@@ -1,0 +1,15 @@
+menu "Display support"
+	config ILI9340
+		depends on HAVE_I2C
+		bool "ILI9340 I2C display support"
+		
+	config LCDPCF8574
+		depends on HAVE_I2C
+		bool "LCD over PCF8572 I2C display support"
+		
+	config LEDMATRIX88
+		bool "Led matrix support"
+		
+	config SSD1306
+		bool "SSD1306 I2C native driver support"
+endmenu

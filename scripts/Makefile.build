@@ -1,0 +1,67 @@
+# ==========================================================================
+# Building
+# ==========================================================================
+
+src := $(obj)
+
+PHONY := __build
+__build:
+
+# Read .config if it exist, otherwise ignore
+-include .config
+
+include scripts/Kbuild.include
+
+# The filename Kbuild has precedence over Makefile
+kbuild-dir := $(if $(filter /%,$(src)),$(src),$(srctree)/$(src))
+include $(if $(wildcard $(kbuild-dir)/Kbuild), $(kbuild-dir)/Kbuild, $(kbuild-dir)/Makefile)
+
+#include scripts/Makefile.lib
+always		:= $(addprefix $(obj)/,$(always))
+
+ifdef host-progs
+ifneq ($(hostprogs-y),$(host-progs))
+$(warning kbuild: $(obj)/Makefile - Usage of host-progs is deprecated. Please replace with hostprogs-y!)
+hostprogs-y += $(host-progs)
+endif
+endif
+
+# Do not include host rules unles needed
+ifneq ($(hostprogs-y)$(hostprogs-m),)
+include scripts/Makefile.host
+endif
+
+
+
+
+# We keep a list of all modules in $(MODVERDIR)
+
+__build: $(always)
+
+
+	
+	
+# Add FORCE to the prequisites of a target to force it to be always rebuilt.
+# ---------------------------------------------------------------------------
+
+PHONY += FORCE
+
+FORCE:
+
+# Read all saved command lines and dependencies for the $(targets) we
+# may be building above, using $(if_changed{,_dep}). As an
+# optimization, we don't need to read them if the target does not
+# exist, we will rebuild anyway in that case.
+
+targets := $(wildcard $(sort $(targets)))
+cmd_files := $(wildcard $(foreach f,$(targets),$(dir $(f)).$(notdir $(f)).cmd))
+
+ifneq ($(cmd_files),)
+  include $(cmd_files)
+endif
+
+
+# Declare the contents of the .PHONY variable as phony.  We keep that
+# information in a variable se we can use it in if_changed and friends.
+
+.PHONY: $(PHONY)

@@ -1,0 +1,17 @@
+menu "IO logic support"
+	config L74HC165
+		depends on HAVE_SPI
+		bool "L74HC165 parallel to serial shift register"
+		
+	config L74HC4051
+		depends on HAVE_SPI
+		bool "L74HC4051 multiplexer support"
+		
+	config L74HC595
+		depends on HAVE_SPI
+		bool "L74HC595 serial to parallel shift register"
+		
+	config PCF8574
+		depends on HAVE_I2C
+		bool "PCF8574 I2C io expander"
+endmenu

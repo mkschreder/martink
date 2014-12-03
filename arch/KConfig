@@ -1,0 +1,83 @@
+menu "Hardware"
+	config HAVE_UART 
+		bool
+	config HAVE_SPI 
+		bool
+	config HAVE_I2C 
+		bool
+	config HAVE_TIMER0
+		bool
+	config HAVE_TIMER1
+		bool
+	config HAVE_TIMER2
+		bool
+	
+	choice 
+		prompt "Processor family"
+
+		config AVR
+			bool "Atmel AVR"
+		
+		config NATIVE
+			bool "Native"
+			help 
+				Attmept to compile code that will run on your current build system
+			
+	endchoice 
+		
+	choice 
+		prompt "Processor model" 
+		config ATMEGA328P
+			depends on AVR
+			select HAVE_SPI
+			select HAVE_UART
+			select HAVE_I2C
+			select HAVE_SPI
+			select HAVE_TIMER0
+			select HAVE_TIMER1
+			select HAVE_TIMER2
+			bool "AVR ATMega328P"
+			
+		config ATMEGA88
+			depends on AVR
+			bool "AVR ATMega88"
+	endchoice 
+
+	choice
+		prompt "Board model"
+		default MULTIWII
+
+		config BOARD_MULTIWII
+			depends on ATMEGA328P
+			bool "Multiwii V2.5 Flight Controller"
+		
+		config BOARD_PROMINI
+			depends on ATMEGA328P
+			bool "Arduino Pro-Mini module"
+			
+		config BOARD_ARDURADIO
+			depends on ATMEGA328P
+			bool "Fortmax custom arduino radio board"
+			
+		config BOARD_VIRTUAL
+			depends on NATIVE
+			bool "Compile for native execution"
+			
+	endchoice
+	
+	config UART 
+		depends on HAVE_UART
+		default y
+		bool "UART interface"
+	
+	config I2C
+		depends on HAVE_I2C
+		default y
+		bool "I2C interface"
+		
+	config SPI
+		depends on HAVE_SPI
+		default y
+		bool "SPI interface"
+		
+endmenu

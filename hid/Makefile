@@ -1,0 +1,1 @@
+obj-$(WIINUNCHUK): wiinunchuck.o

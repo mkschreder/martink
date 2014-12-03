@@ -1,0 +1,17 @@
+obj-$(CONFIG_ACS712) += acs712.o 
+obj-$(CONFIG_AMT1001) += amt1001.o 
+obj-$(CONFIG_BMP085) += bmp085.o 
+obj-$(CONFIG_DS18B20) += ds18b20.o 
+obj-$(CONFIG_HMC5883L) += hmc5883l.o 
+obj-$(CONFIG_LDR) += ldr.o 
+obj-$(CONFIG_MPU6050) += mpu6050.o 
+obj-$(CONFIG_NTCTEMP) += ntctemp.o 
+obj-$(CONFIG_TSL235) += tsl235.o 
+obj-$(CONFIG_ADXL345) += adxl345.o 
+obj-$(CONFIG_BH1750) += bh1750.o 
+obj-$(CONFIG_DHT) += dht.o 
+obj-$(CONFIG_FS300A) += fs300a.o 
+obj-$(CONFIG_L3G4200D) += l3g4200d.o  
+obj-$(CONFIG_MMA7455) += mma7455.o  
+obj-$(CONFIG_MPU6050MP6) += mpu6050dmp6.o 
+obj-$(CONFIG_TEMT6000) += temt6000.o

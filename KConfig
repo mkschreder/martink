@@ -1,0 +1,18 @@
+source arch/KConfig
+
+menu "Device driver support"
+	source crypto/KConfig
+	source disp/KConfig
+	source hid/KConfig
+	source io/KConfig
+	source motors/KConfig
+	source net/KConfig
+	source radio/KConfig
+	source rfid/KConfig
+	source sensors/KConfig
+	source tty/KConfig
+endmenu
+
+menu "Application Configuration"
+	source KConfig.app
+endmenu

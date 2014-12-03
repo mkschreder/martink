@@ -1,0 +1,14 @@
+obj-y += main.o 
+
+include arch/Makefile
+include boards/Makefile
+include crypto/Makefile
+include disp/Makefile
+include hid/Makefile
+include io/Makefile
+include motors/Makefile
+include net/Makefile
+include radio/Makefile
+include rfid/Makefile
+include sensors/Makefile
+include tty/Makefile

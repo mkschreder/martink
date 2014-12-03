@@ -66,7 +66,8 @@ config %config: scripts_basic FORCE
 app: build
 	make -C $(APP) build
 
-fixdep: 
+fixdep:
+	if [ ! -d "build" ]; then mkdir -p build; fi
 	find build -type f -iname '*.d' -exec sh -c 'scripts/basic/fixdep "$${1%.*}.d" "$${1%.*}.o" "" > $${1%.*}.cmd' convert {} \;
 	
 build: fixdep $(obj-y)

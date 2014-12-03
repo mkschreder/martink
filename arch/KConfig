@@ -11,7 +11,13 @@ menu "Hardware"
 		bool
 	config HAVE_TIMER2
 		bool
-	
+	config HAVE_PWM0
+		bool
+	config HAVE_PWM1
+		bool
+	config HAVE_PWM2
+		bool
+		
 	choice 
 		prompt "Processor family"
 

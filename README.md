@@ -16,6 +16,8 @@ But what you get is an object file called built-in.o. What you need to do now is
 
 Example project: https://github.com/mkschreder/bettercopter
 
+The way this is done is you check out the kernel source somewhere. Then create a link to this directory in your project directory and then you can even have a KConfig.app file that you copy into kernel directory before each build (in the makefile) in order to support application speciffic settings in the menuconfig settings - just so all settings, both application speciffic and others can be edited using the same menuconfig utilty that you can start using the "make menuconfig" in the kernel directory (see example project Makefile for details). 
+
 Supported hardware
 ===============
 

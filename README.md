@@ -12,6 +12,10 @@ You compile this firmware just like you compile linux:
     make menuconfig
     make
 
+But what you get is an object file called built-in.o. What you need to do now is link your application against the kernel just like you would otherwise do with any other library. All of this can be done automatically (even updating and compiling the kernel) using a makefile. For an example on how to do this look at the example project below. 
+
+Example project: https://github.com/mkschreder/bettercopter
+
 Supported hardware
 ===============
 

@@ -3,9 +3,9 @@
 #include "include/autoconf.h"
 
 #include <inttypes.h>
-
 #include <arch/soc.h>
 #include <boards/board.h>
+#include "util.h"
 
 //#include "accel_docalibration.h"
 
@@ -173,6 +173,8 @@
 
 #ifdef __cplusplus
 __extension__ typedef int __guard __attribute__((mode (__DI__)));
+
+
 
 extern "C" int __cxa_guard_acquire(__guard *);
 extern "C" void __cxa_guard_release (__guard *);

@@ -2,7 +2,7 @@
  * Automatically generated C config: don't edit
  * version: 
  */
-#define AUTOCONF_TIMESTAMP "2014-12-03 11:50:59 CET"
+#define AUTOCONF_TIMESTAMP "2014-12-05 16:43:48 CET"
 
 
 /*

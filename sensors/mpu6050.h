@@ -95,7 +95,7 @@ extern "C" {
 //timerfreq = (FCPU / prescaler) / timerscale
 //     timerscale 8-bit = 256
 // es. 61 = (16000000 / 1024) / 256
-#define MPU6050_TIMER0INIT TCCR0B |=(1<<CS02)|(1<<CS00); TIMSK0 |=(1<<TOIE0);
+//#define MPU6050_TIMER0INIT TCCR0B |=(1<<CS02)|(1<<CS00); TIMSK0 |=(1<<TOIE0);
 #define mpu6050_mahonysampleFreq 61.0f // sample frequency in Hz
 #define mpu6050_mahonytwoKpDef (2.0f * 0.5f) // 2 * proportional gain
 #define mpu6050_mahonytwoKiDef (2.0f * 0.1f) // 2 * integral gain
@@ -107,10 +107,10 @@ extern "C" {
 //packet size
 #define MPU6050_DMP_dmpPacketSize 42
 //define INT0 rise edge interrupt
-#define MPU6050_DMP_INT0SETUP EICRA |= (1<<ISC01) | (1<<ISC00)
+//#define MPU6050_DMP_INT0SETUP EICRA |= (1<<ISC01) | (1<<ISC00)
 //define enable and disable INT0 rise edge interrupt
-#define MPU6050_DMP_INT0DISABLE EIMSK &= ~(1<<INT0)
-#define MPU6050_DMP_INT0ENABLE EIMSK |= (1<<INT0)
+//#define MPU6050_DMP_INT0DISABLE EIMSK &= ~(1<<INT0)
+//#define MPU6050_DMP_INT0ENABLE EIMSK |= (1<<INT0)
 extern volatile uint8_t mpu6050_mpuInterrupt;
 #endif
 

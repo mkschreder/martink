@@ -72,11 +72,11 @@ fixdep:
 build: fixdep $(obj-y)
 	ar rs $(APPNAME) $(obj-y)
 
-$(BUILD_DIR)/%.o: %.cpp 
+$(BUILD_DIR)/%.o: %.cpp .config
 	mkdir -p `dirname $@`
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.o: %.c 
+$(BUILD_DIR)/%.o: %.c .config
 	mkdir -p `dirname $@`
 	$(CC) -c $(CFLAGS) $< -o $@
 

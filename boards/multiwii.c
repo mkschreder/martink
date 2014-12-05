@@ -1,10 +1,13 @@
 #include "multiwii.h"
 
 #include <arch/soc.h>
+#include "../util.h"
 
 #include <sensors/hmc5883l.h>
 #include <sensors/bmp085.h>
 #include <sensors/mpu6050.h>
+
+#include <math.h>
 
 #define FRONT_PIN PD3
 #define RIGHT_PIN PB1
@@ -35,9 +38,12 @@ static struct board _brd;
 static struct board *brd = &_brd; 
 static struct uart uart;
 
-void get_accelerometer(int16_t *x, int16_t *y, int16_t *z){
-	int16_t gx, gy, gz; 
-	mpu6050_getRawData(x, y, z, &gx, &gy, &gz); 
+void get_accelerometer(float *x, float *y, float *z){
+	double ax, ay, az, gx, gy, gz; 
+	mpu6050_getConvData(&ax, &ay, &az, &gx, &gy, &gz); 
+	*x = ax; 
+	*y = ay; 
+	*z = az; 
 }
 
 void get_gyroscope(float *x, float *y, float *z){
@@ -83,22 +89,30 @@ void brd_init(void){
 	brd->pwm_timeout = timeout_from_now(0); 
 	
 	// init output pins
-	DDRD |= _BV(3); 
-	DDRB |= _BV(1) | _BV(2) | _BV(3) | _BV(5); 
+	// motor 0 1 2
+	DDRD |= _BV(3) | _BV(5) | _BV(6); 
+	// motor 3 and led
+	DDRB |= _BV(1) | _BV(3) | _BV(5); 
+	
+	// set pullups on inputs
+	PORTD |= _BV(2) | _BV(4) | _BV(7); 
+	PORTB |= _BV(0); 
 	
 	// disable external ints
 	EICRA = 0;
 	EIMSK = 0;
 	
 	// enable pin interrupts
-	PCICR |= _BV(PCIE2);  
-	PCMSK0 = 0; //(1<<PCINT4) | (1<<PCINT5);
+	PCICR |= _BV(PCIE0) | _BV(PCIE2);  
+	PCMSK0 = _BV(PCINT0); // | _BV(PCINT2);
 	PCMSK1 = 0; //(1<<PCINT8) | (1<<PCINT9) | (1<<PCINT10) | (1<<PCINT11);
-	PCMSK2 |= _BV(PCINT20) | _BV(PCINT21) | _BV(PCINT22) | _BV(PCINT23) | _BV(PCINT18);
+	PCMSK2 |=  _BV(PCINT18) | _BV(PCINT20) /*| _BV(PCINT21) | _BV(PCINT22) */| _BV(PCINT23);
 	
+#ifdef CONFIG_UART
 	uart_init(&uart, UART_BAUD_SELECT(38400, F_CPU));
 	uart_printf(PSTR("booting..\n")); 
-	
+#endif
+
 	time_init(); 
 	
 	// init all sensors
@@ -109,9 +123,22 @@ void brd_init(void){
 	
 	reset_rc(); 
 	// ticking timer for the pwm generator
-	TCCR2B = _BV(CS22) | _BV(CS20);  // 128 prescaler
+	/*TCCR2B = _BV(CS22) | _BV(CS20);  // 128 prescaler
 	TIMSK2 |= _BV(TOIE2); 
 	TCNT2 = 0; 
+	*/
+	TCCR0A = _BV(COM0A1) | _BV(COM0B1) | _BV(WGM01) | _BV(WGM00); 
+	TCCR0B = _BV(CS02); 
+	TCNT0 = 0; 
+	OCR0A = map(MINCOMMAND, 0, PWM_MAX, 0, 127); 
+	OCR0B = map(MINCOMMAND, 0, PWM_MAX, 0, 127); 
+	
+	TCCR2A = _BV(COM2A1) | _BV(COM2B1) | _BV(WGM21) | _BV(WGM20); 
+	TCCR2B = _BV(CS22) | _BV(CS20); 
+	TCNT2 = 0; 
+	OCR2A = map(MINCOMMAND, 0, PWM_MAX, 0, 250); 
+	OCR2B = map(MINCOMMAND, 0, PWM_MAX, 0, 250); ; 
+	
 	/*
 	TCCR0B = _BV(CS02); //_BV(CS00); // no prescaler, 256 clocks per overflow (FCPU/256)
 	TIMSK0 |= _BV(TOIE0); 
@@ -127,15 +154,18 @@ void brd_process_events(void){
 	if(timeout_expired(brd->last_rc_update)){
 		reset_rc(); 
 	}
-	//_interrupt_pwm_update(); 
-	/*if(timeout_expired(brd->signal_timeout)){
-		for(int c = 0; c < 6; c++)
-			set_pin(PWM_FRONT + c, 0); 
-	}*/
+	
+	// rc reset routine
+	if(timeout_expired(brd->last_rc_update)){
+		for(int c = 0; c < 6; c++){
+			brd->rc_time[c] = timeout_from_now(0); 
+		}
+		brd->last_rc_update = timeout_from_now(1000000); 
+	} 
 }
 
 static volatile uint8_t ch = 0; 
-	
+/*
 ISR(TIMER2_OVF_vect)
 { 
 	sei(); 
@@ -160,46 +190,30 @@ ISR(TIMER2_OVF_vect)
 	if(ch == 6) ch = 0; 
 	PWM_UPDATE_ENABLE; 
 	TIFR2 |= _BV(TOV2);
-	/*
-	if(timeout_expired(brd->pwm_timeout)){
-		brd->pwm_timeout = timeout_from_now(brd->pwm_pulse_delay_us); 
-		
-		for(int c = 0; c < 6; c++){
-			brd->ch_timeout[c] = timeout_from_now(brd->pwm[c]); 
-			switch(PWM_FRONT + c){
-				case PWM_FRONT: PORTD |= _BV(3); break; 
-				case PWM_LEFT: PORTB |= _BV(1); break; 
-				case PWM_RIGHT: PORTB |= _BV(2); break; 
-				case PWM_BACK: PORTB |= _BV(3); break; 
-			}
-		}
-	}
-	for(int c = 0; c < 6; c++){
-		if(timeout_expired(brd->ch_timeout[c])){
-			switch(PWM_FRONT + c){
-				case PWM_FRONT: PORTD &= ~_BV(3); break; 
-				case PWM_LEFT: PORTB 	&= ~_BV(1); break; 
-				case PWM_RIGHT: PORTB &= ~_BV(2); break; 
-				case PWM_BACK: PORTB 	&= ~_BV(3); break; 
-			}
-		} 
-	}*/
-	/*TCNT0 = 0; 
-	TIFR0 |= _BV(TOV0); */
-}
+	
+}*/
 
 void set_pin(uint8_t pin, uint16_t value){
 	if(pin == LED_PIN) {
 		if(value) PORTB |= _BV(5); 
 		else PORTB &= ~_BV(5); 
-	} else if(pin >= PWM_FRONT && pin < PWM_COUNT){
+	} else if(pin == PWM_LEFT){
+		OCR2A = map(value, 0, PWM_MAX, 0, 250); 
+	} else if(pin == PWM_RIGHT){
+		OCR2B = map(value, 0, PWM_MAX, 0, 250); 
+	} else if(pin == PWM_FRONT){
+		OCR0A = map(value, 0, PWM_MAX, 0, 127); 
+	} else if(pin == PWM_BACK){
+		OCR0B = map(value, 0, PWM_MAX, 0, 127); 
+	}
+	/*else if(pin >= PWM_FRONT && pin < PWM_COUNT){
 		if(value > PWM_MAX) value = PWM_MAX; 
 		if(value < PWM_MIN) value = PWM_MIN; 
 		
 		//PWM_UPDATE_DISABLE; 
-		brd->pwm[pin - PWM_FRONT] = value; 
+		//brd->pwm[pin - PWM_FRONT] = value; 
 		//PWM_UPDATE_ENABLE; 
-	}
+	}*/
 	/*if(value == 1){
 		switch(pin){
 			case PWM_FRONT: PORTD |= _BV(3); break; 
@@ -233,7 +247,10 @@ void set_pin(uint8_t pin, uint16_t value){
 
 uint16_t get_pin(uint8_t pin){
 	if(pin >= RC_IN0 && pin <= RC_IN4){
-		uint16_t val = brd->rc_value[pin - RC_IN0]; 
+		uint16_t val;
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+			val = brd->rc_value[pin - RC_IN0]; 
+		}
 		if(val > RC_MAX) return RC_MAX; 
 		if(val < RC_MIN) return RC_MIN; 
 		return val; 
@@ -241,64 +258,43 @@ uint16_t get_pin(uint8_t pin){
 	return 0; 
 }
 
-void _compute_rc_time(uint8_t chan, uint8_t val, timeout_t time){
-	// if the pin went high then reset timer
-	if(val){
-		brd->rc_time[chan] = time; 
-	} else {
-		// if it went low then measure microseconds and save the value
-		timeout_t dv = time_clock_to_us(time - brd->rc_time[chan]);
-		if(dv > RC_MAX) 
-			brd->rc_value[chan] = RC_MAX; 
-		else if(dv < RC_MIN) 
-			brd->rc_value[chan] = RC_MIN; 
-		else 
-			brd->rc_value[chan] = dv; 
-	}
-}
-/*
-/// triggered for channel 5 and 6 
+
 ISR(PCINT0_vect){
-	static volatile uint8_t prev_pinb = 0xff;
-	
 	timeout_t time = time_get_clock();
+	static volatile uint8_t prev = 0;
+	uint8_t value = (PINB & (_BV(0))) | (PIND & (_BV(2) | _BV(4) | _BV(7))); 
+	uint8_t changed = (value ^ prev);
+	prev = value;
 	
-  register uint8_t pinb = PINB & 0xff;
+	brd->last_rc_update = time + 1000000; 
 	
-	register uint8_t changed = (pinb ^ prev_pinb);
-	prev_pinb = pinb;
-
-	for(uint8_t c = 1; c < 4; c++){
-		if(changed & _BV(c)){
-			_compute_rc_time(c, pinb & _BV(c), time);
-		} 
+	#define COMPUTE_RC_CHAN(ch) {\
+		if(set){ brd->rc_time[ch] = time; } \
+		else { \
+			timeout_t ticks = time_clock_to_us(time - brd->rc_time[ch]);\
+			if(abs(brd->rc_value[ch] - ticks) > 10 && ticks > RC_MIN && ticks < RC_MAX)\
+				brd->rc_value[ch] = ticks;\
+		}\
 	}
-}*/
-
-ISR(PCINT2_vect){
-	static volatile uint8_t prev_pind = 0xFF;
-
-	uint8_t pind = PIND & 0xff;
 	
-	uint8_t changed = (pind ^ prev_pind);
-	prev_pind = pind;
-
-	timeout_t time = time_get_clock();
-	
-	//if receiver is just powered on 
-	if(timeout_expired(brd->last_rc_update)){
-		for(int c = 0; c < 6; c++){
-			brd->rc_time[c] = timeout_from_now(0); 
-		}
-		brd->last_rc_update = timeout_from_now(1000000); 
-	} else {
-		brd->last_rc_update = timeout_from_now(1000000); 
-		
-		uint8_t pins[] = {2, 4, 5, 6, 7}; 
-		for(uint8_t c = 0; c < sizeof(pins); c++){
-			if(changed & _BV(pins[c])){
-				_compute_rc_time(c, pind & _BV(pins[c]), time); 
-			}
+	for(uint8_t c = 0; c < 8; c++){
+		if(!(changed & _BV(c))) continue; 
+		uint8_t set = value & _BV(c); 
+		switch(c){
+			case 2: 
+				COMPUTE_RC_CHAN(0);
+				break; 
+			case 4: 
+				COMPUTE_RC_CHAN(1);
+				break; 
+			case 7: 
+				COMPUTE_RC_CHAN(2);
+				break; 
+			case 0: 
+				COMPUTE_RC_CHAN(3);
+				break; 
 		}
 	}
 }
+
+ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));

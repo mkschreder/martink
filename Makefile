@@ -9,6 +9,8 @@ CFLAGS :=
 CXXFLAGS := 
 LDFLAGS := 
 BUILD_DIR := build
+ktree := martink
+#$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 include .config 
 include Makefile.build 
@@ -47,7 +49,7 @@ HOSTCXXFLAGS	+= -O2
 
 MAKEFLAGS += -rR
 
-export srctree CONFIG_SHELL HOSTCC HOSTCFLAGS HOSTCXX HOSTCXXFLAGS 
+export ktree srctree CONFIG_SHELL HOSTCC HOSTCFLAGS HOSTCXX HOSTCXXFLAGS 
 export quiet Q KBUILD_VERBOSE
 
 # Basic helpers built in scripts/

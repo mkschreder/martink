@@ -115,7 +115,7 @@ extern void Sleep( volatile uint32_t dwMs )
         __WFI() ;
     } while( 1 ) ;
 }
-
+/*
 uint32_t time_get_clock(){
 	return GetTickCount(); 
 }
@@ -128,4 +128,4 @@ uint32_t time_us_to_clock(uint32_t us){
 uint32_t time_clock_to_us(uint32_t clock){
 	return clock * 1000; 
 }
-
+*/

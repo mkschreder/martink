@@ -1,0 +1,31 @@
+choice 
+	prompt "ARM Model" 
+	default AT91SAM3
+	
+	config STM32
+		bool 
+	
+	config SAM3
+		bool
+		
+	config STM32F103
+		depends on ARM
+		select STM32
+		select HAVE_UART
+		select HAVE_UART0
+		select HAVE_UART1
+		select HAVE_TWI
+		select HAVE_SPI
+		bool "STM32F103"
+		
+	config AT91SAM3
+		depends on ARM
+		select SAM3
+		select HAVE_UART
+		select HAVE_UART0
+		select HAVE_UART1
+		select HAVE_TWI
+		select HAVE_SPI
+		bool "AT91SAM3"
+		
+endchoice 

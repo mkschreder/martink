@@ -8,19 +8,22 @@
 extern "C" {
 #endif
 
+// these should be moved somewhere. This is the way to do configurable
+// c interfaces using macros. It is used by all generic interface headers. 
+#define PFCALL2(P, F, args...) __##P##_##F##__(args)
+#define PFCALL(P, F, args...) PFCALL2(P, F, args)
+
+
 #include "time.h"
 #include "uart.h"
-
-#ifdef CONFIG_STM32
-#include "arm/stm32/stm32.h"
-#endif
+#include "twi.h"
 
 #ifdef CONFIG_ATMEGA328P
 #include "avr/m328p.h"
 #endif
 
-#ifdef CONFIG_SAM3
-#include "arm/sam3/sam.h"
+#ifdef CONFIG_ARM
+#include "arm/arm.h"
 #endif
 
 #ifdef CONFIG_NATIVE

@@ -1,0 +1,10 @@
+choice 
+	prompt "STM32 Model" 
+	default STM32F10X
+	
+	config STM32F10X
+		depends on STM32
+		
+		bool "STM32F10X"
+	
+endchoice 

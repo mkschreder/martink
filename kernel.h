@@ -70,10 +70,6 @@
 #include "sensors/hmc5883l.h"
 #endif
 
-#ifdef CONFIG_I2CSLAVE
-#include "arch/m328p/twi_slave.h"
-#endif
-
 //#include "i2csoft.h"
 //#include "i2csw.h"
 //#include "i2csw_slave.h"
@@ -138,9 +134,6 @@
 
 //#include "sevseg.h"
 //#include "softi2c.h"
-#ifdef CONFIG_SPI
-#include "arch/m328p/spi.h"
-#endif
 
 #ifdef CONFIG_SSD1306
 #include "disp/ssd1306.h"
@@ -151,12 +144,6 @@
 //#include "stepper04multi.h"
 #if defined(CONFIG_TCPIP) | defined(CONFIG_TCP) | defined(CONFIG_UDP)
 #include "net/tcpip.h"
-#endif
-
-//#include "temt6000.h"
-//#include "tsl235.h"
-#ifdef CONFIG_UART
-#include "arch/m328p/uart.h"
 #endif
 
 #ifdef CONFIG_VT100

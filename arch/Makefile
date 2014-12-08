@@ -8,10 +8,14 @@ ifeq ($(CONFIG_NATIVE), y)
 	include $(srctree)/arch/native/Makefile
 endif
 
+ifeq ($(CONFIG_ARM), y)
+	include $(srctree)/arch/arm/Makefile
+endif
+
 ifeq ($(CONFIG_STM32), y)
 	include $(srctree)/arch/arm/stm32/Makefile
 endif
 
-ifeq ($(CONFIG_SAM3), y)
+ifeq ($(CONFIG_AT91SAM3), y)
 	include $(srctree)/arch/arm/sam3/Makefile
 endif

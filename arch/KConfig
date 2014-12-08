@@ -1,9 +1,19 @@
 menu "Hardware"
 	config HAVE_UART 
 		bool
+	config HAVE_UART0
+		bool
+	config HAVE_UART1
+		bool
 	config HAVE_SPI 
 		bool
-	config HAVE_I2C 
+	config HAVE_TWI
+		bool
+	config HAVE_TWI0
+		bool
+	config HAVE_TWI1
+		bool
+	config HAVE_TWI2
 		bool
 	config HAVE_TIMER0
 		bool
@@ -24,11 +34,8 @@ menu "Hardware"
 		config AVR
 			bool "Atmel AVR"
 		
-		config STM32
-			bool "STM32, ST Electronics"
-		
-		config SAM3
-			bool "AT91SAM3"
+		config ARM
+			bool "ARM"
 			
 		config NATIVE
 			bool "Native"
@@ -37,10 +44,10 @@ menu "Hardware"
 			
 	endchoice 
 		
-	menu "Processor options"
-		source arch/m328p/KConfig
-		source arch/stm32/KConfig
-		source arch/sam3/KConfig
+	menu "Processor type"
+		source arch/avr/m328p/KConfig
+		source arch/arm/stm32/KConfig
+		source arch/arm/KConfig
 		source arch/native/KConfig
 	endmenu
 	
@@ -48,11 +55,11 @@ menu "Hardware"
 		depends on HAVE_UART
 		default y
 		bool "UART interface"
-	
+		
 	config I2C
-		depends on HAVE_I2C
+		depends on HAVE_TWI
 		default y
-		bool "I2C interface"
+		bool "TWI interface"
 		
 	config SPI
 		depends on HAVE_SPI

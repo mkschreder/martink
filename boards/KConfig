@@ -1,0 +1,37 @@
+choice
+	prompt "Board model"
+	default BOARD_MULTIWII
+
+	config BOARD_MULTIWII
+		depends on ATMEGA328P
+		select MPU6050
+		select HMC5883L
+		select BMP085
+		bool "Multiwii V2.5 Flight Controller"
+	
+	config BOARD_PROMINI
+		depends on ATMEGA328P
+		bool "Arduino Pro-Mini module"
+	
+	config BOARD_STM32F103
+		depends on STM32F10X
+		bool "STM32F103C6 dev board"
+		
+	config BOARD_ARDUINO_DUE
+		depends on AT91SAM3
+		bool "Arduino Due SAM3"
+		
+	config BOARD_ARDURADIO
+		depends on ATMEGA328P
+		bool "Fortmax custom arduino radio board"
+		
+	config BOARD_VIRTUAL
+		depends on NATIVE
+		bool "Compile for native execution"
+endchoice
+
+
+config MULTIWII_ACC
+	string "Multiwii Accelerometer"
+	depends on BOARD_MULTIWII
+	default "mpu6050"

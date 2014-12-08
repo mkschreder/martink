@@ -19,7 +19,6 @@ Notes:
 #define BMP085_H_
 
 #include <stdio.h>
-#include <avr/io.h>
 
 #ifdef __cplusplus
 extern "C" {

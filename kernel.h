@@ -163,18 +163,29 @@
 #include "tty/vt100.h"
 #endif
 
-#define kprintf(a, ...) uart_printf(PSTR(a), ##__VA_ARGS__)
+#ifdef CONFIG_HAVE_UART
+	#define kprintf(a, ...) uart_printf(PSTR(a), ##__VA_ARGS__)
 
-#ifdef CONFIG_DEBUG
-#define kdebug(a, ...) uart_printf(PSTR(a), ##__VA_ARGS__)
-#else
-#define kdebug(a, ...) {}
+	#ifdef CONFIG_DEBUG
+		#define kdebug(a, ...) uart_printf(PSTR(a), ##__VA_ARGS__)
+	#else
+		#define kdebug(a, ...) {}
+	#endif
+#else 
+	#define kprintf(a, ...) {}
+	#define kdebug(a, ...) {}
 #endif
+
+struct main_module {
+	void (*init)(); 
+	void (*loop)(); 
+}; 
+
+#define DECLARE_MAIN_MODULE() const struct main_module kmain_module = 
+extern const struct main_module kmain_module; 
 
 #ifdef __cplusplus
 __extension__ typedef int __guard __attribute__((mode (__DI__)));
-
-
 
 extern "C" int __cxa_guard_acquire(__guard *);
 extern "C" void __cxa_guard_release (__guard *);

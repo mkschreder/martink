@@ -7,7 +7,6 @@ Released under GPLv3.
 Please refer to LICENSE file for licensing information.
 */
 
-
 #ifndef WIINUNCHUCK_H_
 #define WIINUNCHUCK_H_
 

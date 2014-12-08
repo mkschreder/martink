@@ -483,11 +483,14 @@ int conf_write(const char *name)
 				}
 				break;
 			case S_STRING:
-				// fix me
+				// TODO: I have replaced string to work as constand define.
+				// Real string and define needs to be implemented separately 
+				// in the grammar and in the parser. 
 				str = sym_get_string_value(sym);
 				fprintf(out, "CONFIG_%s=\"", sym->name);
 				if (out_h)
-					fprintf(out_h, "#define CONFIG_%s \"", sym->name);
+					// here I have removed the quotes so that string is interpreted as constant
+					fprintf(out_h, "#define CONFIG_%s ", sym->name);
 				do {
 					l = strcspn(str, "\"\\");
 					if (l) {
@@ -505,7 +508,8 @@ int conf_write(const char *name)
 				} while (*str);
 				fputs("\"\n", out);
 				if (out_h) {
-					fputs("\"\n", out_h);
+					// here quote has been removed as well
+					fputs("\n", out_h);
 					/* bbox 
 					fprintf(out_h, "#define ENABLE_%s 1\n", sym->name);
 					fprintf(out_h, "#define USE_%s(...) __VA_ARGS__\n", sym->name);

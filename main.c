@@ -5,19 +5,12 @@ extern void app_loop(void);
 
 int main(void){
 	brd_init(); 
+	
 	app_init(); 
 	
 	while(1){
 		brd_process_events(); 
 		app_loop(); 
-		/*
-		#ifdef RFNET
-		rfnet_process_events(); 
-		#endif
-		
-		#ifdef TCPIP
-		ip_process_packets(); 
-		#endif*/
 	}
 }
 

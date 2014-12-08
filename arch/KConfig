@@ -20,10 +20,16 @@ menu "Hardware"
 		
 	choice 
 		prompt "Processor family"
-
+	
 		config AVR
 			bool "Atmel AVR"
 		
+		config STM32
+			bool "STM32, ST Electronics"
+		
+		config SAM3
+			bool "AT91SAM3"
+			
 		config NATIVE
 			bool "Native"
 			help 
@@ -31,45 +37,12 @@ menu "Hardware"
 			
 	endchoice 
 		
-	choice 
-		prompt "Processor model" 
-		config ATMEGA328P
-			depends on AVR
-			select HAVE_SPI
-			select HAVE_UART
-			select HAVE_I2C
-			select HAVE_SPI
-			select HAVE_TIMER0
-			select HAVE_TIMER1
-			select HAVE_TIMER2
-			bool "AVR ATMega328P"
-			
-		config ATMEGA88
-			depends on AVR
-			bool "AVR ATMega88"
-	endchoice 
-
-	choice
-		prompt "Board model"
-		default MULTIWII
-
-		config BOARD_MULTIWII
-			depends on ATMEGA328P
-			bool "Multiwii V2.5 Flight Controller"
-		
-		config BOARD_PROMINI
-			depends on ATMEGA328P
-			bool "Arduino Pro-Mini module"
-			
-		config BOARD_ARDURADIO
-			depends on ATMEGA328P
-			bool "Fortmax custom arduino radio board"
-			
-		config BOARD_VIRTUAL
-			depends on NATIVE
-			bool "Compile for native execution"
-			
-	endchoice
+	menu "Processor options"
+		source arch/m328p/KConfig
+		source arch/stm32/KConfig
+		source arch/sam3/KConfig
+		source arch/native/KConfig
+	endmenu
 	
 	config UART 
 		depends on HAVE_UART

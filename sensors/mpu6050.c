@@ -12,6 +12,7 @@ Please refer to LICENSE file for licensing information.
 #include <string.h>
 #include <arch/soc.h>
 #include "mpu6050.h"
+#include "mpu6050registers.h"
 
 #if MPU6050_GETATTITUDE == 1 || MPU6050_GETATTITUDE == 2
 #include <math.h>  //include libm
@@ -19,6 +20,89 @@ Please refer to LICENSE file for licensing information.
 
 
 volatile uint8_t buffer[14];
+
+//enable the getattitude functions
+//because we do not have a magnetometer, we have to start the chip always in the same position
+//then to obtain your object attitude you have to apply the aerospace sequence
+//0 disabled
+//1 mahony filter
+//2 dmp chip processor
+#define MPU6050_GETATTITUDE 0
+
+//definitions for raw data
+//gyro and acc scale
+#define MPU6050_GYRO_FS MPU6050_GYRO_FS_2000
+#define MPU6050_ACCEL_FS MPU6050_ACCEL_FS_2
+
+#define MPU6050_GYRO_LSB_250 131.0
+#define MPU6050_GYRO_LSB_500 65.5
+#define MPU6050_GYRO_LSB_1000 32.8
+#define MPU6050_GYRO_LSB_2000 16.4
+#if MPU6050_GYRO_FS == MPU6050_GYRO_FS_250
+#define MPU6050_GGAIN MPU6050_GYRO_LSB_250
+#elif MPU6050_GYRO_FS == MPU6050_GYRO_FS_500
+#define MPU6050_GGAIN MPU6050_GYRO_LSB_500
+#elif MPU6050_GYRO_FS == MPU6050_GYRO_FS_1000
+#define MPU6050_GGAIN MPU6050_GYRO_LSB_1000
+#elif MPU6050_GYRO_FS == MPU6050_GYRO_FS_2000
+#define MPU6050_GGAIN MPU6050_GYRO_LSB_2000
+#endif
+
+#define MPU6050_ACCEL_LSB_2 16384.0
+#define MPU6050_ACCEL_LSB_4 8192.0
+#define MPU6050_ACCEL_LSB_8 4096.0
+#define MPU6050_ACCEL_LSB_16 2048.0
+#if MPU6050_ACCEL_FS == MPU6050_ACCEL_FS_2
+#define MPU6050_AGAIN MPU6050_ACCEL_LSB_2
+#elif MPU6050_ACCEL_FS == MPU6050_ACCEL_FS_4
+#define MPU6050_AGAIN MPU6050_ACCEL_LSB_4
+#elif MPU6050_ACCEL_FS == MPU6050_ACCEL_FS_8
+#define MPU6050_AGAIN MPU6050_ACCEL_LSB_8
+#elif MPU6050_ACCEL_FS == MPU6050_ACCEL_FS_16
+#define MPU6050_AGAIN MPU6050_ACCEL_LSB_16
+#endif
+
+#define MPU6050_CALIBRATEDACCGYRO 1 //set to 1 if is calibrated
+#if MPU6050_CALIBRATEDACCGYRO == 1
+#define MPU6050_AXOFFSET 0
+#define MPU6050_AYOFFSET 0
+#define MPU6050_AZOFFSET 0
+#define MPU6050_AXGAIN 16384.0
+#define MPU6050_AYGAIN 16384.0
+#define MPU6050_AZGAIN 16384.0
+#define MPU6050_GXOFFSET -42
+#define MPU6050_GYOFFSET 9
+#define MPU6050_GZOFFSET -29
+#define MPU6050_GXGAIN 16.4
+#define MPU6050_GYGAIN 16.4
+#define MPU6050_GZGAIN 16.4
+#endif
+
+//definitions for attitude 1 function estimation
+#if MPU6050_GETATTITUDE == 1
+#error "GETATTITUDE == 1 is not supported!"
+//setup timer0 overflow event and define madgwickAHRSsampleFreq equal to timer0 frequency
+//timerfreq = (FCPU / prescaler) / timerscale
+//     timerscale 8-bit = 256
+// es. 61 = (16000000 / 1024) / 256
+//#define MPU6050_TIMER0INIT TCCR0B |=(1<<CS02)|(1<<CS00); TIMSK0 |=(1<<TOIE0);
+#define mpu6050_mahonysampleFreq 61.0f // sample frequency in Hz
+#define mpu6050_mahonytwoKpDef (2.0f * 0.5f) // 2 * proportional gain
+#define mpu6050_mahonytwoKiDef (2.0f * 0.1f) // 2 * integral gain
+#endif
+
+
+#if MPU6050_GETATTITUDE == 2
+//dmp definitions
+//packet size
+#define MPU6050_DMP_dmpPacketSize 42
+//define INT0 rise edge interrupt
+//#define MPU6050_DMP_INT0SETUP EICRA |= (1<<ISC01) | (1<<ISC00)
+//define enable and disable INT0 rise edge interrupt
+//#define MPU6050_DMP_INT0DISABLE EIMSK &= ~(1<<INT0)
+//#define MPU6050_DMP_INT0ENABLE EIMSK |= (1<<INT0)
+extern volatile uint8_t mpu6050_mpuInterrupt;
+#endif
 
 /*
  * read bytes from chip register
@@ -484,18 +568,18 @@ void mpu6050_init(void) {
 void mpu6050_getRawData(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz) {
 	mpu6050_readBytes(MPU6050_RA_ACCEL_XOUT_H, 14, (uint8_t *)buffer);
 
-    *ax = (((int16_t)buffer[0]) << 8) | buffer[1];
-    *ay = (((int16_t)buffer[2]) << 8) | buffer[3];
-    *az = (((int16_t)buffer[4]) << 8) | buffer[5];
-    *gx = (((int16_t)buffer[8]) << 8) | buffer[9];
-    *gy = (((int16_t)buffer[10]) << 8) | buffer[11];
-    *gz = (((int16_t)buffer[12]) << 8) | buffer[13];
+	*ax = (((int16_t)buffer[0]) << 8) | buffer[1];
+	*ay = (((int16_t)buffer[2]) << 8) | buffer[3];
+	*az = (((int16_t)buffer[4]) << 8) | buffer[5];
+	*gx = (((int16_t)buffer[8]) << 8) | buffer[9];
+	*gy = (((int16_t)buffer[10]) << 8) | buffer[11];
+	*gz = (((int16_t)buffer[12]) << 8) | buffer[13];
 }
 
 /*
  * get raw data converted to g and deg/sec values
  */
-void mpu6050_getConvData(double* axg, double* ayg, double* azg, double* gxds, double* gyds, double* gzds) {
+void mpu6050_getConvAcc(double* axg, double* ayg, double* azg) {
 	int16_t ax = 0;
 	int16_t ay = 0;
 	int16_t az = 0;
@@ -505,17 +589,31 @@ void mpu6050_getConvData(double* axg, double* ayg, double* azg, double* gxds, do
 	mpu6050_getRawData(&ax, &ay, &az, &gx, &gy, &gz);
 
 	#if MPU6050_CALIBRATEDACCGYRO == 1
-    *axg = (double)(ax-MPU6050_AXOFFSET)/MPU6050_AXGAIN;
-    *ayg = (double)(ay-MPU6050_AYOFFSET)/MPU6050_AYGAIN;
-    *azg = (double)(az-MPU6050_AZOFFSET)/MPU6050_AZGAIN;
-    *gxds = (double)(gx-MPU6050_GXOFFSET)/MPU6050_GXGAIN;
+	*axg = (double)(ax-MPU6050_AXOFFSET)/MPU6050_AXGAIN;
+	*ayg = (double)(ay-MPU6050_AYOFFSET)/MPU6050_AYGAIN;
+	*azg = (double)(az-MPU6050_AZOFFSET)/MPU6050_AZGAIN;
+	#else
+	*axg = (double)(ax)/MPU6050_AGAIN;
+	*ayg = (double)(ay)/MPU6050_AGAIN;
+	*azg = (double)(az)/MPU6050_AGAIN;
+	#endif  
+}
+
+void mpu6050_getConvGyr(double* gxds, double* gyds, double* gzds) {
+	int16_t ax = 0;
+	int16_t ay = 0;
+	int16_t az = 0;
+	int16_t gx = 0;
+	int16_t gy = 0;
+	int16_t gz = 0;
+	mpu6050_getRawData(&ax, &ay, &az, &gx, &gy, &gz);
+
+	#if MPU6050_CALIBRATEDACCGYRO == 1
+	*gxds = (double)(gx-MPU6050_GXOFFSET)/MPU6050_GXGAIN;
 	*gyds = (double)(gy-MPU6050_GYOFFSET)/MPU6050_GYGAIN;
 	*gzds = (double)(gz-MPU6050_GZOFFSET)/MPU6050_GZGAIN;
 	#else
-    *axg = (double)(ax)/MPU6050_AGAIN;
-    *ayg = (double)(ay)/MPU6050_AGAIN;
-    *azg = (double)(az)/MPU6050_AGAIN;
-    *gxds = (double)(gx)/MPU6050_GGAIN;
+	*gxds = (double)(gx)/MPU6050_GGAIN;
 	*gyds = (double)(gy)/MPU6050_GGAIN;
 	*gzds = (double)(gz)/MPU6050_GGAIN;
 	#endif  
@@ -678,3 +776,7 @@ void mpu6050_getRollPitchYaw(double *roll, double *pitch, double *yaw) {
 
 #endif
 
+const struct mpu6050 mpu6050 = {
+	mpu6050_getConvAcc, 
+	mpu6050_getConvGyr
+}; 

@@ -20,6 +20,17 @@
 #define PWM_UPDATE_DISABLE {TIMSK2 &= ~_BV(TOIE2);}
 #define PWM_UPDATE_ENABLE {TIMSK2 |= _BV(TOIE2);}
 
+#define ACCNAME CONFIG_MULTIWII_ACC
+
+/*
+#define PREFIX foo
+#define CALL2(P,x) _##P##_bar(x)
+#define CALL(P, x) CALL2(P,x)
+*/
+
+//#define acc_read(ACC, x, y, z) _##ACC_getConvAcc(x, y, z); 
+//#define gyr_read(x, y, z) _ACCNAME##_getConvGyr(x, y, z); 
+
 const static uint16_t rc_defaults[6] = {1000, 1500, 1500, 1500, 1500, 1500}; 
 
 struct board {
@@ -39,16 +50,17 @@ static struct board *brd = &_brd;
 static struct uart uart;
 
 void get_accelerometer(float *x, float *y, float *z){
-	double ax, ay, az, gx, gy, gz; 
-	mpu6050_getConvData(&ax, &ay, &az, &gx, &gy, &gz); 
+	double ax, ay, az; 
+	//CALL(foo, 10); 
+	ACCNAME.getConvAcc(&ax, &ay, &az); 
 	*x = ax; 
 	*y = ay; 
 	*z = az; 
 }
 
 void get_gyroscope(float *x, float *y, float *z){
-	double ax, ay, az, gx, gy, gz; 
-	mpu6050_getConvData(&ax, &ay, &az, &gx, &gy, &gz);   
+	double gx, gy, gz; 
+	ACCNAME.getConvGyr(&gx, &gy, &gz);   
 	*x = gx; 
 	*y = gy; 
 	*z = gz; 
@@ -277,6 +289,7 @@ ISR(PCINT0_vect){
 		}\
 	}
 	
+	#define abs(x) ((x >= 0)?x:-x)
 	for(uint8_t c = 0; c < 8; c++){
 		if(!(changed & _BV(c))) continue; 
 		uint8_t set = value & _BV(c); 

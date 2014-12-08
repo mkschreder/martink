@@ -19,7 +19,7 @@ COMMON_FLAGS += $(CPU_FLAGS)
 # add includes to the make
 CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
 CXXFLAGS 	+= $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
-LDFLAGS 	+= $(COMMON_FLAGS) 
+LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS)
 OUTDIRS := build build/crypto/aes
 APPNAME := built-in.o
 
@@ -81,8 +81,8 @@ $(BUILD_DIR)/%.o: %.c .config
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean: 
-	@find . \( -name '*.[oas]' -o -name '*.ko' -o -name '.*.cmd' \
-		-o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \) \
+	@find . \( -name '*.o' -o -name '*.ko' -o -name '*.cmd' \
+		-o -name '*.d' -o -name '.*.tmp'  \) \
 		-type f -print | xargs rm -f	
 	@find . \( -name 'docproc' -o -name 'split-include' \
 		  \

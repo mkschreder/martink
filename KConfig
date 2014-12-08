@@ -1,5 +1,9 @@
 source arch/KConfig
 
+menu "Board support"
+	source boards/KConfig
+endmenu
+
 menu "Device driver support"
 	source crypto/KConfig
 	source disp/KConfig

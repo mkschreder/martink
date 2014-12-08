@@ -1,4 +1,5 @@
 menu "HID support"
 	config WIINUNCHUCK
+		depends on HAVE_I2C
 		bool "WII nunchuck support"
 endmenu

@@ -1,5 +1,7 @@
 #include <stdlib.h>
-
+#include <math.h>
+#include <stdio.h>
+/*
 void raise(){
 	while(1); 
 }
@@ -7,9 +9,9 @@ void raise(){
 int __isnanf(float x){
 	return isnan(x); 
 }
-
+*/
 float sqrtf(float x){
-	return sqrt(x); 
+	return 0; //return sqrt(x); 
 }
 
 #undef atan2
@@ -18,7 +20,7 @@ float sqrtf(float x){
 #define max(a, b) ((a >= b)?a:b) 
 #define min(a, b) ((a <= b)?a:b) 
 
-float atan2(float y, float x)
+double atan2(double y, double x)
 {
   float t0, t1, t2, t3, t4;
 
@@ -44,3 +46,28 @@ float atan2(float y, float x)
 
   return t3;
 }
+/*
+void __assert_fail(void){
+	
+}
+
+void srand(unsigned s){
+	
+}
+
+int __errno(void){
+	return 0; 
+}
+
+int __assert_func(void){
+	return 1; 
+}
+*/
+/*
+#include <reent.h>
+#include <unistd.h>
+
+extern void *_sbrk_r (struct _reent *, ptrdiff_t);
+void *_sbrk (ptrdiff_t d){
+	return 0; 
+}*/

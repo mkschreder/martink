@@ -30,6 +30,11 @@
 
 //#include "accel_docalibration.h"
 
+
+#ifdef CONFIG_SSD1306
+#include "disp/ssd1306.h"
+#endif
+
 #ifdef CONFIG_ACS712
 #include "sensors/acs712.h"
 #endif

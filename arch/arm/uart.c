@@ -22,6 +22,8 @@
 #include <inttypes.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include <arch/soc.h>
 
@@ -63,12 +65,11 @@ void __uart0_init__(uint32_t baud){
 
 uint16_t __uart0_printf__(const char *fmt, ...){
 	char buf[UART_TX_BUFFER_SIZE * 2]; 
-	memcpy(buf, "Hello World!", 10); 
-	
+	//memcpy(buf, "Hello WOrld!", 10); 
 	uint16_t n; 
 	va_list vl; 
 	va_start(vl, fmt);
-	n = 10; //vsnprintf(buf, sizeof(buf)-1, fmt, vl); 
+	n = vsnprintf(buf, sizeof(buf)-1, fmt, vl); 
 	va_end(vl);
 	
 	USART_WriteBuffer(USART0, buf, n);

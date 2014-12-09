@@ -30,3 +30,4 @@
 #endif
 
 #include "uart.h"
+#include "twi.h"

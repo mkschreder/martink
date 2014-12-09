@@ -8,6 +8,7 @@ COMMON_FLAGS := -MD -ffunction-sections -Wall -Wstrict-prototypes -Wno-pointer-t
 CFLAGS := 
 CXXFLAGS := 
 LDFLAGS := 
+EXTRALIBS := 
 BUILD_DIR := build
 ktree := martink
 #$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))

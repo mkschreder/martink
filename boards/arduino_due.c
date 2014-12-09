@@ -27,9 +27,9 @@
 #include <sensors/hmc5883l.h>
 #include <sensors/bmp085.h>
 #include <sensors/mpu6050.h>
+#include <disp/ssd1306.h>
 
 #include <math.h>
-
 
 static void __phantom_handler(void) { while(1); }
  
@@ -146,7 +146,6 @@ struct board {
 
 static struct board _brd; 
 static struct board *brd = &_brd; 
-static struct uart uart;
 
 void get_accelerometer(float *x, float *y, float *z){
 	
@@ -263,9 +262,15 @@ void brd_init(void){
 	USART_SetReceiverEnabled(USART1, 1); 
 	USART_EnableIt(USART1, 1); */
 	
+	i2c_init(); 
+	
   while(1) {
     Sleep(250);
     
+    i2c_start_wait(0x11 | I2C_WRITE);
+		i2c_write(0x40);
+		i2c_stop();
+		
 		uart_printf("Bar %d\n", 10); 
   
     USART_PutChar(USART1, 'D'); 
@@ -317,7 +322,7 @@ timeout_t time_clock_to_us(timeout_t clock){
 	return clock * 1000; 
 }
 
-
+/*
 void raise(void){
 	while(1); 
 }
@@ -329,25 +334,14 @@ int __isnanf(float x){
 float sqrtf(float x){
 	return sqrt(x); 
 }
-
+* 
 #undef atan2
-
-void __assert_fail(void){
-	
-}
-
-void srand(int x) {
-	
-}
-
-int __errno(void){
-	return 0; 
-}
-
+*/
+/*
 #define abs(x) ((x < 0)?-x:x)
 double atan2(double y, double x)
 {
-  float t0, t1, t2, t3, t4;
+  float t0, t1, t3, t4;
 
   t3 = abs(x);
   t1 = abs(y);
@@ -370,4 +364,4 @@ double atan2(double y, double x)
   t3 = (y < 0) ? -t3 : t3;
 
   return t3;
-}
+}*/

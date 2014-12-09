@@ -13,10 +13,11 @@
 #include <util/delay.h>
 #else
 #define PROGMEM
+#define pgm_read_byte(a) (*a)
 #endif
 
 #include <stdlib.h>
-#include <i2c.h>
+#include <arch/soc.h>
 
 #include "ssd1306.h"
 #include "ssd1306_priv.h"
@@ -28,6 +29,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 #define ABS(x) ((x >= 0) ? x : -x)
 
@@ -115,7 +117,7 @@ int16_t ssd1306_printf(ssd1306_device_t *dev, uint8_t col, const char *fmt, ...)
 	char buf[64]; 
 	
 	n = vsnprintf(buf, 64, fmt, vl);
-	
+	 
 	va_end(vl);
 
 	ssd1306_puts(dev, buf, col); 

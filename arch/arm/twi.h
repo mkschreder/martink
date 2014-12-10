@@ -21,42 +21,18 @@
 
 #pragma once
 
-#include "autoconf.h"
 
-#include <inttypes.h>
+/** defines the data direction (reading from I2C device) in i2c_start(),i2c_rep_start() */
+#define I2C_READ    1
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/** defines the data direction (writing to I2C device) in i2c_start(),i2c_rep_start() */
+#define I2C_WRITE   0
 
-// these should be moved somewhere. This is the way to do configurable
-// c interfaces using macros. It is used by all generic interface headers. 
-#define PFCALL2(P, F, args...) __##P##_##F##__(args)
-#define PFCALL(P, F, args...) PFCALL2(P, F, args)
-
-
-#include "time.h"
-#include "uart.h"
-#include "twi.h"
-#include "spi.h"
-
-#ifdef CONFIG_ATMEGA328P
-#include "avr/m328p.h"
-#endif
-
-#ifdef CONFIG_ARM
-#include "arm/arm.h"
-#endif
-
-#ifdef CONFIG_NATIVE
-#include "native/native.h"
-#endif
-
-#ifndef PROGMEM
-#define PROGMEM
-#define pgm_read_byte(a) (*a)
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+void __twi0_init__(void);
+void __twi0_stop__(void);
+unsigned char __twi0_start__(unsigned char addr);
+unsigned char __twi0_rep_start__(unsigned char addr);
+unsigned char __twi0_start_wait__(unsigned char addr);
+unsigned char __twi0_write__(unsigned char data);
+unsigned char __twi0_readAck__(void);
+unsigned char __twi0_readNak__(void);

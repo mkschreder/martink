@@ -19,44 +19,7 @@
 	Github: https://github.com/mkschreder
 */
 
-#pragma once
-
-#include "autoconf.h"
-
-#include <inttypes.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// these should be moved somewhere. This is the way to do configurable
-// c interfaces using macros. It is used by all generic interface headers. 
-#define PFCALL2(P, F, args...) __##P##_##F##__(args)
-#define PFCALL(P, F, args...) PFCALL2(P, F, args)
-
-
-#include "time.h"
-#include "uart.h"
-#include "twi.h"
-#include "spi.h"
-
-#ifdef CONFIG_ATMEGA328P
-#include "avr/m328p.h"
-#endif
-
-#ifdef CONFIG_ARM
-#include "arm/arm.h"
-#endif
-
-#ifdef CONFIG_NATIVE
-#include "native/native.h"
-#endif
-
-#ifndef PROGMEM
-#define PROGMEM
-#define pgm_read_byte(a) (*a)
-#endif
-
-#ifdef __cplusplus
-}
+#ifdef CONFIG_HAVE_SPI
+#define spi0_init() PFCALL(spi0, init)
+#define spi0_writereadbyte(byte) PFCALL(spi0, writereadbyte, byte) 
 #endif

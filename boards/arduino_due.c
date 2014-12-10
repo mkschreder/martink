@@ -263,6 +263,7 @@ void brd_init(void){
 	USART_EnableIt(USART1, 1); */
 	
 	i2c_init(); 
+	spi0_init(); 
 	
   while(1) {
     Sleep(250);
@@ -270,6 +271,8 @@ void brd_init(void){
     i2c_start_wait(0x11 | I2C_WRITE);
 		i2c_write(0x40);
 		i2c_stop();
+		
+		spi0_writereadbyte(0x11); 
 		
 		uart_printf("Bar %d\n", 10); 
   

@@ -91,6 +91,8 @@ extern "C" {
 
 #include <avr/io.h>
 
+#include "autoconf.h"
+
 /** defines the data direction (reading from I2C device) in i2c_start(),i2c_rep_start() */
 #define I2C_READ    1
 
@@ -103,7 +105,7 @@ extern "C" {
  @param  void
  @return none
  */
-extern void __twi0_init__(void);
+extern void PFDECL(CONFIG_TWI0_NAME, init, void);
 
 
 /** 
@@ -111,7 +113,7 @@ extern void __twi0_init__(void);
  @param void
  @return none
  */
-extern void __twi0_stop__(void);
+extern void PFDECL(CONFIG_TWI0_NAME, stop, void);
 
 
 /** 
@@ -121,7 +123,7 @@ extern void __twi0_stop__(void);
  @retval   0   device accessible 
  @retval   1   failed to access device 
  */
-extern unsigned char __twi0_start__(unsigned char addr);
+extern unsigned char PFDECL(CONFIG_TWI0_NAME, start, unsigned char addr);
 
 
 /**
@@ -131,7 +133,7 @@ extern unsigned char __twi0_start__(unsigned char addr);
  @retval  0 device accessible
  @retval  1 failed to access device
  */
-extern unsigned char __twi0_rep_start__(unsigned char addr);
+extern unsigned char PFDECL(CONFIG_TWI0_NAME, rep_start, unsigned char addr);
 
 
 /**
@@ -141,7 +143,7 @@ extern unsigned char __twi0_rep_start__(unsigned char addr);
  @param    addr address and transfer direction of I2C device
  @return   none
  */
-extern uint8_t __twi0_start_wait__(unsigned char addr);
+extern uint8_t PFDECL(CONFIG_TWI0_NAME, start_wait, unsigned char addr);
 
  
 /**
@@ -150,20 +152,20 @@ extern uint8_t __twi0_start_wait__(unsigned char addr);
  @retval   0 write successful
  @retval   1 write failed
  */
-extern unsigned char __twi0_write__(unsigned char data);
+extern unsigned char PFDECL(CONFIG_TWI0_NAME, write, unsigned char data);
 
 
 /**
  @brief    read one byte from the I2C device, request more data from device 
  @return   byte read from I2C device
  */
-extern unsigned char __twi0_readAck__(void);
+extern unsigned char PFDECL(CONFIG_TWI0_NAME, readAck, void);
 
 /**
  @brief    read one byte from the I2C device, read is followed by a stop condition 
  @return   byte read from I2C device
  */
-extern unsigned char __twi0_readNak__(void);
+extern unsigned char PFDECL(CONFIG_TWI0_NAME, readNak, void);
 
 #ifdef __cplusplus
 }

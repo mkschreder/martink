@@ -67,8 +67,7 @@ struct board {
 }; 
 
 static struct board _brd; 
-static struct board *brd = &_brd; 
-static struct uart uart;
+static struct board *brd = &_brd;
 
 void get_accelerometer(float *x, float *y, float *z){
 	double ax, ay, az; 
@@ -141,10 +140,8 @@ void brd_init(void){
 	PCMSK1 = 0; //(1<<PCINT8) | (1<<PCINT9) | (1<<PCINT10) | (1<<PCINT11);
 	PCMSK2 |=  _BV(PCINT18) | _BV(PCINT20) /*| _BV(PCINT21) | _BV(PCINT22) */| _BV(PCINT23);
 	
-#ifdef CONFIG_UART
-	uart_init(&uart, UART_BAUD_SELECT(38400, F_CPU));
-	uart_printf(PSTR("booting..\n")); 
-#endif
+	uart0_init(UART_BAUD_SELECT(38400, F_CPU));
+	uart0_puts("booting..\n"); 
 
 	time_init(); 
 	
@@ -179,7 +176,7 @@ void brd_init(void){
 	
 	sei(); 
 	
-	uart_printf(PSTR("multiwii board!\n")); 
+	uart0_puts("multiwii board!\n"); 
 }
 
 void brd_process_events(void){

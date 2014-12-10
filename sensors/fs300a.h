@@ -15,7 +15,6 @@ Please refer to LICENSE file for licensing information.
 #define FS300A_H_
 
 #include <stdio.h>
-#include <avr/io.h>
 
 //setup button port
 #define FS300A_DDR DDRC

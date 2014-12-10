@@ -7,8 +7,7 @@ Released under GPLv3.
 Please refer to LICENSE file for licensing information.
 */
 
-#include <avr/io.h>
-#include <util/delay.h>
+#include <arch/soc.h>
 
 #include "ds18b20.h"
 
@@ -17,7 +16,8 @@ Please refer to LICENSE file for licensing information.
  */
 uint8_t ds18b20_reset(void) {
 	uint8_t i;
-
+	/// TODO: Make portable!
+	/*
 	//low for 480us
 	DS18B20_PORT &= ~ (1<<DS18B20_DQ); //low
 	DS18B20_DDR |= (1<<DS18B20_DQ); //output
@@ -30,7 +30,7 @@ uint8_t ds18b20_reset(void) {
 	//get value and wait 420us
 	i = (DS18B20_PIN & (1<<DS18B20_DQ));
 	_delay_us(420);
-
+*/
 	//return the read value, 0=ok, 1=error
 	return i;
 }
@@ -39,6 +39,8 @@ uint8_t ds18b20_reset(void) {
  * write one bit
  */
 void ds18b20_writebit(uint8_t bit){
+	/// TODO: make portable
+	/*
 	//low for 1uS
 	DS18B20_PORT &= ~ (1<<DS18B20_DQ); //low
 	DS18B20_DDR |= (1<<DS18B20_DQ); //output
@@ -51,6 +53,7 @@ void ds18b20_writebit(uint8_t bit){
 	//wait 60uS and release the line
 	_delay_us(60);
 	DS18B20_DDR &= ~(1<<DS18B20_DQ); //input
+	*/
 }
 
 /*
@@ -58,7 +61,8 @@ void ds18b20_writebit(uint8_t bit){
  */
 uint8_t ds18b20_readbit(void){
 	uint8_t bit=0;
-
+	/// TODO: make portable
+	/*
 	//low for 1uS
 	DS18B20_PORT &= ~ (1<<DS18B20_DQ); //low
 	DS18B20_DDR |= (1<<DS18B20_DQ); //output
@@ -74,6 +78,7 @@ uint8_t ds18b20_readbit(void){
 
 	//wait 45uS and return read value
 	_delay_us(45);
+	*/
 	return bit;
 }
 

@@ -9,8 +9,10 @@
 #include <inttypes.h>
 #include <compat/twi.h>
 #include <util/delay.h>
-#include "i2cmaster.h"
 
+#include <arch/soc.h>
+
+#include "i2cmaster.h"
 
 /* define CPU frequency in Mhz here if not defined in Makefile */
 #ifndef F_CPU

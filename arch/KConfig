@@ -7,6 +7,10 @@ menu "Hardware"
 		bool
 	config HAVE_SPI 
 		bool
+	config HAVE_SPI0
+		bool
+	config HAVE_SPI1 
+		bool
 	config HAVE_TWI
 		bool
 	config HAVE_TWI0
@@ -50,20 +54,49 @@ menu "Hardware"
 		source arch/arm/KConfig
 		source arch/native/KConfig
 	endmenu
-	
-	config UART 
+
+	menu "UART config"
 		depends on HAVE_UART
-		default y
-		bool "UART interface"
-		
-	config I2C
-		depends on HAVE_TWI
-		default y
-		bool "TWI interface"
-		
-	config SPI
+		config UART0_NAME
+			depends on HAVE_UART0
+			default "uart0"
+			string "UART0 device name"
+		config UART1_NAME
+			depends on HAVE_UART1
+			default "uart1"
+			string "UART1 device name"
+		config UART2_NAME
+			depends on HAVE_UART2
+			default "uart2"
+			string "UART2 device name"
+	endmenu
+
+	menu "SPI config"
 		depends on HAVE_SPI
-		default y
-		bool "SPI interface"
+		config SPI0_NAME
+			depends on HAVE_SPI0
+			default "spi0"
+			string "SPI0 device name"
+		config SPI1_NAME
+			depends on HAVE_SPI1
+			default "spi1"
+			string "SPI1 device name"
+		config SPI2_NAME
+			depends on HAVE_SPI2
+			default "spi2"
+			string "SPI2 device name"
+	endmenu
+
+	menu "I2C config"
+		depends on HAVE_TWI
+		config TWI0_NAME
+			depends on HAVE_TWI0
+			default "twi0"
+			string "TWI0 device name"
+		config TWI1_NAME
+			depends on HAVE_TWI1
+			default "twi1"
+			string "TWI1 device name"
+	endmenu
 		
 endmenu

@@ -21,9 +21,6 @@
 
 #pragma once
 
-#include <avr/pgmspace.h>
-
-
 #define ILI9340_TFTWIDTH  240
 #define ILI9340_TFTHEIGHT 320
 

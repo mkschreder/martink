@@ -16,8 +16,6 @@ extern "C" {
  * 	info@fortmax.se
  */
  
-#include <avr/pgmspace.h>
-
 typedef uint8_t ip_addr_t[4]; 
 typedef uint8_t ip_mac_t[6]; 
 

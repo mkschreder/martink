@@ -19,20 +19,20 @@
 	Github: https://github.com/mkschreder
 */
 
-#include "ili9340.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include <avr/pgmspace.h>
-#include <util/delay.h>
 #include <limits.h>
 #include <math.h>
 
 #include <arch/soc.h>
 
+#include "ili9340.h"
+
+/// TODO: All of this is AVR speciffic. Has to be made portable!
+/*
 #define SPI_DDR DDRB
 #define SPI_PORT PORTB
 #define SPI_MISO PB4
@@ -57,6 +57,24 @@
 #define RST_LO _RB(ILI_PORT, RST_PIN)
 #define DC_HI _SB(ILI_PORT, DC_PIN)
 #define DC_LO _RB(ILI_PORT, DC_PIN)
+*/
+
+#ifndef CONFIG_ILI9340_CS_PIN
+#error "CS pin not defined!"
+#endif
+#ifndef CONFIG_ILI9340_RST_PIN
+#error "RST pin not defined!"
+#endif
+#ifndef CONFIG_ILI9340_DC_PIN
+#error "DC pin not defined!"
+#endif
+
+#define CS_HI 		gpio_write_pin(CONFIG_ILI9340_CS_PIN, 1)
+#define CS_LO 		gpio_write_pin(CONFIG_ILI9340_CS_PIN, 0)
+#define RST_HI 		gpio_write_pin(CONFIG_ILI9340_RST_PIN, 1)
+#define RST_LO 		gpio_write_pin(CONFIG_ILI9340_RST_PIN, 0)
+#define DC_HI 		gpio_write_pin(CONFIG_ILI9340_DC_PIN, 1)
+#define DC_LO 		gpio_write_pin(CONFIG_ILI9340_DC_PIN, 0)
 
 static const unsigned char font[] PROGMEM = {
 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -317,6 +335,11 @@ static const unsigned char font[] PROGMEM = {
 };
 
 //static uint16_t _width = ILI9340_TFTWIDTH, _height  = ILI9340_TFTHEIGHT;
+#undef spi_writereadbyte
+#undef spi_init
+
+#define spi_init() PFCALL(CONFIG_ILI9340_SPI_NAME, init)
+#define spi_writereadbyte(ch) PFCALL(CONFIG_ILI9340_SPI_NAME, writereadbyte, (ch))
 
 static struct ili9340 {
 	uint16_t screen_width, screen_height; 
@@ -325,32 +348,6 @@ static struct ili9340 {
 	uint16_t back_color, front_color;
 	uint16_t scroll_start; 
 } term;
-
-/*
-void _spi_init(void) {
-    SPI_DDR &= ~((1<<SPI_MISO)); //input
-    SPI_DDR |= ((1<<SPI_MOSI) | (1<<SPI_SS) | (1<<SPI_SCK)); //output
-
-		// pullup! 
-		SPI_PORT |= (1<<SPI_MISO);
-		
-    SPCR = ((1<<SPE)|               // SPI Enable
-            (0<<SPIE)|              // SPI Interupt Enable
-            (0<<DORD)|              // Data Order (0:MSB first / 1:LSB first)
-            (1<<MSTR)|              // Master/Slave select
-            (0<<SPR1)|(0<<SPR0)|    // SPI Clock Rate
-            (0<<CPOL)|              // Clock Polarity (0:SCK low / 1:SCK hi when idle)
-            (0<<CPHA));             // Clock Phase (0:leading / 1:trailing edge sampling)
-
-    SPSR = (1<<SPI2X); // Double SPI Speed Bit
-}
-
-uint8_t spi_writereadbyte(uint8_t c) {
-	SPDR = c;
-	while(!(SPSR & _BV(SPIF)));
-	return SPDR; 
-}
-*/
 
 void _wr_command(uint8_t c) {
 	DC_LO;
@@ -387,20 +384,19 @@ uint16_t _wr_data16(uint16_t c){
 #define DELAY 0x80
 
 void ili9340_init(void) {
-	ILI_DDR |= _BV(RST_PIN);
-	ILI_DDR |= _BV(DC_PIN);
-	ILI_DDR |= _BV(CS_PIN);
-	
+	gpio_set_function(CONFIG_ILI9340_CS_PIN, GP_OUTPUT); 
+	gpio_set_function(CONFIG_ILI9340_RST_PIN, GP_OUTPUT); 
+	gpio_set_function(CONFIG_ILI9340_DC_PIN, GP_OUTPUT); 
 	RST_LO; 
 
 	spi_init();
 	
   RST_HI; 
-  _delay_ms(5); 
+  time_delay(5000); 
   RST_LO; 
-  _delay_ms(20);
+  time_delay(20000);
   RST_HI; 
-  _delay_ms(150);
+  time_delay(150000L);
 
   _wr_command(0xEF);
   _wr_data(0x03);
@@ -444,7 +440,7 @@ void ili9340_init(void) {
   _wr_data(0x10);   //SAP[2:0];BT[3:0] 
  
   _wr_command(ILI9340_VMCTR1);    //VCM control 
-  _wr_data(0x3e); //�Աȶȵ���
+  _wr_data(0x3e); //
   _wr_data(0x28); 
   
   _wr_command(ILI9340_VMCTR2);    //VCM control2 
@@ -506,7 +502,7 @@ void ili9340_init(void) {
   _wr_data(0x0F); 
 
   _wr_command(ILI9340_SLPOUT);    //Exit Sleep 
-  _delay_ms(120); 		
+  time_delay(120000L); 		
   _wr_command(ILI9340_DISPON);    //Display on
 
   term.screen_width = ILI9340_TFTWIDTH;
@@ -558,7 +554,7 @@ void ili9340_readRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *
   _ili9340_setAddrWindow(x, y, x + w - 1, y + h - 1);
   //_wr_command(ILI9340_RAMRD); // read RAM
   CS_LO;
-  DC_LO
+  DC_LO; 
 	
 	spi_writereadbyte(ILI9340_RAMRD);
 	//spi_writereadbyte(0);
@@ -585,7 +581,7 @@ void ili9340_writeRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t 
 	CS_LO; 
 	*/
 	CS_LO;
-  DC_LO
+  DC_LO; 
 	
 	spi_writereadbyte(ILI9340_RAMWR);
 	//spi_writereadbyte(0);
@@ -713,7 +709,7 @@ void ili9340_drawChar(uint16_t x, uint16_t y, uint8_t ch){
 		// draw 5 pixels for each column of the glyph
 		for(int j = 0; j < 5; j++){
 			uint16_t pix = t->back_color;
-			if(_buf[j] & _BV(b))
+			if(_buf[j] & (1 << b))
 				pix = t->front_color;
 			spi_writereadbyte(pix >> 8);
 			spi_writereadbyte(pix);

@@ -50,6 +50,7 @@
 #define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
 
 typedef struct ssd1306_device {
+	uint8_t placeholder;
 	
 } ssd1306_device_t;
 

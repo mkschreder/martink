@@ -1,5 +1,7 @@
 #include <arch/soc.h>
 
+#include "spi.h"
+
 #define PIO_MOSI 	PIO_PA26A_SPI0_MOSI
 #define PIO_MISO 	PIO_PA25A_SPI0_MISO
 #define PIO_SCK 	PIO_PA27A_SPI0_SPCK
@@ -12,13 +14,12 @@
 #define SPI_CLOCK_DIV64	 255
 #define SPI_CLOCK_DIV128 255
 
-
 #define SPI_MODE0 0x02
 #define SPI_MODE1 0x00
 #define SPI_MODE2 0x03
 #define SPI_MODE3 0x01
 
-void __spi0_init__(void){
+void PFDECL(CONFIG_SPI0_NAME, init, void){
 	pmc_enable_periph_clk(ID_SPI0);
 	
 	PIO_Configure(PIOA, PIO_PERIPH_A, PIO_MOSI, PIO_DEFAULT); 
@@ -35,7 +36,7 @@ void __spi0_init__(void){
 	//SPI_ConfigureNPCS(SPI0, 0, SPI_BITS_8 | SCBR);
 }
 
-uint8_t __spi0_writereadbyte__(uint8_t data){
+uint8_t PFDECL(CONFIG_SPI0_NAME, writereadbyte, uint8_t data){
 	uint32_t ch = 0;
 	uint32_t d = data | SPI_PCS(0);
 	/*if (_mode == SPI_LAST)

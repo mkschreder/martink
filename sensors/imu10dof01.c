@@ -14,6 +14,8 @@ Please refer to LICENSE file for licensing information.
 #include <util/delay.h>
 #include <math.h>  //include libm
 
+#include <arch/soc.h>
+
 #include "imu10dof01.h"
 
 #include "adxl345.h"

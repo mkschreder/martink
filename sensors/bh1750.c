@@ -9,11 +9,10 @@ Please refer to LICENSE file for licensing information.
 
 
 #include <stdio.h>
-#include <util/delay.h>
+
+#include <arch/soc.h>
 
 #include "bh1750.h"
-
-#include <i2c.h>
 
 /*
  * init bh1750

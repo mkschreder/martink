@@ -76,13 +76,16 @@ extern "C" {
 
 
 /** Size of the circular receive buffer, must be power of 2 */
-#ifndef UART_RX_BUFFER_SIZE
-#define UART_RX_BUFFER_SIZE 32
+#ifndef CONFIG_UART0_TX_BUF_SIZE
+#define CONFIG_UART0_TX_BUF_SIZE 32
 #endif
 /** Size of the circular transmit buffer, must be power of 2 */
-#ifndef UART_TX_BUFFER_SIZE
-#define UART_TX_BUFFER_SIZE 32
+#ifndef CONFIG_UART0_RX_BUF_SIZE
+#define CONFIG_UART0_RX_BUF_SIZE 32
 #endif
+
+#define UART_TX_BUFFER_SIZE CONFIG_UART0_TX_BUF_SIZE
+#define UART_RX_BUFFER_SIZE CONFIG_UART0_RX_BUF_SIZE
 
 /* test if the size of the circular buffers fits into SRAM */
 #if ( (UART_RX_BUFFER_SIZE+UART_TX_BUFFER_SIZE) >= (RAMEND-0x60 ) )
@@ -98,15 +101,6 @@ extern "C" {
 #define UART_NO_DATA          0x0100              /* no receive data available   */
 
 
-struct uart {
-	volatile unsigned char UART_TxBuf[UART_TX_BUFFER_SIZE];
-	volatile unsigned char UART_RxBuf[UART_RX_BUFFER_SIZE];
-	volatile int16_t UART_TxHead;
-	volatile int16_t UART_TxTail;
-	volatile int16_t UART_RxHead;
-	volatile int16_t UART_RxTail;
-	volatile unsigned char UART_LastRxError;
-};
 /*
 ** function prototypes
 */
@@ -116,7 +110,7 @@ struct uart {
    @param   baudrate Specify baudrate using macro UART_BAUD_SELECT()
    @return  none
 */
-extern void uart_init(struct uart *uart, unsigned int baudrate);
+void PFDECL(CONFIG_UART0_NAME, init, unsigned int baudrate);
 
 
 /**
@@ -144,15 +138,15 @@ extern void uart_init(struct uart *uart, unsigned int baudrate);
  *           - \b UART_FRAME_ERROR       
  *             <br>Framing Error by UART
  */
-extern unsigned int uart_getc(void);
+extern unsigned int PFDECL(CONFIG_UART0_NAME, getc, void);
 
-extern uint16_t uart_waiting(void); 
+extern uint16_t PFDECL(CONFIG_UART0_NAME, waiting, void); 
 /**
  *  @brief   Put byte to ringbuffer for transmitting via UART
  *  @param   data byte to be transmitted
  *  @return  none
  */
-extern void uart_putc(unsigned char data);
+extern void PFDECL(CONFIG_UART0_NAME, putc, unsigned char data);
 
 
 /**
@@ -165,7 +159,7 @@ extern void uart_putc(unsigned char data);
  *  @param   s string to be transmitted
  *  @return  none
  */
-extern void uart_puts(const char *s );
+extern void PFDECL(CONFIG_UART0_NAME, puts, const char *s );
 
 
 /**
@@ -179,32 +173,19 @@ extern void uart_puts(const char *s );
  * @return   none
  * @see      uart_puts_P
  */
-extern void uart_puts_p(const char *s );
+extern void PFDECL(CONFIG_UART0_NAME, puts_p, const char *s );
 
-/**
- * @brief    Macro to automatically put a string constant into program memory
- */
-#define uart_puts_P(__s)       uart_puts_p(PSTR(__s))
+extern uint16_t PFDECL(CONFIG_UART0_NAME, printf, const prog_char *fmt, ...);
 
-
-
-/** @brief  Initialize USART1 (only available on selected ATmegas) @see uart_init */
+/*
 extern void uart1_init(unsigned int baudrate);
-/** @brief  Get received byte of USART1 from ringbuffer. (only available on selected ATmega) @see uart_getc */
 extern unsigned int uart1_getc(void);
-/** @brief  Put byte to ringbuffer for transmitting via USART1 (only available on selected ATmega) @see uart_putc */
 extern void uart1_putc(unsigned char data);
-/** @brief  Put string to ringbuffer for transmitting via USART1 (only available on selected ATmega) @see uart_puts */
 extern void uart1_puts(const char *s );
-/** @brief  Put string from program memory to ringbuffer for transmitting via USART1 (only available on selected ATmega) @see uart_puts_p */
 extern void uart1_puts_p(const char *s );
-/** @brief  Macro to automatically put a string constant into program memory */
 #define uart1_puts_P(__s)       uart1_puts_p(PSTR(__s))
-
 extern uint16_t uart_printf(const prog_char *fmt, ...);
-
-/**@}*/
-
+*/
 
 #ifdef __cplusplus
 }

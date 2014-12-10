@@ -7,6 +7,8 @@ Released under GPLv3.
 Please refer to LICENSE file for licensing information.
 */
 
+#include <arch/soc.h>
+
 #include "spi.h"
 
 #include <avr/io.h>
@@ -16,7 +18,7 @@ Please refer to LICENSE file for licensing information.
 /*
  * spi initialize
  */
-void spi_init(void) {
+void PFDECL(CONFIG_SPI0_NAME, init, void) {
     SPI_DDR &= ~((1<<SPI_MISO)); //input
     SPI_DDR |= ((1<<SPI_MOSI) | (1<<SPI_SS) | (1<<SPI_SCK)); //output
 
@@ -37,7 +39,7 @@ void spi_init(void) {
 /*
  * spi write one byte and read it back
  */
-uint8_t spi_writereadbyte(uint8_t data) {
+uint8_t PFDECL(CONFIG_SPI0_NAME, writereadbyte, uint8_t data) {
     SPDR = data;
     while((SPSR & (1<<SPIF)) == 0);
     return SPDR;

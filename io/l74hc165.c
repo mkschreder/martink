@@ -9,9 +9,8 @@ Please refer to LICENSE file for licensing information.
 
 
 #include <stdio.h>
-#include <avr/io.h>
 #include <string.h>
-#include <util/delay.h>
+#include <arch/soc.h>
 
 #include "l74hc165.h"
 

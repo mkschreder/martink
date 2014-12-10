@@ -16,8 +16,6 @@ Please refer to LICENSE file for licensing information.
 #ifndef _NRF24L01_H_
 #define _NRF24L01_H_
 
-#include <avr/io.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

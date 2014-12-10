@@ -52,7 +52,7 @@ void UART0_Handler(void) {
    }*/
 }
 
-void __uart0_init__(uint32_t baud){
+void PFDECL(CONFIG_UART0_NAME, init, uint32_t baud){
 	pmc_enable_periph_clk(ID_PIOA);
   pmc_enable_periph_clk(ID_USART0);
 	PIO_Configure(PIOA,PIO_PERIPH_A,(PIO_PA10A_RXD0|PIO_PA11A_TXD0),PIO_DEFAULT);
@@ -63,7 +63,7 @@ void __uart0_init__(uint32_t baud){
 	USART_EnableIt(USART0,UART_IER_ENDRX);
 }
 
-uint16_t __uart0_printf__(const char *fmt, ...){
+uint16_t PFDECL(CONFIG_UART0_NAME, printf, const char *fmt, ...){
 	char buf[UART_TX_BUFFER_SIZE * 2]; 
 	//memcpy(buf, "Hello WOrld!", 10); 
 	uint16_t n; 

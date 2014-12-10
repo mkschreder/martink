@@ -58,7 +58,7 @@ static unsigned char TWI_state    = TWI_NO_STATE;  // State byte. Default set to
 // Also used to determine how deep we can sleep.
 static volatile unsigned char TWI_busy = 0;
 
-union TWI_statusReg_t TWI_statusReg = {0};           // TWI_statusReg is defined in TWI_Slave.h
+//union TWI_statusReg_t TWI_statusReg.flags = {0};           // TWI_statusReg.flags is defined in TWI_Slave.h
 
 /****************************************************************************
 Call this function to set up the TWI slave to its initial standby state.
@@ -157,15 +157,15 @@ unsigned char twi_slave_get_data( unsigned char *msg, unsigned char msgSize )
 
   while ( twi_slave_busy() ) {}             // Wait until TWI is ready for next transmission.
 
-  if( TWI_statusReg.lastTransOK )               // Last transmission completed successfully.              
+  if( TWI_statusReg.flags.lastTransOK )               // Last transmission completed successfully.              
   {                                             
     for ( i=0; i<msgSize; i++ )                 // Copy data from Transceiver buffer.
     {
       msg[ i ] = TWI_buf[ i ];
     }
-    TWI_statusReg.RxDataInBuf = FALSE;          // Slave Receive data has been read from buffer.
+    TWI_statusReg.flags.RxDataInBuf = FALSE;          // Slave Receive data has been read from buffer.
   }
-  return( TWI_statusReg.lastTransOK );                                   
+  return( TWI_statusReg.flags.lastTransOK );                                   
 }
 
 
@@ -196,7 +196,7 @@ ISR(TWI_vect)
                                      // I.e. this could be the end of the transmission.
       if (TWI_bufPtr == TWI_msgSize) // Have we transceived all expected data?
       {
-        TWI_statusReg.lastTransOK = TRUE;               // Set status bits to completed successfully. 
+        TWI_statusReg.flags.lastTransOK = TRUE;               // Set status bits to completed successfully. 
       } 
       else                          // Master has sent a NACK before all data where sent.
       {
@@ -212,11 +212,11 @@ ISR(TWI_vect)
       break;     
     case TWI_SRX_GEN_ACK:            // General call address has been received; ACK has been returned
 //    case TWI_SRX_GEN_ACK_M_ARB_LOST: // Arbitration lost in SLA+R/W as Master; General call address has been received; ACK has been returned
-      TWI_statusReg.genAddressCall = TRUE;
+      TWI_statusReg.flags.genAddressCall = TRUE;
     case TWI_SRX_ADR_ACK:            // Own SLA+W has been received ACK has been returned
 //    case TWI_SRX_ADR_ACK_M_ARB_LOST: // Arbitration lost in SLA+R/W as Master; own SLA+W has been received; ACK has been returned    
                                                         // Dont need to clear TWI_S_statusRegister.generalAddressCall due to that it is the default state.
-      TWI_statusReg.RxDataInBuf = TRUE;      
+      TWI_statusReg.flags.RxDataInBuf = TRUE;      
       TWI_bufPtr   = 0;                                 // Set buffer pointer to first data location
       
                                                         // Reset the TWI Interupt to wait for a new event.
@@ -231,7 +231,7 @@ ISR(TWI_vect)
     case TWI_SRX_GEN_DATA_ACK:       // Previously addressed with general call; data has been received; ACK has been returned
       // TODO: What is this? Seems to be no bounds checking!
       TWI_buf[TWI_bufPtr++]     = TWDR;
-      TWI_statusReg.lastTransOK = TRUE;                 // Set flag transmission successfull.       
+      TWI_statusReg.flags.lastTransOK = TRUE;                 // Set flag transmission successfull.       
                                                         // Reset the TWI Interupt to wait for a new event.
       TWCR = (1<<TWEN)|                                 // TWI Interface enabled
              (1<<TWIE)|(1<<TWINT)|                      // Enable TWI Interupt and clear the flag to send byte
@@ -304,7 +304,7 @@ void example(){
       // interrupts.
       // If the transceiver not is busy, we can enter power-down mode because next receive
       // should be a TWI address match and it wakes the device up from all sleep modes.
-      if( ! TWI_statusReg.RxDataInBuf ) {
+      if( ! TWI_statusReg.flags.RxDataInBuf ) {
         if(TWI_Transceiver_Busy()) {
           MCUCR = (1<<SE)|(0<<SM2)|(0<<SM1)|(0<<SM0); // Enable sleep with idle mode
         } else {
@@ -324,14 +324,14 @@ void example(){
     if ( ! TWI_Transceiver_Busy() )                              
     {
       // Check if the last operation was successful
-      if ( TWI_statusReg.lastTransOK )
+      if ( TWI_statusReg.flags.lastTransOK )
       {
         // Check if the last operation was a reception
-        if ( TWI_statusReg.RxDataInBuf )
+        if ( TWI_statusReg.flags.RxDataInBuf )
         {
           TWI_Get_Data_From_Transceiver(messageBuf, 2);         
           // Check if the last operation was a reception as General Call        
-          if ( TWI_statusReg.genAddressCall )
+          if ( TWI_statusReg.flags.genAddressCall )
           {
             // Put data received out to PORTB as an example.        
             PORTB = messageBuf[0];

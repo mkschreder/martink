@@ -18,8 +18,11 @@
 	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
 */
+#pragma once
+
+#include "autoconf.h"
 
 #ifdef CONFIG_HAVE_SPI
-#define spi0_init() PFCALL(spi0, init)
-#define spi0_writereadbyte(byte) PFCALL(spi0, writereadbyte, byte) 
+#define spi0_init() PFCALL(CONFIG_SPI0_NAME, init)
+#define spi0_writereadbyte(byte) PFCALL(CONFIG_SPI0_NAME, writereadbyte, byte) 
 #endif

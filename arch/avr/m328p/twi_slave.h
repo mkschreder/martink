@@ -47,14 +47,14 @@
   
 union TWI_statusReg_t                       // Status byte holding flags.
 {
-    unsigned char all;
-    struct
+    unsigned int all;
+    struct 
     {
-        unsigned char lastTransOK:1;      
-        unsigned char RxDataInBuf:1;
-        unsigned char genAddressCall:1;                        // TRUE = General call, FALSE = TWI Address;
-        unsigned char unusedBits:5;
-    };
+        unsigned int lastTransOK:1;      
+        unsigned int RxDataInBuf:1;
+        unsigned int genAddressCall:1;                        // TRUE = General call, FALSE = TWI Address;
+        unsigned int unusedBits:5;
+    } flags;
 };
 
 extern union TWI_statusReg_t TWI_statusReg;

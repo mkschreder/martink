@@ -1,7 +1,5 @@
 #pragma once 
 
-#include <avr/io.h>
-
 //setup ports
 #define L74HC595_DDR DDRB
 #define L74HC595_PORT PORTB

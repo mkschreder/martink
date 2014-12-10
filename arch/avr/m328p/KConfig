@@ -4,12 +4,13 @@ choice
 	
 	config ATMEGA328P
 		depends on AVR
-		select HAVE_SPI
 		select HAVE_UART
+		select HAVE_UART0
 		select HAVE_I2C
 		select HAVE_TWI
 		select HAVE_TWI0
 		select HAVE_SPI
+		select HAVE_SPI0
 		select HAVE_TIMER0
 		select HAVE_TIMER1
 		select HAVE_TIMER2

@@ -7,14 +7,13 @@
  * 
  * 	info@fortmax.se
  */
- 
-#include <avr/io.h>
-#include <avr/pgmspace.h>
+
+#include <arch/soc.h>
+
 #include "net.h"
 #include "enc28j60.h"
 #include "tcpip.h"
 #include <string.h>
-#include <util/delay.h>
 
 struct ethernet {
 	ip_mac_t macaddr;

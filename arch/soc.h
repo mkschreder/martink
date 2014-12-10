@@ -29,16 +29,33 @@
 extern "C" {
 #endif
 
+
+#ifndef PROGMEM
+#define PROGMEM
+#define PSTR(a) (a)
+#define pgm_read_byte(a) (*a)
+#define pgm_read_word(a) (*((short int*)a))
+#define pgm_read_word(a) (*((short int*)a))
+#endif
+
+#ifndef _BV
+#define _BV(a) (1 << (a))
+#endif
+
 // these should be moved somewhere. This is the way to do configurable
 // c interfaces using macros. It is used by all generic interface headers. 
-#define PFCALL2(P, F, args...) __##P##_##F##__(args)
+#define PFCALL2(P, F, args...) __##P##_##F##__( args )
 #define PFCALL(P, F, args...) PFCALL2(P, F, args)
 
+// used for declaring driver functions
+#define PFDECL2(P, F, args...) __##P##_##F##__( args )
+#define PFDECL(P, F, args...) PFDECL2(P, F, args )
 
 #include "time.h"
 #include "uart.h"
 #include "twi.h"
 #include "spi.h"
+#include "gpio.h"
 
 #ifdef CONFIG_ATMEGA328P
 #include "avr/m328p.h"
@@ -50,11 +67,6 @@ extern "C" {
 
 #ifdef CONFIG_NATIVE
 #include "native/native.h"
-#endif
-
-#ifndef PROGMEM
-#define PROGMEM
-#define pgm_read_byte(a) (*a)
 #endif
 
 #ifdef __cplusplus

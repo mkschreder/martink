@@ -39,7 +39,8 @@ LICENSE:
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
-#include "uart.h"
+
+#include <arch/soc.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
@@ -226,17 +227,30 @@ LICENSE:
  *  module global variables
  */
 
+#ifdef CONFIG_HAVE_UART0
+static volatile struct uart0 {
+	volatile unsigned char UART_TxBuf[UART_TX_BUFFER_SIZE];
+	volatile unsigned char UART_RxBuf[UART_RX_BUFFER_SIZE];
+	volatile int16_t UART_TxHead;
+	volatile int16_t UART_TxTail;
+	volatile int16_t UART_RxHead;
+	volatile int16_t UART_RxTail;
+	volatile unsigned char UART_LastRxError;
+} _uart0;
+static volatile struct uart0 *uart0 = &_uart0;
+#endif
 
-static volatile struct uart *uart0 = 0;
-
-#if defined( ATMEGA_USART1 )
-static volatile unsigned char UART1_TxBuf[UART_TX_BUFFER_SIZE];
-static volatile unsigned char UART1_RxBuf[UART_RX_BUFFER_SIZE];
-static volatile unsigned char UART1_TxHead;
-static volatile unsigned char UART1_TxTail;
-static volatile unsigned char UART1_RxHead;
-static volatile unsigned char UART1_RxTail;
-static volatile unsigned char UART1_LastRxError;
+#ifdef CONFIG_HAVE_UART1
+static volatile struct uart1 {
+	volatile unsigned char TxBuf[UART1_TX_BUFFER_SIZE];
+	volatile unsigned char RxBuf[UART1_RX_BUFFER_SIZE];
+	volatile int16_t TxHead;
+	volatile int16_t TxTail;
+	volatile int16_t RxHead;
+	volatile int16_t RxTail;
+	volatile unsigned char LastRxError;
+} _uart1;
+static volatile struct uart1 *uart1 = &_uart1;
 #endif
 
 ISR(UART0_RECEIVE_INTERRUPT)
@@ -245,8 +259,6 @@ Function: UART Receive Complete interrupt
 Purpose:  called when the UART has received a character
 **************************************************************************/
 {
-		if(!uart0) return;
-		
     unsigned char tmphead;
     unsigned char data;
     unsigned char usr;
@@ -291,8 +303,7 @@ Purpose:  called when the UART is ready to transmit the next byte
 **************************************************************************/
 {
 	unsigned char tmptail;
-	if(!uart0) return;
-	
+
 	if ( uart0->UART_TxHead != uart0->UART_TxTail) {
 		/* calculate and store new buffer index */
 		tmptail = (uart0->UART_TxTail + 1) & UART_TX_BUFFER_MASK;
@@ -312,10 +323,8 @@ Purpose:  initialize UART and set baudrate
 Input:    baudrate using macro UART_BAUD_SELECT()
 Returns:  none
 **************************************************************************/
-void uart_init(struct uart *_u0, unsigned int baudrate)
+void PFDECL(CONFIG_UART0_NAME, init, unsigned int baudrate)
 {
-		uart0 = _u0;
-		
     uart0->UART_TxHead = 0;
     uart0->UART_TxTail = 0;
     uart0->UART_RxHead = 0;
@@ -386,11 +395,9 @@ void uart_init(struct uart *_u0, unsigned int baudrate)
     UART0_CONTROL = _BV(RXCIE)|(1<<RXEN)|(1<<TXEN);
 
 #endif
-
 }/* uart_init */
 
-uint16_t uart_waiting(void){
-	if(!uart0) return 0; 
+uint16_t PFDECL(CONFIG_UART0_NAME, waiting, void){
 	int16_t l = (int16_t)uart0->UART_RxHead - (int16_t)uart0->UART_RxTail; 
 	return (l < 0)?(l+UART_RX_BUFFER_SIZE):l;
 }
@@ -401,7 +408,7 @@ Purpose:  return byte from ringbuffer
 Returns:  lower byte:  received byte from ringbuffer
           higher byte: last receive error
 **************************************************************************/
-unsigned int uart_getc(void)
+unsigned int PFDECL(CONFIG_UART0_NAME, getc, void)
 {
 	if(!uart0) return UART_NO_DATA;
 	
@@ -423,23 +430,16 @@ unsigned int uart_getc(void)
 
 }/* uart_getc */
 
-
 /*************************************************************************
 Function: uart_putc()
 Purpose:  write byte to ringbuffer for transmitting via UART
 Input:    byte to be transmitted
 Returns:  none          
 **************************************************************************/
-void uart_putc(unsigned char data)
+void PFDECL(CONFIG_UART0_NAME, putc, unsigned char data)
 {
-	if(!uart0) return;
-	
 	unsigned char tmphead;
 
-	/*loop_until_bit_is_set(UCSR0A, UDRE0); 
-	UDR0 = data;
-	return;*/
-	
 	tmphead  = (uart0->UART_TxHead + 1) & UART_TX_BUFFER_MASK;
 	
 	//if(tmphead == uart0->UART_TxTail) return; 
@@ -459,15 +459,15 @@ Purpose:  transmit string to UART
 Input:    string to be transmitted
 Returns:  none          
 **************************************************************************/
-void uart_puts(const char *s )
+void PFDECL(CONFIG_UART0_NAME, puts, const char *s )
 {
 	if(!uart0) return;
 	
 	while (*s) 
-		uart_putc(*s++);
+		PFCALL(CONFIG_UART0_NAME, putc, *s++);
 }/* uart_puts */
 
-uint16_t uart_printf(const prog_char *fmt, ...){
+uint16_t PFDECL(CONFIG_UART0_NAME, printf, const prog_char *fmt, ...){
 	if(!uart0) return 0;
 	
 	char buf[UART_TX_BUFFER_SIZE * 2]; 
@@ -477,7 +477,7 @@ uint16_t uart_printf(const prog_char *fmt, ...){
 	va_start(vl, fmt);
 	n = vsnprintf_P(buf, sizeof(buf)-1, fmt, vl); 
 	va_end(vl);
-	uart_puts(buf);
+	PFCALL(CONFIG_UART0_NAME, puts, buf);
 	return n; 
 }
 
@@ -487,17 +487,16 @@ Purpose:  transmit string from program memory to UART
 Input:    program memory string to be transmitted
 Returns:  none
 **************************************************************************/
-void uart_puts_p(const char *progmem_s )
+void PFDECL(CONFIG_UART0_NAME, puts_p, const char *progmem_s )
 {
 	if(!uart0) return;
 	
 	register char c;
 	
 	while ( (c = pgm_read_byte(progmem_s++)) ) 
-		uart_putc(c);
+		PFCALL(CONFIG_UART0_NAME, putc, c);
 
 }/* uart_puts_p */
-
 
 /*
  * these functions are only for ATmegas with two USART

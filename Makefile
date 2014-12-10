@@ -17,7 +17,7 @@ include .config
 include Makefile.build 
 
 # append flags defined in arch/
-COMMON_FLAGS += $(CPU_FLAGS)
+COMMON_FLAGS +=  $(CPU_FLAGS)
 
 # add includes to the make
 CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
@@ -72,7 +72,7 @@ app: build
 fixdep: 
 	find build -type f -iname '*.d' -exec sh -c 'scripts/basic/fixdep "$${1%.*}.d" "$${1%.*}.o" "" > $${1%.*}.cmd' convert {} \;
 	
-build: fixdep $(obj-y)
+build: fixdep check $(obj-y)
 	ar rs $(APPNAME) $(obj-y)
 
 $(BUILD_DIR)/%.o: %.cpp .config
@@ -82,6 +82,9 @@ $(BUILD_DIR)/%.o: %.cpp .config
 $(BUILD_DIR)/%.o: %.c .config
 	mkdir -p `dirname $@`
 	$(CC) -c $(CFLAGS) $< -o $@
+
+check: GCC-exists
+GCC-exists: ; @which $(CC) > /dev/null
 
 clean: 
 	@find . \( -name '*.o' -o -name '*.ko' -o -name '*.cmd' \

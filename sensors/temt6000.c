@@ -9,7 +9,6 @@ Please refer to LICENSE file for licensing information.
 
 
 #include <stdio.h>
-#include <avr/io.h>
 
 #include "temt6000.h"
 

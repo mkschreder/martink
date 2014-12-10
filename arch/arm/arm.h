@@ -31,3 +31,5 @@
 
 #include "uart.h"
 #include "twi.h"
+#include "spi.h"
+#include "gpio.h"

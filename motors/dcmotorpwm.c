@@ -8,10 +8,7 @@ Please refer to LICENSE file for licensing information.
 */
 
 #include <stdio.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <util/delay.h>
-
+#include <arch/soc.h>
 #include "dcmotorpwm.h"
 
 /*
@@ -19,6 +16,8 @@ Please refer to LICENSE file for licensing information.
  */
 void dcmotorpwm_init(void) {
 	//set ports
+	///TODO: make portable
+	/*
 	DCMOTORPWM_DDR |= (1<<DCMOTORPWM_PIN1);
 	DCMOTORPWM_DDR |= (1<<DCMOTORPWM_PIN2);
 
@@ -34,7 +33,7 @@ void dcmotorpwm_init(void) {
 
 	//stop motor
 	OCR1A = 0;
-	OCR1B = 0;
+	OCR1B = 0;*/
 }
 
 /*
@@ -42,8 +41,9 @@ void dcmotorpwm_init(void) {
  */
 void dcmotorpwm_gostop(void) {
 	//set orc
-	OCR1A = 0;
-	OCR1B = 0;
+	///TODO: make portable
+	/*OCR1A = 0;
+	OCR1B = 0;*/
 }
 
 /*
@@ -52,13 +52,14 @@ void dcmotorpwm_gostop(void) {
  */
 void dcmotorpwm_goforward(uint8_t vel) {
 	//limit velocity
+	///TODO: make portable
 	if(vel > 100)
 		vel = 100;
 	//transform velocity to orc value
 	uint16_t orctop = ((DCMOTORPWM_ICR1-DCMOTORPWM_MINVEL) * (vel / 100.0)) + DCMOTORPWM_MINVEL;
 	//set orc
-	OCR1A = orctop;
-	OCR1B = 0;
+	/*OCR1A = orctop;
+	OCR1B = 0;*/
 }
 
 /*
@@ -72,8 +73,8 @@ void dcmotorpwm_gobackward(uint8_t vel) {
 	//transform velocity to orc value
 	uint16_t orctop = ((DCMOTORPWM_ICR1-DCMOTORPWM_MINVEL) * (vel / 100.0)) + DCMOTORPWM_MINVEL;
 	//set orc
-	OCR1A = 0;
-	OCR1B = orctop;
+	/*OCR1A = 0;
+	OCR1B = orctop;*/
 }
 
 

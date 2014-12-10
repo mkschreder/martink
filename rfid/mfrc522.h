@@ -73,10 +73,7 @@
  */
 #ifndef MFRC522_h
 #define MFRC522_h
-
-#include <Arduino.h>
-#include <SPI.h>
-
+/*
 class MFRC522 {
 public:
 	// MFRC522 registers. Described in chapter 9 of the datasheet.
@@ -339,5 +336,5 @@ private:
 	byte _resetPowerDownPin;	// Arduino pin connected to MFRC522's reset and power down input (Pin 6, NRSTPD, active low)
 	byte MIFARE_TwoStepHelper(byte command, byte blockAddr, long data);
 };
-
+*/
 #endif

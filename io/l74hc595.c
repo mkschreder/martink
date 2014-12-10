@@ -12,21 +12,33 @@ Please refer to LICENSE file for licensing information.
 
 
 #include <stdio.h>
-#include <avr/io.h>
-#include <util/delay.h>
 
-#include "l74hc595.h"
 #include <arch/soc.h>
 
+#include "l74hc595.h"
+
+#ifndef CONFIG_L74HC595_STC_PIN
+#define CONFIG_L74HC595_STC_PIN GPIO_NONE
+#endif
+
+#undef spi_init
+#undef spi_writereadbyte
+
+#define spi_init() PFCALL(CONFIG_SPI0_NAME, init)
+#define spi_writereadbyte(b) PFCALL(CONFIG_SPI0_NAME, writereadbyte, b)
+/*
 #define L74HC595_STCLo {L74HC595_PORT &= ~_BV(L74HC595_STCPIN);}
 #define L74HC595_STCHi {L74HC595_PORT |= _BV(L74HC595_STCPIN);}
+*/
+#define L74HC595_STCLo gpio_write_pin(CONFIG_L74HC595_STC_PIN, 0)
+#define L74HC595_STCHi gpio_write_pin(CONFIG_L74HC595_STC_PIN, 1)
 /*
  * init the shift register
  */
 void l74hc595_init(void) {
 	spi_init(); 
-	
-	L74HC595_DDR |= _BV(L74HC595_STCPIN); 
+
+	gpio_set_function(CONFIG_L74HC595_STC_PIN, GP_OUTPUT);
 	
 	L74HC595_STCLo;  
 }
@@ -34,6 +46,6 @@ void l74hc595_init(void) {
 void l74hc595_write(uint8_t data) {
 	spi_writereadbyte(data); 
 	L74HC595_STCHi; 
-	_delay_us(1); // not needed but still for safety (16ns is minimum high period)
+	time_delay(1); // not needed but still for safety (16ns is minimum high period)
 	L74HC595_STCLo; 
 }

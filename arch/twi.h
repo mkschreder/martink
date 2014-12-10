@@ -30,7 +30,6 @@
 
 // generic twi interface
 #ifdef CONFIG_HAVE_TWI
-
 #define twi0_init() PFCALL(CONFIG_TWI0_NAME, init)
 #define twi0_start(addr) PFCALL(CONFIG_TWI0_NAME, start, addr) 
 #define twi0_stop() PFCALL(CONFIG_TWI0_NAME, stop) 
@@ -41,7 +40,7 @@
 #define twi0_readNak() PFCALL(CONFIG_TWI0_NAME, readNak)
 
 /// initializes twi bus
-#define i2c_init() twi0_init()
+#define i2c_init twi0_init
 /// sends start condition
 #define i2c_start(addr) twi0_start(addr)
 /// signals stop condition

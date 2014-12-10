@@ -8,8 +8,8 @@ Please refer to LICENSE file for licensing information.
 */
 
 #include <stdio.h>
-#include <avr/io.h>
-#include <util/delay.h>
+
+#include <arch/soc.h>
 
 #include "dcmotor.h"
 
@@ -18,7 +18,8 @@ Please refer to LICENSE file for licensing information.
  */
 void dcmotor_setup(void) {
 	uint8_t i = 0;
-
+	/// TODO: Make portable!
+/*
 	//motor 1
 	i=0;
 	dcmotor_array[i].ddr = &DDRD;
@@ -32,6 +33,7 @@ void dcmotor_setup(void) {
 	dcmotor_array[i].port = &PORTD;
 	dcmotor_array[i].pinA = PD4;
 	dcmotor_array[i].pinB = PD5;
+	*/
 }
 
 /*

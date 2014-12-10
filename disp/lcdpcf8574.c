@@ -8,15 +8,15 @@ Please refer to LICENSE file for licensing information.
 */
 
 #include <inttypes.h>
-#include <avr/io.h>
-#include <avr/pgmspace.h>
 #include <stdarg.h>
+#include <stdio.h>
 
+#include <arch/soc.h>
 #include <io/pcf8574.h>
 
 #include "lcdpcf8574.h"
 
-#define lcd_e_delay()   __asm__ __volatile__( "rjmp 1f\n 1:" );
+#define lcd_e_delay()   {for(int c = 0; c < 1; c++);}//__asm__ __volatile__( "rjmp 1f\n 1:" );
 #define lcd_e_toggle()  toggle_e()
 
 #if LCD_LINES==1
@@ -43,6 +43,8 @@ static void toggle_e(void);
 *************************************************************************/
 static inline void _delayFourCycles(unsigned int __count)
 {
+	time_delay(__count); 
+	/*
     if ( __count == 0 )    
         __asm__ __volatile__( "rjmp 1f\n 1:" );    // 2 cycles
     else
@@ -51,7 +53,7 @@ static inline void _delayFourCycles(unsigned int __count)
     	    "brne 1b"                              // 4 cycles/loop
     	    : "=w" (__count)
     	    : "0" (__count)
-    	   );
+    	   );*/
 }
 
 

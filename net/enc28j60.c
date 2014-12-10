@@ -1,24 +1,36 @@
-#include <avr/io.h>
-#include <util/delay.h>
+#include <arch/soc.h>
 
 #include "enc28j60.h"
-#include <arch/soc.h>
 
 static uint8_t enc28j60_Bank;
 static uint16_t NextPacketPtr;
-
+/*
 #define ENC28J60_CONTROL_PORT    PORTD
 #define ENC28J60_CONTROL_DDR     DDRD
 #define ENC28J60_CONTROL_CS      PORTD2
+*/
+#ifndef CONFIG_ENC28J60_CS_PIN
+#warning "ENC28J60 CS pin undefined!"
+#define CONFIG_ENC28J60_CS_PIN GPIO_NONE
+#endif
+
 //#define ENC28J60_CONTROL_SO      PORTB5
 //#define ENC28J60_CONTROL_SI      PORTB6
 //#define ENC28J60_CONTROL_SCK     PORTB7
-
+/*
 // set CS to 0 = active
 #define CSACTIVE ENC28J60_CONTROL_PORT &= ~(1 << ENC28J60_CONTROL_CS)
 // set CS to 1 = passive
-#define CSPASSIVE ENC28J60_CONTROL_PORT |= (1 << ENC28J60_CONTROL_CS)
-//
+#define CSPASSIVE ENC28J60_CONTROL_PORT |= (1 << ENC28J60_CONTROL_CS)*/
+#define CSACTIVE gpio_write_pin(CONFIG_ENC28J60_CS_PIN, 0)
+// set CS to 1 = passive
+#define CSPASSIVE gpio_write_pin(CONFIG_ENC28J60_CS_PIN, 1)
+
+#undef spi_writereadbyte
+#undef spi_init
+
+#define spi_init() PFCALL(CONFIG_ILI9340_SPI_NAME, init)
+#define spi_writereadbyte(ch) PFCALL(CONFIG_ILI9340_SPI_NAME, writereadbyte, (ch))
 
 //*****************************************************************************
 uint8_t enc28j60_ReadOp(uint8_t op, uint8_t address)
@@ -124,7 +136,7 @@ void enc28j60_PhyWrite(uint8_t address, uint16_t data)
    // wait until the PHY write completes
    while(enc28j60_Read(MISTAT) & MISTAT_BUSY)
    {
-      _delay_us(15);
+      time_delay(15);
    }
 }
 
@@ -139,27 +151,27 @@ void InitPhy (void)
 	// 0x880 is PHLCON LEDB=on, LEDA=on
 	// enc28j60PhyWrite(PHLCON,0b0000 1000 1000 00 00);
 	enc28j60_PhyWrite(PHLCON,0x880);
-	_delay_ms(500);
+	time_delay(500000L);
 	//
 	// 0x990 is PHLCON LEDB=off, LEDA=off
 	// enc28j60PhyWrite(PHLCON,0b0000 1001 1001 00 00);
 	enc28j60_PhyWrite(PHLCON,0x990);
-	_delay_ms(500);
+	time_delay(500000L);
 	//
 	// 0x880 is PHLCON LEDB=on, LEDA=on
 	// enc28j60PhyWrite(PHLCON,0b0000 1000 1000 00 00);
 	enc28j60_PhyWrite(PHLCON,0x880);
-	_delay_ms(500);
+	time_delay(500000L);
 	//
 	// 0x990 is PHLCON LEDB=off, LEDA=off
 	// enc28j60PhyWrite(PHLCON,0b0000 1001 1001 00 00);
 	enc28j60_PhyWrite(PHLCON,0x990);
-	_delay_ms(500);
+	time_delay(500000L);
 	//
    // 0x476 is PHLCON LEDA=links status, LEDB=receive/transmit
    // enc28j60PhyWrite(PHLCON,0b0000 0100 0111 01 10);
    enc28j60_PhyWrite(PHLCON,0x476);
-	_delay_ms(100);
+	time_delay(100000L);
 }
 
 
@@ -168,14 +180,15 @@ void enc28j60_Init(uint8_t* macaddr)
 {
    // initialize I/O
    // cs as output:
-   ENC28J60_CONTROL_DDR |= (1 << ENC28J60_CONTROL_CS);
+   gpio_set_function(CONFIG_ENC28J60_CS_PIN, GP_OUTPUT); 
+   //ENC28J60_CONTROL_DDR |= (1 << ENC28J60_CONTROL_CS);
    CSPASSIVE; // ss=0
    
    spi_init(); 
    
    // perform system reset
    enc28j60_WriteOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
-   _delay_ms(50);
+   time_delay(50000L);
    // check CLKRDY bit to see if reset is complete
    // The CLKRDY does not work. See Rev. B4 Silicon Errata point. Just wait.
    //while(!(enc28j60Read(ESTAT) & ESTAT_CLKRDY));

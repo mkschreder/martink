@@ -9,12 +9,10 @@ Please refer to LICENSE file for licensing information.
 
 
 #include <stdlib.h>
-#include <avr/io.h>
-#include <util/delay.h>
+
+#include <arch/soc.h>
 
 #include "l3g4200d.h"
-
-#include <i2c.h>
 
 //offset variables
 volatile double l3g4200d_offsetx = 0.0f;

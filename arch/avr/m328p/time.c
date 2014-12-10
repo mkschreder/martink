@@ -8,6 +8,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#include <arch/time.h>
 #include "time.h"
 
 // update this for correct amount of ticks in microsecon

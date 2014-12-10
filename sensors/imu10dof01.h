@@ -23,15 +23,11 @@ References:
 #ifndef IMU10DOF01_H_
 #define IMU10DOF01_H_
 
-//i2c settings
-#define IMU10DOF01_I2CFLEURYPATH "i2cmaster.h" //define the path to i2c fleury lib
-#define IMU10DOF01_I2CINIT 1 //init i2c
-
 //setup timer0 overflow event and define madgwickAHRSsampleFreq equal to timer0 frequency
 //timerfreq = (FCPU / prescaler) / timerscale
 //     timerscale 8-bit = 256
 // es. 61 = (16000000 / 1024) / 256
-#define TIMER0_PRESCALER (1<<CS02)|(1<<CS00)
+//#define TIMER0_PRESCALER (1<<CS02)|(1<<CS00)
 
 #define IMU10DOF01_BAROMETERENABLED 1 //enable or disable barometer
 

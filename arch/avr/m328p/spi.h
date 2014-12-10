@@ -17,6 +17,8 @@ Please refer to LICENSE file for licensing information.
 
 #include <avr/io.h>
 
+#include "autoconf.h"
+
 // commands
 #define SPI_CMD_SET_PIN 0x1000
 #define SPI_CMD_SENDRECEIVE 0x2000
@@ -30,7 +32,7 @@ Please refer to LICENSE file for licensing information.
 #define SPI_SCK PB5
 #define SPI_SS PB2
 
-extern void spi_init(void);
-extern uint8_t spi_writereadbyte(uint8_t data);
+void PFDECL(CONFIG_SPI0_NAME, init, void);
+uint8_t PFDECL(CONFIG_SPI0_NAME, writereadbyte, uint8_t data);
 
 #endif

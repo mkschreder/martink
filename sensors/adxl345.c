@@ -9,8 +9,8 @@ Please refer to LICENSE file for licensing information.
 
 
 #include <stdlib.h>
-#include <avr/io.h>
-#include <util/delay.h>
+
+#include <arch/soc.h>
 
 #include "adxl345.h"
 
@@ -19,7 +19,6 @@ Please refer to LICENSE file for licensing information.
 #include <string.h>
 #endif
 
-#include <i2c.h>
 
 #if ADXL345_LOWPASSENABLED == 1
 static double axold = 0;

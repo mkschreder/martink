@@ -16,7 +16,6 @@ References:
 #define LCD_H
 
 #include <inttypes.h>
-#include <avr/pgmspace.h>
 
 #define LCD_PCF8574_INIT 1 //init pcf8574
 

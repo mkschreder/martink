@@ -129,7 +129,7 @@
 //#include "ledmatrix88.h"
 //#include "magn_docalibration.h"
 #ifdef CONFIG_MFRC522
-#include "sensors/mfrc522.h"
+#include "rfid/mfrc522.h"
 #endif
 
 #ifdef CONFIG_MMA7455
@@ -177,10 +177,10 @@
 #endif
 
 #ifdef CONFIG_HAVE_UART
-	#define kprintf(a, ...) uart_printf(PSTR(a), ##__VA_ARGS__)
+	#define kprintf(a, ...) uart0_printf(PSTR(a), ##__VA_ARGS__)
 
 	#ifdef CONFIG_DEBUG
-		#define kdebug(a, ...) uart_printf(PSTR(a), ##__VA_ARGS__)
+		#define kdebug(a, ...) uart0_printf(PSTR(a), ##__VA_ARGS__)
 	#else
 		#define kdebug(a, ...) {}
 	#endif

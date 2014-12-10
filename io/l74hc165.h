@@ -7,9 +7,6 @@ Released under GPLv3.
 Please refer to LICENSE file for licensing information.
 */
 
-
-#include <avr/io.h>
-
 #ifndef L74HC165_H_
 #define L74HC165_H_
 

@@ -16,8 +16,6 @@ References:
 #ifndef DS18B20_H_
 #define DS18B20_H_
 
-#include <avr/io.h>
-
 //setup connection
 #define DS18B20_PORT PORTC
 #define DS18B20_DDR DDRC

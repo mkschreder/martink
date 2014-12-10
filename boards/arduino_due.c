@@ -216,10 +216,10 @@ void brd_init(void){
 	/* The general init (clock, libc, watchdog disable) */
   init_controller();
   
-  uart_init(38400); 
-  
-  uart_printf("Foo %d\n", 10); 
-  
+  uart0_init(38400); 
+  uart0_printf("Foo %d\n", 10); 
+
+  pmc_enable_periph_clk(ID_USART0);
   pmc_enable_periph_clk(ID_USART1);
   
 /*
@@ -274,7 +274,7 @@ void brd_init(void){
 		
 		spi0_writereadbyte(0x11); 
 		
-		uart_printf("Bar %d\n", 10); 
+		uart0_printf("Bar %d\n", 10); 
   
     USART_PutChar(USART1, 'D'); 
     //USART_PutChar(USART0, 'D'); 

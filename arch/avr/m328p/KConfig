@@ -1,0 +1,21 @@
+choice 
+	prompt "AVR Model" 
+	default ATMEGA328P
+	
+	config ATMEGA328P
+		depends on AVR
+		select HAVE_SPI
+		select HAVE_UART
+		select HAVE_I2C
+		select HAVE_TWI
+		select HAVE_TWI0
+		select HAVE_SPI
+		select HAVE_TIMER0
+		select HAVE_TIMER1
+		select HAVE_TIMER2
+		bool "AVR ATMega328P"
+		
+	config ATMEGA88
+		depends on AVR
+		bool "AVR ATMega88"
+endchoice 

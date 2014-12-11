@@ -116,7 +116,7 @@ void ip_init(ip_mac_t mymac, ip_addr_t myip, uint8_t *buffer, uint16_t size)
 
 {
 	enc28j60_Init(mymac);    //initialize enc28j60
-	_delay_ms(10);
+	time_delay(10000L);
 	InitPhy();
 	
 	eth->seqnum = 0xa; 

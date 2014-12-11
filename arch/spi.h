@@ -23,6 +23,18 @@
 #include "autoconf.h"
 
 #ifdef CONFIG_HAVE_SPI
+
+// this is the SPI api specification
+struct spi_api {
+	void (*init)(void); 
+	uint8_t (*writereadbyte)(uint8_t); 
+}; 
+
+#define SPI_API(device) (struct spi_api){\
+	.init = PFNAME(device, init), \
+	.writereadbyte = PFNAME(device, writereadbyte)\
+}
+
 #define spi0_init() PFCALL(CONFIG_SPI0_NAME, init)
 #define spi0_writereadbyte(byte) PFCALL(CONFIG_SPI0_NAME, writereadbyte, byte) 
 #endif

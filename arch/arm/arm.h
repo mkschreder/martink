@@ -27,6 +27,7 @@
 
 #ifdef CONFIG_AT91SAM3
 #include "sam3/sam.h"
+#include "at91sam3xe.h"
 #endif
 
 #include "uart.h"

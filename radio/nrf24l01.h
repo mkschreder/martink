@@ -20,6 +20,12 @@ Please refer to LICENSE file for licensing information.
 extern "C" {
 #endif
 
+struct nrf24l01 {
+	struct spi_api spi; 
+	gpio_pin_t cs_pin; 
+	gpio_pin_t ce_pin; 
+}; 
+
 //CE and CSN port definitions
 /*#define FX_RADIO*/
 /*
@@ -37,23 +43,21 @@ extern "C" {
 #error "FX_FLIGHT_CONTROL or FX_RADIO needs to be defined!"
 #endif
 */
-
+/*
 #define NRF24L01_DDR *nrf_ddr
 #define NRF24L01_PORT *nrf_port
 #define NRF24L01_CE nrf_ce_pin
 #define NRF24L01_CSN nrf_cs_pin
-
+*/
 #define NRF24L01_MAX_CHANNEL 128
 
-//define the spi path
-#define NRF24L01_SPIPATH "spi.h" //spi lib path
-
+/*
 //CE and CSN functions
 #define nrf24l01_CSNhi NRF24L01_PORT |= (1<<NRF24L01_CSN);
 #define nrf24l01_CSNlo NRF24L01_PORT &= ~(1<<NRF24L01_CSN);
 #define nrf24l01_CEhi NRF24L01_PORT |=  (1<<NRF24L01_CE);
 #define nrf24l01_CElo NRF24L01_PORT &= ~(1<<NRF24L01_CE);
-
+*/
 //power setup
 #define NRF24L01_RF24_PA_MIN 1
 #define NRF24L01_RF24_PA_LOW 2
@@ -109,18 +113,15 @@ extern "C" {
  //enable print info function
 #define NRF24L01_PRINTENABLE 0
 
-extern void nrf24l01_init(volatile uint8_t *port, volatile uint8_t *ddr, uint8_t ce_pin, uint8_t cs_pin);
-extern uint8_t nrf24l01_getstatus(void);
-extern uint8_t nrf24l01_readready(uint8_t* pipe); 
-extern void nrf24l01_read(uint8_t *data);
-extern uint8_t nrf24l01_write(uint8_t *data);
-extern void nrf24l01_setrxaddr(uint8_t channel, uint8_t *addr);
-extern void nrf24l01_settxaddr(uint8_t *addr);
-#if NRF24L01_PRINTENABLE == 1
-extern void nrf24l01_printinfo(void(*prints)(const char *), void(*printc)(unsigned char data));
-void nrf24l01_powerdown(void);
-#endif
-void nrf24l01_scan(uint8_t iterations, uint8_t result[NRF24L01_MAX_CHANNEL]); 
+extern void nrf24l01_init(struct nrf24l01 *nrf);
+extern uint8_t nrf24l01_getstatus(struct nrf24l01 *nrf);
+extern uint8_t nrf24l01_readready(struct nrf24l01 *nrf, uint8_t* pipe); 
+extern void nrf24l01_read(struct nrf24l01 *nrf, uint8_t *data);
+extern uint8_t nrf24l01_write(struct nrf24l01 *nrf, uint8_t *data);
+extern void nrf24l01_setrxaddr(struct nrf24l01 *nrf, uint8_t channel, uint8_t *addr);
+extern void nrf24l01_settxaddr(struct nrf24l01 *nrf, uint8_t *addr);
+void nrf24l01_powerdown(struct nrf24l01 *nrf);
+void nrf24l01_scan(struct nrf24l01 *nrf, uint8_t iterations, uint8_t result[NRF24L01_MAX_CHANNEL]); 
 
 
 #ifdef __cplusplus

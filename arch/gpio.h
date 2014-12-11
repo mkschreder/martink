@@ -24,7 +24,11 @@
 
 enum {
 	GP_INPUT,
-	GP_OUTPUT
+	GP_OUTPUT,
+	GP_AUX_A, 
+	GP_AUX_B, 
+	GP_AUX_C, 
+	GP_AUX_D
 };
 
 /*

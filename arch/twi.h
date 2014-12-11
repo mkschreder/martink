@@ -28,8 +28,13 @@
 #define CONFIG_TWI0_NAME twi0
 #endif
 
+struct twi_api {
+	
+}; 
+
 // generic twi interface
 #ifdef CONFIG_HAVE_TWI
+
 #define twi0_init() PFCALL(CONFIG_TWI0_NAME, init)
 #define twi0_start(addr) PFCALL(CONFIG_TWI0_NAME, start, addr) 
 #define twi0_stop() PFCALL(CONFIG_TWI0_NAME, stop) 

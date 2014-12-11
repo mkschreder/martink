@@ -32,32 +32,7 @@
 #include "ili9340.h"
 
 /// TODO: All of this is AVR speciffic. Has to be made portable!
-/*
-#define SPI_DDR DDRB
-#define SPI_PORT PORTB
-#define SPI_MISO PB4
-#define SPI_MOSI PB3
-#define SPI_SCK PB5
-#define SPI_SS PB2
 
-#define SET_BIT(port, bitMask) *(port) |= (bitMask)
-#define CLEAR_BIT(port, bitMask) *(port) &= ~(bitMask)
-
-#define ILI_PORT PORTB
-#define ILI_DDR DDRB
-#define CS_PIN PB0
-#define RST_PIN SPI_SS
-#define DC_PIN PB1
-
-#define _SB(port, pin) {port |= _BV(pin);}
-#define _RB(port, pin) {port &= ~_BV(pin);}
-#define CS_HI _SB(ILI_PORT, CS_PIN)
-#define CS_LO _RB(ILI_PORT, CS_PIN)
-#define RST_HI _SB(ILI_PORT, RST_PIN)
-#define RST_LO _RB(ILI_PORT, RST_PIN)
-#define DC_HI _SB(ILI_PORT, DC_PIN)
-#define DC_LO _RB(ILI_PORT, DC_PIN)
-*/
 
 #ifndef CONFIG_ILI9340_CS_PIN
 #error "CS pin not defined!"
@@ -68,6 +43,13 @@
 #ifndef CONFIG_ILI9340_DC_PIN
 #error "DC pin not defined!"
 #endif
+
+//static uint16_t _width = ILI9340_TFTWIDTH, _height  = ILI9340_TFTHEIGHT;
+#undef spi_writereadbyte
+#undef spi_init
+
+#define spi_init() PFCALL(CONFIG_ILI9340_SPI_NAME, init)
+#define spi_writereadbyte(ch) PFCALL(CONFIG_ILI9340_SPI_NAME, writereadbyte, (ch))
 
 #define CS_HI 		gpio_write_pin(CONFIG_ILI9340_CS_PIN, 1)
 #define CS_LO 		gpio_write_pin(CONFIG_ILI9340_CS_PIN, 0)
@@ -334,13 +316,6 @@ static const unsigned char font[] PROGMEM = {
 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-//static uint16_t _width = ILI9340_TFTWIDTH, _height  = ILI9340_TFTHEIGHT;
-#undef spi_writereadbyte
-#undef spi_init
-
-#define spi_init() PFCALL(CONFIG_ILI9340_SPI_NAME, init)
-#define spi_writereadbyte(ch) PFCALL(CONFIG_ILI9340_SPI_NAME, writereadbyte, (ch))
-
 static struct ili9340 {
 	uint16_t screen_width, screen_height; 
 	int16_t cursor_x, cursor_y;
@@ -349,7 +324,7 @@ static struct ili9340 {
 	uint16_t scroll_start; 
 } term;
 
-void _wr_command(uint8_t c) {
+static void _wr_command(uint8_t c) {
 	DC_LO;
 	CS_LO;
 	
@@ -359,7 +334,7 @@ void _wr_command(uint8_t c) {
 }
 
 
-uint8_t _wr_data(uint8_t c) {
+static uint8_t _wr_data(uint8_t c) {
 	DC_HI; 
   CS_LO; 
   uint8_t r = spi_writereadbyte(c);
@@ -367,7 +342,7 @@ uint8_t _wr_data(uint8_t c) {
 	return r; 
 } 
 
-uint16_t _wr_data16(uint16_t c){
+static uint16_t _wr_data16(uint16_t c){
 	DC_HI; 
   CS_LO; 
   uint16_t r = spi_writereadbyte(c >> 8);
@@ -646,14 +621,6 @@ void ili9340_fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
 }
 
 void ili9340_drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t col){
-	/*if(x0 == x1) {
-		ili9340_drawFastVLine(x0, y0, y1 - y0, col); 
-		return; 
-	} else if(y0 == y1){
-		ili9340_drawFastHLine(x0, y0, x1 - x0, col); 
-		return; 
-	}*/
-	
   int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
   int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
   int err = (dx>dy ? dx : -dy)/2, e2;

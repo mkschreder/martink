@@ -46,28 +46,3 @@ double atan2(double y, double x)
 
   return t3;
 }
-/*
-void __assert_fail(void){
-	
-}
-
-void srand(unsigned s){
-	
-}
-
-int __errno(void){
-	return 0; 
-}
-
-int __assert_func(void){
-	return 1; 
-}
-*/
-/*
-#include <reent.h>
-#include <unistd.h>
-
-extern void *_sbrk_r (struct _reent *, ptrdiff_t);
-void *_sbrk (ptrdiff_t d){
-	return 0; 
-}*/

@@ -44,12 +44,17 @@ extern "C" {
 
 // these should be moved somewhere. This is the way to do configurable
 // c interfaces using macros. It is used by all generic interface headers. 
+
+// used for generating references to static methods
+#define PFNAME2(P, F) __##P##_##F##__
+#define PFNAME(P, F) PFNAME2(P, F)
+
+// used for generating calls to static device methods
 #define PFCALL2(P, F, args...) __##P##_##F##__( args )
 #define PFCALL(P, F, args...) PFCALL2(P, F, args)
 
 // used for declaring driver functions
-#define PFDECL2(P, F, args...) __##P##_##F##__( args )
-#define PFDECL(P, F, args...) PFDECL2(P, F, args )
+#define PFDECL(P, F, args...) PFCALL(P, F, args)
 
 #include "time.h"
 #include "uart.h"

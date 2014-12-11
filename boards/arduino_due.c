@@ -27,87 +27,12 @@
 #include <sensors/hmc5883l.h>
 #include <sensors/bmp085.h>
 #include <sensors/mpu6050.h>
+#include <radio/nrf24l01.h>
 #include <disp/ssd1306.h>
 
 #include <math.h>
 
-static void __phantom_handler(void) { while(1); }
- 
-void NMI_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-void HardFault_Handler (void) __attribute__ ((weak, alias("__phantom_handler")));
-void MemManage_Handler (void) __attribute__ ((weak, alias("__phantom_handler")));
-void BusFault_Handler  (void) __attribute__ ((weak, alias("__phantom_handler")));
-void UsageFault_Handler(void) __attribute__ ((weak, alias("__phantom_handler")));
-void DebugMon_Handler  (void) __attribute__ ((weak, alias("__phantom_handler")));
-void SVC_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-void PendSV_Handler    (void) __attribute__ ((weak, alias("__phantom_handler")));
-void SysTick_Handler(void) { TimeTick_Increment(); }
-void SUPC_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-void RSTC_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-void RTC_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void RTT_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void WDT_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void PMC_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void EFC0_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-void EFC1_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-void UART_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-#ifdef _SAM3XA_SMC_INSTANCE_
-void SMC_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-#endif
-#ifdef _SAM3XA_SDRAMC_INSTANCE_
-void SDRAMC_Handler     (void) __attribute__ ((weak, alias("__phantom_handler")));
-#endif
-void PIOA_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-void PIOB_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-#ifdef _SAM3XA_PIOC_INSTANCE_
-void PIOC_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-#endif
-#ifdef _SAM3XA_PIOD_INSTANCE_
-void PIOD_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-#endif
-#ifdef _SAM3XA_PIOE_INSTANCE_
-void PIOE_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-#endif
-#ifdef _SAM3XA_PIOF_INSTANCE_
-void PIOF_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-#endif
-//void USART0_Handler     (void) __attribute__ ((weak, alias("__phantom_handler")));
-//void USART1_Handler     (void) __attribute__ ((weak, alias("__phantom_handler")));
-void USART2_Handler     (void) __attribute__ ((weak, alias("__phantom_handler")));
-#ifdef _SAM3XA_USART3_INSTANCE_
-void USART3_Handler     (void) __attribute__ ((weak, alias("__phantom_handler")));
-#endif
-void HSMCI_Handler      (void) __attribute__ ((weak, alias("__phantom_handler")));
-void TWI0_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-void TWI1_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-void SPI0_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-#ifdef _SAM3XA_SPI1_INSTANCE_
-void SPI1_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-#endif
-void SSC_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void TC0_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void TC1_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void TC2_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void TC3_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void TC4_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void TC5_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-#ifdef _SAM3XA_TC2_INSTANCE_
-void TC6_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void TC7_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void TC8_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-#endif
-void PWM_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void ADC_Handler        (void) __attribute__ ((weak, alias("__phantom_handler")));
-void DACC_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-void DMAC_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-void UOTGHS_Handler     (void) __attribute__ ((weak, alias("__phantom_handler")));
-void TRNG_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-#ifdef _SAM3XA_EMAC_INSTANCE_
-void EMAC_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-#endif
-void CAN0_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
-void CAN1_Handler       (void) __attribute__ ((weak, alias("__phantom_handler")));
- 
+
 #define FRONT_PIN PD3
 #define RIGHT_PIN PB1
 #define LEFT_PIN PB2
@@ -120,15 +45,6 @@ void CAN1_Handler       (void) __attribute__ ((weak, alias("__phantom_handler"))
 #define PWM_UPDATE_ENABLE {TIMSK2 |= _BV(TOIE2);}
 
 #define ACCNAME mpu6050
-
-/*
-#define PREFIX foo
-#define CALL2(P,x) _##P##_bar(x)
-#define CALL(P, x) CALL2(P,x)
-*/
-
-//#define acc_read(ACC, x, y, z) _##ACC_getConvAcc(x, y, z); 
-//#define gyr_read(x, y, z) _ACCNAME##_getConvGyr(x, y, z); 
 
 const static uint16_t rc_defaults[6] = {1000, 1500, 1500, 1500, 1500, 1500}; 
 
@@ -180,45 +96,18 @@ void reset_rc(void){
 		brd->rc_value[c] = rc_defaults[c]; 
 	}
 }
-/********************************************************************************
- * Controller initialisation. Call this function in main(), which is itself called
- * from Reset_Handler()
- ********************************************************************************/
-void __libc_init_array(void);
-
-void init_controller(void)
-{
-  /*
-   * SAM System init: Initializes the PLL / clock.
-   * Defined in CMSIS/ATMEL/sam3xa/source/system_sam3xa.c
-   */
-  SystemInit();
-  /*
-   * Config systick interrupt timing, core clock is in microseconds --> 1ms
-   * Defined in CMSIS/CMSIS/include/core_cm3.h
-   */
-   SysTick_Config(SystemCoreClock / 1000);
-   
-  //if (SysTick_Config(SystemCoreClock / 1000)) while (1);
- 
-  /*
-   * No watchdog now
-   *
-   */
-  WDT_Disable(WDT);
- 
-  /*
-   * GCC libc init, also done in Reset_Handler()
-   */
-}
 
 void brd_init(void){
 	/* The general init (clock, libc, watchdog disable) */
-  init_controller();
+  cpu_init();
   
   uart0_init(38400); 
   uart0_printf("Foo %d\n", 10); 
-
+	
+	pmc_enable_periph_clk(ID_PIOA); 
+	pmc_enable_periph_clk(ID_PIOB); 
+	pmc_enable_periph_clk(ID_PIOC); 
+	pmc_enable_periph_clk(ID_PIOD); 
   pmc_enable_periph_clk(ID_USART0);
   pmc_enable_periph_clk(ID_USART1);
   
@@ -257,32 +146,41 @@ void brd_init(void){
 	// Enable receiver and transmitter
 	USART1->US_CR = US_CR_RXEN | US_CR_TXEN ;
 
-	/*USART_Configure(USART1, USART_MODE_ASYNCHRONOUS, 38400, SystemCoreClock); 
-	USART_SetTransmitterEnabled(USART1, 1); 
-	USART_SetReceiverEnabled(USART1, 1); 
-	USART_EnableIt(USART1, 1); */
-	
 	i2c_init(); 
 	spi0_init(); 
 	
+	struct nrf24l01 nrf1 = {
+		.spi = SPI_API(spi0), 
+		.cs_pin = GPIO_PA15, 
+		.ce_pin = GPIO_PD1
+	}; 
+	nrf24l01_init(&nrf1); 
+	
+	gpio_set_function(GPIO_PB26, GP_OUTPUT); 
+	gpio_set_function(GPIO_PA16, GP_OUTPUT); 
+	
   while(1) {
-    Sleep(250);
+		char buf[NRF24L01_PAYLOAD]; 
+		nrf24l01_write(&nrf1, buf); 
+		
+    time_delay(250000L);
     
     i2c_start_wait(0x11 | I2C_WRITE);
 		i2c_write(0x40);
 		i2c_stop();
 		
-		spi0_writereadbyte(0x11); 
+		//spi0_writereadbyte(0x11); 
 		
 		uart0_printf("Bar %d\n", 10); 
   
     USART_PutChar(USART1, 'D'); 
     //USART_PutChar(USART0, 'D'); 
-    if(PIOB->PIO_ODSR & PIO_PB27) {
-      PIOB->PIO_CODR = PIO_PB27;
-    } else {
-      PIOB->PIO_SODR = PIO_PB27;
-    }
+    
+    if(gpio_read(GPIO_PB27)){
+			gpio_clear(GPIO_PB27); 
+		} else {
+			gpio_set(GPIO_PB27); 
+		}
   }
 }
 
@@ -310,61 +208,3 @@ uint16_t get_pin(uint8_t pin){
 	}
 	return 0; 
 }
-
-
-timeout_t time_get_clock(void){
-	return GetTickCount(); 
-}
-
-timeout_t time_us_to_clock(timeout_t us){
-	return us / 1000; 
-}
-
-
-timeout_t time_clock_to_us(timeout_t clock){
-	return clock * 1000; 
-}
-
-/*
-void raise(void){
-	while(1); 
-}
-
-int __isnanf(float x){
-	return isnan(x); 
-}
-
-float sqrtf(float x){
-	return sqrt(x); 
-}
-* 
-#undef atan2
-*/
-/*
-#define abs(x) ((x < 0)?-x:x)
-double atan2(double y, double x)
-{
-  float t0, t1, t3, t4;
-
-  t3 = abs(x);
-  t1 = abs(y);
-  t0 = max(t3, t1);
-  t1 = min(t3, t1);
-  t3 = (float)1.0f / t0;
-  t3 = t1 * t3;
-
-  t4 = t3 * t3;
-  t0 =         - (float)0.013480470;
-  t0 = t0 * t4 + (float)0.057477314;
-  t0 = t0 * t4 - (float)0.121239071;
-  t0 = t0 * t4 + (float)0.195635925;
-  t0 = t0 * t4 - (float)0.332994597;
-  t0 = t0 * t4 + (float)0.999995630;
-  t3 = t0 * t3;
-
-  t3 = (abs(y) > abs(x)) ? (float)1.570796327 - t3 : t3;
-  t3 = (x < 0) ?  (float)3.141592654 - t3 : t3;
-  t3 = (y < 0) ? -t3 : t3;
-
-  return t3;
-}*/

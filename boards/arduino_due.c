@@ -19,6 +19,8 @@
 	Github: https://github.com/mkschreder
 */
 
+////// THIS IS ONLY A TEST FILE FOR TESTING //////
+
 #include "multiwii.h"
 
 #include <arch/soc.h>

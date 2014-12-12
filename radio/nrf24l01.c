@@ -21,23 +21,9 @@ Please refer to LICENSE file for licensing information.
 #define nrf24l01_CElo gpio_clear(nrf->ce_pin) // NRF24L01_PORT &= ~(1<<NRF24L01_CE);
 
 #undef spi_init
-#define spi_init nrf->spi.init
+#define spi_init nrf->spi->init
 #undef spi_writereadbyte
-#define spi_writereadbyte nrf->spi.writereadbyte
-
-/*
-static volatile uint8_t *nrf_port = 0, *nrf_ddr = 0;
-static uint8_t nrf_ce_pin = 0, nrf_cs_pin = 0;
-*/
-//address variables
-/*
-static uint8_t nrf24l01_addr0[NRF24L01_ADDRSIZE] = NRF24L01_ADDRP0;
-static uint8_t nrf24l01_addr1[NRF24L01_ADDRSIZE] = NRF24L01_ADDRP1;
-static uint8_t nrf24l01_addr2[NRF24L01_ADDRSIZE] = NRF24L01_ADDRP2;
-static uint8_t nrf24l01_addr3[NRF24L01_ADDRSIZE] = NRF24L01_ADDRP3;
-static uint8_t nrf24l01_addr4[NRF24L01_ADDRSIZE] = NRF24L01_ADDRP4;
-static uint8_t nrf24l01_addr5[NRF24L01_ADDRSIZE] = NRF24L01_ADDRP5;
-static uint8_t nrf24l01_addrtx[NRF24L01_ADDRSIZE] = NRF24L01_ADDRTX;*/
+#define spi_writereadbyte nrf->spi->writereadbyte
 
 /*
  * read one register
@@ -408,7 +394,11 @@ void nrf24l01_setcrclength(struct nrf24l01 *nrf) {
 /*
  * init nrf24l01
  */
-void nrf24l01_init(struct nrf24l01 *nrf) {
+void nrf24l01_init(struct nrf24l01 *nrf, const struct d_spi *spi, gpio_pin_t cs, gpio_pin_t ce) {
+	nrf->spi = spi; 
+	nrf->cs_pin = cs; 
+	nrf->ce_pin = ce; 
+	
 	gpio_set_function(nrf->cs_pin, GP_OUTPUT); 
 	gpio_set_function(nrf->ce_pin, GP_OUTPUT); 
 	/*nrf_ddr = ddr;

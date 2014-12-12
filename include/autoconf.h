@@ -2,7 +2,7 @@
  * Automatically generated C config: don't edit
  * version: 
  */
-#define AUTOCONF_TIMESTAMP "2014-12-10 17:27:32 CET"
+#define AUTOCONF_TIMESTAMP "2014-12-12 02:30:45 CET"
 
 
 /*
@@ -10,31 +10,32 @@
  */
 #define CONFIG_HAVE_UART 1
 #define CONFIG_HAVE_UART0 1
-#define CONFIG_HAVE_UART1 1
 #define CONFIG_HAVE_SPI 1
 #define CONFIG_HAVE_SPI0 1
-#define CONFIG_HAVE_SPI1 1
 #define CONFIG_HAVE_TWI 1
 #define CONFIG_HAVE_TWI0 1
-#define CONFIG_ARM 1
+#define CONFIG_HAVE_TIMER0 1
+#define CONFIG_HAVE_TIMER1 1
+#define CONFIG_HAVE_TIMER2 1
+#define CONFIG_AVR 1
 
 /*
  * Processor type
  */
-#define CONFIG_AT91SAM3 1
+#define CONFIG_ATMEGA328P 1
 
 /*
  * UART config
  */
 #define CONFIG_UART0_NAME uart0
-#define CONFIG_UART1_NAME uart1
+#define CONFIG_UART1_NAME 
 #define CONFIG_UART2_NAME 
 
 /*
  * SPI config
  */
 #define CONFIG_SPI0_NAME spi0
-#define CONFIG_SPI1_NAME spi1
+#define CONFIG_SPI1_NAME 
 #define CONFIG_SPI2_NAME 
 
 /*
@@ -46,8 +47,8 @@
 /*
  * Board support
  */
-#define CONFIG_BOARD_ARDUINO_DUE 1
-#define CONFIG_MULTIWII_ACC 
+#define CONFIG_BOARD_MULTIWII 1
+#define CONFIG_MULTIWII_ACC mpu6050
 
 /*
  * Device driver support

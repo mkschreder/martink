@@ -25,14 +25,10 @@ choice
 		select SAM3
 		select HAVE_UART
 		select HAVE_UART0
-		select HAVE_UART1
-		select HAVE_UART2
-		select HAVE_UART3
 		select HAVE_TWI
 		select HAVE_TWI0
 		select HAVE_SPI
 		select HAVE_SPI0
-		select HAVE_SPI1
 		bool "AT91SAM3"
 		
 endchoice 

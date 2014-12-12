@@ -10,8 +10,6 @@ Please refer to LICENSE file for licensing information.
 
 #include <stdio.h>
 #include <string.h>
-#include <avr/io.h>
-#include <util/delay.h>
 
 #include "dht.h"
 

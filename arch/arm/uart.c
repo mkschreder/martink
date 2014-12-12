@@ -63,15 +63,49 @@ void PFDECL(CONFIG_UART0_NAME, init, uint32_t baud){
 	USART_EnableIt(USART0,UART_IER_ENDRX);
 }
 
+size_t PFDECL(CONFIG_UART0_NAME, write, const uint8_t *data, size_t max_size){
+	// wait for previous op to complete
+	while(!(USART_GetStatus(USART0) & US_CSR_TXRDY)); 
+	for(int c = 0; c < max_size; c++){
+		USART_PutChar(USART0, data[c]); 
+	}
+	//return USART_WriteBuffer(USART0, data, max_size);
+}
+
+size_t PFDECL(CONFIG_UART0_NAME, read, uint8_t *data, size_t max_size){
+	if(!(USART_GetStatus(USART0) & US_CSR_RXRDY)) return 0;  
+	return USART_ReadBuffer(USART0, data, max_size); 
+}
+
+uint16_t PFDECL(CONFIG_UART0_NAME, getc, void){
+	return USART_GetChar(USART0); 
+}
+
+void PFDECL(CONFIG_UART0_NAME, putc, uint8_t ch){
+	if(!(USART_GetStatus(USART0) & US_CSR_TXRDY)) return 0; 
+	USART_PutChar(USART0, ch); 
+	return 1; 
+}
+
+uint16_t PFDECL(CONFIG_UART0_NAME, puts, const char *str){
+	uint16_t n = 0; 
+	while(*str){
+		PFCALL(CONFIG_UART0_NAME, putc, *str); 
+		n++; str++; 
+	}
+	return n; 
+}
+
 uint16_t PFDECL(CONFIG_UART0_NAME, printf, const char *fmt, ...){
-	char buf[UART_TX_BUFFER_SIZE * 2]; 
+	static uint8_t buf[UART_TX_BUFFER_SIZE * 2]; 
 	//memcpy(buf, "Hello WOrld!", 10); 
 	uint16_t n; 
 	va_list vl; 
 	va_start(vl, fmt);
-	n = vsnprintf(buf, sizeof(buf)-1, fmt, vl); 
+	n = vsnprintf((char*)buf, sizeof(buf)-1, fmt, vl); 
 	va_end(vl);
 	
-	USART_WriteBuffer(USART0, buf, n);
+	PFCALL(CONFIG_UART0_NAME, write, buf, n); 
+	
 	return n; 
 }

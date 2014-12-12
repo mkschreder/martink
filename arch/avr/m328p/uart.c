@@ -465,8 +465,30 @@ void PFDECL(CONFIG_UART0_NAME, puts, const char *s )
 	
 	while (*s) 
 		PFCALL(CONFIG_UART0_NAME, putc, *s++);
-}/* uart_puts */
+}
 
+size_t PFDECL(CONFIG_UART0_NAME, write, const char *s, size_t c)
+{
+	if(!uart0) return;
+	
+	size_t t = c; 
+	while (c--) 
+		PFCALL(CONFIG_UART0_NAME, putc, *s++);
+	return t; 
+}
+
+size_t PFDECL(CONFIG_UART0_NAME, read, const char *s, size_t c)
+{
+	if(!uart0) return;
+	
+	size_t t = 0; 
+	while (t < c) {
+		uint16_t d = PFCALL(CONFIG_UART0_NAME, getc);
+		if(d == UART_NO_DATA) return t; 
+		t++; 
+	}
+	return t; 
+}
 uint16_t PFDECL(CONFIG_UART0_NAME, printf, const prog_char *fmt, ...){
 	if(!uart0) return 0;
 	

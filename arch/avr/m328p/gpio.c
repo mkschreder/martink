@@ -1,12 +1,14 @@
+#include <arch/soc.h>
+
 struct pin_decl {
 	uint8_t pin_id; 
 	uint8_t reg_bit; 
-	uint8_t *out_reg;
-	uint8_t *in_reg;
-	uint8_t	*ddr_reg;
+	volatile uint8_t *out_reg;
+	volatile uint8_t *in_reg;
+	volatile uint8_t	*ddr_reg;
 }; 
 
-static struct pin_decl gPinDecl _pins[] PROGMEM = {
+static const struct pin_decl _pins[] PROGMEM = {
 	{GPIO_NONE, 0, 0, 0, 0}, 
 	/*GPIO_A0,
 	GPIO_A1,
@@ -42,10 +44,10 @@ static struct pin_decl gPinDecl _pins[] PROGMEM = {
 	{GPIO_D7, 7, &PORTD, &PIND, &DDRD},
 };
 
-#define OUT_REG(pin) 	*((uint8_t*)gpm_read_byte(&gPinDecl[pin].out_reg))
-#define IN_REG(pin) 	*((uint8_t*)gpm_read_byte(&gPinDecl[pin].in_reg))
-#define DDR_REG(pin) 	*((uint8_t*)gpm_read_byte(&gPinDecl[pin].ddr_reg))
-#define PIN_BIT(pin) 	 ((uint8_t*)gpm_read_byte(&gPinDecl[pin].reg_bit))
+#define OUT_REG(pin) 	*((uint8_t*)gpm_read_byte(&_pins[pin].out_reg))
+#define IN_REG(pin) 	*((uint8_t*)gpm_read_byte(&_pins[pin].in_reg))
+#define DDR_REG(pin) 	*((uint8_t*)gpm_read_byte(&_pins[pin].ddr_reg))
+#define PIN_BIT(pin) 	 (gpm_read_byte(&_pins[pin].reg_bit))
 
 void gpio_write_pin(gpio_pin_t pin, uint8_t value) {
 	if(value)

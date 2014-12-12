@@ -97,9 +97,17 @@ void reset_rc(void){
 	}
 }
 
+#undef putc
+
+void test(struct d_spi *spi){
+	spi->writereadbyte(10); 
+}
+
 void brd_init(void){
 	/* The general init (clock, libc, watchdog disable) */
   cpu_init();
+ 
+  //soc_init(&cpu); 
   
   uart0_init(38400); 
   uart0_printf("Foo %d\n", 10); 
@@ -149,18 +157,14 @@ void brd_init(void){
 	i2c_init(); 
 	spi0_init(); 
 	
-	struct nrf24l01 nrf1 = {
-		.spi = SPI_API(spi0), 
-		.cs_pin = GPIO_PA15, 
-		.ce_pin = GPIO_PD1
-	}; 
-	nrf24l01_init(&nrf1); 
+	struct nrf24l01 nrf1;  
+	nrf24l01_init(&nrf1, &cpu.spi0, GPIO_PA15, GPIO_PD1); 
 	
 	gpio_set_function(GPIO_PB26, GP_OUTPUT); 
 	gpio_set_function(GPIO_PA16, GP_OUTPUT); 
 	
   while(1) {
-		char buf[NRF24L01_PAYLOAD]; 
+		uint8_t buf[NRF24L01_PAYLOAD]; 
 		nrf24l01_write(&nrf1, buf); 
 		
     time_delay(250000L);
@@ -171,8 +175,12 @@ void brd_init(void){
 		
 		//spi0_writereadbyte(0x11); 
 		
-		uart0_printf("Bar %d\n", 10); 
-  
+		uart0_printf("Bar %d\r\n", 10); 
+		///struct d_char *uart = &cpu.uart0; 
+		//uart->putc('D'); 
+		//cpu.uart0.putc('D'); 
+		//cpu.uart0.write("Test\n", 5); 
+		
     USART_PutChar(USART1, 'D'); 
     //USART_PutChar(USART0, 'D'); 
     

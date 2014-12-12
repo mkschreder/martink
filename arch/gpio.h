@@ -31,6 +31,7 @@ enum {
 	GP_AUX_D
 };
 
+typedef uint16_t gpio_pin_t; 
 /*
 #define gpio_set(pin, value) PFCALL(gpio, set, value)
 #define gpio_set_direction(pin, dir)

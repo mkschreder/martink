@@ -23,5 +23,20 @@
 
 #include "uart.h"
 
-void __uart0_init__(uint32_t baud);
-uint16_t __uart0_printf__(const char *fmt, ...);
+#ifdef CONFIG_HAVE_UART0
+void PFDECL(CONFIG_UART0_NAME, init, uint32_t baud);
+uint16_t PFDECL(CONFIG_UART0_NAME, printf, const char *fmt, ...);
+size_t PFDECL(CONFIG_UART0_NAME, write, const uint8_t *data, size_t max_size);
+size_t PFDECL(CONFIG_UART0_NAME, read, uint8_t *data, size_t max_size);
+uint16_t PFDECL(CONFIG_UART0_NAME, getc, void);
+void PFDECL(CONFIG_UART0_NAME, putc, uint8_t ch); 
+#endif
+
+#ifdef CONFIG_HAVE_UART1
+void PFDECL(CONFIG_UART1_NAME, init, uint32_t baud);
+uint16_t PFDECL(CONFIG_UART1_NAME, printf, const char *fmt, ...);
+size_t PFDECL(CONFIG_UART1_NAME, write, const uint8_t *data, size_t max_size);
+size_t PFDECL(CONFIG_UART1_NAME, read, uint8_t *data, size_t max_size);
+uint16_t PFDECL(CONFIG_UART1_NAME, getc, void);
+void PFDECL(CONFIG_UART1_NAME, putc, uint8_t ch); 
+#endif

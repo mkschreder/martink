@@ -1,4 +1,4 @@
-obj-y += arch/time.o 
+obj-y += arch/time.o arch/soc.o
 
 ifeq ($(CONFIG_ATMEGA328P), y)
 	include $(srctree)/arch/avr/m328p/Makefile

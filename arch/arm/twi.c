@@ -208,7 +208,7 @@ void __twi0_stop__(void){
 	__twi0_end__(1); 
 }
 
-uint8_t __twi0_write__(uint8_t data) {
+uint8_t PFDECL(CONFIG_TWI0_NAME, write, uint8_t data) {
 	if (twi0.status == MASTER_SEND) {
 		if (twi0.txBufferLength >= BUFFER_LENGTH)
 			return 0;

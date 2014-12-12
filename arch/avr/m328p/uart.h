@@ -160,7 +160,8 @@ extern void PFDECL(CONFIG_UART0_NAME, putc, unsigned char data);
  *  @return  none
  */
 extern void PFDECL(CONFIG_UART0_NAME, puts, const char *s );
-
+extern size_t PFDECL(CONFIG_UART0_NAME, write, const char *s, size_t c); 
+extern size_t PFDECL(CONFIG_UART0_NAME, read, const char *s, size_t c); 
 
 /**
  * @brief    Put string from program memory to ringbuffer for transmitting via UART.

@@ -140,9 +140,11 @@ void brd_init(void){
 	PCMSK1 = 0; //(1<<PCINT8) | (1<<PCINT9) | (1<<PCINT10) | (1<<PCINT11);
 	PCMSK2 |=  _BV(PCINT18) | _BV(PCINT20) /*| _BV(PCINT21) | _BV(PCINT22) */| _BV(PCINT23);
 	
+	sei(); 
+	
 	uart0_init(UART_BAUD_SELECT(38400, F_CPU));
 	uart0_puts("booting..\n"); 
-
+	
 	time_init(); 
 	
 	// init all sensors

@@ -1,6 +1,6 @@
 #pragma once
 
-typedef enum {
+enum {
 	GPIO_NONE = 0,
 	/*GPIO_A0,
 	GPIO_A1,
@@ -34,10 +34,10 @@ typedef enum {
 	GPIO_D5,
 	GPIO_D6,
 	GPIO_D7,
-} gpio_pin_t;
+} ;
 
 
-typedef enum {
+ enum {
 	/*GPIO_A0,
 	GPIO_A1,
 	GPIO_A2,
@@ -78,7 +78,7 @@ typedef enum {
 	GPIO_OC0A = GPIO_D6,
 	GPIO_AIN0 = GPIO_D6,
 	GPIO_AIN1 = GPIO_D7,
-} aux_pin_t;
+} ;
 
 extern void 		gpio_write_pin(gpio_pin_t pin, uint8_t value);
 extern uint8_t 	gpio_read_pin(gpio_pin_t pin);

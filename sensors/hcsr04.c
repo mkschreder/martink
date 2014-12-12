@@ -22,11 +22,8 @@
  */
 
 #include <stdio.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/pgmspace.h>
 #include <inttypes.h>
-#include <util/atomic.h>
+
 #include "hcsr04.h"
 
 //values for state
@@ -129,7 +126,6 @@ void pin_init(void)
  */
 ISR(PCINT1_vect)
 {
-
 	register uint8_t leading_edge = PINC & (1 << PINC2);
 	if (state == ST_WAITING_RESPONSE_PULSE) {
 		if (leading_edge) {
@@ -200,7 +196,10 @@ uint16_t hcsr04_get_pulse_length(void)
 	return ret_val;
 }
 
-void hcsr04_init(){
+void hcsr04_init(void){
+	gpio_set_function(GPIO_PA10, GP_PULSE_IN); 
+	gpio_read(GPIO_PA10); // returns pulse width in usec. 
+	
 	send_pulse(); 
 	//timer_init(); 
 	//pin_init(); 

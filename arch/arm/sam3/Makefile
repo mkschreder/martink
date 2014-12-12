@@ -10,6 +10,7 @@ curdir := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 #-L$(curdir)/../../../lib/newlib-2.1.0/bin/arm-none-eabi/lib/ \
 
 LDFLAGS += \
+-flto -static -nostartfiles \
 -T$(curdir)/sam3flash.ld\
 -Wl,-Map,$(APPNAME).map \
 -nostdlib -mthumb -Wl,--cref -Wl,--check-sections -Wl,--gc-sections \

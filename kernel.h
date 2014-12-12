@@ -177,10 +177,10 @@
 #endif
 
 #ifdef CONFIG_HAVE_UART
-	#define kprintf(a, ...) uart0_printf(PSTR(a), ##__VA_ARGS__)
-
+	#define kprintf(a, ...) PFCALL(CONFIG_UART0_NAME, printf, a, ##__VA_ARGS__) 
+	
 	#ifdef CONFIG_DEBUG
-		#define kdebug(a, ...) uart0_printf(PSTR(a), ##__VA_ARGS__)
+		#define kdebug(a, args...) PFCALL(CONFIG_UART0_NAME, printf, a, args) 
 	#else
 		#define kdebug(a, ...) {}
 	#endif
@@ -188,11 +188,6 @@
 	#define kprintf(a, ...) {}
 	#define kdebug(a, ...) {}
 #endif
-
-struct main_module {
-	void (*init)(); 
-	void (*loop)(); 
-}; 
 
 #define DECLARE_MAIN_MODULE() const struct main_module kmain_module = 
 extern const struct main_module kmain_module; 

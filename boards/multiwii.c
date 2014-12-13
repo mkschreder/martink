@@ -167,10 +167,10 @@ void brd_init(void){
 	
 	sei(); 
 	
+	time_init(); 
+	
 	uart0_init(38400);
 	uart0_puts("booting..\n"); 
-	
-	time_init(); 
 	
 	// init all sensors
 	i2c_init(); 

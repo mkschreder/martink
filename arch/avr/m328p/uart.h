@@ -1,28 +1,26 @@
+/**
+	This file is part of martink project.
+
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
+*/
+
 #ifndef UART_H
 #define UART_H
-/************************************************************************
-Title:    Interrupt UART library with receive/transmit circular buffers
-Author:   Peter Fleury <pfleury@gmx.ch>   http://jump.to/fleury
-File:     $Id: uart.h,v 1.8.2.1 2007/07/01 11:14:38 peter Exp $
-Software: AVR-GCC 4.1, AVR Libc 1.4
-Hardware: any AVR with built-in UART, tested on AT90S8515 & ATmega8 at 4 Mhz
-License:  GNU General Public License 
-Usage:    see Doxygen manual
-
-LICENSE:
-    Copyright (C) 2006 Peter Fleury
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-    
-************************************************************************/
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,7 +29,6 @@ extern "C" {
 #if (__GNUC__ * 100 + __GNUC_MINOR__) < 304
 #error "This library requires AVR-GCC 3.4 or later, update to newer AVR-GCC compiler !"
 #endif
-
 
 // used later
 #define uart0_clear_errors() (CLRBIT(UCSR0A, FE0), CLRBIT(UCSR0A, DOR0), CLRBIT(UCSR0A, UPE0))
@@ -111,13 +108,13 @@ extern "C" {
 #define uart0_transmit_complete() (BITSET(UCSR0A, TXC0))
 #define uart0_data_register_empty() (BITSET(UCSR0A, UDRE0))
 
-#define uart0_wait_for_receive_complete()      loop_until_bit_is_set(UCSR0A, RXC0)
-#define uart0_wait_for_transmit_complete()     loop_until_bit_is_set(UCSR0A, TXC0)
-#define uart0_wait_for_empty_transmit_buffer() loop_until_bit_is_set(UCSR0A, UDRE0)
+#define uart0_wait_for_receive_complete()      ({loop_until_bit_is_set(UCSR0A, RXC0);})
+#define uart0_wait_for_transmit_complete()     ({loop_until_bit_is_set(UCSR0A, TXC0);})
+#define uart0_wait_for_empty_transmit_buffer() ({loop_until_bit_is_set(UCSR0A, UDRE0);})
 
-#define uart0_frame_error() (BITSET(UCSR0A, FE0))
-#define uart0_data_overrun() (BITSET(UCSR0A, DOR0))
-#define uart0_parity_error() (BITSET(UCSR0A, UPE0))
+#define uart0_frame_error() (UCSR0A |= _BV(FE0))
+#define uart0_data_overrun() (UCSR0A |= _BV(DOR0))
+#define uart0_parity_error() (UCSR0A |= _BV(UPE0))
 
 #define uart0_init(baud) PFCALL(uart0, init, baud)
 
@@ -132,16 +129,16 @@ extern "C" {
   uart0_interrupt_rx_on(); \
 }
 
-#define uart0_putc_direct(ch){\
-	usart_wait_for_empty_transmit_buffer();\
-	UDR0 = byte;\
-}
+#define uart0_putc_direct(ch) ({\
+	uart0_wait_for_empty_transmit_buffer();\
+	UDR0 = ch;\
+})
 
 #define uart0_getc_direct() (\
-	usart_wait_for_receive_complete(), \
-	((usart_frame_error())?UART_FRAME_ERROR:\
-	((usart_data_overrun())?UART_OVERRUN_ERROR:\
-	((usart_parity_error())?UART_PARITY_ERROR:\
+	uart0_wait_for_receive_complete(),\
+	((uart0_frame_error())?UART_FRAME_ERROR:\
+	((uart0_data_overrun())?UART_OVERRUN_ERROR:\
+	((uart0_parity_error())?UART_PARITY_ERROR:\
 	UDR0)))\
 )
 
@@ -171,93 +168,15 @@ extern "C" {
 #define UART_BUFFER_OVERFLOW  0x0200              /* receive ringbuffer overflow */
 #define UART_NO_DATA          0x0100              /* no receive data available   */
 
-
-/*
-** function prototypes
-*/
-
-/**
-   @brief   Initialize UART and set baudrate 
-   @param   baudrate Specify baudrate using macro UART_BAUD_SELECT()
-   @return  none
-*/
-void PFDECL(CONFIG_UART0_NAME, init, unsigned int baudrate);
-
-
-/**
- *  @brief   Get received byte from ringbuffer
- *
- * Returns in the lower byte the received character and in the 
- * higher byte the last receive error.
- * UART_NO_DATA is returned when no data is available.
- *
- *  @param   void
- *  @return  lower byte:  received byte from ringbuffer
- *  @return  higher byte: last receive status
- *           - \b 0 successfully received data from UART
- *           - \b UART_NO_DATA           
- *             <br>no receive data available
- *           - \b UART_BUFFER_OVERFLOW   
- *             <br>Receive ringbuffer overflow.
- *             We are not reading the receive buffer fast enough, 
- *             one or more received character have been dropped 
- *           - \b UART_OVERRUN_ERROR     
- *             <br>Overrun condition by UART.
- *             A character already present in the UART UDR register was 
- *             not read by the interrupt handler before the next character arrived,
- *             one or more received characters have been dropped.
- *           - \b UART_FRAME_ERROR       
- *             <br>Framing Error by UART
- */
+extern void PFDECL(CONFIG_UART0_NAME, init, unsigned int baudrate);
 extern unsigned int PFDECL(CONFIG_UART0_NAME, getc, void);
-
 extern uint16_t PFDECL(CONFIG_UART0_NAME, waiting, void); 
-/**
- *  @brief   Put byte to ringbuffer for transmitting via UART
- *  @param   data byte to be transmitted
- *  @return  none
- */
 extern void PFDECL(CONFIG_UART0_NAME, putc, unsigned char data);
-
-
-/**
- *  @brief   Put string to ringbuffer for transmitting via UART
- *
- *  The string is buffered by the uart library in a circular buffer
- *  and one character at a time is transmitted to the UART using interrupts.
- *  Blocks if it can not write the whole string into the circular buffer.
- * 
- *  @param   s string to be transmitted
- *  @return  none
- */
 extern void PFDECL(CONFIG_UART0_NAME, puts, const char *s );
 extern size_t PFDECL(CONFIG_UART0_NAME, write, const char *s, size_t c); 
 extern size_t PFDECL(CONFIG_UART0_NAME, read, const char *s, size_t c); 
-
-/**
- * @brief    Put string from program memory to ringbuffer for transmitting via UART.
- *
- * The string is buffered by the uart library in a circular buffer
- * and one character at a time is transmitted to the UART using interrupts.
- * Blocks if it can not write the whole string into the circular buffer.
- *
- * @param    s program memory string to be transmitted
- * @return   none
- * @see      uart_puts_P
- */
 extern void PFDECL(CONFIG_UART0_NAME, puts_p, const char *s );
-
 extern uint16_t PFDECL(CONFIG_UART0_NAME, printf, const prog_char *fmt, ...);
-
-/*
-extern void uart1_init(unsigned int baudrate);
-extern unsigned int uart1_getc(void);
-extern void uart1_putc(unsigned char data);
-extern void uart1_puts(const char *s );
-extern void uart1_puts_p(const char *s );
-#define uart1_puts_P(__s)       uart1_puts_p(PSTR(__s))
-extern uint16_t uart_printf(const prog_char *fmt, ...);
-*/
 
 #ifdef __cplusplus
 }

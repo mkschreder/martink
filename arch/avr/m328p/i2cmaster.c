@@ -28,17 +28,13 @@
 *************************************************************************/
 void __twi0_init__(void)
 {
-  /* initialize TWI clock: 100 kHz clock, TWPS = 0 => prescaler = 1 */
-  
-  TWSR = 0;                         /* no prescaler */
-  TWBR = (uint8_t)(((F_CPU/SCL_CLOCK)-16)/2);  /* must be > 10 for stable operation */
-
-}/* i2c_init */
+	hwtwi0_init(SCL_CLOCK); 
+}
 
 uint8_t __twi0_sync__(void){
 	uint16_t timeout = 100; 
 	while(!(TWCR & (1<<TWINT)) && timeout) {
-		_delay_us(1); 
+		time_delay(1); 
 		timeout--; 
 	}
 	return timeout != 0; 
@@ -47,7 +43,7 @@ uint8_t __twi0_sync__(void){
 uint8_t __twi0_waitStop__(void){
 	uint16_t timeout = 100; 
 	while((TWCR & (1<<TWSTO)) && timeout) {
-		_delay_us(1); 
+		time_delay(1); 
 		timeout--; 
 	}
 	return timeout != 0; 

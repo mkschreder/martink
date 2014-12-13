@@ -93,12 +93,13 @@ extern "C" {
 
 #include "autoconf.h"
 
-/** defines the data direction (reading from I2C device) in i2c_start(),i2c_rep_start() */
 #define I2C_READ    1
-
-/** defines the data direction (writing to I2C device) in i2c_start(),i2c_rep_start() */
 #define I2C_WRITE   0
 
+#define hwtwi0_init(speed) ({\
+	TWSR = 0;\
+  TWBR = (uint8_t)(((F_CPU/speed)-16)/2);\
+})
 
 /**
  @brief initialize the I2C master interace. Need to be called only once 

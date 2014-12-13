@@ -1,5 +1,14 @@
 #include <arch/soc.h>
 
+static uint8_t _dummyPR = 0; 
+const struct pin_decl gPinPorts[4] = {
+	{&_dummyPR, &_dummyPR, &_dummyPR },
+	{&PORTB, &PINB, &DDRB},
+	{&PORTC, &PINC, &DDRC},
+	{&PORTD, &PIND, &DDRD},
+};
+
+/*
 struct pin_decl {
 	uint8_t pin_id; 
 	uint8_t reg_bit; 
@@ -10,14 +19,6 @@ struct pin_decl {
 
 static const struct pin_decl _pins[] PROGMEM = {
 	{GPIO_NONE, 0, 0, 0, 0}, 
-	/*GPIO_A0,
-	GPIO_A1,
-	GPIO_A2,
-	GPIO_A3,
-	GPIO_A4,
-	GPIO_A5,
-	GPIO_A6,
-	GPIO_A7,*/
 	{GPIO_B0, 0, &PORTB, &PINB, &DDRB},
 	{GPIO_B1, 1, &PORTB, &PINB, &DDRB},
 	{GPIO_B2, 2, &PORTB, &PINB, &DDRB},
@@ -72,3 +73,4 @@ void gpio_set_pullup(gpio_pin_t pin, uint8_t pullup){
 	gpio_set_function(pin, GP_INPUT); 
 	gpio_write_pin(pin, 1);
 }
+*/

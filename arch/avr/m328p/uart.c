@@ -295,7 +295,6 @@ Purpose:  called when the UART has received a character
     uart0->UART_LastRxError = lastRxError;   
 }
 
-
 ISR(UART0_TRANSMIT_INTERRUPT)
 /*************************************************************************
 Function: UART Data Register Empty interrupt
@@ -316,7 +315,6 @@ Purpose:  called when the UART is ready to transmit the next byte
 	}
 }
 
-
 /*************************************************************************
 Function: uart_init()
 Purpose:  initialize UART and set baudrate
@@ -331,71 +329,11 @@ void PFDECL(CONFIG_UART0_NAME, init, unsigned int baudrate)
     uart0->UART_RxTail = 0;
 
     memset((void*)uart0->UART_TxBuf, '.', sizeof(uart0->UART_TxBuf)); 
-#if defined( AT90_UART )
-    /* set baud rate */
-    UBRR = (unsigned char)baudrate; 
 
-    /* enable UART receiver and transmmitter and receive complete interrupt */
-    UART0_CONTROL = _BV(RXCIE)|_BV(RXEN)|_BV(TXEN);
-
-#elif defined (ATMEGA_USART)
-    /* Set baud rate */
-    if ( baudrate & 0x8000 )
-    {
-    	 UART0_STATUS = (1<<U2X);  //Enable 2x speed 
-    	 baudrate &= ~0x8000;
-    }
-    UBRRH = (unsigned char)(baudrate>>8);
-    UBRRL = (unsigned char) baudrate;
-   
-    /* Enable USART receiver and transmitter and receive complete interrupt */
-    UART0_CONTROL = _BV(RXCIE)|(1<<RXEN)|(1<<TXEN);
+    UCSR0B = _BV(RXCIE0)|(1<<RXEN0)|(1<<TXEN0);
     
-    /* Set frame format: asynchronous, 8data, no parity, 1stop bit */
-    #ifdef URSEL
-    //UCSRC = (1<<URSEL)|(3<<UCSZ0);
-    #else
-    //UCSRC = (3<<UCSZ0);
-    #endif 
-    
-#elif defined (ATMEGA_USART0 )
-		//#warning "ATMEGA_USART0 enabled"	
-		
-    /* Set baud rate */
-    if ( baudrate & 0x8000 ) 
-    {
-   		UART0_STATUS = (1<<U2X0);  //Enable 2x speed 
-   		baudrate &= ~0x8000;
-   	}
-    UBRR0H = (unsigned char)(baudrate>>8);
-    UBRR0L = (unsigned char) baudrate;
-
-    /* Enable USART receiver and transmitter and receive complete interrupt */
-    UART0_CONTROL = _BV(RXCIE0)|(1<<RXEN0)|(1<<TXEN0);
-    
-    /* Set frame format: asynchronous, 8data, no parity, 1stop bit */
-    #ifdef URSEL0
-    UCSR0C = (1<<URSEL0)|(3<<UCSZ00);
-    #else
     UCSR0C = (3<<UCSZ00);
-    #endif 
-		//UDR0 = 0;
-		
-#elif defined ( ATMEGA_UART )
-    /* set baud rate */
-    if ( baudrate & 0x8000 ) 
-    {
-    	UART0_STATUS = (1<<U2X);  //Enable 2x speed 
-    	baudrate &= ~0x8000;
-    }
-    UBRRHI = (unsigned char)(baudrate>>8);
-    UBRR   = (unsigned char) baudrate;
-
-    /* Enable UART receiver and transmitter and receive complete interrupt */
-    UART0_CONTROL = _BV(RXCIE)|(1<<RXEN)|(1<<TXEN);
-
-#endif
-}/* uart_init */
+}
 
 uint16_t PFDECL(CONFIG_UART0_NAME, waiting, void){
 	int16_t l = (int16_t)uart0->UART_RxHead - (int16_t)uart0->UART_RxTail; 
@@ -461,16 +399,12 @@ Returns:  none
 **************************************************************************/
 void PFDECL(CONFIG_UART0_NAME, puts, const char *s )
 {
-	if(!uart0) return;
-	
 	while (*s) 
 		PFCALL(CONFIG_UART0_NAME, putc, *s++);
 }
 
 size_t PFDECL(CONFIG_UART0_NAME, write, const char *s, size_t c)
 {
-	if(!uart0) return;
-	
 	size_t t = c; 
 	while (c--) 
 		PFCALL(CONFIG_UART0_NAME, putc, *s++);
@@ -479,8 +413,6 @@ size_t PFDECL(CONFIG_UART0_NAME, write, const char *s, size_t c)
 
 size_t PFDECL(CONFIG_UART0_NAME, read, const char *s, size_t c)
 {
-	if(!uart0) return;
-	
 	size_t t = 0; 
 	while (t < c) {
 		uint16_t d = PFCALL(CONFIG_UART0_NAME, getc);
@@ -490,8 +422,6 @@ size_t PFDECL(CONFIG_UART0_NAME, read, const char *s, size_t c)
 	return t; 
 }
 uint16_t PFDECL(CONFIG_UART0_NAME, printf, const prog_char *fmt, ...){
-	if(!uart0) return 0;
-	
 	char buf[UART_TX_BUFFER_SIZE * 2]; 
 	
 	uint16_t n; 

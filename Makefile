@@ -21,7 +21,7 @@ COMMON_FLAGS +=  $(CPU_FLAGS)
 
 # add includes to the make
 CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
-CXXFLAGS 	+= $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
+CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
 LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS)
 OUTDIRS := build build/crypto/aes
 APPNAME := built-in.o

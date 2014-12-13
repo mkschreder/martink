@@ -115,21 +115,44 @@ void reset_rc(void){
 	}
 }
 
+#define GPIO_MWII_MOTOR0 	GPIO_PD3
+#define GPIO_MWII_MOTOR1 	GPIO_PD5
+#define GPIO_MWII_MOTOR2 	GPIO_PD6
+#define GPIO_MWII_MOTOR3 	GPIO_PB3
+
+#define GPIO_MWII_RX0			GPIO_PD2
+#define GPIO_MWII_RX1			GPIO_PD4
+#define GPIO_MWII_RX2			GPIO_PD7
+#define GPIO_MWII_RX3			GPIO_PB0
+
+#define GPIO_MWII_LED			GPIO_PB5
+
 void brd_init(void){
 	brd->pwm_pulse_delay_us = 10500; 
 	brd->pwm_lock = 0; 
 	brd->pwm_timeout = timeout_from_now(0); 
+
+	gpio_set_function(GPIO_MWII_MOTOR0, GP_OUTPUT);
+	gpio_set_function(GPIO_MWII_MOTOR1, GP_OUTPUT);
+	gpio_set_function(GPIO_MWII_MOTOR2, GP_OUTPUT);
+	gpio_set_function(GPIO_MWII_MOTOR3, GP_OUTPUT);
 	
+	gpio_set_pullup(GPIO_MWII_RX0, 1);
+	gpio_set_pullup(GPIO_MWII_RX1, 1);
+	gpio_set_pullup(GPIO_MWII_RX2, 1);
+	gpio_set_pullup(GPIO_MWII_RX3, 1);
+	
+	gpio_set_function(GPIO_MWII_LED, GP_OUTPUT); 
 	// init output pins
 	// motor 0 1 2
-	DDRD |= _BV(3) | _BV(5) | _BV(6); 
+	/*DDRD |= _BV(3) | _BV(5) | _BV(6); 
 	// motor 3 and led
 	DDRB |= _BV(1) | _BV(3) | _BV(5); 
 	
 	// set pullups on inputs
 	PORTD |= _BV(2) | _BV(4) | _BV(7); 
 	PORTB |= _BV(0); 
-	
+	*/
 	// disable external ints
 	EICRA = 0;
 	EIMSK = 0;
@@ -142,7 +165,7 @@ void brd_init(void){
 	
 	sei(); 
 	
-	uart0_init(UART_BAUD_SELECT(38400, F_CPU));
+	uart0_init(38400);
 	uart0_puts("booting..\n"); 
 	
 	time_init(); 

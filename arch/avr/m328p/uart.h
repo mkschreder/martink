@@ -24,29 +24,6 @@ LICENSE:
     
 ************************************************************************/
 
-/** 
- *  @defgroup pfleury_uart UART Library
- *  @code #include <uart.h> @endcode
- * 
- *  @brief Interrupt UART library using the built-in UART with transmit and receive circular buffers. 
- *
- *  This library can be used to transmit and receive data through the built in UART. 
- *
- *  An interrupt is generated when the UART has finished transmitting or
- *  receiving a byte. The interrupt handling routines use circular buffers
- *  for buffering received and transmitted data.
- *
- *  The UART_RX_BUFFER_SIZE and UART_TX_BUFFER_SIZE constants define
- *  the size of the circular buffers in bytes. Note that these constants must be a power of 2.
- *  You may need to adapt this constants to your target and your application by adding 
- *  CDEFS += -DUART_RX_BUFFER_SIZE=nn -DUART_RX_BUFFER_SIZE=nn to your Makefile.
- *
- *  @note Based on Atmel Application Note AVR306
- *  @author Peter Fleury pfleury@gmx.ch  http://jump.to/fleury
- */
- 
-/**@{*/
-
 typedef char PROGMEM prog_char; 
 
 #ifdef __cplusplus
@@ -58,22 +35,115 @@ extern "C" {
 #endif
 
 
-/*
-** constants and macros
-*/
+// used later
+#define uart0_clear_errors() (CLRBIT(UCSR0A, FE0), CLRBIT(UCSR0A, DOR0), CLRBIT(UCSR0A, UPE0))
 
-/** @brief  UART Baudrate Expression
- *  @param  xtalcpu  system clock in Mhz, e.g. 4000000L for 4Mhz          
- *  @param  baudrate baudrate in bps, e.g. 1200, 2400, 9600     
- */
-#define UART_BAUD_SELECT(baudRate,xtalCpu) ((xtalCpu)/((baudRate)*16l)-1)
+///// Baud Rate /////
+/// Values for the UBRRn register depending on USART baud rate
+// Asynchronous normal mode (U2Xn = 0)
+#define BAUD_PRESCALE_ASYNC(baudr) (((F_CPU / (baudr * 16UL))) - 1)
+// Asynchronous double speed mode (U2Xn = 1)
+#define BAUD_PRESCALE_ASYNC_DOUBLED(baudr) (((F_CPU / (baudr * 8UL))) - 1)
+// Synchronous master mode
+#define BAUD_PRESCALE_SYNC(baudr) (((F_CPU / (baudr * 2UL))) - 1)
 
-/** @brief  UART Baudrate Expression for ATmega double speed mode
- *  @param  xtalcpu  system clock in Mhz, e.g. 4000000L for 4Mhz           
- *  @param  baudrate baudrate in bps, e.g. 1200, 2400, 9600     
- */
-#define UART_BAUD_SELECT_DOUBLE_SPEED(baudRate,xtalCpu) (((xtalCpu)/((baudRate)*8l)-1)|0x8000)
+// Load value for UBRR into registers
+// eg. `uart0_baud(BAUD_PRESCALE_SYNC(57600));`
+#define uart0_baud(ubrr) (UBRR0H = (unsigned char)(ubrr << 8), UBRR0L = (unsigned char)ubrr)
 
+#define uart0_normal_transmission_speed() (uart0_clear_errors(), CLRBIT(UCSR0A, U2X0))
+#define uart0_double_transmission_speed() (uart0_clear_errors(), SETBIT(UCSR0A, U2X0))
+
+///// USART Mode /////
+#define uart0_mode_async() (CLRBIT(UCSR0C, UMSEL01), CLRBIT(UCSR0C, UMSEL00))
+#define uart0_mode_sync()  (CLRBIT(UCSR0C, UMSEL01), SETBIT(UCSR0C, UMSEL00))
+#define uart0_mode_master_spi() (SETBIT(UCSR0C, UMSEL01), SETBIT(UCSR0C, UMSEL00))
+
+///// Frame Format /////
+#define uart0_character_size5() (CLRBIT(UCSR0B, UCSZ02), CLRBIT(UCSR0C, UCSZ01), CLRBIT(UCSR0C, UCSZ00))
+#define uart0_character_size6() (CLRBIT(UCSR0B, UCSZ02), CLRBIT(UCSR0C, UCSZ01), SETBIT(UCSR0C, UCSZ00))
+#define uart0_character_size7() (CLRBIT(UCSR0B, UCSZ02), SETBIT(UCSR0C, UCSZ01), CLRBIT(UCSR0C, UCSZ00))
+#define uart0_character_size8() (CLRBIT(UCSR0B, UCSZ02), SETBIT(UCSR0C, UCSZ01), SETBIT(UCSR0C, UCSZ00))
+#define uart0_character_size9() (SETBIT(UCSR0B, UCSZ02), SETBIT(UCSR0C, UCSZ01), SETBIT(UCSR0C, UCSZ00))
+
+#define uart0_parity_off()  (CLRBIT(UCSR0C, UPM01), CLRBIT(UCSR0C, UPM00))
+#define uart0_parity_even() (SETBIT(UCSR0C, UPM01), CLRBIT(UCSR0C, UPM00))
+#define uart0_parity_odd()  (SETBIT(UCSR0C, UPM01), SETBIT(UCSR0C, UPM00))
+
+#define uart0_stop_1bit()  (CLRBIT(UCSR0C, USBS0))
+#define uart0_stop_2bits() (SETBIT(UCSR0C, USBS0))
+
+#define uart0_multi_processor_mode_on()  (uart0_clear_errors(), CLRBIT(UCSR0A, MPCM0))
+#define uart0_multi_processor_mode_off() (uart0_clear_errors(), SETBIT(UCSR0A, MPCM0))
+
+///// Interrupts /////
+#define uart0_interrupt_rx_on()  (SETBIT(UCSR0B, RXCIE0))
+#define uart0_interrupt_rx_off() (CLRBIT(UCSR0B, RXCIE0))
+#define uart0_interrupt_tx_on()  (SETBIT(UCSR0B, TXCIE0))
+#define uart0_interrupt_tx_off() (CLRBIT(UCSR0B, TXCIE0))
+#define uart0_interrupt_dre_on()  (SETBIT(UCSR0B, UDRIE0))
+#define uart0_interrupt_dre_off() (CLRBIT(UCSR0B, UDRIE0))
+
+///// Other /////
+
+// When to transmit data (tx) and receive data in one clock cycle
+// Used in synchronous mode only.
+// Transmit on falling edge of clock:
+#define uart0_clock_polarity_tx_falling() (CLRBIT(UCSR0C, UCPOL0))
+// Transmit on raising edge of clock:
+#define uart0_clock_polarity_tx_raising() (SETBIT(UCSR0C, UCPOL0))
+
+//TODO this does not compile with -Werror=unused-but-set-variable
+#define uart0_flush_receive_buffer() {\
+  unsigned char uart0_flush_receive_buffer_dummy; \
+  while (BITSET(UCSR0A, RXC0)) uart0_flush_receive_buffer_dummy = UDR0; \
+}
+
+///// Transmitting and receiving /////
+
+#define SETBIT(reg, bit) (reg |= _BV(bit))
+#define CLRBIT(reg, bit) (reg &= ~_BV(bit))
+
+#define uart0_receiver_enable()  (SETBIT(UCSR0B, RXEN0))
+#define uart0_receiver_disable() (CLRBIT(UCSR0B, RXEN0))
+#define uart0_transmitter_enable() (SETBIT(UCSR0B, TXEN0))
+#define uart0_transmitter_disable() (CLRBIT(UCSR0B, TXEN0))
+
+#define uart0_receive_complete()  (BITSET(UCSR0A, RXC0))
+#define uart0_transmit_complete() (BITSET(UCSR0A, TXC0))
+#define uart0_data_register_empty() (BITSET(UCSR0A, UDRE0))
+
+#define uart0_wait_for_receive_complete()      loop_until_bit_is_set(UCSR0A, RXC0)
+#define uart0_wait_for_transmit_complete()     loop_until_bit_is_set(UCSR0A, TXC0)
+#define uart0_wait_for_empty_transmit_buffer() loop_until_bit_is_set(UCSR0A, UDRE0)
+
+#define uart0_frame_error() (BITSET(UCSR0A, FE0))
+#define uart0_data_overrun() (BITSET(UCSR0A, DOR0))
+#define uart0_parity_error() (BITSET(UCSR0A, UPE0))
+
+#define uart0_init(baudrate) { \
+  uart0_baud(BAUD_PRESCALE_SYNC(baudrate)); \
+  uart0_mode_sync(); \
+  uart0_character_size8(); \
+  uart0_parity_off(); \
+  uart0_stop_1bit(); \
+  uart0_receiver_enable(); \
+  uart0_transmitter_enable(); \
+  uart0_interrupt_rx_on(); \
+}
+
+#define uart0_putc_direct(ch){\
+	usart_wait_for_empty_transmit_buffer();\
+	UDR0 = byte;\
+}
+
+#define uart0_getc_direct() (\
+	usart_wait_for_receive_complete(), \
+	((usart_frame_error())?UART_FRAME_ERROR:\
+	((usart_data_overrun())?UART_OVERRUN_ERROR:\
+	((usart_parity_error())?UART_PARITY_ERROR:\
+	UDR0)))\
+)
 
 /** Size of the circular receive buffer, must be power of 2 */
 #ifndef CONFIG_UART0_TX_BUF_SIZE
@@ -95,6 +165,7 @@ extern "C" {
 /* 
 ** high byte error return code of uart_getc()
 */
+#define UART_PARITY_ERROR			0x1000
 #define UART_FRAME_ERROR      0x0800              /* Framing Error by UART       */
 #define UART_OVERRUN_ERROR    0x0400              /* Overrun condition by UART   */
 #define UART_BUFFER_OVERFLOW  0x0200              /* receive ringbuffer overflow */

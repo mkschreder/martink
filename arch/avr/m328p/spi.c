@@ -19,6 +19,8 @@ Please refer to LICENSE file for licensing information.
  * spi initialize
  */
 void PFDECL(CONFIG_SPI0_NAME, init, void) {
+	hwspi0_init(); 
+	/*
     SPI_DDR &= ~((1<<SPI_MISO)); //input
     SPI_DDR |= ((1<<SPI_MOSI) | (1<<SPI_SS) | (1<<SPI_SCK)); //output
 
@@ -34,15 +36,14 @@ void PFDECL(CONFIG_SPI0_NAME, init, void) {
             (0<<CPHA));             // Clock Phase (0:leading / 1:trailing edge sampling)
 
     SPSR = (0<<SPI2X); // Double SPI Speed Bit
+   */
 }
 
 /*
  * spi write one byte and read it back
  */
 uint8_t PFDECL(CONFIG_SPI0_NAME, writereadbyte, uint8_t data) {
-    SPDR = data;
-    while((SPSR & (1<<SPIF)) == 0);
-    return SPDR;
+	return hwspi0_transfer(data); 
 }
 
 

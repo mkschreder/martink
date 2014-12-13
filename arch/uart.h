@@ -38,7 +38,7 @@
 #endif
 */
 
-#define uart_init(baud) PFCALL(CONFIG_UART0_NAME, init, baud)
+//#define uart_init(baud) PFCALL(CONFIG_UART0_NAME, init, baud)
 #define uart_printf(fmt, args...) PFCALL(CONFIG_UART0_NAME, printf, fmt, args) 
 #define uart_puts(fmt) PFCALL(CONFIG_UART0_NAME, puts, fmt) 
 #define uart_putc(ch) PFCALL(CONFIG_UART0_NAME, putc, ch)
@@ -49,7 +49,6 @@
 
 // generic uart interface
 #ifdef CONFIG_HAVE_UART0
-#define uart0_init(baud) PFCALL(CONFIG_UART0_NAME, init, baud)
 #define uart0_printf(fmt, args...) PFCALL(CONFIG_UART0_NAME, printf, fmt, args) 
 #define uart0_puts(fmt) PFCALL(CONFIG_UART0_NAME, puts, fmt) 
 #define uart0_putc(ch) PFCALL(CONFIG_UART0_NAME, putc, ch)

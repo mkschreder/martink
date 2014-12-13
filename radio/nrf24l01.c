@@ -21,9 +21,9 @@ Please refer to LICENSE file for licensing information.
 #define nrf24l01_CElo gpio_clear(nrf->ce_pin) // NRF24L01_PORT &= ~(1<<NRF24L01_CE);
 
 #undef spi_init
-#define spi_init nrf->spi->init
+#define spi_init hwspi0_init
 #undef spi_writereadbyte
-#define spi_writereadbyte nrf->spi->writereadbyte
+#define spi_writereadbyte hwspi0_transfer
 
 /*
  * read one register

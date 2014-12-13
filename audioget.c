@@ -165,4 +165,3 @@ int16_t audioget_getspl(float voltnow, float voltref, float dbref) {
 	int16_t ret = (20 * log10((voltnow/voltref)+1)) +  dbref;
 	return ret;
 }
-

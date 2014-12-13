@@ -65,6 +65,7 @@ extern "C" {
 #include "spi.h"
 #include "gpio.h"
 
+/*
 struct d_char {
 	void 			(*const putc)(uint8_t ch); 
 	uint16_t 	(*const getc)(void); 
@@ -129,6 +130,7 @@ struct d_soc {
 //const struct d_soc *main_cpu(void); 
 
 extern const struct d_soc cpu; 
+*/
 
 #ifdef CONFIG_ATMEGA328P
 #include "avr/m328p.h"

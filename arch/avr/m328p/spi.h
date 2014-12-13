@@ -1,16 +1,23 @@
-/*
-spi lib 0x01
+/**
+	Fast macro based SPI interface for AVR Mega 328P
 
-copyright (c) Davide Gironi, 2012
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-References:
-  -  This library is based upon SPI avr lib by Stefan Engelke
-     http://www.tinkerer.eu/AVRLib/SPI
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-Released under GPLv3.
-Please refer to LICENSE file for licensing information.
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
 */
-
 
 #ifndef _SPI_H_
 #define _SPI_H_

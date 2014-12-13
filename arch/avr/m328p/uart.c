@@ -45,6 +45,8 @@ LICENSE:
 #include <string.h>
 #include <stdio.h>
 
+#include <static_cbuf.h>
+
 #define SIG_USART_RECV USART_RX_vect
 #define SIG_USART_DATA USART_UDRE_vect
 
@@ -222,11 +224,14 @@ LICENSE:
  #error "no UART definition for MCU available"
 #endif
 
+DECLARE_STATIC_CBUF(uart0_tx_buf, char, UART_TX_BUFFER_SIZE);
+DECLARE_STATIC_CBUF(uart0_rx_buf, char, UART_RX_BUFFER_SIZE);
+
+static struct {
+	uint8_t error;
+} uart0;
 
 /*
- *  module global variables
- */
-
 #ifdef CONFIG_HAVE_UART0
 static volatile struct uart0 {
 	volatile unsigned char UART_TxBuf[UART_TX_BUFFER_SIZE];
@@ -252,6 +257,7 @@ static volatile struct uart1 {
 } _uart1;
 static volatile struct uart1 *uart1 = &_uart1;
 #endif
+*/
 
 ISR(UART0_RECEIVE_INTERRUPT)
 /*************************************************************************
@@ -259,17 +265,24 @@ Function: UART Receive Complete interrupt
 Purpose:  called when the UART has received a character
 **************************************************************************/
 {
+	uint8_t err = ( UART0_STATUS & (_BV(FE0)|_BV(DOR0)));
+	uint8_t data = UDR0;  
+	if(cbuf_is_full(&uart0_rx_buf)){
+		err = UART_BUFFER_OVERFLOW >> 8;
+	} else {
+		cbuf_put(&uart0_rx_buf, data);
+	}
+	uart0.error = err; 
+	/*
     unsigned char tmphead;
     unsigned char data;
     unsigned char usr;
     unsigned char lastRxError;
  
  
-    /* read UART status register and UART data register */ 
     usr  = UART0_STATUS;
     data = UART0_DATA;
     
-    /* */
 #if defined( AT90_UART )
     lastRxError = (usr & (_BV(FE)|_BV(DOR)) );
 #elif defined( ATMEGA_USART )
@@ -280,39 +293,40 @@ Purpose:  called when the UART has received a character
     lastRxError = (usr & (_BV(FE)|_BV(DOR)) );
 #endif
         
-    /* calculate buffer index */ 
     tmphead = ( uart0->UART_RxHead + 1) & UART_RX_BUFFER_MASK;
     
     if ( tmphead == uart0->UART_RxTail ) {
-        /* error: receive buffer overflow */
         lastRxError = UART_BUFFER_OVERFLOW >> 8;
-    }else{
-        /* store new index */
+    } else {
         uart0->UART_RxHead = tmphead;
-        /* store received data in buffer */
         uart0->UART_RxBuf[tmphead] = data;
     }
-    uart0->UART_LastRxError = lastRxError;   
+    uart0->UART_LastRxError = lastRxError;
+    */
 }
 
-ISR(UART0_TRANSMIT_INTERRUPT)
 /*************************************************************************
 Function: UART Data Register Empty interrupt
 Purpose:  called when the UART is ready to transmit the next byte
 **************************************************************************/
+ISR(UART0_TRANSMIT_INTERRUPT)
 {
+	if(cbuf_get_data_count(&uart0_tx_buf)){
+		// send one byte over the wire
+		UDR0 = cbuf_get(&uart0_tx_buf);
+	} else {
+		// disable interrupt
+		uart0_interrupt_dre_off(); 
+	}
+	/*
 	unsigned char tmptail;
-
 	if ( uart0->UART_TxHead != uart0->UART_TxTail) {
-		/* calculate and store new buffer index */
 		tmptail = (uart0->UART_TxTail + 1) & UART_TX_BUFFER_MASK;
 		uart0->UART_TxTail = tmptail;
-		/* get one byte from buffer and write it to UART */
-		UART0_DATA = uart0->UART_TxBuf[tmptail];  /* start transmission */
+		UART0_DATA = uart0->UART_TxBuf[tmptail];  
 	} else {
-		/* tx buffer empty, disable UDRE interrupt */
 		UART0_CONTROL &= ~_BV(UART0_UDRIE);
-	}
+	}*/
 }
 
 /*************************************************************************
@@ -323,23 +337,21 @@ Returns:  none
 **************************************************************************/
 void PFDECL(CONFIG_UART0_NAME, init, unsigned int baudrate)
 {
-	uart0->UART_TxHead = 0;
-	uart0->UART_TxTail = 0;
-	uart0->UART_RxHead = 0;
-	uart0->UART_RxTail = 0;
-
-	memset((void*)uart0->UART_TxBuf, '.', sizeof(uart0->UART_TxBuf)); 
-	
 	uart0_init_default(baudrate); 
-	
-	UCSR0B = _BV(RXCIE0)|(1<<RXEN0)|(1<<TXEN0);
+
+	uart0_interrupt_rx_on(); 
 
 	UCSR0C = (3<<UCSZ00);
 }
 
 uint16_t PFDECL(CONFIG_UART0_NAME, waiting, void){
+	uart0_interrupt_rx_off(); 
+	int wait = cbuf_get_data_count(&uart0_rx_buf);
+	uart0_interrupt_rx_on();
+	return wait; 
+	/*
 	int16_t l = (int16_t)uart0->UART_RxHead - (int16_t)uart0->UART_RxTail; 
-	return (l < 0)?(l+UART_RX_BUFFER_SIZE):l;
+	return (l < 0)?(l+UART_RX_BUFFER_SIZE):l;*/
 }
 
 /*************************************************************************
@@ -350,25 +362,27 @@ Returns:  lower byte:  received byte from ringbuffer
 **************************************************************************/
 unsigned int PFDECL(CONFIG_UART0_NAME, getc, void)
 {
-	if(!uart0) return UART_NO_DATA;
-	
-	unsigned char tmptail;
+	uart0_interrupt_rx_off(); 
+	if(cbuf_is_empty(&uart0_rx_buf)) return UART_NO_DATA;
+	uint8_t data = cbuf_get(&uart0_rx_buf);
+	uart0_interrupt_rx_on(); 
+	return data;
+	//(uart0->UART_LastRxError << 8) + data;
+	/*unsigned char tmptail;
 	unsigned char data;
 
 	if ( uart0->UART_RxHead == uart0->UART_RxTail ) {
-			return UART_NO_DATA;   /* no data available */
+			return UART_NO_DATA;   
 	}
 	
-	/* calculate /store buffer index */
 	tmptail = (uart0->UART_RxTail + 1) & UART_RX_BUFFER_MASK;
 	uart0->UART_RxTail = tmptail; 
 	
-	/* get data from receive buffer */
 	data = uart0->UART_RxBuf[tmptail];
 	
 	return (uart0->UART_LastRxError << 8) + data;
-
-}/* uart_getc */
+*/
+}
 
 /*************************************************************************
 Function: uart_putc()
@@ -378,6 +392,18 @@ Returns:  none
 **************************************************************************/
 void PFDECL(CONFIG_UART0_NAME, putc, unsigned char data)
 {
+	// the strategy when the buffer is full is to wait for a time and then discard
+	// although it could be: discard or wait forever
+	int timeout = 100;
+	do {
+		uart0_interrupt_dre_off();
+		int ret = cbuf_put(&uart0_tx_buf, data);
+		uart0_interrupt_dre_on();
+		if(ret == -1) time_delay(1);
+		else break; 
+	} while(timeout--);
+	
+	/*
 	unsigned char tmphead;
 
 	tmphead  = (uart0->UART_TxHead + 1) & UART_TX_BUFFER_MASK;
@@ -388,9 +414,8 @@ void PFDECL(CONFIG_UART0_NAME, putc, unsigned char data)
 	uart0->UART_TxBuf[tmphead] = data;
 	uart0->UART_TxHead = tmphead;
 	
-	/* enable UDRE interrupt */
-	UART0_CONTROL    |= _BV(UART0_UDRIE);
-}/* uart_putc */
+	UART0_CONTROL    |= _BV(UART0_UDRIE);*/
+}
 
 
 /*************************************************************************
@@ -442,9 +467,7 @@ Input:    program memory string to be transmitted
 Returns:  none
 **************************************************************************/
 void PFDECL(CONFIG_UART0_NAME, puts_p, const char *progmem_s )
-{
-	if(!uart0) return;
-	
+{ 
 	register char c;
 	
 	while ( (c = pgm_read_byte(progmem_s++)) ) 

@@ -1,0 +1,41 @@
+#pragma once
+
+#include <inttypes.h>
+
+#include "pp_math.h"
+
+#define DECLARE_STATIC_CBUF(name, elem_type, size) \
+static struct {\
+	elem_type buffer[NEXT_POW2(size)];\
+	size_t head;\
+	size_t tail;\
+	const size_t total_size;\
+	const size_t size_mask; \
+} name = {{0}, 0, 0, NEXT_POW2(size), (NEXT_POW2(size) - (1))};\
+
+/// helper to get difference between head and tail counter
+#define _cbuf_hmt(name) ((name)->head - (name)->tail)
+
+/// evaluates to number of unread elements in buffer
+#define cbuf_get_data_count(name) (\
+	(_cbuf_hmt(name) < 0)?(_cbuf_hmt(name) + ((name)->total_size)):_cbuf_hmt(name)\
+)
+
+/// checks if buffer is empty
+#define cbuf_is_empty(name) ((name)->head == (name)->tail)
+
+/// tests if the buffer is full
+#define cbuf_is_full(name) ((name)->head == (((name)->tail - 1) & (name)->size_mask))
+
+/// reads next element from the buffer and updates pointers
+#define cbuf_get(name) (({\
+	(name)->tail = ((name)->tail + 1) & (name)->size_mask; \
+}), (name)->buffer[(name)->tail])
+
+/// put a character into the buffer
+/// evaluates to 0 if success, -1 if buffer full
+#define cbuf_put(name, data) ((cbuf_is_full(name))\
+	?(-1):(({\
+	(name)->head = ((name)->head + 1) & (name)->size_mask;\
+	(name)->buffer[(name)->head] = data; \
+}), 0))

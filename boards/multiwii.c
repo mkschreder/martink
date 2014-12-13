@@ -132,6 +132,9 @@ void brd_init(void){
 	brd->pwm_lock = 0; 
 	brd->pwm_timeout = timeout_from_now(0); 
 
+	gpio_set_function(GPIO_MWII_LED, GP_OUTPUT); 
+	//gpio_set(GPIO_MWII_LED); 
+	
 	gpio_set_function(GPIO_MWII_MOTOR0, GP_OUTPUT);
 	gpio_set_function(GPIO_MWII_MOTOR1, GP_OUTPUT);
 	gpio_set_function(GPIO_MWII_MOTOR2, GP_OUTPUT);
@@ -142,7 +145,6 @@ void brd_init(void){
 	gpio_set_pullup(GPIO_MWII_RX2, 1);
 	gpio_set_pullup(GPIO_MWII_RX3, 1);
 	
-	gpio_set_function(GPIO_MWII_LED, GP_OUTPUT); 
 	// init output pins
 	// motor 0 1 2
 	/*DDRD |= _BV(3) | _BV(5) | _BV(6); 

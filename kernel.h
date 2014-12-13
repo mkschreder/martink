@@ -177,10 +177,10 @@
 #endif
 
 #ifdef CONFIG_HAVE_UART
-	#define kprintf(a, ...) PFCALL(CONFIG_UART0_NAME, printf, a, ##__VA_ARGS__) 
+	#define kprintf(a, ...) PFCALL(CONFIG_UART0_NAME, printf, PSTR(a), ##__VA_ARGS__) 
 	
 	#ifdef CONFIG_DEBUG
-		#define kdebug(a, args...) PFCALL(CONFIG_UART0_NAME, printf, a, args) 
+		#define kdebug(a, args...) PFCALL(CONFIG_UART0_NAME, printf, PSTR(a), args) 
 	#else
 		#define kdebug(a, ...) {}
 	#endif

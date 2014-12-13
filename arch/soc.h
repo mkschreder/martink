@@ -26,18 +26,11 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-#ifndef PROGMEM
-#define PROGMEM
-#define PSTR(a) (a)
-#define pgm_read_byte(a) (*a)
-#define pgm_read_word(a) (*((short int*)a))
-#define pgm_read_word(a) (*((short int*)a))
-#endif
 
 #ifndef _BV
 #define _BV(a) (1 << (a))
@@ -58,6 +51,19 @@ extern "C" {
 #define PFDECL(P, F, args...) PFCALL(P, F, args )
 
 #define __init __attribute__((constructor))
+
+
+#ifdef CONFIG_ATMEGA328P
+#include "avr/m328p.h"
+#endif
+
+#ifdef CONFIG_ARM
+#include "arm/arm.h"
+#endif
+
+#ifdef CONFIG_NATIVE
+#include "native/native.h"
+#endif
 
 #include "time.h"
 #include "uart.h"
@@ -132,16 +138,12 @@ struct d_soc {
 extern const struct d_soc cpu; 
 */
 
-#ifdef CONFIG_ATMEGA328P
-#include "avr/m328p.h"
-#endif
-
-#ifdef CONFIG_ARM
-#include "arm/arm.h"
-#endif
-
-#ifdef CONFIG_NATIVE
-#include "native/native.h"
+#ifndef PROGMEM
+#define PROGMEM
+#define PSTR(a) (a)
+#define pgm_read_byte(a) (*a)
+#define pgm_read_word(a) (*((short int*)a))
+#define pgm_read_word(a) (*((short int*)a))
 #endif
 
 #ifdef __cplusplus

@@ -29,6 +29,8 @@
 #include <util/delay.h>
 #include <util/atomic.h>
 
+typedef char PROGMEM prog_char; 
+
 #include "autoconf.h"
 
 #ifdef CONFIG_HAVE_ADC

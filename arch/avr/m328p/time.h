@@ -11,6 +11,8 @@
 extern "C" {
 #endif
 
+#include <arch/time.h>
+
 #define time_before(unknown, known) ((timeout_t)(unknown) - (timeout_t)(known) < 0)
 #define time_after(a,b) time_before(b, a)
 #define timeout_from_now(us) (time_get_clock() + time_us_to_clock(us))

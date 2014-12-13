@@ -23,12 +23,6 @@
 
 #include "autoconf.h"
 
-// default for strings stored in flash
-#ifndef PROGMEM
-#define PROGMEM
-#define PSTR(a) (a)
-#endif
-
 /*
 #ifndef CONFIG_UART0_NAME
 #define CONFIG_UART0_NAME uart0

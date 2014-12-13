@@ -323,16 +323,18 @@ Returns:  none
 **************************************************************************/
 void PFDECL(CONFIG_UART0_NAME, init, unsigned int baudrate)
 {
-    uart0->UART_TxHead = 0;
-    uart0->UART_TxTail = 0;
-    uart0->UART_RxHead = 0;
-    uart0->UART_RxTail = 0;
+	uart0->UART_TxHead = 0;
+	uart0->UART_TxTail = 0;
+	uart0->UART_RxHead = 0;
+	uart0->UART_RxTail = 0;
 
-    memset((void*)uart0->UART_TxBuf, '.', sizeof(uart0->UART_TxBuf)); 
+	memset((void*)uart0->UART_TxBuf, '.', sizeof(uart0->UART_TxBuf)); 
+	
+	uart0_init_default(baudrate); 
+	
+	UCSR0B = _BV(RXCIE0)|(1<<RXEN0)|(1<<TXEN0);
 
-    UCSR0B = _BV(RXCIE0)|(1<<RXEN0)|(1<<TXEN0);
-    
-    UCSR0C = (3<<UCSZ00);
+	UCSR0C = (3<<UCSZ00);
 }
 
 uint16_t PFDECL(CONFIG_UART0_NAME, waiting, void){
@@ -427,7 +429,7 @@ uint16_t PFDECL(CONFIG_UART0_NAME, printf, const prog_char *fmt, ...){
 	uint16_t n; 
 	va_list vl; 
 	va_start(vl, fmt);
-	n = vsnprintf_P(buf, sizeof(buf)-1, fmt, vl); 
+	n = vsnprintf(buf, sizeof(buf)-1, fmt, vl); 
 	va_end(vl);
 	PFCALL(CONFIG_UART0_NAME, puts, buf);
 	return n; 

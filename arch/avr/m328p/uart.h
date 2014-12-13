@@ -24,8 +24,6 @@ LICENSE:
     
 ************************************************************************/
 
-typedef char PROGMEM prog_char; 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -121,9 +119,11 @@ extern "C" {
 #define uart0_data_overrun() (BITSET(UCSR0A, DOR0))
 #define uart0_parity_error() (BITSET(UCSR0A, UPE0))
 
-#define uart0_init(baudrate) { \
-  uart0_baud(BAUD_PRESCALE_SYNC(baudrate)); \
-  uart0_mode_sync(); \
+#define uart0_init(baud) PFCALL(uart0, init, baud)
+
+#define uart0_init_default(baudrate) { \
+  uart0_baud(BAUD_PRESCALE_ASYNC(baudrate)); \
+  uart0_mode_async(); \
   uart0_character_size8(); \
   uart0_parity_off(); \
   uart0_stop_1bit(); \

@@ -27,6 +27,7 @@
 #include <sensors/hmc5883l.h>
 #include <sensors/bmp085.h>
 #include <sensors/mpu6050.h>
+#include <radio/nrf24l01.h>
 
 #include <math.h>
 
@@ -145,16 +146,6 @@ void brd_init(void){
 	gpio_set_pullup(GPIO_MWII_RX2, 1);
 	gpio_set_pullup(GPIO_MWII_RX3, 1);
 	
-	// init output pins
-	// motor 0 1 2
-	/*DDRD |= _BV(3) | _BV(5) | _BV(6); 
-	// motor 3 and led
-	DDRB |= _BV(1) | _BV(3) | _BV(5); 
-	
-	// set pullups on inputs
-	PORTD |= _BV(2) | _BV(4) | _BV(7); 
-	PORTB |= _BV(0); 
-	*/
 	// disable external ints
 	EICRA = 0;
 	EIMSK = 0;
@@ -200,8 +191,6 @@ void brd_init(void){
 	TCCR0B = _BV(CS02); //_BV(CS00); // no prescaler, 256 clocks per overflow (FCPU/256)
 	TIMSK0 |= _BV(TOIE0); 
 	TCNT0 = 0;*/
-	
-	sei(); 
 	
 	uart0_puts("multiwii board!\n"); 
 }

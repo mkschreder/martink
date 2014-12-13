@@ -59,24 +59,24 @@
 #define hwspi0_interrupt_disable() (SPCR &= ~_BV(SPIE))
 #define hwspi0_enable() 					(SPCR |= _BV(SPE))
 #define hwspi0_disable() 					(SPCR &= ~_BV(SPE))
-#define hwspi0_config_gpio()			(\
-	gpio_set_function(GPIO_SPI0_MISO, GP_INPUT),\
-	gpio_set_pullup(GPIO_SPI0_MISO, 1),\
-	gpio_set_function(GPIO_SPI0_MOSI, GP_OUTPUT),\
-	gpio_set_function(GPIO_SPI0_SS, GP_OUTPUT),\
-	gpio_set_function(GPIO_SPI0_SCK, GP_OUTPUT)\
-)
-#define hwspi0_wait_for_transmit_complete() ({while((SPSR & (1<<SPIF)) == 0);})
+#define hwspi0_config_gpio()			({\
+	gpio_set_function(GPIO_SPI0_MISO, GP_INPUT);\
+	gpio_set_pullup(GPIO_SPI0_MISO, 1);\
+	gpio_set_function(GPIO_SPI0_MOSI, GP_OUTPUT);\
+	gpio_set_function(GPIO_SPI0_SS, GP_OUTPUT);\
+	gpio_set_function(GPIO_SPI0_SCK, GP_OUTPUT);\
+})
+#define hwspi0_wait_for_transmit_complete() ({while(!(SPSR & _BV(SPIF)));})
 #define hwspi0_error_collision() (SPSR & _BV(WCOL))
 
-#define hwspi0_init() ({\
+#define hwspi0_init_default() ({\
 	hwspi0_config_gpio();\
-	hwspi0_enable();\
 	hwspi0_interrupt_disable(); \
 	hwspi0_order_msb_first();\
 	hwspi0_master();\
 	hwspi0_set_clock(SPI_CLOCK_DIV128);\
 	hwspi0_set_mode(SPI_MODE0);\
+	hwspi0_enable();\
 })
 
 #define hwspi0_putc(ch) ({\
@@ -93,11 +93,10 @@
 )
 
 #define hwspi0_transfer(ch) (\
-	hwspi0_putc(ch),\
-	hwspi0_getc()\
+	SPDR = ch,\
+	hwspi0_wait_for_transmit_complete(), \
+	SPDR \
 )
 
-void PFDECL(CONFIG_SPI0_NAME, init, void);
-uint8_t PFDECL(CONFIG_SPI0_NAME, writereadbyte, uint8_t data);
 
 #endif

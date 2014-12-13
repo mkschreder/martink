@@ -1,5 +1,5 @@
 /**
-	Interrupt driven fast and buffered UART for ATMega AVR
+	Portable uart driver code
 
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,59 +30,37 @@
 
 #include <static_cbuf.h>
 
-#define SIG_USART_RECV USART_RX_vect
-#define SIG_USART_DATA USART_UDRE_vect
-
-#define UART0_STATUS   UCSR0A
-#define UART0_CONTROL  UCSR0B
-#define UART0_DATA     UDR0
-#define UART0_UDRIE    UDRIE0
-
-DECLARE_STATIC_CBUF(uart0_tx_buf, char, UART_TX_BUFFER_SIZE);
-DECLARE_STATIC_CBUF(uart0_rx_buf, char, UART_RX_BUFFER_SIZE);
-
 static struct {
 	uint8_t error;
 } uart0;
 
-// rx int runs when new byte is received by uart hardware
-ISR(USART_RX_vect) {
-	uint8_t err = ( UART0_STATUS & (_BV(FE0)|_BV(DOR0)));
-	uint8_t data = UDR0; //uart0_getc_direct(); 
-	/*UDR0 = data; //uart0_putc_direct(data); 
-	uart0_interrupt_dre_on(); 
-	*/
-	if(cbuf_is_full(&uart0_rx_buf)){
-		err = UART_BUFFER_OVERFLOW >> 8;
-	} else {
-		cbuf_put(&uart0_rx_buf, data);
-	}
-	uart0.error = err; 
-}
+DECLARE_STATIC_CBUF(uart0_tx_buf, uint8_t, UART_TX_BUFFER_SIZE);
+DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 
-// data register empty int runs when hardware requests more data
-ISR(USART_UDRE_vect) {
-	if(cbuf_get_data_count(&uart0_tx_buf)){
-		// send one byte over the wire
-		uart0_putc_direct(cbuf_get(&uart0_tx_buf)); 
-	} else {
-		// disable interrupt
-		uart0_interrupt_dre_off(); 
-	}
-}
+DECLARE_UART0_RX_INTERRUPT(uart0_rx_buf, uart0.error); 
+DECLARE_UART0_TX_INTERRUPT()
+DECLARE_UART0_DRE_INTERRUPT(uart0_tx_buf); 
 
-void PFDECL(CONFIG_UART0_NAME, init, unsigned int baudrate)
-{
+void PFDECL(CONFIG_UART0_NAME, init, unsigned int baudrate) {
 	uart0_init_default(baudrate); 
-
-	UCSR0C = (3<<UCSZ00);
 }
 
-uint16_t PFDECL(CONFIG_UART0_NAME, waiting, void){
+size_t PFDECL(CONFIG_UART0_NAME, waiting, void){
 	uart0_interrupt_rx_off(); 
 	int wait = cbuf_get_data_count(&uart0_rx_buf);
 	uart0_interrupt_rx_on();
 	return wait; 
+}
+
+void PFDECL(CONFIG_UART0_NAME, flush, void){
+	uint16_t timeout = 2000; 
+	while(timeout--){
+		uart0_interrupt_dre_off(); 
+		int empty = cbuf_is_empty(&uart0_tx_buf);
+		uart0_interrupt_dre_on();
+		if(empty) break; 
+		time_static_delay_us(1); 
+	}
 }
 
 unsigned int PFDECL(CONFIG_UART0_NAME, getc, void)
@@ -136,13 +114,13 @@ size_t PFDECL(CONFIG_UART0_NAME, read, const char *s, size_t c)
 	return t; 
 }
 
-uint16_t PFDECL(CONFIG_UART0_NAME, printf, const prog_char *fmt, ...){
+uint16_t PFDECL(CONFIG_UART0_NAME, printf, const char *fmt, ...){
 	char buf[uart0_tx_buf.total_size * 2]; 
 	
 	uint16_t n; 
 	va_list vl; 
 	va_start(vl, fmt);
-	n = vsnprintf_P(buf, sizeof(buf)-1, fmt, vl); 
+	n = vsnprintf(buf, sizeof(buf)-1, fmt, vl); 
 	va_end(vl);
 	PFCALL(CONFIG_UART0_NAME, puts, buf);
 	return n; 

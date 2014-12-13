@@ -21,39 +21,13 @@
 
 #include <arch/soc.h>
 
+#include "gpio.h"
 #include "spi.h"
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-
-
-/*
- * spi initialize
- */
 void PFDECL(CONFIG_SPI0_NAME, init, void) {
-	hwspi0_init(); 
-	/*
-    SPI_DDR &= ~((1<<SPI_MISO)); //input
-    SPI_DDR |= ((1<<SPI_MOSI) | (1<<SPI_SS) | (1<<SPI_SCK)); //output
-
-		// pullup! 
-		SPI_PORT |= (1<<SPI_MISO);
-		
-    SPCR = ((1<<SPE)|               // SPI Enable
-            (0<<SPIE)|              // SPI Interupt Enable
-            (0<<DORD)|              // Data Order (0:MSB first / 1:LSB first)
-            (1<<MSTR)|              // Master/Slave select
-            (1<<SPR1)|(1<<SPR0)|    // SPI Clock Rate
-            (0<<CPOL)|              // Clock Polarity (0:SCK low / 1:SCK hi when idle)
-            (0<<CPHA));             // Clock Phase (0:leading / 1:trailing edge sampling)
-
-    SPSR = (0<<SPI2X); // Double SPI Speed Bit
-   */
+	hwspi0_init_default(); 
 }
 
-/*
- * spi write one byte and read it back
- */
 uint8_t PFDECL(CONFIG_SPI0_NAME, writereadbyte, uint8_t data) {
 	return hwspi0_transfer(data); 
 }

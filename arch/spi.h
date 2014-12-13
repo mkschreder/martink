@@ -22,6 +22,16 @@
 
 #include "autoconf.h"
 
-#ifdef CONFIG_HAVE_SPI
+struct spi_interface {
+	/// transmits a byte.
+	/// returns byte received while clocking out transmit byte
+	/// does not return until operation is completed by hardware
+	uint8_t 	(*put_and_getc)(uint8_t byte); 
+}; 
 
-#endif
+#define SPI_DEVICE_INTERFACE(spi_device) (struct spi_interface){\
+	.put_and_getc = PFNAME(spi_device, writereadbyte) \
+}
+
+void PFDECL(CONFIG_SPI0_NAME, init, void);
+uint8_t PFDECL(CONFIG_SPI0_NAME, writereadbyte, uint8_t data);

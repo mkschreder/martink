@@ -21,9 +21,9 @@ Please refer to LICENSE file for licensing information.
 #define nrf24l01_CElo gpio_clear(nrf->ce_pin) // NRF24L01_PORT &= ~(1<<NRF24L01_CE);
 
 #undef spi_init
-#define spi_init hwspi0_init
+#define spi_init() {}
 #undef spi_writereadbyte
-#define spi_writereadbyte hwspi0_transfer
+#define spi_writereadbyte nrf->spi.put_and_getc
 
 /*
  * read one register
@@ -394,7 +394,7 @@ void nrf24l01_setcrclength(struct nrf24l01 *nrf) {
 /*
  * init nrf24l01
  */
-void nrf24l01_init(struct nrf24l01 *nrf, const struct d_spi *spi, gpio_pin_t cs, gpio_pin_t ce) {
+void nrf24l01_init(struct nrf24l01 *nrf, struct spi_interface spi, gpio_pin_t cs, gpio_pin_t ce) {
 	nrf->spi = spi; 
 	nrf->cs_pin = cs; 
 	nrf->ce_pin = ce; 
@@ -483,17 +483,6 @@ void nrf24l01_init(struct nrf24l01 *nrf, const struct d_spi *spi, gpio_pin_t cs,
 		nrf24l01_writeregister(nrf, NRF24L01_REG_EN_AA, nrf24l01_readregister(nrf, NRF24L01_REG_EN_AA) & ~(1<<NRF24L01_REG_ENAA_P5));
 	#endif
 
-	//rx address
-	/*nrf24l01_setrxaddr(0, nrf24l01_addr0);
-	nrf24l01_setrxaddr(1, nrf24l01_addr1);
-	nrf24l01_setrxaddr(2, nrf24l01_addr2);
-	nrf24l01_setrxaddr(3, nrf24l01_addr3);
-	nrf24l01_setrxaddr(4, nrf24l01_addr4);
-	nrf24l01_setrxaddr(5, nrf24l01_addr5);
-
-	//tx address
-	nrf24l01_settxaddr(nrf24l01_addrtx);
-*/
 	//set rx mode
 	nrf24l01_setRX(nrf);
 }

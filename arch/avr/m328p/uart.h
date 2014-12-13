@@ -30,6 +30,11 @@ extern "C" {
 #error "This library requires AVR-GCC 3.4 or later, update to newer AVR-GCC compiler !"
 #endif
 
+#define UART0_STATUS   UCSR0A
+#define UART0_CONTROL  UCSR0B
+#define UART0_DATA     UDR0
+#define UART0_UDRIE    UDRIE0
+
 // used later
 #define uart0_clear_errors() (CLRBIT(UCSR0A, FE0), CLRBIT(UCSR0A, DOR0), CLRBIT(UCSR0A, UPE0))
 
@@ -142,6 +147,29 @@ extern "C" {
 	UDR0)))\
 )
 
+#define DECLARE_UART0_RX_INTERRUPT(cbuf_rx_buf, u8_err_var) \
+ISR(USART_RX_vect) { \
+	uint8_t err = ( UART0_STATUS & (_BV(FE0)|_BV(DOR0))); \
+	uint8_t data = UDR0; \
+	if(cbuf_is_full(&cbuf_rx_buf)){ \
+		err = UART_BUFFER_OVERFLOW >> 8; \
+	} else { \
+		cbuf_put(&cbuf_rx_buf, data); \
+	} \
+	u8_err_var = err; \
+}
+
+#define DECLARE_UART0_TX_INTERRUPT() void _uart0_tx_interrupt__(void){}
+
+#define DECLARE_UART0_DRE_INTERRUPT(cbuf_tx_buf) \
+ISR(USART_UDRE_vect) {\
+	if(cbuf_get_data_count(&cbuf_tx_buf)){\
+		uart0_putc_direct(cbuf_get(&cbuf_tx_buf)); \
+	} else {\
+		uart0_interrupt_dre_off(); \
+	}\
+}
+
 /** Size of the circular receive buffer, must be power of 2 */
 #ifndef CONFIG_UART0_TX_BUF_SIZE
 #define CONFIG_UART0_TX_BUF_SIZE 32
@@ -159,24 +187,11 @@ extern "C" {
 #warning "size of UART_RX_BUFFER_SIZE + UART_TX_BUFFER_SIZE larger than size of SRAM"
 #endif
 
-/* 
-** high byte error return code of uart_getc()
-*/
 #define UART_PARITY_ERROR			0x1000
 #define UART_FRAME_ERROR      0x0800              /* Framing Error by UART       */
 #define UART_OVERRUN_ERROR    0x0400              /* Overrun condition by UART   */
 #define UART_BUFFER_OVERFLOW  0x0200              /* receive ringbuffer overflow */
 #define UART_NO_DATA          0x0100              /* no receive data available   */
-
-extern void PFDECL(CONFIG_UART0_NAME, init, unsigned int baudrate);
-extern unsigned int PFDECL(CONFIG_UART0_NAME, getc, void);
-extern uint16_t PFDECL(CONFIG_UART0_NAME, waiting, void); 
-extern void PFDECL(CONFIG_UART0_NAME, putc, unsigned char data);
-extern void PFDECL(CONFIG_UART0_NAME, puts, const char *s );
-extern size_t PFDECL(CONFIG_UART0_NAME, write, const char *s, size_t c); 
-extern size_t PFDECL(CONFIG_UART0_NAME, read, const char *s, size_t c); 
-extern void PFDECL(CONFIG_UART0_NAME, puts_p, const char *s );
-extern uint16_t PFDECL(CONFIG_UART0_NAME, printf, const prog_char *fmt, ...);
 
 #ifdef __cplusplus
 }

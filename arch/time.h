@@ -27,6 +27,11 @@ extern "C" {
 
 typedef int32_t timeout_t;
 
+#ifndef time_static_delay_us
+#warning "time_static_delay_us not declared "
+#define time_static_delay_us(a) do {} while(0); 
+#endif
+
 extern void time_init(void);
 extern timeout_t time_get_clock(void); 
 extern timeout_t time_us_to_clock(timeout_t us);

@@ -77,20 +77,20 @@ size_t PFDECL(CONFIG_UART0_NAME, read, uint8_t *data, size_t max_size){
 	return USART_ReadBuffer(USART0, data, max_size); 
 }
 
-uint16_t PFDECL(CONFIG_UART0_NAME, getc, void){
+uint16_t PFDECL(CONFIG_UART0_NAME, getc, struct serial_interface *self){
 	return USART_GetChar(USART0); 
 }
 
-void PFDECL(CONFIG_UART0_NAME, putc, uint8_t ch){
+uint16_t PFDECL(CONFIG_UART0_NAME, putc, struct serial_interface *self, uint8_t ch){
 	if(!(USART_GetStatus(USART0) & US_CSR_TXRDY)) return 0; 
 	USART_PutChar(USART0, ch); 
 	return 1; 
 }
 
-uint16_t PFDECL(CONFIG_UART0_NAME, puts, const char *str){
+size_t PFDECL(CONFIG_UART0_NAME, puts, const char *str){
 	uint16_t n = 0; 
 	while(*str){
-		PFCALL(CONFIG_UART0_NAME, putc, *str); 
+		PFCALL(CONFIG_UART0_NAME, putc, 0, *str); 
 		n++; str++; 
 	}
 	return n; 

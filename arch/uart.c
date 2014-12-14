@@ -19,11 +19,8 @@
 	Github: https://github.com/mkschreder
 */
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/pgmspace.h>
-
 #include <arch/soc.h>
+
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
@@ -41,18 +38,18 @@ DECLARE_UART0_RX_INTERRUPT(uart0_rx_buf, uart0.error);
 DECLARE_UART0_TX_INTERRUPT()
 DECLARE_UART0_DRE_INTERRUPT(uart0_tx_buf); 
 
-void PFDECL(CONFIG_UART0_NAME, init, unsigned int baudrate) {
+void PFDECL(CONFIG_UART0_NAME, init, uint32_t baudrate) {
 	uart0_init_default(baudrate); 
 }
 
-size_t PFDECL(CONFIG_UART0_NAME, waiting, void){
+size_t PFDECL(CONFIG_UART0_NAME, waiting, struct serial_interface *self){
 	uart0_interrupt_rx_off(); 
 	int wait = cbuf_get_data_count(&uart0_rx_buf);
 	uart0_interrupt_rx_on();
 	return wait; 
 }
 
-void PFDECL(CONFIG_UART0_NAME, flush, void){
+void PFDECL(CONFIG_UART0_NAME, flush, struct serial_interface *self){
 	uint16_t timeout = 2000; 
 	while(timeout--){
 		uart0_interrupt_dre_off(); 
@@ -63,7 +60,7 @@ void PFDECL(CONFIG_UART0_NAME, flush, void){
 	}
 }
 
-unsigned int PFDECL(CONFIG_UART0_NAME, getc, void)
+uint16_t PFDECL(CONFIG_UART0_NAME, getc, struct serial_interface *self)
 {
 	uart0_interrupt_rx_off(); 
 	if(cbuf_is_empty(&uart0_rx_buf)) {
@@ -75,7 +72,7 @@ unsigned int PFDECL(CONFIG_UART0_NAME, getc, void)
 	return data;
 }
 
-void PFDECL(CONFIG_UART0_NAME, putc, unsigned char data)
+uint16_t PFDECL(CONFIG_UART0_NAME, putc, struct serial_interface *self, unsigned char data)
 {
 	// the strategy when the buffer is full is to wait for a time and then discard
 	// although it could be: discard always, or wait forever
@@ -85,34 +82,40 @@ void PFDECL(CONFIG_UART0_NAME, putc, unsigned char data)
 		int ret = cbuf_put(&uart0_tx_buf, data);
 		uart0_interrupt_dre_on();
 		if(ret == -1) _delay_us(1);
-		else break; 
+		else return 0; 
 	} while(timeout--);
+	return UART_BUFFER_FULL; 
 }
 
-void PFDECL(CONFIG_UART0_NAME, puts, const char *s )
-{
-	while (*s) 
-		PFCALL(CONFIG_UART0_NAME, putc, *s++);
-}
-
-size_t PFDECL(CONFIG_UART0_NAME, write, const char *s, size_t c)
+size_t PFDECL(CONFIG_UART0_NAME, putn, struct serial_interface *self, const uint8_t *s, size_t c)
 {
 	size_t t = c; 
 	while (c--) 
-		PFCALL(CONFIG_UART0_NAME, putc, *s++);
+		PFCALL(CONFIG_UART0_NAME, putc, self, *s++);
 	return t; 
 }
 
-size_t PFDECL(CONFIG_UART0_NAME, read, const char *s, size_t c)
+size_t PFDECL(CONFIG_UART0_NAME, getn, struct serial_interface *self, uint8_t *s, size_t c)
 {
 	size_t t = 0; 
 	while (t < c) {
-		uint16_t d = PFCALL(CONFIG_UART0_NAME, getc);
+		uint16_t d = PFCALL(CONFIG_UART0_NAME, getc, self);
 		if(d == UART_NO_DATA) return t; 
 		t++; 
 	}
 	return t; 
 }
+
+size_t PFDECL(CONFIG_UART0_NAME, puts, const char *s )
+{
+	size_t count = 0; 
+	while (*s) {
+		PFCALL(CONFIG_UART0_NAME, putc, 0, *s++);
+		count++; 
+	}
+	return count; 
+}
+
 
 uint16_t PFDECL(CONFIG_UART0_NAME, printf, const char *fmt, ...){
 	char buf[uart0_tx_buf.total_size * 2]; 
@@ -130,6 +133,6 @@ void PFDECL(CONFIG_UART0_NAME, puts_p, const char *progmem_s )
 { 
 	register char c;
 	while ( (c = pgm_read_byte(progmem_s++)) ) 
-		PFCALL(CONFIG_UART0_NAME, putc, c);
+		PFCALL(CONFIG_UART0_NAME, putc, 0, c);
 }
 

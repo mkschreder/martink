@@ -152,7 +152,7 @@ ISR(USART_RX_vect) { \
 	uint8_t err = ( UART0_STATUS & (_BV(FE0)|_BV(DOR0))); \
 	uint8_t data = UDR0; \
 	if(cbuf_is_full(&cbuf_rx_buf)){ \
-		err = UART_BUFFER_OVERFLOW >> 8; \
+		err = UART_BUFFER_FULL >> 8; \
 	} else { \
 		cbuf_put(&cbuf_rx_buf, data); \
 	} \
@@ -169,29 +169,6 @@ ISR(USART_UDRE_vect) {\
 		uart0_interrupt_dre_off(); \
 	}\
 }
-
-/** Size of the circular receive buffer, must be power of 2 */
-#ifndef CONFIG_UART0_TX_BUF_SIZE
-#define CONFIG_UART0_TX_BUF_SIZE 32
-#endif
-/** Size of the circular transmit buffer, must be power of 2 */
-#ifndef CONFIG_UART0_RX_BUF_SIZE
-#define CONFIG_UART0_RX_BUF_SIZE 32
-#endif
-
-#define UART_TX_BUFFER_SIZE CONFIG_UART0_TX_BUF_SIZE
-#define UART_RX_BUFFER_SIZE CONFIG_UART0_RX_BUF_SIZE
-
-/* test if the size of the circular buffers fits into SRAM */
-#if ( (UART_RX_BUFFER_SIZE+UART_TX_BUFFER_SIZE) >= (RAMEND-0x60 ) )
-#warning "size of UART_RX_BUFFER_SIZE + UART_TX_BUFFER_SIZE larger than size of SRAM"
-#endif
-
-#define UART_PARITY_ERROR			0x1000
-#define UART_FRAME_ERROR      0x0800              /* Framing Error by UART       */
-#define UART_OVERRUN_ERROR    0x0400              /* Overrun condition by UART   */
-#define UART_BUFFER_OVERFLOW  0x0200              /* receive ringbuffer overflow */
-#define UART_NO_DATA          0x0100              /* no receive data available   */
 
 #ifdef __cplusplus
 }

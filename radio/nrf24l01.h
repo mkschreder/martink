@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 struct nrf24l01 {
-	struct spi_interface spi; 
+	struct serial_interface *spi; 
 	gpio_pin_t cs_pin; 
 	gpio_pin_t ce_pin; 
 }; 
@@ -114,7 +114,7 @@ struct nrf24l01 {
 #define NRF24L01_PRINTENABLE 0
 
 extern void nrf24l01_init(struct nrf24l01 *nrf, 
-	struct spi_interface spi, 
+	struct serial_interface *spi, 
 	gpio_pin_t cs, gpio_pin_t ce);
 extern uint8_t nrf24l01_getstatus(struct nrf24l01 *nrf);
 extern uint8_t nrf24l01_readready(struct nrf24l01 *nrf, uint8_t* pipe); 

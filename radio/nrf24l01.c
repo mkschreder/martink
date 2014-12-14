@@ -23,7 +23,7 @@ Please refer to LICENSE file for licensing information.
 #undef spi_init
 #define spi_init() {}
 #undef spi_writereadbyte
-#define spi_writereadbyte nrf->spi.put_and_getc
+#define spi_writereadbyte(ch) (s_putc(nrf->spi, ch), s_getc(nrf->spi))
 
 /*
  * read one register
@@ -394,7 +394,7 @@ void nrf24l01_setcrclength(struct nrf24l01 *nrf) {
 /*
  * init nrf24l01
  */
-void nrf24l01_init(struct nrf24l01 *nrf, struct spi_interface spi, gpio_pin_t cs, gpio_pin_t ce) {
+void nrf24l01_init(struct nrf24l01 *nrf, struct serial_interface *spi, gpio_pin_t cs, gpio_pin_t ce) {
 	nrf->spi = spi; 
 	nrf->cs_pin = cs; 
 	nrf->ce_pin = ce; 

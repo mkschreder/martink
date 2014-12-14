@@ -21,6 +21,8 @@
 
 #pragma once
 
+#include "../../gpio.h"
+
 enum {
 	GPIO_NONE = 0,
 	GPIO_PA0_NC,

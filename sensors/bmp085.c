@@ -30,17 +30,28 @@ static long bmp085_rawtemperature, bmp085_rawpressure;
  * i2c write
  */
 void bmp085_writemem(uint8_t reg, uint8_t value) {
-	i2c_start_wait(BMP085_ADDR | I2C_WRITE);
+	char buf[2] = {reg, value}; 
+	twi0_start_transaction(TWI_OP_LIST(
+		TWI_OP(BMP085_ADDR | I2C_WRITE, buf, 2)
+	)); 
+	twi0_wait(); 
+	/*i2c_start_wait(BMP085_ADDR | I2C_WRITE);
 	i2c_write(reg);
 	i2c_write(value);
-	i2c_stop();
+	i2c_stop();*/
 }
 
 /*
  * i2c read
  */
 void bmp085_readmem(uint8_t reg, uint8_t buff[], uint8_t bytes) {
-	uint8_t i =0;
+	char buf[1] = {reg}; 
+	twi0_start_transaction(TWI_OP_LIST(
+		TWI_OP(BMP085_ADDR | I2C_WRITE, buf, 1),
+		TWI_OP(BMP085_ADDR | I2C_READ, buff, bytes)
+	)); 
+	twi0_wait(); 
+	/*uint8_t i =0;
 	i2c_start_wait(BMP085_ADDR | I2C_WRITE);
 	i2c_write(reg);
 	i2c_rep_start(BMP085_ADDR | I2C_READ);
@@ -50,7 +61,7 @@ void bmp085_readmem(uint8_t reg, uint8_t buff[], uint8_t bytes) {
 		else
 			buff[i] = i2c_readAck();
 	}
-	i2c_stop();
+	i2c_stop();*/
 }
 
 

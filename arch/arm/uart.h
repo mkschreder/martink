@@ -23,6 +23,16 @@
 
 #include "uart.h"
 
+
+#define DECLARE_UART0_RX_INTERRUPT(cbuf_rx_buf, u8_err_var) \
+void _uart0_rx_interrupt__(void){}
+
+#define DECLARE_UART0_TX_INTERRUPT() void _uart0_tx_interrupt__(void){}
+
+#define DECLARE_UART0_DRE_INTERRUPT(cbuf_tx_buf) \
+void _uart0_dre_interrupt__(void){}
+
+/*
 #ifdef CONFIG_HAVE_UART0
 void PFDECL(CONFIG_UART0_NAME, init, uint32_t baud);
 uint16_t PFDECL(CONFIG_UART0_NAME, printf, const char *fmt, ...);
@@ -40,3 +50,4 @@ size_t PFDECL(CONFIG_UART1_NAME, read, uint8_t *data, size_t max_size);
 uint16_t PFDECL(CONFIG_UART1_NAME, getc, void);
 void PFDECL(CONFIG_UART1_NAME, putc, uint8_t ch); 
 #endif
+*/

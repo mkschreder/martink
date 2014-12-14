@@ -1,5 +1,11 @@
 #pragma once
 
+#include "framebuffer.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define SSD1306_128_64
 // #define SSD1306_128_32
 /*=========================================================================*/
@@ -49,22 +55,21 @@
 #define SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL 0x29
 #define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
 
-typedef struct ssd1306_device {
-	uint8_t placeholder;
-	
-} ssd1306_device_t;
+typedef struct ssd1306 {
+	uint8_t r_row_start, r_row_end; 
+} ssd1306_t;
 
-void ssd1306_init(ssd1306_device_t *dev);
-void ssd1306_gotoChar(ssd1306_device_t *dev, uint8_t x, uint8_t y); 
-void ssd1306_clear(ssd1306_device_t *dev); 
-int16_t ssd1306_puts(ssd1306_device_t *dev, const char *str, uint8_t col);
-int16_t ssd1306_printf(ssd1306_device_t *dev, uint8_t col, const char *str, ...); 
-void ssd1306_reset(ssd1306_device_t *dev);
+void ssd1306_init(ssd1306_t *dev);
+void ssd1306_set_region(ssd1306_t *dev, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1); 
+void ssd1306_fill(ssd1306_t *dev, fb_color_t color, size_t len); 
+void ssd1306_draw(ssd1306_t *dev, uint16_t x, uint16_t y, fb_image_t img); 
+void ssd1306_gotoChar(ssd1306_t *dev, uint8_t x, uint8_t y); 
+void ssd1306_clear(ssd1306_t *dev); 
+int16_t ssd1306_puts(ssd1306_t *dev, const char *str, uint8_t col);
+int16_t ssd1306_printf(ssd1306_t *dev, uint8_t col, const char *str, ...); 
+void ssd1306_reset(ssd1306_t *dev);
 
-/*
-int8_t ssd1306_puts(handle_t dev, const char *str, async_callback_t callback, void *ptr);
-int8_t ssd1306_putraw(handle_t dev, const uint8_t *data, uint8_t size, async_callback_t callback, void *ptr); 
-int8_t 	ssd1306_init(handle_t dev, async_callback_t callback, void *ptr); 
-int8_t ssd1306_filltest(handle_t dev, async_callback_t callback, void *ptr); 
-void ssd1306_seek(handle_t h, uint16_t addr); 
-*/
+
+#ifdef __cplusplus
+}
+#endif

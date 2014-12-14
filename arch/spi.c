@@ -1,5 +1,5 @@
 /**
-	This file is part of martink project.
+	Immediate mode (no interrupts) SPI driver
 
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,13 +23,49 @@
 
 #include "gpio.h"
 #include "spi.h"
+#include "interface.h"
+
+DECLARE_STATIC_CBUF(spi0_rx_buf, uint8_t, 4); 
+//DECLARE_STATIC_CBUF(spi0_tx_buf, uint8_t, 2); 
 
 void PFDECL(CONFIG_SPI0_NAME, init, void) {
 	hwspi0_init_default(); 
 }
 
-uint8_t PFDECL(CONFIG_SPI0_NAME, writereadbyte, uint8_t data) {
-	return hwspi0_transfer(data); 
+uint16_t PFDECL(CONFIG_SPI0_NAME, putc, struct serial_interface *self, uint8_t ch){
+	uint8_t data = hwspi0_transfer(ch); 
+	cbuf_put(&spi0_rx_buf, data); 
+	return 0; 
 }
 
+uint16_t PFDECL(CONFIG_SPI0_NAME, getc, struct serial_interface *self) {
+	if(!cbuf_get_data_count(&spi0_rx_buf)) return SERIAL_NO_DATA; 
+	return cbuf_get(&spi0_rx_buf); 
+}
+
+size_t PFDECL(CONFIG_SPI0_NAME, putn, struct serial_interface *self, const uint8_t *data, size_t sz){
+	size_t size = sz; 
+	while(sz--){
+		hwspi0_transfer(*data++); 
+	}
+	return size; 
+}
+
+size_t PFDECL(CONFIG_SPI0_NAME, getn, struct serial_interface *self, uint8_t *data, size_t sz){
+	size_t count = 0; 
+	while(sz--){
+		*data = hwspi0_transfer(0); 
+		data++; 
+		count++; 
+	}
+	return count; 
+}
+
+size_t PFDECL(CONFIG_SPI0_NAME, waiting, struct serial_interface *self){
+	return cbuf_get_data_count(&spi0_rx_buf); 
+}
+
+void PFDECL(CONFIG_SPI0_NAME, flush, struct serial_interface *self){
+	// do nothing (but may be useful for interrupt driven version) 
+}
 

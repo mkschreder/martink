@@ -99,12 +99,6 @@ void reset_rc(void){
 	}
 }
 
-#undef putc
-
-void test(struct d_spi *spi){
-	spi->writereadbyte(10); 
-}
-
 void brd_init(void){
 	/* The general init (clock, libc, watchdog disable) */
   cpu_init();
@@ -159,15 +153,15 @@ void brd_init(void){
 	i2c_init(); 
 	spi0_init(); 
 	
-	struct nrf24l01 nrf1;  
-	nrf24l01_init(&nrf1, &cpu.spi0, GPIO_PA15, GPIO_PD1); 
+	//struct nrf24l01 nrf1;  
+	//nrf24l01_init(&nrf1, &cpu.spi0, GPIO_PA15, GPIO_PD1); 
 	
 	gpio_set_function(GPIO_PB26, GP_OUTPUT); 
 	gpio_set_function(GPIO_PA16, GP_OUTPUT); 
 	
   while(1) {
 		uint8_t buf[NRF24L01_PAYLOAD]; 
-		nrf24l01_write(&nrf1, buf); 
+		//nrf24l01_write(&nrf1, buf); 
 		
     time_delay(250000L);
     

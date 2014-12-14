@@ -22,16 +22,18 @@
 
 #include "autoconf.h"
 
-struct spi_interface {
-	/// transmits a byte.
-	/// returns byte received while clocking out transmit byte
-	/// does not return until operation is completed by hardware
-	uint8_t 	(*put_and_getc)(uint8_t byte); 
-}; 
+#define SPI_DEVICE_INTERFACE(spi_device) CONSTRUCT_SERIAL_INTERFACE(spi_device)
 
-#define SPI_DEVICE_INTERFACE(spi_device) (struct spi_interface){\
-	.put_and_getc = PFNAME(spi_device, writereadbyte) \
-}
+DECLARE_SERIAL_INTERFACE(CONFIG_SPI0_NAME); 
+/*
+extern uint16_t PFDECL(CONFIG_SPI0_NAME, waiting, void); 
+extern uint16_t PFDECL(CONFIG_SPI0_NAME, getc, void);
+extern void PFDECL(CONFIG_SPI0_NAME, putc, uint8_t data);
+extern void PFDECL(CONFIG_SPI0_NAME, puts, const char *s );
+extern size_t PFDECL(CONFIG_SPI0_NAME, putn, const char *s, size_t c); 
+extern size_t PFDECL(CONFIG_SPI0_NAME, getn, char *s, size_t c); 
+*/
+//DEFINE_SERIAL_INTERFACE(CONFIG_SPI0_NAME); 
 
 void PFDECL(CONFIG_SPI0_NAME, init, void);
-uint8_t PFDECL(CONFIG_SPI0_NAME, writereadbyte, uint8_t data);
+#define spi0_init() PFCALL(CONFIG_SPI0_NAME, init)

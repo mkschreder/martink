@@ -27,6 +27,9 @@
 #include <sensors/hmc5883l.h>
 #include <sensors/bmp085.h>
 #include <sensors/mpu6050.h>
+#include <disp/ssd1306.h>
+#include <util/serial_debugger.h>
+
 #include <radio/nrf24l01.h>
 
 #include <math.h>
@@ -65,6 +68,8 @@ struct board {
 	timeout_t last_rc_update; 
 	uint16_t pwm_pulse_delay_us; 
 	volatile uint8_t pwm_lock; 
+	
+	struct ssd1306 ssd; 
 }; 
 
 static struct board _brd; 
@@ -129,6 +134,7 @@ void reset_rc(void){
 #define GPIO_MWII_LED			GPIO_PB5
 
 void brd_init(void){
+	
 	brd->pwm_pulse_delay_us = 10500; 
 	brd->pwm_lock = 0; 
 	brd->pwm_timeout = timeout_from_now(0); 
@@ -159,16 +165,33 @@ void brd_init(void){
 	sei(); 
 	
 	time_init(); 
-	
 	uart0_init(38400);
 	uart0_puts("booting..\n"); 
 	
-	// init all sensors
 	i2c_init(); 
-	hmc5883l_init(); 
+	spi0_init(); 
+	
+	struct nrf24l01 nrf; 
+	struct serial_debugger debug; 
+	struct serial_interface spi = SPI_DEVICE_INTERFACE(spi0); 
+	struct serial_interface console = UART_DEVICE_INTERFACE(uart0); 
+	serial_debugger_init(&debug, &spi, &console); 
+	
+	nrf24l01_init(&nrf, &debug.interface, GPIO_PB0, GPIO_PB1); 
+	while(1){
+		char data[32] = {0}; 
+		strcpy(data, "Hello World!"); 
+		nrf24l01_write(&nrf, data); 
+		while(1); 
+	}
+	// init all sensors
+	
+	
+	//hmc5883l_init(); 
 	bmp085_init(); 
 	mpu6050_init(); 
 	
+	uart0_puts("INIT DONE!\n"); 
 	reset_rc(); 
 	// ticking timer for the pwm generator
 	/*TCCR2B = _BV(CS22) | _BV(CS20);  // 128 prescaler

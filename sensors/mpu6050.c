@@ -108,7 +108,14 @@ extern volatile uint8_t mpu6050_mpuInterrupt;
  * read bytes from chip register
  */
 int8_t mpu6050_readBytes(uint8_t regAddr, uint8_t length, uint8_t *data) {
-	uint8_t i = 0;
+	uint8_t wr_buf[1] = {regAddr}; 
+	twi0_start_transaction(TWI_OP_LIST(
+		TWI_OP(MPU6050_ADDR | I2C_WRITE, wr_buf, 1),
+		TWI_OP(MPU6050_ADDR | I2C_READ, data, length)
+	)); 
+	twi0_wait(); 
+	return length; 
+	/*uint8_t i = 0;
 	int8_t count = 0;
 	if(length > 0) {
 		//request register
@@ -126,7 +133,7 @@ int8_t mpu6050_readBytes(uint8_t regAddr, uint8_t length, uint8_t *data) {
 		}
 		i2c_stop();
 	}
-	return count;
+	return count;*/
 }
 
 /*
@@ -140,14 +147,20 @@ int8_t mpu6050_readByte(uint8_t regAddr, uint8_t *data) {
  * write bytes to chip register
  */
 void mpu6050_writeBytes(uint8_t regAddr, uint8_t length, uint8_t* data) {
+	uint8_t wr[32]; 
+	wr[0] = regAddr; memcpy(&wr[1], data, length); 
 	if(length > 0) {
 		//write data
-		i2c_start(MPU6050_ADDR | I2C_WRITE);
+		twi0_start_transaction(TWI_OP_LIST(
+			TWI_OP(MPU6050_ADDR | I2C_WRITE, wr, length + 1)
+		)); 
+		twi0_wait(); 
+		/*i2c_start(MPU6050_ADDR | I2C_WRITE);
 		i2c_write(regAddr); //reg
 		for (uint8_t i = 0; i < length; i++) {
 			i2c_write((uint8_t) data[i]);
 		}
-		i2c_stop();
+		i2c_stop();*/
 	}
 }
 

@@ -24,13 +24,39 @@
 #define I2C_READ    1
 #define I2C_WRITE   0
 
+struct i2c_op {
+  uint8_t address;
+  uint8_t buflen;
+  uint8_t bufpos;
+  uint8_t *buf;
+};
+
+struct i2c_txn {
+  volatile uint8_t flags;
+  uint8_t opslen;
+  uint8_t opspos;
+  struct i2c_op ops[4];
+};
+
+typedef struct i2c_op i2c_op_t;
+typedef struct i2c_txn i2c_txn_t;
+
+typedef i2c_op_t i2c_op_list_t[4]; 
+
+#define TWI_OP_LIST(args...) (i2c_op_list_t){ args , (struct i2c_op){0, 0, 0, 0}}
+#define TWI_OP(addr, buffer, sz) { \
+	.address = addr, \
+	.buflen = sz, \
+	.bufpos = 0, \
+	.buf = buffer \
+}
+#define TWI_TRANS(ops_list...) { \
+	.ops = (i2c_op_list_t){ ops_list } \
+}
+
 #ifndef CONFIG_TWI0_NAME
 #define CONFIG_TWI0_NAME twi0
 #endif
-
-struct twi_api {
-	
-}; 
 
 // generic twi interface
 #ifdef CONFIG_HAVE_TWI

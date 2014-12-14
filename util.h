@@ -39,3 +39,12 @@ inline long constrain(long x, long a, long b){
 	if(x > b) return b; 
 	return x; 
 }
+
+#define assert(condition) ({\
+	(condition)?(1):({uart0_printf("ERROR: assertion failed in %s line %d\n", __FILE__, __LINE__); while(1);});\
+})
+
+#define container_of(ptr, type, member) ({                      \
+        const __typeof__( ((type *)0)->member ) *__mptr = (ptr);    \
+        (type *)( (char *)__mptr - offsetof(type,member) );})
+

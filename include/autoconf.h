@@ -2,7 +2,7 @@
  * Automatically generated C config: don't edit
  * version: 
  */
-#define AUTOCONF_TIMESTAMP "2014-12-12 02:30:45 CET"
+#define AUTOCONF_TIMESTAMP "2014-12-15 00:18:31 CET"
 
 
 /*
@@ -14,15 +14,12 @@
 #define CONFIG_HAVE_SPI0 1
 #define CONFIG_HAVE_TWI 1
 #define CONFIG_HAVE_TWI0 1
-#define CONFIG_HAVE_TIMER0 1
-#define CONFIG_HAVE_TIMER1 1
-#define CONFIG_HAVE_TIMER2 1
-#define CONFIG_AVR 1
+#define CONFIG_ARM 1
 
 /*
  * Processor type
  */
-#define CONFIG_ATMEGA328P 1
+#define CONFIG_AT91SAM3 1
 
 /*
  * UART config
@@ -47,8 +44,8 @@
 /*
  * Board support
  */
-#define CONFIG_BOARD_MULTIWII 1
-#define CONFIG_MULTIWII_ACC mpu6050
+#define CONFIG_BOARD_ARDUINO_DUE 1
+#define CONFIG_MULTIWII_ACC 
 
 /*
  * Device driver support

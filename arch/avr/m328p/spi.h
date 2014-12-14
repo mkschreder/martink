@@ -24,6 +24,8 @@
 
 #include <avr/io.h>
 
+#include "gpio.h"
+
 #include "autoconf.h"
 
 #define SPI_CLOCK_DIV2 	(SPSR |= _BV(SPI2X))
@@ -70,21 +72,17 @@
 #define hwspi0_error_collision() (SPSR & _BV(WCOL))
 
 #define hwspi0_init_default() ({\
+	hwspi0_set_mode(SPI_MODE0);\
 	hwspi0_config_gpio();\
 	hwspi0_interrupt_disable(); \
 	hwspi0_order_msb_first();\
 	hwspi0_master();\
-	hwspi0_set_clock(SPI_CLOCK_DIV128);\
-	hwspi0_set_mode(SPI_MODE0);\
+	hwspi0_set_clock(SPI_CLOCK_DIV16);\
 	hwspi0_enable();\
 })
 
 #define hwspi0_putc(ch) ({\
 	SPDR = ch;\
-	if(hwspi0_error_collision()) {\
-		hwspi0_wait_for_transmit_complete();\
-		SPDR = ch; \
-	}\
 })
 
 #define hwspi0_getc(ch) (\
@@ -92,11 +90,10 @@
 	SPDR \
 )
 
-#define hwspi0_transfer(ch) (\
-	SPDR = ch,\
-	hwspi0_wait_for_transmit_complete(), \
-	SPDR \
-)
+#define hwspi0_transfer(ch) (({\
+	SPDR = ch;\
+	hwspi0_wait_for_transmit_complete(); \
+}), SPDR )
 
 
 #endif

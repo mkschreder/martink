@@ -17,8 +17,8 @@ static const uint8_t cmd_init[] PROGMEM = {
 	0x0a8, 0x03f,		/* multiplex ratio */
 	0x0d3, 0x000,	0x00,	/* display offset */
 	//0x040,				/* start line */
-	0x08d, 0x014,		/* charge pump setting (p62): 0x014 enable, 0x010 disable */
-	0x020, 0x000, // memory addr mode
+	0x08d, 0x14,		/* charge pump setting (p62): 0x014 enable, 0x010 disable */
+	0x020, 0x00, // memory addr mode
 	0x0a1,				/* segment remap a0/a1*/
 	0x0a5, // display on
 	0x0c8,				/* c0: scan dir normal, c8: reverse */

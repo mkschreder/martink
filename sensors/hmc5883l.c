@@ -50,18 +50,30 @@ void hmc5883l_init(void) {
 		hmc5883l_scale = 4.35;
 	#endif
 
-	
   time_delay(50000L);  //Wait before start
   
+  uint8_t buf[] = {
+		HMC5883L_CONFREGA, 
+		0x70, //Configuration Register A  -- 0 11 100 00  num samples: 8 ; output rate: 15Hz ; normal measurement mode
+		HMC5883L_CONFREGB, 
+		0x20, //Configuration Register B  -- 001 00000    configuration gain 1.3Ga
+		HMC5883L_MODEREG,
+		0x00 //Mode register             -- 000000 00    continuous Conversion Mode
+	}; 
+	twi0_start_transaction(TWI_OP_LIST(
+		TWI_OP(HMC5883L_ADDR | I2C_WRITE, buf, 6)
+	)); 
+	twi0_wait(); 
   // leave test mode
-  i2c_start_wait(HMC5883L_ADDR | I2C_WRITE); 
+  /*i2c_start_wait(HMC5883L_ADDR | I2C_WRITE); 
   i2c_write(HMC5883L_CONFREGA); 
   i2c_write(0x70); //Configuration Register A  -- 0 11 100 00  num samples: 8 ; output rate: 15Hz ; normal measurement mode
   i2c_write(HMC5883L_CONFREGB); 
   i2c_write(0x20); //Configuration Register B  -- 001 00000    configuration gain 1.3Ga
   i2c_write(HMC5883L_MODEREG); 
   i2c_write(0x00); //Mode register             -- 000000 00    continuous Conversion Mode
-  i2c_stop(); 
+  i2c_stop(); */
+  
   time_delay(100000L);
   
 	/*//setting is in the top 3 bits of the register.
@@ -82,6 +94,14 @@ void hmc5883l_init(void) {
  * get raw data
  */
 void hmc5883l_getrawdata(int16_t *mxraw, int16_t *myraw, int16_t *mzraw) {
+	uint8_t wr[1] = {HMC5883L_DATAREGBEGIN}; 
+	uint8_t buff[6];
+	twi0_start_transaction(TWI_OP_LIST(
+		TWI_OP(HMC5883L_ADDR | I2C_WRITE, wr, 1),
+		TWI_OP(HMC5883L_ADDR | I2C_READ, buff, 6)
+	)); 
+	twi0_wait(); 
+	/*
 	uint8_t i = 0;
 	uint8_t buff[6];
 
@@ -96,7 +116,7 @@ void hmc5883l_getrawdata(int16_t *mxraw, int16_t *myraw, int16_t *mzraw) {
 			buff[i] = i2c_readAck();
 	}
 	i2c_stop();
-
+*/
 	*mxraw = (int16_t)((buff[0] << 8) | buff[1]);
 	*mzraw = (int16_t)((buff[2] << 8) | buff[3]);
 	*myraw = (int16_t)((buff[4] << 8) | buff[5]);

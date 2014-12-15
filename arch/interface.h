@@ -22,6 +22,7 @@
 #pragma once
 
 #include <inttypes.h>
+#include <stddef.h>
 
 #undef getc
 #undef putc
@@ -101,3 +102,64 @@ extern size_t 	PFDECL(device_name, getn, struct serial_interface*, uint8_t *s, s
 	.flush = PFNAME(device_name, flush), \
 	.waiting = PFNAME(device_name, waiting), \
 }
+
+/**
+ * A packet interface is similar to a serial interface but instead operates on
+ * chunks of data. Whereas a serial interface guarantees that you either get or
+ * not get an individual byte of data, a packet interface does the same for
+ * chunks, meaning that you either get or not get a packet - there is no possibility
+ * to only get a partial packet.
+ *
+ * Packet interfaces are useful for message based communication schemes and bus
+ * types that operates by means of "start -> data bytes -> stop" pattern. It
+ * does not however handle addressing - this is the job of the underlying device
+ * that this interface is used to access. All addressing and protocol data must
+ * be passed inside the packet sent over this interface. This is another point
+ * in which the packet device differs from a stream device. 
+ */
+
+struct packet_interface {
+	/// must be called every time you want to start sending data. This call allows the
+	/// driver to power on the device and prepare it for accepting new data.
+	void 					(*begin)(struct packet_interface *self);
+	/// must be called when you do not intend to send more data for a while. This method
+	/// signals the driver to release the bus to other devices since packet interfaces
+	/// usually share underlying medium. It is also a good place to tell the other side
+	/// that we are done transmitting data. 
+	void 					(*end)(struct packet_interface *self); 
+	/// putn writes a packet to the device
+	/// the max_sz parameter tells the device how big the packet is. The function
+	/// can return before the data is actually sent. In that case the device will
+	/// be busy and will not accept any data until the previous data has been sent
+	uint32_t			(*write)(struct packet_interface *self, const uint8_t *data, uint16_t max_sz);
+	/// reads a packet from the device. May return before the operation completes! 
+	/// max_sz denotes maximum number of bytes that are read. If a packet that arrives
+	/// in hardware is larger than max_sz then the function reads in max_sz bytes and
+	/// returns an error in top 16 bits of the return value. The bottom 16 bits are
+	/// number of bytes that have been read. You must always check status to see
+	/// if previous operation has been completed before you make any changes to
+	/// passed parameters because the method accesses the data directly and if you
+	/// for example exit from a function where data is a stack variable without making
+	/// sure that the operation has completed, the result may be a crash because the
+	/// driver is not mandated to block until the data has been received. 
+	uint32_t			(*read)(struct packet_interface *self, uint8_t *data, uint16_t max_sz);
+
+	/// instructs the hardware to send all the data it has in it's buffers and
+	/// waits for the hardware to complete as well as makes sure that all pending
+	/// operations have completed before exiting. 
+	void					(*sync)(struct packet_interface *self);
+	/// returns the number of packets that are waiting to be read using getn. If
+	/// a read operation is already in progress, this call should return one less packets
+	/// or zero in the case where only one packet can be received at a time. 
+	uint16_t 			(*packets_available)(struct packet_interface *self);
+};
+
+#define p_begin(ptr_iface) ptr_iface->begin(ptr_iface)
+#define p_end(ptr_iface) ptr_iface->end(ptr_iface);
+#define p_write(ptr_iface, data, size) ptr_iface->write(ptr_iface, data, size)
+#define p_read(ptr_iface, data, size) ptr_iface->read(ptr_iface, data, size)
+#define p_sync(ptr_iface) ptr_iface->sync(ptr_iface)
+
+#define PK_ERR_INVALID 0x00010000L
+
+//#define p_wait(ptr_iface) ptr_iface->waiting(ptr_iface)

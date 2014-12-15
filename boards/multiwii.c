@@ -33,6 +33,7 @@
 #include <radio/nrf24l01.h>
 
 #include <math.h>
+#include <string.h>
 
 #define FRONT_PIN PD3
 #define RIGHT_PIN PB1
@@ -44,8 +45,6 @@
 
 #define PWM_UPDATE_DISABLE {TIMSK2 &= ~_BV(TOIE2);}
 #define PWM_UPDATE_ENABLE {TIMSK2 |= _BV(TOIE2);}
-
-#define ACCNAME CONFIG_MULTIWII_ACC
 
 /*
 #define PREFIX foo
@@ -68,7 +67,9 @@ struct board {
 	timeout_t last_rc_update; 
 	uint16_t pwm_pulse_delay_us; 
 	volatile uint8_t pwm_lock; 
-	
+	struct bmp085 bmp;
+	struct mpu6050 mpu; 
+	struct twi_device twi0; 
 	struct ssd1306 ssd; 
 }; 
 
@@ -78,7 +79,7 @@ static struct board *brd = &_brd;
 void get_accelerometer(float *x, float *y, float *z){
 	double ax, ay, az; 
 	//CALL(foo, 10); 
-	ACCNAME.getConvAcc(&ax, &ay, &az); 
+	mpu6050_getConvAcc(&brd->mpu, &ax, &ay, &az); 
 	*x = ax; 
 	*y = ay; 
 	*z = az; 
@@ -86,7 +87,7 @@ void get_accelerometer(float *x, float *y, float *z){
 
 void get_gyroscope(float *x, float *y, float *z){
 	double gx, gy, gz; 
-	ACCNAME.getConvGyr(&gx, &gy, &gz);   
+	mpu6050_getConvGyr(&brd->mpu, &gx, &gy, &gz);   
 	*x = gx; 
 	*y = gy; 
 	*z = gz; 
@@ -100,15 +101,15 @@ void get_magnetometer(int16_t *x, int16_t *y, int16_t *z){
 }
 
 void get_altitude(int16_t *alt){
-	*alt = bmp085_getaltitude(); 
+	*alt = bmp085_getaltitude(&brd->bmp); 
 }
 
 void get_pressure(int16_t *pres){
-	*pres = bmp085_getpressure() / 10; 
+	*pres = bmp085_getpressure(&brd->bmp) / 10; 
 }
 
 void get_temperature(int16_t *temp){
-	*temp = bmp085_gettemperature(); 
+	*temp = bmp085_gettemperature(&brd->bmp); 
 }
 
 uint8_t get_rc_commands(int16_t *throt, int16_t *yaw, int16_t *pitch, int16_t *roll){
@@ -168,8 +169,10 @@ void brd_init(void){
 	uart0_init(38400);
 	uart0_puts("booting..\n"); 
 	
-	i2c_init(); 
+	twi_init(0); 
 	spi0_init(); 
+
+	twi_get_interface(0, &brd->twi0);
 	
 	struct nrf24l01 nrf; 
 	struct serial_debugger debug; 
@@ -179,7 +182,7 @@ void brd_init(void){
 	
 	nrf24l01_init(&nrf, &debug.interface, GPIO_PB0, GPIO_PB1); 
 	while(1){
-		char data[32] = {0}; 
+		unsigned char data[32] = {0}; 
 		strcpy(data, "Hello World!"); 
 		nrf24l01_write(&nrf, data); 
 		while(1); 
@@ -188,8 +191,8 @@ void brd_init(void){
 	
 	
 	//hmc5883l_init(); 
-	bmp085_init(); 
-	mpu6050_init(); 
+	bmp085_init(&brd->bmp, &brd->twi0.interface); 
+	mpu6050_init(&brd->mpu, &brd->twi0.interface); 
 	
 	uart0_puts("INIT DONE!\n"); 
 	reset_rc(); 

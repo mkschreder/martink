@@ -23,10 +23,66 @@ extern "C" {
 #include "autoconf.h"
 #include "../../twi.h"
 
+
+struct _avr_twi_op {
+  uint8_t address;
+  uint8_t buflen;
+  uint8_t bufpos;
+  uint8_t *buf;
+};
+
+typedef struct _avr_twi_op avr_twi_op;
+
+struct _avr_twi_device {
+	struct _avr_twi_op op; 
+	uint8_t status;
+};
+
+extern volatile struct _avr_twi_device _twi0;
+
 #define hwtwi0_init(speed) ({\
 	TWSR = 0;\
   TWBR = (uint8_t)(((F_CPU/speed)-16)/2);\
 })
+
+#define TWCR_DEFAULT (_BV(TWEA) | _BV(TWEN) | _BV(TWIE))
+
+#define TWCR_NOT_ACK (_BV(TWINT) | _BV(TWEN) | _BV(TWIE))
+#define TWCR_ACK (TWCR_NOT_ACK | _BV(TWEA))
+
+#define TWI_ERR_BUSY 0x0100
+
+/// always set when twi bus is ready to receive more data
+#define TWI_READY 0
+/// set when data has been sent but no stop condition has been sent yet
+#define TWI_IDLE	1
+
+extern void 		twi0_init_default(void);
+
+/// sends a missing stop and prepares the device for receiving more data
+#define twi0_begin() (\
+	(_twi0.status & _BV(TWI_IDLE))?({twi0_end();}):(0),\
+	_twi0.status &= ~(_BV(TWI_IDLE))\
+)
+
+/// sends stop signal on the bus
+#define twi0_end() ({\
+	TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTO);\
+	_twi0.status |= _BV(TWI_READY);\
+})
+
+/// address is the first byte of data
+extern uint16_t 		twi0_start_write(const uint8_t *data, size_t data_sz);
+/// address is the first byte of data
+extern uint16_t 		twi0_start_read(uint8_t *data, size_t data_sz);
+/// waits until current transaction has completed
+//extern void 		twi0_wait_until_transaction_completed(void);
+
+#define twi0_status() (_twi0.status)
+#define twi0_sync() do { } while(!(_twi0.status & (_BV(TWI_IDLE) | _BV(TWI_READY))))
+
+//extern void 		twi0_start_transaction(i2c_op_list_t);
+/*
 #define twi0_is_busy() PFCALL(CONFIG_TWI0_NAME, is_busy)
 #define twi0_wait() ({ while(twi0_is_busy()); })
 #define twi0_start_transaction(op_list) PFCALL(CONFIG_TWI0_NAME, start_transaction, op_list)
@@ -34,7 +90,7 @@ extern "C" {
 extern void PFDECL(CONFIG_TWI0_NAME, init, void);
 extern uint8_t PFDECL(CONFIG_TWI0_NAME, is_busy, void);
 extern void PFDECL(CONFIG_TWI0_NAME, start_transaction, i2c_op_list_t);
-
+*/
 /*
 extern void PFDECL(CONFIG_TWI0_NAME, stop, void);
 extern unsigned char PFDECL(CONFIG_TWI0_NAME, start, unsigned char addr);

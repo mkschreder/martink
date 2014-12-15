@@ -38,7 +38,7 @@ typedef char PROGMEM prog_char;
 #endif
 
 #ifdef CONFIG_HAVE_TWI
-#include "m328p/i2cmaster.h"
+#include "m328p/twi.h"
 #include "m328p/twi_slave.h"
 #include "m328p/twi_slave.h"
 #endif

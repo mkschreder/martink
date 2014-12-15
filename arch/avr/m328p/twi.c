@@ -12,7 +12,7 @@
 
 #include <arch/soc.h>
 
-#include "i2cmaster.h"
+#include "twi.h"
 
 #include <assert.h>
 #include <avr/interrupt.h>
@@ -21,23 +21,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "i2c.h"
 
 // By default, the control register is set to:
 // - TWEA: Automatically send acknowledge bit in receive mode.
 // - TWEN: Enable the I2C system.
 // - TWIE: Enable interrupt requests when TWINT is set.
 
-#define TWCR_DEFAULT (_BV(TWEA) | _BV(TWEN) | _BV(TWIE))
-
-#define TWCR_NOT_ACK (_BV(TWINT) | _BV(TWEN) | _BV(TWIE))
-#define TWCR_ACK (TWCR_NOT_ACK | _BV(TWEA))
-
 #define I2C_FREQ 100000
 
 #define I2C_TXN_DONE _BV(0)
 #define I2C_TXN_ERR  _BV(1)
-
+/*
 static inline void i2c_op_init(i2c_op_t *o, uint8_t address, uint8_t *buf, uint8_t buflen) {
   o->address = address;
   o->buflen = buflen;
@@ -51,13 +45,16 @@ static inline void i2c_op_init_rd(i2c_op_t *o, uint8_t address, uint8_t *buf, ui
 
 static inline void i2c_op_init_wr(i2c_op_t *o, uint8_t address, uint8_t *buf, uint8_t buflen) {
   i2c_op_init(o, (address << 1) | TW_WRITE, buf, buflen);
-}
+}*/
 
+volatile struct _avr_twi_device _twi0;
+
+/*
 static volatile i2c_txn_t _txn; 
 static volatile i2c_txn_t *txn = 0;
 static volatile i2c_op_t *op;
-
-void __twi0_init__(void) {
+*/
+void twi0_init_default(void) {
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
 		TWSR &= ~(_BV(TWPS1) | _BV(TWPS0));
 		TWBR = ((F_CPU / I2C_FREQ) - 16) / (2 * 1);
@@ -66,14 +63,39 @@ void __twi0_init__(void) {
 		
 		TWCR = TWCR_DEFAULT;
 
+		_twi0.status = _BV(TWI_READY);
+		
 		TWAR = 0;
 	}
 }
 
-uint8_t __twi0_is_busy__(void){
-	return txn != 0; 
+uint16_t twi0_start_write(const uint8_t *data, size_t size){
+	if(_twi0.status & TWI_READY && size){
+		_twi0.status &= ~_BV(TWI_READY); 
+		_twi0.op.address = (data[0] & 0xfe) | I2C_READ;
+		_twi0.op.buf = (uint8_t*)&data[1];
+		_twi0.op.buflen = size - 1;
+		_twi0.op.bufpos = 0; 
+		TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTA);
+		return 0; 
+	}
+	return TWI_ERR_BUSY; 
 }
 
+uint16_t twi0_start_read(uint8_t *data, size_t size){
+	if(_twi0.status & TWI_READY && size){
+		_twi0.status &= ~_BV(TWI_READY); 
+		_twi0.op.address = (data[0] & 0xfe) | I2C_WRITE;
+		_twi0.op.buf = &data[1];
+		_twi0.op.buflen = size - 1;
+		_twi0.op.bufpos = 0; 
+		TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTA);
+		return 0; 
+	}
+	return TWI_ERR_BUSY; 
+}
+
+/*
 void __twi0_start_transaction__(i2c_op_list_t ops) {
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
 		if (txn == NULL) { // if no transaction is in progress
@@ -94,10 +116,11 @@ void __twi0_start_transaction__(i2c_op_list_t ops) {
 		}
 	}
 }
-
+*/
 ISR(TWI_vect) {
   uint8_t status = TW_STATUS;
-
+	volatile struct _avr_twi_op *op = &_twi0.op;
+	
   if ((op->address & _BV(0)) == TW_READ) {
     // Master Receiver mode.
     switch (status) {
@@ -129,7 +152,7 @@ ISR(TWI_vect) {
 
     // SLA+R has been transmitted; NOT ACK has been received. 
     case TW_MR_SLA_NACK:
-      txn->flags = I2C_TXN_DONE | I2C_TXN_ERR;
+      //op->flags = I2C_TXN_DONE | I2C_TXN_ERR;
       break; 
       //goto next_txn;
 
@@ -179,7 +202,7 @@ ISR(TWI_vect) {
 
     // SLA+W has been transmitted; NOT ACK has been received. 
     case TW_MT_SLA_NACK:
-      txn->flags = I2C_TXN_DONE | I2C_TXN_ERR;
+      //op->flags = I2C_TXN_DONE | I2C_TXN_ERR;
       break; 
       //goto next_txn;
 
@@ -198,7 +221,7 @@ ISR(TWI_vect) {
     case TW_MT_DATA_NACK:
       if (op->bufpos < op->buflen) {
         // There were more bytes left to transmit! 
-        txn->flags = I2C_TXN_DONE | I2C_TXN_ERR;
+        //txn->flags = I2C_TXN_DONE | I2C_TXN_ERR;
         break; 
         //goto next_txn;
       }
@@ -213,7 +236,11 @@ ISR(TWI_vect) {
   return;
 
 next_op:
+	//txn = NULL;
+	_twi0.status |= TWI_IDLE; 
 
+  //TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTO);
+/*
 	/// TODO: REMOVE
 	_delay_us(10);
 	
@@ -225,6 +252,7 @@ next_op:
   }
 
   txn->flags = I2C_TXN_DONE;
+ */
 /*
 next_txn:
   if (txn->next != NULL) {
@@ -235,10 +263,7 @@ next_txn:
     return;
   }
 */
-  txn = NULL;
-  op = NULL;
-
-  TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTO);
+  
 }
 
 /*

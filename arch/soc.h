@@ -23,6 +23,8 @@
 
 #include "autoconf.h"
 
+#include "../util.h"
+
 #include <inttypes.h>
 #include <stddef.h>
 

@@ -56,10 +56,11 @@ extern "C" {
 #define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
 
 typedef struct ssd1306 {
+	struct packet_interface *port; 
 	uint8_t r_row_start, r_row_end; 
 } ssd1306_t;
 
-void ssd1306_init(ssd1306_t *dev);
+void ssd1306_init(ssd1306_t *dev, struct packet_interface *port);
 void ssd1306_set_region(ssd1306_t *dev, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1); 
 void ssd1306_fill(ssd1306_t *dev, fb_color_t color, size_t len); 
 void ssd1306_draw(ssd1306_t *dev, uint16_t x, uint16_t y, fb_image_t img); 

@@ -18,19 +18,22 @@
 	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
 */
+#pragma once
 
 #include "autoconf.h"
+
+struct twi_device {
+	uint8_t id;
+	struct packet_interface interface; 
+};
 
 #define I2C_READ    1
 #define I2C_WRITE   0
 
-struct i2c_op {
-  uint8_t address;
-  uint8_t buflen;
-  uint8_t bufpos;
-  uint8_t *buf;
-};
+void twi_init(uint8_t dev);
+void twi_get_interface(uint8_t id, struct twi_device *dev);
 
+/*
 struct i2c_txn {
   volatile uint8_t flags;
   uint8_t opslen;
@@ -38,7 +41,6 @@ struct i2c_txn {
   struct i2c_op ops[4];
 };
 
-typedef struct i2c_op i2c_op_t;
 typedef struct i2c_txn i2c_txn_t;
 
 typedef i2c_op_t i2c_op_list_t[4]; 
@@ -53,11 +55,11 @@ typedef i2c_op_t i2c_op_list_t[4];
 #define TWI_TRANS(ops_list...) { \
 	.ops = (i2c_op_list_t){ ops_list } \
 }
-
+*/
 #ifndef CONFIG_TWI0_NAME
 #define CONFIG_TWI0_NAME twi0
 #endif
-
+/*
 // generic twi interface
 #ifdef CONFIG_HAVE_TWI
 
@@ -89,5 +91,5 @@ typedef i2c_op_t i2c_op_list_t[4];
 /// helper read method
 #define i2c_read(ack)  ((ack) ? i2c_readAck() : i2c_readNak())
 
-#endif
+#endif*/
 

@@ -19,7 +19,7 @@ static double hmc5883l_scale = 0;
  * init the hmc5883l
  */
 void hmc5883l_init(void) {
-	time_delay(50000L); 
+	delay_us(50000L); 
 	
 	//set scale
 	hmc5883l_scale = 0;
@@ -50,7 +50,7 @@ void hmc5883l_init(void) {
 		hmc5883l_scale = 4.35;
 	#endif
 
-  time_delay(50000L);  //Wait before start
+  delay_us(50000L);  //Wait before start
   
   uint8_t buf[] = {
 		HMC5883L_CONFREGA, 
@@ -74,7 +74,7 @@ void hmc5883l_init(void) {
   i2c_write(0x00); //Mode register             -- 000000 00    continuous Conversion Mode
   i2c_stop(); */
   
-  time_delay(100000L);
+  delay_us(100000L);
   
 	/*//setting is in the top 3 bits of the register.
 	regValue = regValue << 5;

@@ -141,7 +141,7 @@ void bmp085_getrawtemperature(struct bmp085 *self) {
 
 	//read raw temperature
 	bmp085_writemem(self, BMP085_REGCONTROL, BMP085_REGREADTEMPERATURE);
-	time_delay(5000L); // min. 4.5ms read Temp delay
+	delay_us(5000L); // min. 4.5ms read Temp delay
 	bmp085_readmem(self, BMP085_REGCONTROLOUTPUT, buff, 2);
 	ut = ((long)buff[0] << 8 | ((long)buff[1])); //uncompensated temperature value
 
@@ -166,7 +166,7 @@ void bmp085_getrawpressure(struct bmp085 *self) {
 
 	//read raw pressure
 	bmp085_writemem(self, BMP085_REGCONTROL, BMP085_REGREADPRESSURE+(BMP085_MODE << 6));
-	time_delay((2 + (3<<BMP085_MODE)) * 1000L);
+	delay_us((2 + (3<<BMP085_MODE)) * 1000L);
 	bmp085_readmem(self, BMP085_REGCONTROLOUTPUT, buff, 3);
 	up = ((((long)buff[0] <<16) | ((long)buff[1] <<8) | ((long)buff[2])) >> (8-BMP085_MODE)); // uncompensated pressure value
 

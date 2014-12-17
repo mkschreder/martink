@@ -115,7 +115,7 @@ int8_t mpu6050_readBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, 
 	p_write(self->port, buf, 2);
 	p_sync(self->port);
 	
-	time_delay(10); 
+	delay_us(10); 
 	
 	p_read(self->port, buf, length + 1);
 	p_sync(self->port);
@@ -485,13 +485,13 @@ void mpu6050_init(struct mpu6050 *self, struct packet_interface *port) {
 	self->port = port; 
 	
 	//allow mpu6050 chip clocks to start up
-	time_delay(100000L);
+	delay_us(100000L);
 
 	//set sleep disabled
 	mpu6050_setSleepDisabled(self);
 	
 	//wake up delay needed sleep disabled
-	time_delay(10000L);
+	delay_us(10000L);
 	
 	//set clock source
 	//  it is highly recommended that the device be configured to use one of the gyroscopes (or an external clock source)
@@ -664,7 +664,7 @@ void mpu6050_updateQuaternion(struct mpu6050 *self) {
 		mpu6050_readBit(self, MPU6050_RA_INT_STATUS, MPU6050_INTERRUPT_DATA_RDY_BIT, (uint8_t *)buffer);
 		if(buffer[0])
 			break;
-		time_delay(10);
+		delay_us(10);
 	}
 
 	mpu6050_readBytes(self, MPU6050_RA_ACCEL_XOUT_H, 14, (uint8_t *)buffer);

@@ -19,40 +19,6 @@
 	Github: https://github.com/mkschreder
 */
 
-#pragma once 
+#pragma once
 
-#include <avr/io.h>
-#include <avr/pgmspace.h>
-#include <avr/interrupt.h>
-
-#include <util/crc16.h>
-#include <util/delay.h>
-#include <util/atomic.h>
-
-typedef char PROGMEM prog_char; 
-
-#include "autoconf.h"
-
-#ifdef CONFIG_HAVE_ADC
-#include "m328p/adc.h"
-#endif
-
-#ifdef CONFIG_HAVE_TWI
-#include "m328p/twi.h"
-#include "m328p/twi_slave.h"
-#include "m328p/twi_slave.h"
-#endif
-
-#ifdef CONFIG_HAVE_SPI
-#include "m328p/spi.h"
-#endif
-
-#ifdef CONFIG_HAVE_UART
-#include "m328p/uart.h"
-#endif
-
-#include "m328p/random.h"
-#include "m328p/stack.h"
-#include "m328p/time.h"
-#include "m328p/gpio.h"
-#include "m328p/pwm.h"
+struct pwm_interface pwm_get_interface(void);

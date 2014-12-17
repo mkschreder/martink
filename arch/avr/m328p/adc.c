@@ -28,10 +28,7 @@ Please refer to LICENSE file for licensing information.
 //ISR(ADC_vect) 
 //{
 //}
-
 /*
- * set an adc channel
- */
 void adc_setchannel(uint8_t channel)
 {
 	ADCSRA &= ~(1 << ADEN);
@@ -39,9 +36,6 @@ void adc_setchannel(uint8_t channel)
 	ADCSRA |= (1 << ADEN);
 }
 
-/*
- * read from selected adc channel
- */
 uint16_t adc_readsel(void)
 {
 	ADCSRA |= (1 << ADSC); // Start conversion
@@ -52,18 +46,12 @@ uint16_t adc_readsel(void)
 	return(adc);
 }
 
-/*
- * read from adc channel
- */
 uint16_t adc_read(uint8_t channel)
 {
 	adc_setchannel(channel);
 	return adc_readsel();
 }
 
-/*
- * init adc
- */
 void adc_init(void) 
 {
 	// Set ADC reference
@@ -132,9 +120,6 @@ void adc_init(void)
 	#endif
 }
 
-/*
- * get reference voltage using bandgap voltage
- */
 double acd_getrealvref(void)
 {
 	double intvoltage = 0;
@@ -149,9 +134,6 @@ double acd_getrealvref(void)
 	return intvoltage;
 }
 
-/*
- * convert an adc value to a resistence value
- */
 long adc_getresistence(uint16_t adcread, uint16_t adcbalanceresistor)
 {
 	if(adcread == 0)
@@ -160,9 +142,6 @@ long adc_getresistence(uint16_t adcread, uint16_t adcbalanceresistor)
 		return (long)((long)(ADC_REFRES*(long)adcbalanceresistor)/adcread-(long)adcbalanceresistor);
 }
 
-/*
- * convert an adc value to a voltage value
- */
 double adc_getvoltage(uint16_t adcread, double adcvref) {
 	if(adcread == 0)
 		return 0;
@@ -170,16 +149,6 @@ double adc_getvoltage(uint16_t adcread, double adcvref) {
 		return (double)(adcread*adcvref/(double)ADC_REFRES);
 }
 
-/*
- * exponential moving avarage filter
- *
- * "newvalue" new adc read value
- * "value" old adc filtered value
- * return a new filtered value
- *
- * References:
- *   Guillem Planissi: Measurement and filtering of temperatures with NTC
- */
 #define ADC_EMAFILTERALPHA 30
 unsigned int adc_emafilter(unsigned int newvalue, unsigned int value)
 {
@@ -189,4 +158,4 @@ unsigned int adc_emafilter(unsigned int newvalue, unsigned int value)
 	value = (value>>6);
 	return value;
 }
-
+*/

@@ -56,7 +56,7 @@ void PFDECL(CONFIG_UART0_NAME, flush, struct serial_interface *self){
 		int empty = cbuf_is_empty(&uart0_tx_buf);
 		uart0_interrupt_dre_on();
 		if(empty) break; 
-		time_static_delay_us(1); 
+		delay_us(1); 
 	}
 }
 

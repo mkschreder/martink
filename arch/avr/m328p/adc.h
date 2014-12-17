@@ -25,31 +25,32 @@ Please refer to LICENSE file for licensing information.
 #define ADC_BANDGAPVOLTAGE 1300L
 #endif
 
-#define hwadc0_disable() ({ADCSRA &= ~_BV(ADEN);})
-#define hwadc0_enable() ({ADCSRA |= _BV(ADEN);})
+#define adc0_disable() ({ADCSRA &= ~_BV(ADEN);})
+#define adc0_enable() ({ADCSRA |= _BV(ADEN);})
 
-#define hwadc0_set_channel(u8_chan) ({\
-	hwadc0_disable(); \
+#define adc0_set_channel(u8_chan) ({\
+	adc0_disable(); \
 	ADMUX = (ADMUX & 0xf8) | (u8_chan & 0x07); \
-	hwadc0_enable(); \
+	adc0_enable(); \
 })
 
-#define hwadc0_start_conversion() ({ADCSRA |= (1 << ADSC);})
-#define hwadc0_conversion_in_progress() (ADCSRA & _BV(ADSC))
-#define hwadc0_wait_for_completed_conversion() ({while(ADCSRA & _BV(ADSC));})
+#define adc0_start_conversion() ({ADCSRA |= (1 << ADSC);})
+#define adc0_conversion_in_progress() (ADCSRA & _BV(ADSC))
+#define adc0_wait_for_completed_conversion() ({while(ADCSRA & _BV(ADSC));})
 
-#define hwadc0_read_selected() ({\
-	if(hwadc0_conversion_in_progress()) \
-		hwadc0_wait_for_completed_conversion(); \
+#define adc0_read_selected() ({\
+	if(adc0_conversion_in_progress()) \
+		adc0_wait_for_completed_conversion(); \
 }, ADC)
 
 #define hwadc0_sample_channel(chan) (\
-	hwadc0_wait_for_completed_conversion(); \
-	hwadc0_set_channel(chan); \
-	hwadc0_start_conversion(); \
-}, hwadc0_read_selected())
+	adc0_wait_for_completed_conversion(); \
+	adc0_set_channel(chan); \
+	adc0_start_conversion(); \
+}, adc0_read_selected())
 
 //functions
+/*
 extern void adc_setchannel(uint8_t channel);
 extern uint16_t adc_read(uint8_t channel);
 extern uint16_t adc_readsel(void);
@@ -58,5 +59,5 @@ extern double acd_getrealvref(void);
 extern long adc_getresistence(uint16_t adcread, uint16_t adcbalanceresistor);
 extern double adc_getvoltage(uint16_t adcread, double adcvref);
 extern unsigned int adc_emafilter(unsigned int newvalue, unsigned int value);
-
+*/
 #endif

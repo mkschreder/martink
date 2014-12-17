@@ -30,10 +30,10 @@ const struct pin_decl gPinPorts[4] = {
 	{&PORTD, &PIND, &DDRD},
 };
 
-volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0] = {0}; 
+volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0] = {{0}}; 
 
 ISR(PCINT0_vect){
-	timeout_t time = time_get_clock(); 
+	timestamp_t time = timestamp_now(); 
 	static uint8_t prev[3] = {0xff, 0xff, 0xff}; 
 	uint8_t current[3] = {PINB, PINC, PIND}; 
 	uint8_t changed[3] = {

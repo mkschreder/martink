@@ -46,6 +46,6 @@ void l74hc595_init(void) {
 void l74hc595_write(uint8_t data) {
 	spi_writereadbyte(data); 
 	L74HC595_STCHi; 
-	time_delay(1); // not needed but still for safety (16ns is minimum high period)
+	delay_us(1); // not needed but still for safety (16ns is minimum high period)
 	L74HC595_STCLo; 
 }

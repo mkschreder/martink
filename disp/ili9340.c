@@ -367,11 +367,11 @@ void ili9340_init(void) {
 	spi_init();
 	
   RST_HI; 
-  time_delay(5000); 
+  delay_us(5000); 
   RST_LO; 
-  time_delay(20000);
+  delay_us(20000);
   RST_HI; 
-  time_delay(150000L);
+  delay_us(150000L);
 
   _wr_command(0xEF);
   _wr_data(0x03);
@@ -477,7 +477,7 @@ void ili9340_init(void) {
   _wr_data(0x0F); 
 
   _wr_command(ILI9340_SLPOUT);    //Exit Sleep 
-  time_delay(120000L); 		
+  delay_us(120000L); 		
   _wr_command(ILI9340_DISPON);    //Display on
 
   term.screen_width = ILI9340_TFTWIDTH;

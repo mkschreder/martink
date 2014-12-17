@@ -21,7 +21,6 @@ extern "C" {
 #include <avr/io.h>
 
 #include "autoconf.h"
-#include "../../twi.h"
 
 
 struct _avr_twi_op {

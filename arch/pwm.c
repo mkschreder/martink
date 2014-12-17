@@ -19,40 +19,29 @@
 	Github: https://github.com/mkschreder
 */
 
-#pragma once 
+#include <arch/soc.h>
 
-#include <avr/io.h>
-#include <avr/pgmspace.h>
-#include <avr/interrupt.h>
 
-#include <util/crc16.h>
-#include <util/delay.h>
-#include <util/atomic.h>
+uint16_t 		_pwm_set_channel_duty(struct pwm_interface *self, uint8_t channel, uint16_t value_us){
+	switch(channel){
+		case 0: return pwm0_set(value_us);
+		case 1: return pwm1_set(value_us);
+		// not available because timer1 is always used for timing tasks!
+		//case 2: return pwm2_set(value_us);
+		//case 3: return pwm3_set(value_us);
+		case 4: return pwm4_set(value_us);
+		case 5: return pwm5_set(value_us);
+		default: return 0; 
+	}
+}
 
-typedef char PROGMEM prog_char; 
+uint16_t 		_pwm_set_channel_period(struct pwm_interface *self, uint8_t channel, uint16_t value_us){
+	return 0; 
+}
 
-#include "autoconf.h"
-
-#ifdef CONFIG_HAVE_ADC
-#include "m328p/adc.h"
-#endif
-
-#ifdef CONFIG_HAVE_TWI
-#include "m328p/twi.h"
-#include "m328p/twi_slave.h"
-#include "m328p/twi_slave.h"
-#endif
-
-#ifdef CONFIG_HAVE_SPI
-#include "m328p/spi.h"
-#endif
-
-#ifdef CONFIG_HAVE_UART
-#include "m328p/uart.h"
-#endif
-
-#include "m328p/random.h"
-#include "m328p/stack.h"
-#include "m328p/time.h"
-#include "m328p/gpio.h"
-#include "m328p/pwm.h"
+struct pwm_interface pwm_get_interface(void){
+	return (struct pwm_interface){
+		.set_channel_duty = _pwm_set_channel_duty,
+		.set_channel_period = _pwm_set_channel_period
+	}; 
+}

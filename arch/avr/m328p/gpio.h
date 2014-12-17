@@ -22,6 +22,7 @@
 #pragma once
 
 #include "../../gpio.h"
+#include "../../time.h"
 
 enum {
 	GPIO_NONE = 0,
@@ -57,6 +58,7 @@ enum {
 	GPIO_PD5,
 	GPIO_PD6,
 	GPIO_PD7,
+	GPIO_COUNT
 };
 
 #define GPIO_ICP1 	GPIO_PB0
@@ -94,37 +96,62 @@ enum {
 extern const struct pin_decl {
 	volatile uint8_t *out_reg;
 	volatile uint8_t *in_reg;
-	volatile uint8_t	*ddr_reg;
+	volatile uint8_t *ddr_reg;
 } gPinPorts[4];
 
+struct pin_state {
+	volatile timeout_t t_up; 
+	volatile timeout_t t_down; 
+	volatile uint8_t status; 
+}; 
 
-#define REG_IDX(pin) 	((pin > 0)?(((pin - 1) & 0xf8) >> 3):0)
-#define PIN_IDX(pin) 	((pin > 0)?((pin - 1) & 0x07):0)
-#define OUT_REG(pin) 	*(gPinPorts[REG_IDX(pin)].out_reg)
-#define IN_REG(pin) 	*(gPinPorts[REG_IDX(pin)].in_reg)
-#define DDR_REG(pin) 	*(gPinPorts[REG_IDX(pin)].ddr_reg)
+extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0]; 
 
-#define gpio_set_function(pin, fun) (\
-	(fun == GP_OUTPUT)\
-		?(DDR_REG(pin) |= _BV(PIN_IDX(pin)))\
-		:(DDR_REG(pin) &= ~_BV(PIN_IDX(pin)))\
+#define RIDX(pin) 	((pin > 0)?(((pin - 1) & 0xf8) >> 3):0)
+#define PIDX(pin) 	((pin > 0)?((pin - 1) & 0x07):0)
+#define OREG(pin) 	*(gPinPorts[RIDX(pin)].out_reg)
+#define IREG(pin) 	*(gPinPorts[RIDX(pin)].in_reg)
+#define DREG(pin) 	*(gPinPorts[RIDX(pin)].ddr_reg)
+#define RSET(reg, bit) (reg |= _BV(bit))
+#define RCLR(reg, bit) (reg &= ~_BV(bit))
+
+#define gpio_configure(pin, fun) (\
+	((fun) & GP_OUTPUT)\
+		?RSET(DREG(pin), PIDX(pin))\
+		:RCLR(DREG(pin), PIDX(pin)), \
+	(((fun) & GP_PULL) && ((fun) & GP_PULLUP))\
+		?RSET(OREG(pin), PIDX(pin))\
+		:RCLR(OREG(pin), PIDX(pin)) \
 )
 
+static inline uint8_t gpio_get_status(gpio_pin_t pin, 
+	timeout_t *ch_up, timeout_t *ch_down){
+	pin = (pin < GPIO_PB0)?GPIO_PB0:((pin > GPIO_PD7)?GPIO_PD7:pin); 
+	uint8_t ret = 0;
+	volatile struct pin_state *st = &gPinState[pin - GPIO_PB0]; 
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+		ret = st->status; 
+		*ch_up = st->t_up; 
+		*ch_down = st->t_down; 
+		st->status = 0; 
+	}
+	return ret; 
+}
+
+/*
 #define gpio_set_pullup(pin, pull) (\
 	gpio_set_function(pin, GP_INPUT),\
 	(pull)\
 		?(OUT_REG(pin) |= _BV(PIN_IDX(pin)))\
 		:(OUT_REG(pin) &= ~_BV(PIN_IDX(pin)))\
 )
-
+*/
 #define gpio_write_pin(pin, val) (\
-	(val)\
-		?(OUT_REG(pin) |= _BV(PIN_IDX(pin)))\
-		:(OUT_REG(pin) &= ~_BV(PIN_IDX(pin)))\
+	(val)?RSET(OREG(pin), PIDX(pin)):RCLR(OREG(pin), PIDX(pin))\
 )
 
 #define gpio_read_pin(pin) (\
-	(IN_REG(pin) & PIN_IDX(pin))?1:0\
+	(IREG(pin) & PIDX(pin))?1:0 \
 )
 
 #define gpio_clear(pin) gpio_write_pin(pin, 0)

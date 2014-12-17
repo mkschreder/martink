@@ -25,61 +25,62 @@ extern "C" {
 
 
 struct _avr_twi_op {
-  uint8_t address;
-  uint8_t buflen;
-  uint8_t bufpos;
-  uint8_t *buf;
+  volatile uint8_t address;
+  volatile uint8_t buflen;
+  volatile uint8_t bufpos;
+  volatile uint8_t *buf;
 };
 
 typedef struct _avr_twi_op avr_twi_op;
 
 struct _avr_twi_device {
-	struct _avr_twi_op op; 
-	uint8_t status;
+	volatile struct _avr_twi_op op; 
+	//volatile uint8_t status;
 };
 
 extern volatile struct _avr_twi_device _twi0;
+extern volatile uint8_t _twi0_status; 
 
 #define hwtwi0_init(speed) ({\
 	TWSR = 0;\
   TWBR = (uint8_t)(((F_CPU/speed)-16)/2);\
 })
 
-#define TWCR_DEFAULT (_BV(TWEA) | _BV(TWEN) | _BV(TWIE))
+#define TWCR_DEFAULT (_BV(TWEN) | _BV(TWIE)) //_BV(TWEA)
 
-#define TWCR_NOT_ACK (_BV(TWINT) | _BV(TWEN) | _BV(TWIE))
-#define TWCR_ACK (TWCR_NOT_ACK | _BV(TWEA))
+//#define TWCR_NOT_ACK TWCR_DEFAULT | _BV(TWINT)
+//#define TWCR_ACK (TWCR_NOT_ACK | _BV(TWEA))
 
-#define TWI_ERR_BUSY 0x0100
+#define TWI_ERR_BUSY 				0x0100
+#define TWI_ERR_NO_RESPONSE 0x0200
 
 /// always set when twi bus is ready to receive more data
 #define TWI_READY 0
 /// set when data has been sent but no stop condition has been sent yet
 #define TWI_IDLE	1
+#define TWI_NO_RESPONSE 2
+#define TWI_REP_START_SENT 4
 
 extern void 		twi0_init_default(void);
 
 /// sends a missing stop and prepares the device for receiving more data
-#define twi0_begin() (\
-	(_twi0.status & _BV(TWI_IDLE))?({twi0_end();}):(0),\
-	_twi0.status &= ~(_BV(TWI_IDLE))\
-)
+#define twi0_begin() ({}) 
+
+uint8_t twi0_busy(void); 
+uint8_t twi0_success(void); 
 
 /// sends stop signal on the bus
-#define twi0_end() ({\
-	TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTO);\
-	_twi0.status |= _BV(TWI_READY);\
-})
+void twi0_end(void);
 
 /// address is the first byte of data
-extern uint16_t 		twi0_start_write(const uint8_t *data, size_t data_sz);
+extern void 		twi0_start_write(uint8_t *data, uint8_t data_sz);
 /// address is the first byte of data
-extern uint16_t 		twi0_start_read(uint8_t *data, size_t data_sz);
+extern void 		twi0_start_read(uint8_t *data, uint8_t data_sz);
 /// waits until current transaction has completed
 //extern void 		twi0_wait_until_transaction_completed(void);
 
-#define twi0_status() (_twi0.status)
-#define twi0_sync() do { } while(!(_twi0.status & (_BV(TWI_IDLE) | _BV(TWI_READY))))
+//#define twi0_status() (_twi0_status)
+//void twi0_sync(void); 
 
 //extern void 		twi0_start_transaction(i2c_op_list_t);
 /*

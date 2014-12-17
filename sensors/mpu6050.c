@@ -1,4 +1,7 @@
 /*
+
+NOTE: DMP has not been ported because I have never used it. 
+
 MPU6050 lib 0x02
 
 copyright (c) Davide Gironi, 2012
@@ -17,7 +20,6 @@ Please refer to LICENSE file for licensing information.
 #if MPU6050_GETATTITUDE == 1 || MPU6050_GETATTITUDE == 2
 #include <math.h>  //include libm
 #endif
-
 
 volatile uint8_t buffer[14];
 
@@ -108,42 +110,19 @@ extern volatile uint8_t mpu6050_mpuInterrupt;
  * read bytes from chip register
  */
 int8_t mpu6050_readBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t *data) {
-	length &= 0x0f; 
 	uint8_t buf[16] = {MPU6050_ADDR, regAddr};
 	p_begin(self->port);
 	p_write(self->port, buf, 2);
 	p_sync(self->port);
+	
+	time_delay(10); 
+	
 	p_read(self->port, buf, length + 1);
 	p_sync(self->port);
 	p_end(self->port); 
 	memcpy(data, &buf[1], length);
+	
 	return length; 
-	/*
-	twi0_start_transaction(TWI_OP_LIST(
-		TWI_OP(MPU6050_ADDR | I2C_WRITE, wr_buf, 1),
-		TWI_OP(MPU6050_ADDR | I2C_READ, data, length)
-	)); 
-	twi0_wait(); 
-	return length; */
-	/*uint8_t i = 0;
-	int8_t count = 0;
-	if(length > 0) {
-		//request register
-		i2c_start(MPU6050_ADDR | I2C_WRITE);
-		i2c_write(regAddr);
-		time_delay(10);
-		//read data
-		i2c_start(MPU6050_ADDR | I2C_READ);
-		for(i=0; i<length; i++) {
-			count++;
-			if(i==length-1)
-				data[i] = i2c_readNak();
-			else
-				data[i] = i2c_readAck();
-		}
-		i2c_stop();
-	}
-	return count;*/
 }
 
 /*
@@ -157,24 +136,14 @@ int8_t mpu6050_readByte(struct mpu6050 *self, uint8_t regAddr, uint8_t *data) {
  * write bytes to chip register
  */
 void mpu6050_writeBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t* data) {
-	uint8_t wr[32]; 
-	wr[0] = regAddr; memcpy(&wr[1], data, length); 
+	uint8_t wr[16] = {MPU6050_ADDR, regAddr}; 
+	memcpy(&wr[2], data, length); 
+	
 	if(length > 0) {
 		p_begin(self->port);
-		p_write(self->port, wr, length);
+		p_write(self->port, wr, length + 2);
 		p_sync(self->port);
 		p_end(self->port); 
-		//write data
-		/*twi0_start_transaction(TWI_OP_LIST(
-			TWI_OP(MPU6050_ADDR | I2C_WRITE, wr, length + 1)
-		)); 
-		twi0_wait(); */
-		/*i2c_start(MPU6050_ADDR | I2C_WRITE);
-		i2c_write(regAddr); //reg
-		for (uint8_t i = 0; i < length; i++) {
-			i2c_write((uint8_t) data[i]);
-		}
-		i2c_stop();*/
 	}
 }
 
@@ -182,7 +151,7 @@ void mpu6050_writeBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, u
  * write 1 byte to chip register
  */
 void mpu6050_writeByte(struct mpu6050 *self, uint8_t regAddr, uint8_t data) {
-    return mpu6050_writeBytes(self, regAddr, 1, &data);
+  return mpu6050_writeBytes(self, regAddr, 1, &data);
 }
 
 /*
@@ -514,14 +483,16 @@ uint8_t mpu6050_probe(struct mpu6050 *self) {
  */
 void mpu6050_init(struct mpu6050 *self, struct packet_interface *port) {
 	self->port = port; 
+	
 	//allow mpu6050 chip clocks to start up
 	time_delay(100000L);
 
 	//set sleep disabled
 	mpu6050_setSleepDisabled(self);
+	
 	//wake up delay needed sleep disabled
 	time_delay(10000L);
-
+	
 	//set clock source
 	//  it is highly recommended that the device be configured to use one of the gyroscopes (or an external clock source)
 	//  as the clock reference for improved stability

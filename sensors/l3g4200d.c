@@ -29,12 +29,14 @@ double l3g4200d_gtemp = 0; //temperature used for compensation
  * set reference temperature
  */
 void l3g4200d_settemperatureref(void) {
+	uint8_t rawtemp; 
+	/*
 	i2c_start(L3G4200D_ADDR | I2C_WRITE);
 	i2c_write(L3G4200D_OUT_TEMP);
 	i2c_rep_start(L3G4200D_ADDR | I2C_READ);
-	uint8_t rawtemp = i2c_readNak();
+	rawtemp = i2c_readNak();
 	i2c_stop();
-
+*/
 	l3g4200d_temperatureref = (int8_t) rawtemp;
 	#if L3G4200D_CALIBRATED == 1 && L3G4200D_CALIBRATEDDOTEMPCOMP == 1
 	l3g4200d_gtemp = (double)rawtemp;
@@ -45,12 +47,14 @@ void l3g4200d_settemperatureref(void) {
  * get temperature variation
  */
 int8_t l3g4200d_gettemperaturediff(void) {
+	uint8_t rawtemp; 
+	/*
 	i2c_start(L3G4200D_ADDR | I2C_WRITE);
 	i2c_write(L3G4200D_OUT_TEMP);
 	i2c_rep_start(L3G4200D_ADDR | I2C_READ);
-	uint8_t rawtemp = i2c_readNak();
+	rawtemp = i2c_readNak();
 	i2c_stop();
-
+*/
 	return l3g4200d_temperatureref - (int8_t)rawtemp;
 }
 
@@ -69,7 +73,7 @@ void l3g4200d_setoffset(double offsetx, double offsety, double offsetz) {
 void l3g4200d_getrawdata(int16_t *gxraw, int16_t *gyraw, int16_t *gzraw) {
 	uint8_t i = 0;
 	uint8_t buff[6];
-
+/*
 	i2c_start(L3G4200D_ADDR | I2C_WRITE);
 	i2c_write(L3G4200D_OUT_X_L | (1 << 7));
 	i2c_rep_start(L3G4200D_ADDR | I2C_READ);
@@ -80,7 +84,7 @@ void l3g4200d_getrawdata(int16_t *gxraw, int16_t *gyraw, int16_t *gzraw) {
 			buff[i] = i2c_readAck();
 	}
 	i2c_stop();
-
+*/
 	*gxraw = ((buff[1] << 8) | buff[0]);
 	*gyraw = ((buff[3] << 8) | buff[2]);
 	*gzraw = ((buff[5] << 8) | buff[4]);
@@ -122,6 +126,7 @@ void l3g4200d_getdata(double* gx, double* gy, double* gz) {
  */
 void l3g4200d_init(void) {
 	//enable chip
+	/*
 	i2c_start(L3G4200D_ADDR | I2C_WRITE);
 	i2c_write(L3G4200D_CTRL_REG1);
 	i2c_write(0x0F); //0x0F = 0b00001111, normal power mode, all axes enabled
@@ -131,7 +136,7 @@ void l3g4200d_init(void) {
 	i2c_write(L3G4200D_CTRL_REG4);
 	i2c_write(L3G4200D_RANGE<<4);
 	i2c_stop();
-
+*/
 	#if L3G4200D_CALIBRATED == 1
 	//init offset
 	l3g4200d_offsetx = L3G4200D_OFFSETX;

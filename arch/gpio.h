@@ -21,15 +21,17 @@
 
 #pragma once
 
+#define GP_INPUT 		(0)
+#define GP_OUTPUT 	(1 << 0)
+#define GP_PULL 		(1 << 1)
+#define GP_HIZ			(0 << 1)
+#define GP_PULLUP 	(GP_PULL | (1 << 2))
+#define GP_PULLDOWN (GP_PULL | (0 << 2))
 
-enum {
-	GP_INPUT,
-	GP_OUTPUT,
-	GP_AUX_A, 
-	GP_AUX_B, 
-	GP_AUX_C, 
-	GP_AUX_D
-};
+// GPIO status flags
+#define GP_CHANGED 		(1 << 0)
+#define GP_WENT_HIGH 	(GP_CHANGED | (1 << 1))
+#define GP_WENT_LOW 	(GP_CHANGED | (1 << 2))
 
 typedef uint16_t gpio_pin_t; 
 /*

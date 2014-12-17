@@ -1,412 +1,288 @@
-/*************************************************************************
-* Title:    I2C master library using hardware TWI interface
-* Author:   Peter Fleury <pfleury@gmx.ch>  http://jump.to/fleury
-* File:     $Id: twimaster.c,v 1.3 2005/07/02 11:14:21 Peter Exp $
-* Software: AVR-GCC 3.4.3 / avr-libc 1.2.3
-* Target:   any AVR device with hardware TWI 
-* Usage:    API compatible with I2C Software Library i2cmaster.h
-**************************************************************************/
-#include <inttypes.h>
+/* =============================================================================
+
+Copyright (c) 2006 Pieter Conradie [www.piconomic.co.za]
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in
+the documentation and/or other materials provided with the
+distribution.
+
+* Neither the name of the copyright holders nor the names of
+contributors may be used to endorse or promote products derived
+from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+Title:		  Interrupt-driven TWI (I2C) Master
+Author(s):	  Pieter Conradie
+Creation Date:  2007-03-31
+Revision Info:  $Id: twi_master.c 117 2010-06-24 20:21:28Z pieterconradie $
+
+============================================================================= */
+#include <avr/io.h>
+#include <avr/interrupt.h>
 #include <compat/twi.h>
-#include <util/delay.h>
 
 #include <arch/soc.h>
 
 #include "twi.h"
 
-#include <assert.h>
-#include <avr/interrupt.h>
-#include <avr/io.h>
-#include <util/atomic.h>
-#include <stdio.h>
-#include <stdlib.h>
+#define TWI_FREQ 100000
 
-
-// By default, the control register is set to:
-// - TWEA: Automatically send acknowledge bit in receive mode.
-// - TWEN: Enable the I2C system.
-// - TWIE: Enable interrupt requests when TWINT is set.
-
-#define I2C_FREQ 100000
-
-#define I2C_TXN_DONE _BV(0)
-#define I2C_TXN_ERR  _BV(1)
-/*
-static inline void i2c_op_init(i2c_op_t *o, uint8_t address, uint8_t *buf, uint8_t buflen) {
-  o->address = address;
-  o->buflen = buflen;
-  o->bufpos = 0;
-  o->buf = buf;
-}
-
-static inline void i2c_op_init_rd(i2c_op_t *o, uint8_t address, uint8_t *buf, uint8_t buflen) {
-  i2c_op_init(o, (address << 1) | TW_READ, buf, buflen);
-}
-
-static inline void i2c_op_init_wr(i2c_op_t *o, uint8_t address, uint8_t *buf, uint8_t buflen) {
-  i2c_op_init(o, (address << 1) | TW_WRITE, buf, buflen);
-}*/
-
-volatile struct _avr_twi_device _twi0;
+/// Size TWI clock prescaler according to desired TWI clock frequency
+#define TWI_PRESCALER	((0<<TWPS1)|(0<<TWPS0))
 
 /*
-static volatile i2c_txn_t _txn; 
-static volatile i2c_txn_t *txn = 0;
-static volatile i2c_op_t *op;
+/// Map TWI clock prescaler to prescaler value
+#if   (TWI_PRESCALER == ((0<<TWPS1)|(0<<TWPS0)))
+#define TWI_PRESCALER_VALUE 1
+#elif (TWI_PRESCALER == ((0<<TWPS1)|(1<<TWPS0)))
+#define TWI_PRESCALER_VALUE 4
+#elif (TWI_PRESCALER == ((1<<TWPS1)|(0<<TWPS0)))
+#define TWI_PRESCALER_VALUE 16
+#elif (TWI_PRESCALER == ((1<<TWPS1)|(1<<TWPS0)))
+#define TWI_PRESCALER_VALUE 64
+#else
+#error "Undefined TWI_PRESCALER value!"
+#endif
 */
-void twi0_init_default(void) {
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-		TWSR &= ~(_BV(TWPS1) | _BV(TWPS0));
-		TWBR = ((F_CPU / I2C_FREQ) - 16) / (2 * 1);
-		
-		//PORTC |= _BV(PC5) | _BV(PC4);
-		
-		TWCR = TWCR_DEFAULT;
+/// Calculate TWI Baud rate value according to selected frequency and prescaler
+#define TWI_BR_VALUE ((DIV_ROUND(F_CPU,TWI_FREQUENCY_HZ)-16ul)/(2ul*TWI_PRESCALER_VALUE))
 
-		_twi0.status = _BV(TWI_READY);
-		
-		TWAR = 0;
-	}
-}
+/// TWI State machine value when finished
+#define TWI_STATUS_DONE 0xff
 
-uint16_t twi0_start_write(const uint8_t *data, size_t size){
-	if(_twi0.status & TWI_READY && size){
-		_twi0.status &= ~_BV(TWI_READY); 
-		_twi0.op.address = (data[0] & 0xfe) | I2C_READ;
-		_twi0.op.buf = (uint8_t*)&data[1];
-		_twi0.op.buflen = size - 1;
-		_twi0.op.bufpos = 0; 
-		TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTA);
-		return 0; 
-	}
-	return TWI_ERR_BUSY; 
-}
+/* _____LOCAL VARIABLES______________________________________________________ */
+static volatile uint8_t twi_adr;
+static volatile uint8_t *twi_data;
+static volatile uint8_t twi_data_counter;
+static volatile uint8_t twi_status;
 
-uint16_t twi0_start_read(uint8_t *data, size_t size){
-	if(_twi0.status & TWI_READY && size){
-		_twi0.status &= ~_BV(TWI_READY); 
-		_twi0.op.address = (data[0] & 0xfe) | I2C_WRITE;
-		_twi0.op.buf = &data[1];
-		_twi0.op.buflen = size - 1;
-		_twi0.op.bufpos = 0; 
-		TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTA);
-		return 0; 
-	}
-	return TWI_ERR_BUSY; 
-}
+/* _____PRIVATE FUNCTIONS____________________________________________________ */
+/// TWI state machine interrupt handler
+ISR(TWI_vect)
+{
+	uint8_t status = TWSR; 
+	switch(status)
+	{
+	case TW_START:
+		// START has been transmitted
+		// Fall through...
 
-/*
-void __twi0_start_transaction__(i2c_op_list_t ops) {
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-		if (txn == NULL) { // if no transaction is in progress
-			txn = &_txn; 
-			
-			txn->opslen = 0; 
-			while(ops[txn->opslen].buf != 0){
-				txn->ops[txn->opslen] = ops[txn->opslen]; 
-				txn->opslen++; 
-			}
-			txn->flags = 0;
-			txn->opspos = 0;
-			op = &txn->ops[0];
+	case TW_REP_START:
+		// REPEATED START has been transmitted
 
-			TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTA);
-		} else {
-			// throw away??
+		// Load data register with TWI slave address
+		TWDR = twi_adr;
+		// TWI Interrupt enabled and clear flag to send next byte
+		TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
+		break;
+
+	case TW_MT_SLA_ACK:
+		// SLA+W has been tramsmitted and ACK received
+		// Fall through...
+
+	case TW_MT_DATA_ACK:
+		// Data byte has been tramsmitted and ACK received
+		if(twi_data_counter != 0)
+		{
+			// Decrement counter
+			twi_data_counter--;
+			// Load data register with next byte
+			TWDR = *twi_data++;
+			// TWI Interrupt enabled and clear flag to send next byte
+			TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 		}
+		else
+		{
+			// Allow rep start! Disable TWI Interrupt
+			TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
+
+			// Initiate STOP condition after last byte; TWI Interrupt disabled
+			//TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(1<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
+
+			// Transfer finished
+			twi_status = TWI_STATUS_DONE;
+		}
+		break;
+
+	case TW_MR_DATA_ACK:
+		// Data byte has been received and ACK tramsmitted
+		// Buffer received byte
+		*twi_data++ = TWDR;
+		// Decrement counter
+		twi_data_counter--;
+		// Fall through...
+
+	case TW_MR_SLA_ACK:
+		// SLA+R has been transmitted and ACK received
+		// See if last expected byte will be received ...
+		if(twi_data_counter > 1)
+		{
+			// Send ACK after reception
+			TWCR = (1<<TWINT)|(1<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
+		}
+		else
+		{
+			// Send NACK after next reception
+			TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
+		}
+		break;
+
+	case TW_MR_DATA_NACK:
+		// Data byte has been received and NACK tramsmitted
+		// Buffer received byte
+		*twi_data++ = TWDR;
+		// Decrement counter
+		twi_data_counter--;
+
+		// Allow repeated start! Disable TWI Interrupt
+		TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
+
+		// Initiate STOP condition after last byte; TWI Interrupt disabled
+		//TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(1<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
+
+		// Transfer finished
+		twi_status = TWI_STATUS_DONE;
+		break;
+
+	case TW_MT_ARB_LOST:
+		// Arbitration lost...
+		// Initiate a (REPEATED) START condition; Interrupt enabled and flag cleared
+		TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
+		break;
+
+	default:
+		// Error condition; save status
+		twi_status = TWSR;
+		// Reset TWI Interface; disable interrupt
+		TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
 	}
 }
-*/
-ISR(TWI_vect) {
-  uint8_t status = TW_STATUS;
-	volatile struct _avr_twi_op *op = &_twi0.op;
-	
-  if ((op->address & _BV(0)) == TW_READ) {
-    // Master Receiver mode.
-    switch (status) {
 
-    // A START condition has been transmitted. 
-    case TW_START:
-    // A repeated START condition has been transmitted. 
-    case TW_REP_START:
-      assert(op->buflen > 0);
-      op->bufpos = 0;
-      TWDR = op->address;
-      TWCR = TWCR_DEFAULT | _BV(TWINT);
-      break;
-
-    // Arbitration lost in SLA+R or NOT ACK bit. 
-    case TW_MR_ARB_LOST:
-      // A START condition will be transmitted when the bus becomes free. 
-      TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTA);
-      break;
-
-    // SLA+R has been transmitted; ACK has been received. 
-    case TW_MR_SLA_ACK:
-      if (op->buflen == 1) {
-        TWCR = TWCR_NOT_ACK;
-      } else {
-        TWCR = TWCR_ACK;
-      }
-      break;
-
-    // SLA+R has been transmitted; NOT ACK has been received. 
-    case TW_MR_SLA_NACK:
-      //op->flags = I2C_TXN_DONE | I2C_TXN_ERR;
-      break; 
-      //goto next_txn;
-
-    // Data byte has been received; ACK has been returned. 
-    case TW_MR_DATA_ACK:
-      op->buf[op->bufpos++] = TWDR;
-      if (op->bufpos+1 == op->buflen) {
-        TWCR = TWCR_NOT_ACK;
-      } else {
-        TWCR = TWCR_ACK;
-      }
-      break;
-
-    // Data byte has been received; NOT ACK has been returned. 
-    case TW_MR_DATA_NACK:
-      op->buf[op->bufpos++] = TWDR;
-      goto next_op;
-
-    default:
-			assert(0 && "unknown status in master receiver mode");
-    }
-  } else {
-    // Master Transmitter mode. 
-    switch (status) {
-
-    // A START condition has been transmitted. 
-    case TW_START:
-    // A repeated START condition has been transmitted. 
-    case TW_REP_START:
-      assert(op->buflen > 0);
-      op->bufpos = 0;
-      TWDR = op->address;
-      TWCR = TWCR_DEFAULT | _BV(TWINT);
-      break;
-
-    // Arbitration lost in SLA+W or data bytes. 
-    case TW_MT_ARB_LOST:
-      // A START condition will be transmitted when the bus becomes free. 
-      TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTA);
-      break;
-
-    // SLA+W has been transmitted; ACK has been received. 
-    case TW_MT_SLA_ACK:
-      TWDR = op->buf[op->bufpos++];
-      TWCR = TWCR_DEFAULT | _BV(TWINT);
-      break;
-
-    // SLA+W has been transmitted; NOT ACK has been received. 
-    case TW_MT_SLA_NACK:
-      //op->flags = I2C_TXN_DONE | I2C_TXN_ERR;
-      break; 
-      //goto next_txn;
-
-    // Data byte has been transmitted; ACK has been received. 
-    case TW_MT_DATA_ACK:
-      if (op->bufpos < op->buflen) {
-        TWDR = op->buf[op->bufpos++];
-        TWCR = TWCR_DEFAULT | _BV(TWINT);
-        break;
-      }
-
-      // No more bytes left to transmit... 
-      goto next_op;
-
-    // Data byte has been transmitted; NOT ACK has been received. 
-    case TW_MT_DATA_NACK:
-      if (op->bufpos < op->buflen) {
-        // There were more bytes left to transmit! 
-        //txn->flags = I2C_TXN_DONE | I2C_TXN_ERR;
-        break; 
-        //goto next_txn;
-      }
-
-      goto next_op;
-
-    default:
-      assert(0 && "unknown status in master transmitter mode");
-    }
-  }
-
-  return;
-
-next_op:
-	//txn = NULL;
-	_twi0.status |= TWI_IDLE; 
-
-  //TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTO);
-/*
-	/// TODO: REMOVE
-	_delay_us(10);
-	
-  if (++(txn->opspos) < txn->opslen) {
-    op = &txn->ops[txn->opspos];
-
-    TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTA);
-    return;
-  }
-
-  txn->flags = I2C_TXN_DONE;
- */
-/*
-next_txn:
-  if (txn->next != NULL) {
-    txn = txn->next;
-    op = &txn->ops[0];
-
-    TWCR = TWCR_DEFAULT | _BV(TWINT) | _BV(TWSTA);
-    return;
-  }
-*/
-  
-}
-
-/*
-#define SCL_CLOCK  100000L
-
-void __twi0_init__(void)
+/* _____FUNCTIONS_____________________________________________________ */
+void twi0_init_default(void)
 {
-	hwtwi0_init(SCL_CLOCK); 
+	// Initialise variable
+	twi_data_counter = 0;
+
+	// Initialize TWI clock
+	TWSR = TWI_PRESCALER;
+	TWBR = ((F_CPU / TWI_FREQ) - 16) / (2 * 1);
+
+	// Load data register with default content; release SDA
+	TWDR = 0xff;
+
+	// Enable TWI peripheral with interrupt disabled
+	TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
 }
 
-uint8_t __twi0_sync__(void){
-	uint16_t timeout = 10000; 
-	while(!(TWCR & (1<<TWINT)) && timeout) {
-		_delay_us(1); 
-		timeout--; 
+void twi0_start_write(uint8_t *data, uint8_t bytes_to_send)
+{
+	uint8_t adr = *data++; bytes_to_send--; 
+	
+	// Wait for previous transaction to finish
+	while(twi0_busy())
+	{
+		;
 	}
-	return timeout != 0; 
+
+	// Copy address; clear R/~W bit in SLA+R/W address field
+	twi_adr = adr & ~I2C_READ;
+
+	// Save pointer to data and number of bytes to send
+	twi_data		= data;
+	twi_data_counter = bytes_to_send;
+
+	// Initiate a START condition; Interrupt enabled and flag cleared
+	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 }
 
-uint8_t __twi0_waitStop__(void){
-	uint16_t timeout = 100; 
-	while((TWCR & (1<<TWSTO)) && timeout) {
-		time_delay(1); 
-		timeout--; 
+void twi0_start_read(uint8_t *data, uint8_t bytes_to_receive)
+{
+	uint8_t adr = *data++; bytes_to_receive--; 
+	
+	// Wait for previous transaction to finish
+	while(twi0_busy())
+	{
+		;
 	}
-	return timeout != 0; 
+
+	// Copy address; set R/~W bit in SLA+R/W address field
+	twi_adr = adr | I2C_READ;
+
+	// Save pointer to data and number of bytes to receive
+	twi_data		 = data;
+	twi_data_counter = bytes_to_receive;
+
+	// Initiate a START condition; Interrupt enabled and flag cleared
+	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 }
 
-unsigned char __twi0_start__(unsigned char address)
+uint8_t twi0_busy(void)
 {
-    uint8_t   twst;
-
-	// send START condition
-	TWCR = (1<<TWINT) | (1<<TWSTA) | (1<<TWEN);
-
-	// wait until transmission completed (this is stupid!!)
-	__twi0_sync__(); 
-
-	// check value of TWI Status Register. Mask prescaler bits.
-	twst = TW_STATUS & 0xF8;
-	if ( (twst != TW_START) && (twst != TW_REP_START)) return 1;
-
-	// send device address
-	TWDR = address;
-	TWCR = (1<<TWINT) | (1<<TWEN);
-
-	// wail until transmission completed and ACK/NACK has been received
-	__twi0_sync__(); 
-	
-	// check value of TWI Status Register. Mask prescaler bits.
-	twst = TW_STATUS & 0xF8;
-	if ( (twst != TW_MT_SLA_ACK) && (twst != TW_MR_SLA_ACK) ) return 1;
-
-	return 0;
-
+	// IF TWI Interrupt is enabled then the peripheral is busy
+	if(TWCR & _BV(TWIE))
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
-uint8_t __twi0_start_wait__(unsigned char address)
+uint8_t twi0_success(void)
 {
-    uint8_t   twst;
-
-    int retry = 2000; 
-    while ( 1 )
-    {
-	    // send START condition
-	    TWCR = (1<<TWINT) | (1<<TWSTA) | (1<<TWEN);
-    
-    	// wait until transmission completed
-    	__twi0_sync__(); 
-    
-    	// check value of TWI Status Register. Mask prescaler bits.
-    	twst = TW_STATUS & 0xF8;
-    	if ( (twst != TW_START) && (twst != TW_REP_START)) continue;
-    
-    	// send device address
-    	TWDR = address;
-    	TWCR = (1<<TWINT) | (1<<TWEN);
-    
-    	// wail until transmission completed
-    	__twi0_sync__(); 
-    
-    	// check value of TWI Status Register. Mask prescaler bits.
-    	twst = TW_STATUS & 0xF8;
-    	if ( (twst == TW_MT_SLA_NACK )||(twst ==TW_MR_DATA_NACK) ) 
-    	{    	    
-	        TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTO);
-	        
-	        // wait until stop condition is executed and bus released
-	        if(!__twi0_waitStop__()) continue; 
-
-	        if(!(retry --)) break;  
-    	    continue;
-    	}
-    	return 1; 
-    	//if( twst != TW_MT_SLA_ACK) return 1;
-    	break;
-     }
-	return 0; 
+	if(twi_status == TWI_STATUS_DONE)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
-unsigned char __twi0_rep_start__(unsigned char address)
+uint8_t twi0_get_status(void)
 {
-    return __twi0_start__( address );
-
+	return twi_status;
 }
 
-void __twi0_stop__(void)
+void twi0_end(void)
 {
-	TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTO);
-	
-	// wait until stop condition is executed and bus released
-	__twi0_waitStop__(); 
+	// Wait for transaction to finish
+	while(twi0_busy())
+	{
+		;
+	}
 
+	// Make sure transaction was succesful
+	if(twi_status != TWI_STATUS_DONE)
+	{
+		return;
+	}
+
+	// Initiate a STOP condition
+	TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(1<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
+
+	// Wait until STOP has finished
+	while(TWCR & _BV(TWSTO));
 }
-
-unsigned char __twi0_write__( unsigned char data )
-{	
-	uint8_t   twst;
-    
-	// send data to the previously addressed device
-	TWDR = data;
-	TWCR = (1<<TWINT) | (1<<TWEN);
-
-	// wait until transmission completed
-	__twi0_sync__(); 
-
-	// check value of TWI Status Register. Mask prescaler bits
-	twst = TW_STATUS & 0xF8;
-	if( twst != TW_MT_DATA_ACK) return 1;
-	return 0;
-
-}
-
-unsigned char __twi0_readAck__(void)
-{
-	TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWEA);
-	__twi0_sync__();    
-	return TWDR;
-}
-
-unsigned char __twi0_readNak__(void)
-{
-	TWCR = (1<<TWINT) | (1<<TWEN);
-	__twi0_sync__(); 
-	return TWDR;
-}*/

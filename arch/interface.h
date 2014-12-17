@@ -162,4 +162,14 @@ struct packet_interface {
 
 #define PK_ERR_INVALID 0x00010000L
 
-//#define p_wait(ptr_iface) ptr_iface->waiting(ptr_iface)
+/**
+ * GPIO interface is for implementing any type of bit wise parallel io. A lot 
+ * of device can implement this kind of interface - i2c parallel io chips, shift 
+ * registers that connect over spi, soc gpio pins, etc. Characteristic of this 
+ * interface is that it consists of arbitrary number of "pins" that can be written
+ * and read, as well as configured to have pullups. 
+ **/
+struct parallel_interface {
+	
+}; 
+	

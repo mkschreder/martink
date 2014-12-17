@@ -30,7 +30,9 @@ static long bmp085_rawtemperature, bmp085_rawpressure;
  * i2c write
  */
 void bmp085_writemem(struct bmp085 *self, uint8_t reg, uint8_t value) {
-	uint8_t buf[3] = {BMP085_ADDR, reg, value};
+	//uart0_printf("BMP: writing reg %d: %d .. ", reg, value); 
+	
+	uint8_t buf[8] = {BMP085_ADDR, reg, value};
 	p_begin(self->port);
 	p_write(self->port, buf, 3);
 	p_sync(self->port);
@@ -50,15 +52,17 @@ void bmp085_writemem(struct bmp085 *self, uint8_t reg, uint8_t value) {
  * i2c read
  */
 static inline void bmp085_readmem(struct bmp085 *self, uint8_t reg, uint8_t *buff, uint8_t bytes) {
-	bytes &= 0x07; 
-	char buf[8] = {BMP085_ADDR, reg};
-	// we use i2c packet format here with first byte telling the address of the device
+	//bytes &= 0x07; 
+	//uart0_printf("BMP: reading reg %d:  %d\n", reg, bytes); 
+	uint8_t buf[8] = {BMP085_ADDR, reg, 0, 0, 0, 0, 0, 0};
 	p_begin(self->port);
 	p_write(self->port, buf, 2);
 	p_sync(self->port);
+	_delay_us(10); 
 	p_read(self->port, buf, bytes + 1);
 	p_sync(self->port);
 	p_end(self->port);
+	
 	memcpy(buff, &buf[1], bytes); 
 	/*twi0_start_transaction(TWI_OP_LIST(
 		TWI_OP(BMP085_ADDR | I2C_WRITE, buf, 1),
@@ -100,7 +104,7 @@ long bmp085_avaragefilter(long input) {
  * read calibration registers
  */
 void bmp085_getcalibration(struct bmp085 *self) {
-	uint8_t buff[2];
+	uint8_t buff[4];
 	memset(buff, 0, sizeof(buff));
 
 	bmp085_readmem(self, BMP085_REGAC1, buff, 2);

@@ -27,7 +27,7 @@ struct mpu6050{
 }; 
 
 //definitions
-#define MPU6050_ADDR (0x68 <<1) //device address - 0x68 pin low (GND), 0x69 pin high (VCC)
+#define MPU6050_ADDR (0x68 <<1 ) //device address - 0x68 pin low (GND), 0x69 pin high (VCC)
 #define MPU6050_GETATTITUDE 0
 
 //functions

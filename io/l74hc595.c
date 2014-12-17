@@ -25,7 +25,7 @@ Please refer to LICENSE file for licensing information.
 #undef spi_writereadbyte
 
 #define spi_init() PFCALL(CONFIG_SPI0_NAME, init)
-#define spi_writereadbyte(b) PFCALL(CONFIG_SPI0_NAME, writereadbyte, b)
+#define spi_writereadbyte(b) (__spi0_putc__(0, b), __spi0_getc__(0))
 /*
 #define L74HC595_STCLo {L74HC595_PORT &= ~_BV(L74HC595_STCPIN);}
 #define L74HC595_STCHi {L74HC595_PORT |= _BV(L74HC595_STCPIN);}
@@ -38,7 +38,7 @@ Please refer to LICENSE file for licensing information.
 void l74hc595_init(void) {
 	spi_init(); 
 
-	gpio_set_function(CONFIG_L74HC595_STC_PIN, GP_OUTPUT);
+	gpio_configure(CONFIG_L74HC595_STC_PIN, GP_OUTPUT);
 	
 	L74HC595_STCLo;  
 }

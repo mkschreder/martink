@@ -46,6 +46,7 @@ void adxl345_getpitchroll(double ax, double ay, double az, double *pitch, double
  * initialize the accellerometer
  */
 void adxl345_init(void) {
+	/*
 	i2c_rep_start(ADXL345_ADDR | I2C_WRITE);
 	uint8_t range = ADXL345_RANGE | (ADXL345_FULLRANGE<<3);
 	i2c_write(0x31);
@@ -66,13 +67,14 @@ void adxl345_init(void) {
 	i2c_write(0x80); //data_ready on int2
 
 	_delay_ms(20);
-	i2c_stop();
+	i2c_stop();*/
 }
 
 /*
  * write the calibration offset
  */
 void adxl345_writeoffset(int8_t offsetx, int8_t offsety, int8_t offsetz) {
+	/*
 	//x offset
 	i2c_start_wait(ADXL345_ADDR | I2C_WRITE);
 	i2c_write(0x1E);
@@ -87,6 +89,7 @@ void adxl345_writeoffset(int8_t offsetx, int8_t offsety, int8_t offsetz) {
 	i2c_write(offsetz);
 
 	i2c_stop();
+	* */
 }
 
 /*
@@ -95,6 +98,7 @@ void adxl345_writeoffset(int8_t offsetx, int8_t offsety, int8_t offsetz) {
 void adxl345_waitfordataready(void) {
 	//wait until data is ready
 	unsigned char status = 0;
+	/*
 	i2c_start_wait(ADXL345_ADDR | I2C_WRITE);
 	do {
 		i2c_rep_start(ADXL345_ADDR | I2C_WRITE);
@@ -102,7 +106,7 @@ void adxl345_waitfordataready(void) {
 		i2c_rep_start(ADXL345_ADDR | I2C_READ);
 		status = i2c_readNak();
 		status &= 0b10000000;
-	} while (!status);
+	} while (!status);*/
 }
 
 /*
@@ -114,7 +118,8 @@ void adxl345_getdata(double *ax, double *ay, double *az) {
 	int16_t azraw = 0;
 
 	adxl345_waitfordataready();
-
+	
+	/*
 	//read axis data
 	int16_t temp;
 	//X
@@ -149,7 +154,7 @@ void adxl345_getdata(double *ax, double *ay, double *az) {
 	azraw += (temp<<8);
 
 	i2c_stop();
-
+*/
 	//axisg = mx + b
 	//m is the scaling factor (g/counts), x is the sensor output (counts), and b is the count offset.
 	#if ADXL345_CALIBRATED == 1

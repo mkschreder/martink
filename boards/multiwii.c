@@ -134,24 +134,53 @@ void reset_rc(void){
 
 #define GPIO_MWII_LED			GPIO_PB5
 
+#define GPIO_RC0 GPIO_PD2
+#define GPIO_RC1 GPIO_PD4
+#define GPIO_RC2 GPIO_PD7
+#define GPIO_RC3 GPIO_PB0
+
+void compute_rc_values(void){
+	timeout_t t_up, t_down; 
+	#define abs(x) ((x >= 0)?x:-x)
+	
+	#define COMPUTE_RC_CHAN(ch) {\
+		timeout_t ticks = time_clock_to_us(t_down - t_up);\
+		if(abs(brd->rc_value[ch] - ticks) > 10 && ticks > RC_MIN && ticks < RC_MAX)\
+			brd->rc_value[ch] = ticks;\
+	}
+	
+	if(gpio_get_status(GPIO_RC0, &t_up, &t_down) & GP_WENT_LOW){
+		COMPUTE_RC_CHAN(0); 
+	}
+	if(gpio_get_status(GPIO_RC1, &t_up, &t_down) & GP_WENT_LOW){
+		COMPUTE_RC_CHAN(1); 
+	}
+	if(gpio_get_status(GPIO_RC2, &t_up, &t_down) & GP_WENT_LOW){
+		COMPUTE_RC_CHAN(2); 
+	}
+	if(gpio_get_status(GPIO_RC3, &t_up, &t_down) & GP_WENT_LOW){
+		COMPUTE_RC_CHAN(3); 
+	}
+}
+
 void brd_init(void){
 	
 	brd->pwm_pulse_delay_us = 10500; 
 	brd->pwm_lock = 0; 
 	brd->pwm_timeout = timeout_from_now(0); 
 
-	gpio_set_function(GPIO_MWII_LED, GP_OUTPUT); 
+	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
 	//gpio_set(GPIO_MWII_LED); 
 	
-	gpio_set_function(GPIO_MWII_MOTOR0, GP_OUTPUT);
-	gpio_set_function(GPIO_MWII_MOTOR1, GP_OUTPUT);
-	gpio_set_function(GPIO_MWII_MOTOR2, GP_OUTPUT);
-	gpio_set_function(GPIO_MWII_MOTOR3, GP_OUTPUT);
+	gpio_configure(GPIO_MWII_MOTOR0, GP_OUTPUT);
+	gpio_configure(GPIO_MWII_MOTOR1, GP_OUTPUT);
+	gpio_configure(GPIO_MWII_MOTOR2, GP_OUTPUT);
+	gpio_configure(GPIO_MWII_MOTOR3, GP_OUTPUT);
 	
-	gpio_set_pullup(GPIO_MWII_RX0, 1);
-	gpio_set_pullup(GPIO_MWII_RX1, 1);
-	gpio_set_pullup(GPIO_MWII_RX2, 1);
-	gpio_set_pullup(GPIO_MWII_RX3, 1);
+	gpio_configure(GPIO_MWII_RX0, GP_INPUT | GP_PULLUP);
+	gpio_configure(GPIO_MWII_RX1, GP_INPUT | GP_PULLUP);
+	gpio_configure(GPIO_MWII_RX2, GP_INPUT | GP_PULLUP);
+	gpio_configure(GPIO_MWII_RX3, GP_INPUT | GP_PULLUP);
 	
 	// disable external ints
 	EICRA = 0;
@@ -169,11 +198,14 @@ void brd_init(void){
 	uart0_init(38400);
 	uart0_puts("booting..\n"); 
 	
-	twi_init(0); 
+	twi0_init_default(); 
 	spi0_init(); 
 
-	twi_get_interface(0, &brd->twi0);
-	
+	if(!twi_get_interface(0, &brd->twi0)){
+		uart0_puts("NO I2C!\n"); 
+		while(1); 
+	}
+	/*
 	struct nrf24l01 nrf; 
 	struct serial_debugger debug; 
 	struct serial_interface spi = SPI_DEVICE_INTERFACE(spi0); 
@@ -186,15 +218,18 @@ void brd_init(void){
 		strcpy(data, "Hello World!"); 
 		nrf24l01_write(&nrf, data); 
 		while(1); 
-	}
+	}*/
 	// init all sensors
 	
 	
 	//hmc5883l_init(); 
-	bmp085_init(&brd->bmp, &brd->twi0.interface); 
+	uart0_puts("INIT MPU..\n"); _delay_ms(200); 
 	mpu6050_init(&brd->mpu, &brd->twi0.interface); 
+	uart0_printf("MPU6050 .. %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
 	
-	uart0_puts("INIT DONE!\n"); 
+	uart0_printf("INIT BMP (%04x)..\n", brd->twi0.interface.write); _delay_ms(200); 
+	bmp085_init(&brd->bmp, &brd->twi0.interface); 
+	
 	reset_rc(); 
 	// ticking timer for the pwm generator
 	/*TCCR2B = _BV(CS22) | _BV(CS20);  // 128 prescaler
@@ -218,10 +253,17 @@ void brd_init(void){
 	TIMSK0 |= _BV(TOIE0); 
 	TCNT0 = 0;*/
 	
+	uint16_t pres = 0; get_pressure(&pres); 
+	int16_t temp = 0; get_temperature(&temp); 
+	uart0_printf("Pressure: %d\n", pres); 
+	uart0_printf("Temperature: %d\n", temp); 
+	
 	uart0_puts("multiwii board!\n"); 
 }
 
 void brd_process_events(void){
+	compute_rc_values(); 
+	
 	//TIMSK0 |= _BV(TOIE0); 
 	if(timeout_expired(brd->last_rc_update)){
 		reset_rc(); 
@@ -330,7 +372,7 @@ uint16_t get_pin(uint8_t pin){
 	return 0; 
 }
 
-
+/*
 ISR(PCINT0_vect){
 	timeout_t time = time_get_clock();
 	static volatile uint8_t prev = 0;
@@ -370,4 +412,4 @@ ISR(PCINT0_vect){
 	}
 }
 
-ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));
+ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));*/

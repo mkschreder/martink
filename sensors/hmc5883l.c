@@ -60,10 +60,10 @@ void hmc5883l_init(void) {
 		HMC5883L_MODEREG,
 		0x00 //Mode register             -- 000000 00    continuous Conversion Mode
 	}; 
-	twi0_start_transaction(TWI_OP_LIST(
+	/*twi0_start_transaction(TWI_OP_LIST(
 		TWI_OP(HMC5883L_ADDR | I2C_WRITE, buf, 6)
 	)); 
-	twi0_wait(); 
+	twi0_wait(); */
   // leave test mode
   /*i2c_start_wait(HMC5883L_ADDR | I2C_WRITE); 
   i2c_write(HMC5883L_CONFREGA); 
@@ -96,11 +96,11 @@ void hmc5883l_init(void) {
 void hmc5883l_getrawdata(int16_t *mxraw, int16_t *myraw, int16_t *mzraw) {
 	uint8_t wr[1] = {HMC5883L_DATAREGBEGIN}; 
 	uint8_t buff[6];
-	twi0_start_transaction(TWI_OP_LIST(
+	/*twi0_start_transaction(TWI_OP_LIST(
 		TWI_OP(HMC5883L_ADDR | I2C_WRITE, wr, 1),
 		TWI_OP(HMC5883L_ADDR | I2C_READ, buff, 6)
 	)); 
-	twi0_wait(); 
+	twi0_wait(); */
 	/*
 	uint8_t i = 0;
 	uint8_t buff[6];

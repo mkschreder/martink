@@ -62,11 +62,10 @@
 #define hwspi0_enable() 					(SPCR |= _BV(SPE))
 #define hwspi0_disable() 					(SPCR &= ~_BV(SPE))
 #define hwspi0_config_gpio()			({\
-	gpio_set_function(GPIO_SPI0_MISO, GP_INPUT);\
-	gpio_set_pullup(GPIO_SPI0_MISO, 1);\
-	gpio_set_function(GPIO_SPI0_MOSI, GP_OUTPUT);\
-	gpio_set_function(GPIO_SPI0_SS, GP_OUTPUT);\
-	gpio_set_function(GPIO_SPI0_SCK, GP_OUTPUT);\
+	gpio_configure(GPIO_SPI0_MISO, GP_INPUT | GP_PULLUP);\
+	gpio_configure(GPIO_SPI0_MOSI, GP_OUTPUT);\
+	gpio_configure(GPIO_SPI0_SS, GP_OUTPUT);\
+	gpio_configure(GPIO_SPI0_SCK, GP_OUTPUT);\
 })
 #define hwspi0_wait_for_transmit_complete() ({while(!(SPSR & _BV(SPIF)));})
 #define hwspi0_error_collision() (SPSR & _BV(WCOL))

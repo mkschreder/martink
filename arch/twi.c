@@ -48,10 +48,10 @@ void 			_twi_end(struct packet_interface *self){
 	}
 }
 
-uint32_t	_twi_write(struct packet_interface *self, const uint8_t *data, uint16_t max_sz){
+uint32_t	_twi_write(struct packet_interface *self, uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
 	switch(dev->id){
-		case 0: return twi0_start_write(data, max_sz); break;
+		case 0: twi0_start_write(data, max_sz); return 0;
 	}
 	return PK_ERR_INVALID; 
 }
@@ -59,7 +59,7 @@ uint32_t	_twi_write(struct packet_interface *self, const uint8_t *data, uint16_t
 uint32_t	_twi_read(struct packet_interface *self, uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
 	switch(dev->id){
-		case 0: return twi0_start_read(data, max_sz); break;
+		case 0: twi0_start_read(data, max_sz); return 0;
 	}
 	return PK_ERR_INVALID; 
 }
@@ -67,7 +67,7 @@ uint32_t	_twi_read(struct packet_interface *self, uint8_t *data, uint16_t max_sz
 void			_twi_sync(struct packet_interface *self){
 	DEVICE_CAST(self, dev);
 	switch(dev->id){
-		case 0: twi0_sync(); break;
+		case 0: while(twi0_busy()); break;
 	}
 }
 
@@ -76,7 +76,8 @@ uint16_t 	_twi_packets_available(struct packet_interface *self){
 	return 1; 
 }
 
-void twi_get_interface(uint8_t id, struct twi_device *dev){
+uint8_t twi_get_interface(uint8_t id, struct twi_device *dev){
+	if(id != 0) return 0;
 	*dev = (struct twi_device) {
 		.id = id,
 		.interface = (struct packet_interface) {
@@ -88,4 +89,5 @@ void twi_get_interface(uint8_t id, struct twi_device *dev){
 			.packets_available = _twi_packets_available
 		}
 	}; 
+	return 1; 
 }

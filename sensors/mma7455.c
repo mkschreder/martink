@@ -30,6 +30,7 @@ static uint8_t firstread = 1;
  * initialize the accellerometer
  */
 void mma7455_init(void) {
+	/*
 	#if MMA7455_I2CINIT == 1
 	//init i2c
 	i2c_init();
@@ -41,6 +42,7 @@ void mma7455_init(void) {
     i2c_write(0x16);
     i2c_write(MMA7455_RANGE);
     i2c_stop();
+    */
 }
 
 #if MMA7455_GETATTITUDE == 1
@@ -63,6 +65,7 @@ void mma7455_getpitchroll(double ax, double ay, double az, double *pitch, double
 void mma7455_waitfordataready(void) {
 	//wait until data is ready
 	unsigned char status = 0;
+	/*
 	i2c_start_wait(MMA7455_ADDR | I2C_WRITE);
 	do {
 		i2c_rep_start(MMA7455_ADDR | I2C_WRITE);
@@ -70,7 +73,7 @@ void mma7455_waitfordataready(void) {
 		i2c_rep_start(MMA7455_ADDR | I2C_READ);
 		status = i2c_readNak();
 		status &= (1<<0); //read DRDY to see if data is read
-	} while (!status);
+	} while (!status);*/
 }
 
 /*
@@ -90,7 +93,7 @@ void mma7455_getdata(double *ax, double *ay, double *az) {
 
 	//wait for data
 	mma7455_waitfordataready();
-
+/*
 	//read raw axis data
 	#if MMA7455_MODE == MMA7455_MODE8BIT
 	//X
@@ -145,7 +148,7 @@ void mma7455_getdata(double *ax, double *ay, double *az) {
 	if (azraw&0x0200) azraw |= 0xfc00;
 	#endif
 	i2c_stop();
-
+*/
 	//transform raw data to g data
 	//axisg = mx + b
 	//m is the scaling factor (g/counts), x is the sensor output (counts), and b is the count offset.

@@ -399,8 +399,8 @@ void nrf24l01_init(struct nrf24l01 *nrf, struct serial_interface *spi, gpio_pin_
 	nrf->cs_pin = cs; 
 	nrf->ce_pin = ce; 
 	
-	gpio_set_function(nrf->cs_pin, GP_OUTPUT); 
-	gpio_set_function(nrf->ce_pin, GP_OUTPUT); 
+	gpio_configure(nrf->cs_pin, GP_OUTPUT); 
+	gpio_configure(nrf->ce_pin, GP_OUTPUT); 
 	/*nrf_ddr = ddr;
 	nrf_port = port;
 	nrf_ce_pin = ce_pin;

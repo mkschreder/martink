@@ -240,7 +240,7 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 extern volatile timestamp_t _tsc_ovf;
 
 #define TSC_PRESCALER TIM1_CLOCK_DIV8
-#define TSC_TICKS_PER_US ((timestamp_t)(F_CPU / 8L))
+#define TSC_TICKS_PER_US 2 //((timestamp_t)(F_CPU / 8L))
 
 #define tsc_init(void) (\
 	timer1_mode(TIM1_MODE_NORMAL),\

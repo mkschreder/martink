@@ -140,6 +140,7 @@ void mwii_init(void){
 	
 	timestamp_init(); 
 	uart0_init(38400);
+	
 	uart0_puts("booting..\n"); 
 	
 	twi0_init_default(); 
@@ -163,8 +164,8 @@ void mwii_init(void){
 	pwm4_enable();
 	pwm5_enable();
 	
-	int16_t pres = 0; bmp085_getpressure(&brd->bmp); 
-	int16_t temp = 0; bmp085_gettemperature(&brd->bmp); 
+	int16_t pres = bmp085_getpressure(&brd->bmp); 
+	int16_t temp = bmp085_gettemperature(&brd->bmp); 
 	uart0_printf("Pressure: %d\n", pres); 
 	uart0_printf("Temperature: %d\n", temp); 
 	
@@ -249,7 +250,9 @@ struct fc_quad_interface mwii_get_fc_quad_interface(void){
 		.read_magnetometer = _mwii_read_magnetometer,
 		.read_pressure = _mwii_read_pressure,
 		.read_altitude = _mwii_read_altitude,
-		.read_temperature = _mwii_read_temperature
+		.read_temperature = _mwii_read_temperature, 
+		.read_receiver = _mwii_read_receiver, 
+		.write_motors = _mwii_write_motors
 	}; 
 }
 

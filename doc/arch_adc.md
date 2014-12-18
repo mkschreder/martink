@@ -35,8 +35,10 @@ Macros should be provided for every peripheral separately if multiple devices ar
 Typical direct usage
 --------------------
 
+```
 adc0_init_default();
 printf("ADC value: %d\n", adc0_read_immediate(channel_id));
+```
 
 For other options it is best to check out implementation specific file in arch/<manufacturer>/<cpu>/adc.h
 

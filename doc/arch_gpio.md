@@ -33,6 +33,7 @@ Implementation macro guidelines
 Example usage
 --------------------
 
+```
 	gpio_init();
 		while(1){
 			gpio_write_pin(GPIO_PB0, 1);
@@ -41,5 +42,5 @@ Example usage
 			delay_ms(500);
 		}
 	}
-
+```
 

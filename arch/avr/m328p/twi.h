@@ -79,6 +79,14 @@ uint8_t twi0_busy(void);
 /// returns 1 if previous transaction was successful
 uint8_t twi0_success(void); 
 
+/*
+void twi0_slave_init(uint8_t addr);
+uint8_t twi0_slave_data_available(void);
+// read received data from buffer
+void twi0_slave_read(uint8_t *data, uint8_t max_size);
+// write response to a slave request or will fail if slave interface is not in response state
+void twi0_slave_write(uint8_t *data, uint8_t data_size); 
+*/
 
 #ifdef __cplusplus
 }

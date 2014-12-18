@@ -49,20 +49,6 @@ Revision Info:  $Id: twi_master.c 117 2010-06-24 20:21:28Z pieterconradie $
 /// Size TWI clock prescaler according to desired TWI clock frequency
 #define TWI_PRESCALER	((0<<TWPS1)|(0<<TWPS0))
 
-/*
-/// Map TWI clock prescaler to prescaler value
-#if   (TWI_PRESCALER == ((0<<TWPS1)|(0<<TWPS0)))
-#define TWI_PRESCALER_VALUE 1
-#elif (TWI_PRESCALER == ((0<<TWPS1)|(1<<TWPS0)))
-#define TWI_PRESCALER_VALUE 4
-#elif (TWI_PRESCALER == ((1<<TWPS1)|(0<<TWPS0)))
-#define TWI_PRESCALER_VALUE 16
-#elif (TWI_PRESCALER == ((1<<TWPS1)|(1<<TWPS0)))
-#define TWI_PRESCALER_VALUE 64
-#else
-#error "Undefined TWI_PRESCALER value!"
-#endif
-*/
 /// Calculate TWI Baud rate value according to selected frequency and prescaler
 #define TWI_BR_VALUE ((DIV_ROUND(F_CPU,TWI_FREQUENCY_HZ)-16ul)/(2ul*TWI_PRESCALER_VALUE))
 
@@ -236,8 +222,7 @@ void twi0_start_read(uint8_t *data, uint8_t bytes_to_receive)
 	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 }
 
-uint8_t twi0_busy(void)
-{
+uint8_t twi0_busy(void){
 	// IF TWI Interrupt is enabled then the peripheral is busy
 	if(TWCR & _BV(TWIE))
 	{
@@ -286,3 +271,11 @@ void twi0_end(void)
 	// Wait until STOP has finished
 	while(TWCR & _BV(TWSTO));
 }
+
+/*
+void twi0_slave_init(uint8_t addr){
+	TWAR = addr; 
+  TWCR = (1<<TWEN)|(0<<TWIE)|(0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC); 
+  //TWI_busy = 0;
+}*/
+

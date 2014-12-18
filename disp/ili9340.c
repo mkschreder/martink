@@ -31,32 +31,12 @@
 
 #include "ili9340.h"
 
-/// TODO: All of this is AVR speciffic. Has to be made portable!
-
-
-#ifndef CONFIG_ILI9340_CS_PIN
-#error "CS pin not defined!"
-#endif
-#ifndef CONFIG_ILI9340_RST_PIN
-#error "RST pin not defined!"
-#endif
-#ifndef CONFIG_ILI9340_DC_PIN
-#error "DC pin not defined!"
-#endif
-
-//static uint16_t _width = ILI9340_TFTWIDTH, _height  = ILI9340_TFTHEIGHT;
-#undef spi_writereadbyte
-#undef spi_init
-
-#define spi_init() PFCALL(CONFIG_ILI9340_SPI_NAME, init)
-#define spi_writereadbyte(ch) (__spi0_putc__(0, ch), __spi0_getc__(0))
-
-#define CS_HI 		gpio_write_pin(CONFIG_ILI9340_CS_PIN, 1)
-#define CS_LO 		gpio_write_pin(CONFIG_ILI9340_CS_PIN, 0)
-#define RST_HI 		gpio_write_pin(CONFIG_ILI9340_RST_PIN, 1)
-#define RST_LO 		gpio_write_pin(CONFIG_ILI9340_RST_PIN, 0)
-#define DC_HI 		gpio_write_pin(CONFIG_ILI9340_DC_PIN, 1)
-#define DC_LO 		gpio_write_pin(CONFIG_ILI9340_DC_PIN, 0)
+#define CS_HI 		gpio_set(self->cs_pin)
+#define CS_LO 		gpio_clear(self->cs_pin)
+#define RST_HI 		gpio_set(self->rst_pin)
+#define RST_LO 		gpio_clear(self->rst_pin)
+#define DC_HI 		gpio_set(self->dc_pin)
+#define DC_LO 		gpio_clear(self->dc_pin)
 
 static const unsigned char font[] PROGMEM = {
 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -316,6 +296,9 @@ static const unsigned char font[] PROGMEM = {
 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
+#define spi_writereadbyte(ch) (s_putc(self->serial, (ch)), s_getc(self->serial))
+
+/*
 static struct ili9340 {
 	uint16_t screen_width, screen_height; 
 	int16_t cursor_x, cursor_y;
@@ -323,8 +306,8 @@ static struct ili9340 {
 	uint16_t back_color, front_color;
 	uint16_t scroll_start; 
 } term;
-
-static void _wr_command(uint8_t c) {
+*/
+static void _wr_command(struct ili9340 *self, uint8_t c) {
 	DC_LO;
 	CS_LO;
 	
@@ -334,7 +317,7 @@ static void _wr_command(uint8_t c) {
 }
 
 
-static uint8_t _wr_data(uint8_t c) {
+static uint8_t _wr_data(struct ili9340 *self, uint8_t c) {
 	DC_HI; 
   CS_LO; 
   uint8_t r = spi_writereadbyte(c);
@@ -342,7 +325,7 @@ static uint8_t _wr_data(uint8_t c) {
 	return r; 
 } 
 
-static uint16_t _wr_data16(uint16_t c){
+static uint16_t _wr_data16(struct ili9340 *self, uint16_t c){
 	DC_HI; 
   CS_LO; 
   uint16_t r = spi_writereadbyte(c >> 8);
@@ -351,21 +334,25 @@ static uint16_t _wr_data16(uint16_t c){
 	CS_HI;
 	return r; 
 }
-// Rather than a bazillion _wr_command() and _wr_data() calls, screen
+// Rather than a bazillion _wr_command(self, ) and _wr_data(self, ) calls, screen
 // initialization commands and arguments are organized in these tables
 // stored in PROGMEM.  The table may look bulky, but that's mostly the
 // formatting -- storage-wise this is hundreds of bytes more compact
 // than the equivalent code.  Companion function follows.
 #define DELAY 0x80
 
-void ili9340_init(void) {
-	gpio_configure(CONFIG_ILI9340_CS_PIN, GP_OUTPUT); 
-	gpio_configure(CONFIG_ILI9340_RST_PIN, GP_OUTPUT); 
-	gpio_configure(CONFIG_ILI9340_DC_PIN, GP_OUTPUT); 
+void ili9340_init(struct ili9340 *self, struct serial_interface *spi, gpio_pin_t cs_pin, gpio_pin_t dc_pin, gpio_pin_t rst_pin) {
+	self->serial = spi;
+	self->cs_pin = cs_pin;
+	self->dc_pin = dc_pin;
+	self->rst_pin = rst_pin;
+	
+	gpio_configure(cs_pin, GP_OUTPUT); 
+	gpio_configure(rst_pin, GP_OUTPUT); 
+	gpio_configure(dc_pin, GP_OUTPUT);
+	
 	RST_LO; 
 
-	spi_init();
-	
   RST_HI; 
   delay_us(5000); 
   RST_LO; 
@@ -373,161 +360,162 @@ void ili9340_init(void) {
   RST_HI; 
   delay_us(150000L);
 
-  _wr_command(0xEF);
-  _wr_data(0x03);
-  _wr_data(0x80);
-  _wr_data(0x02);
+  _wr_command(self, 0xEF);
+  _wr_data(self, 0x03);
+  _wr_data(self, 0x80);
+  _wr_data(self, 0x02);
 
-  _wr_command(0xCF);  
-  _wr_data(0x00); 
-  _wr_data(0XC1); 
-  _wr_data(0X30); 
+  _wr_command(self, 0xCF);  
+  _wr_data(self, 0x00); 
+  _wr_data(self, 0XC1); 
+  _wr_data(self, 0X30); 
 
-  _wr_command(0xED);  
-  _wr_data(0x64); 
-  _wr_data(0x03); 
-  _wr_data(0X12); 
-  _wr_data(0X81); 
+  _wr_command(self, 0xED);  
+  _wr_data(self, 0x64); 
+  _wr_data(self, 0x03); 
+  _wr_data(self, 0X12); 
+  _wr_data(self, 0X81); 
  
-  _wr_command(0xE8);  
-  _wr_data(0x85); 
-  _wr_data(0x00); 
-  _wr_data(0x78); 
+  _wr_command(self, 0xE8);  
+  _wr_data(self, 0x85); 
+  _wr_data(self, 0x00); 
+  _wr_data(self, 0x78); 
 
-  _wr_command(0xCB);  
-  _wr_data(0x39); 
-  _wr_data(0x2C); 
-  _wr_data(0x00); 
-  _wr_data(0x34); 
-  _wr_data(0x02); 
+  _wr_command(self, 0xCB);  
+  _wr_data(self, 0x39); 
+  _wr_data(self, 0x2C); 
+  _wr_data(self, 0x00); 
+  _wr_data(self, 0x34); 
+  _wr_data(self, 0x02); 
  
-  _wr_command(0xF7);  
-  _wr_data(0x20); 
+  _wr_command(self, 0xF7);  
+  _wr_data(self, 0x20); 
 
-  _wr_command(0xEA);  
-  _wr_data(0x00); 
-  _wr_data(0x00); 
+  _wr_command(self, 0xEA);  
+  _wr_data(self, 0x00); 
+  _wr_data(self, 0x00); 
  
-  _wr_command(ILI9340_PWCTR1);    //Power control 
-  _wr_data(0x23);   //VRH[5:0] 
+  _wr_command(self, ILI9340_PWCTR1);    //Power control 
+  _wr_data(self, 0x23);   //VRH[5:0] 
  
-  _wr_command(ILI9340_PWCTR2);    //Power control 
-  _wr_data(0x10);   //SAP[2:0];BT[3:0] 
+  _wr_command(self, ILI9340_PWCTR2);    //Power control 
+  _wr_data(self, 0x10);   //SAP[2:0];BT[3:0] 
  
-  _wr_command(ILI9340_VMCTR1);    //VCM control 
-  _wr_data(0x3e); //
-  _wr_data(0x28); 
+  _wr_command(self, ILI9340_VMCTR1);    //VCM control 
+  _wr_data(self, 0x3e); //
+  _wr_data(self, 0x28); 
   
-  _wr_command(ILI9340_VMCTR2);    //VCM control2 
-  _wr_data(0x86);  //--
+  _wr_command(self, ILI9340_VMCTR2);    //VCM control2 
+  _wr_data(self, 0x86);  //--
  
-  _wr_command(ILI9340_MADCTL);    // Memory Access Control 
-  _wr_data(ILI9340_MADCTL_MX | ILI9340_MADCTL_BGR);
+  _wr_command(self, ILI9340_MADCTL);    // Memory Access Control 
+  _wr_data(self, ILI9340_MADCTL_MX | ILI9340_MADCTL_BGR);
 
-  _wr_command(ILI9340_PIXFMT);    
-  _wr_data(0x55); 
+  _wr_command(self, ILI9340_PIXFMT);    
+  _wr_data(self, 0x55); 
   
-  _wr_command(ILI9340_FRMCTR1);    
-  _wr_data(0x00);  
-  _wr_data(0x18); 
+  _wr_command(self, ILI9340_FRMCTR1);    
+  _wr_data(self, 0x00);  
+  _wr_data(self, 0x18); 
  
-  _wr_command(ILI9340_DFUNCTR);    // Display Function Control 
-  _wr_data(0x08); 
-  _wr_data(0x82);
-  _wr_data(0x27);  
+  _wr_command(self, ILI9340_DFUNCTR);    // Display Function Control 
+  _wr_data(self, 0x08); 
+  _wr_data(self, 0x82);
+  _wr_data(self, 0x27);  
  
-  _wr_command(0xF2);    // 3Gamma Function Disable 
-  _wr_data(0x00); 
+  _wr_command(self, 0xF2);    // 3Gamma Function Disable 
+  _wr_data(self, 0x00); 
  
-  _wr_command(ILI9340_GAMMASET);    //Gamma curve selected 
-  _wr_data(0x01); 
+  _wr_command(self, ILI9340_GAMMASET);    //Gamma curve selected 
+  _wr_data(self, 0x01); 
  
-  _wr_command(ILI9340_GMCTRP1);    //Set Gamma 
-  _wr_data(0x0F); 
-  _wr_data(0x31); 
-  _wr_data(0x2B); 
-  _wr_data(0x0C); 
-  _wr_data(0x0E); 
-  _wr_data(0x08); 
-  _wr_data(0x4E); 
-  _wr_data(0xF1); 
-  _wr_data(0x37); 
-  _wr_data(0x07); 
-  _wr_data(0x10); 
-  _wr_data(0x03); 
-  _wr_data(0x0E); 
-  _wr_data(0x09); 
-  _wr_data(0x00); 
+  _wr_command(self, ILI9340_GMCTRP1);    //Set Gamma 
+  _wr_data(self, 0x0F); 
+  _wr_data(self, 0x31); 
+  _wr_data(self, 0x2B); 
+  _wr_data(self, 0x0C); 
+  _wr_data(self, 0x0E); 
+  _wr_data(self, 0x08); 
+  _wr_data(self, 0x4E); 
+  _wr_data(self, 0xF1); 
+  _wr_data(self, 0x37); 
+  _wr_data(self, 0x07); 
+  _wr_data(self, 0x10); 
+  _wr_data(self, 0x03); 
+  _wr_data(self, 0x0E); 
+  _wr_data(self, 0x09); 
+  _wr_data(self, 0x00); 
   
-  _wr_command(ILI9340_GMCTRN1);    //Set Gamma 
-  _wr_data(0x00); 
-  _wr_data(0x0E); 
-  _wr_data(0x14); 
-  _wr_data(0x03); 
-  _wr_data(0x11); 
-  _wr_data(0x07); 
-  _wr_data(0x31); 
-  _wr_data(0xC1); 
-  _wr_data(0x48); 
-  _wr_data(0x08); 
-  _wr_data(0x0F); 
-  _wr_data(0x0C); 
-  _wr_data(0x31); 
-  _wr_data(0x36); 
-  _wr_data(0x0F); 
+  _wr_command(self, ILI9340_GMCTRN1);    //Set Gamma 
+  _wr_data(self, 0x00); 
+  _wr_data(self, 0x0E); 
+  _wr_data(self, 0x14); 
+  _wr_data(self, 0x03); 
+  _wr_data(self, 0x11); 
+  _wr_data(self, 0x07); 
+  _wr_data(self, 0x31); 
+  _wr_data(self, 0xC1); 
+  _wr_data(self, 0x48); 
+  _wr_data(self, 0x08); 
+  _wr_data(self, 0x0F); 
+  _wr_data(self, 0x0C); 
+  _wr_data(self, 0x31); 
+  _wr_data(self, 0x36); 
+  _wr_data(self, 0x0F); 
 
-  _wr_command(ILI9340_SLPOUT);    //Exit Sleep 
+  _wr_command(self, ILI9340_SLPOUT);    //Exit Sleep 
   delay_us(120000L); 		
-  _wr_command(ILI9340_DISPON);    //Display on
+  _wr_command(self, ILI9340_DISPON);    //Display on
 
-  term.screen_width = ILI9340_TFTWIDTH;
-  term.screen_height = ILI9340_TFTHEIGHT;
-  term.char_height = 8;
-  term.char_width = 6;
-  term.back_color = 0x0000;
-  term.front_color = 0xffff;
-  term.cursor_x = term.cursor_y = 0;
-  term.scroll_start = 0; 
+  self->screen_width = ILI9340_TFTWIDTH;
+  self->screen_height = ILI9340_TFTHEIGHT;
+  self->char_height = 8;
+  self->char_width = 6;
+  self->back_color = 0x0000;
+  self->front_color = 0xffff;
+  self->cursor_x = self->cursor_y = 0;
+  self->scroll_start = 0; 
 }
 
-void ili9340_setScrollStart(uint16_t start){
-  _wr_command(0x37); // Vertical Scroll definition.
-  _wr_data16(start);
+/*
+void ili9340_setScrollStart(struct ili9340 *self, uint16_t start){
+  _wr_command(self, 0x37); // Vertical Scroll definition.
+  _wr_data16(self, start);
   term.scroll_start = start; 
-}
+}*/
 
 
-void ili9340_setScrollMargins(uint16_t top, uint16_t bottom) {
+void ili9340_setScrollMargins(struct ili9340 *self, uint16_t top, uint16_t bottom) {
   // Did not pass in VSA as TFA+VSA=BFA must equal 320
-	_wr_command(0x33); // Vertical Scroll definition.
-  _wr_data16(top);
-  _wr_data16(320-(top+bottom));
-  _wr_data16(bottom); 
+	_wr_command(self, 0x33); // Vertical Scroll definition.
+  _wr_data16(self, top);
+  _wr_data16(self, 320-(top+bottom));
+  _wr_data16(self, bottom); 
 }
 
-void _ili9340_setAddrWindow(int16_t x0, int16_t y0, int16_t x1, int16_t y1){
-	_wr_command(ILI9340_CASET); // Column addr set
-  _wr_data(x0 >> 8);
-  _wr_data(x0 & 0xFF);     // XSTART 
-  _wr_data(x1 >> 8);
-  _wr_data(x1 & 0xFF);     // XEND
+void _ili9340_setAddrWindow(struct ili9340 *self, int16_t x0, int16_t y0, int16_t x1, int16_t y1){
+	_wr_command(self, ILI9340_CASET); // Column addr set
+  _wr_data(self, x0 >> 8);
+  _wr_data(self, x0 & 0xFF);     // XSTART 
+  _wr_data(self, x1 >> 8);
+  _wr_data(self, x1 & 0xFF);     // XEND
 
-  _wr_command(ILI9340_PASET); // Row addr set
-  _wr_data(y0>>8);
-  _wr_data(y0);     // YSTART
-  _wr_data(y1>>8);
-  _wr_data(y1);     // YEND
+  _wr_command(self, ILI9340_PASET); // Row addr set
+  _wr_data(self, y0>>8);
+  _wr_data(self, y0);     // YSTART
+  _wr_data(self, y1>>8);
+  _wr_data(self, y1);     // YEND
 }
 
-void ili9340_setAddrWindow_WR(int16_t x0, int16_t y0, int16_t x1,
+void ili9340_setAddrWindow_WR(struct ili9340 *self, int16_t x0, int16_t y0, int16_t x1,
  int16_t y1) {
-  _ili9340_setAddrWindow(x0, y0, x1, y1); 
-  _wr_command(ILI9340_RAMWR); // write to RAM
+  _ili9340_setAddrWindow(self, x0, y0, x1, y1); 
+  _wr_command(self, ILI9340_RAMWR); // write to RAM
 }
 
-void ili9340_readRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *data){
-  _ili9340_setAddrWindow(x, y, x + w - 1, y + h - 1);
-  //_wr_command(ILI9340_RAMRD); // read RAM
+void ili9340_readRect(struct ili9340 *self, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *data){
+  _ili9340_setAddrWindow(self, x, y, x + w - 1, y + h - 1);
+  //_wr_command(self, ILI9340_RAMRD); // read RAM
   CS_LO;
   DC_LO; 
 	
@@ -548,9 +536,9 @@ void ili9340_readRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *
 	CS_HI; 
 }
 
-void ili9340_writeRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *data){
-  _ili9340_setAddrWindow(x, y, x + w - 1, y + h - 1);
-  /*_wr_command(ILI9340_RAMWR); // read RAM
+void ili9340_writeRect(struct ili9340 *self,uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *data){
+  _ili9340_setAddrWindow(self, x, y, x + w - 1, y + h - 1);
+  /*_wr_command(self, ILI9340_RAMWR); // read RAM
   
 	DC_HI; 
 	CS_LO; 
@@ -573,7 +561,7 @@ void ili9340_writeRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t 
 	CS_HI; 
 }
 
-void ili9340_pushColor(uint16_t color) {
+void ili9340_pushColor(struct ili9340 *self, uint16_t color) {
   DC_HI;
   CS_LO; 
 
@@ -582,27 +570,25 @@ void ili9340_pushColor(uint16_t color) {
 
 	CS_HI; 
 }
-uint16_t ili9340_width(void){
-	return term.screen_width;
+uint16_t ili9340_width(struct ili9340 *self){
+	return self->screen_width;
 }
 
-uint16_t ili9340_height(void){
-	return term.screen_height;
+uint16_t ili9340_height(struct ili9340 *self){
+	return self->screen_height;
 }
 
 // fill a rectangle
-void ili9340_fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
+void ili9340_fillRect(struct ili9340 *self, uint16_t x, uint16_t y, uint16_t w, uint16_t h,
   uint16_t color) {
-	struct ili9340 *t = &term;
-
 	//y = (y + term.scroll_start) % term.screen_height;
 	
   // rudimentary clipping (drawChar w/big text requires this)
   //if((x >= t->screen_width) || (y >= t->screen_height)) return;
-  if((x + w - 1) >= t->screen_width)  w = t->screen_width  - x;
-  if((y + h - 1) >= t->screen_height) h = t->screen_height - y;
+  if((x + w - 1) >= self->screen_width)  w = self->screen_width  - x;
+  if((y + h - 1) >= self->screen_height) h = self->screen_height - y;
 
-	ili9340_setAddrWindow_WR(
+	ili9340_setAddrWindow_WR(self, 
 		x, 					y,
 		x + w - 1, 	y + h - 1);
 
@@ -620,7 +606,7 @@ void ili9340_fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
 	CS_HI;
 }
 
-void ili9340_drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t col){
+void ili9340_drawLine(struct ili9340 *self, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t col){
   int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
   int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
   int err = (dx>dy ? dx : -dy)/2, e2;
@@ -628,7 +614,7 @@ void ili9340_drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16
 	uint8_t hi = col >> 8, lo = col;
 	
   for(;;){
-		ili9340_setAddrWindow_WR(x0, y0, x0, y0);
+		ili9340_setAddrWindow_WR(self, x0, y0, x0, y0);
 
 		DC_HI; 
 		CS_LO; 
@@ -645,8 +631,10 @@ void ili9340_drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16
   }
   
 }
+/*
+THIS CODE BELONGS SOMEWHERE ELSE
 
-void ili9340_setBackColor(uint16_t col){
+void ili9340_setBackColor(struct ili9340 *self, uint16_t col){
 	//uint8_t r, uint8_t g, uint8_t b
 	struct ili9340 *t = &term;
 	t->back_color = col; 
@@ -722,18 +710,18 @@ void ili9340_drawSprite(uint16_t x, uint16_t y, const uint8_t *sprite, const uin
   
   CS_HI; 
 }
+*/
 
-void ili9340_drawFastHLine(int16_t x, int16_t y, int16_t w,
+void ili9340_drawFastHLine(struct ili9340 *self, int16_t x, int16_t y, int16_t w,
   uint16_t color) {
-	struct ili9340 *t = &term; 
   // Rudimentary clipping
   
 	//y = (y + term.scroll_start) % term.screen_height;
 	
-  if((x >= t->screen_width) || (y >= t->screen_height)) return;
-  if((x+w-1) >= t->screen_width)  w = t->screen_width-x;
+  if((x >= self->screen_width) || (y >= self->screen_height)) return;
+  if((x+w-1) >= self->screen_width)  w = self->screen_width-x;
   
-  ili9340_setAddrWindow_WR(x, y, x+w-1, y);
+  ili9340_setAddrWindow_WR(self, x, y, x+w-1, y);
 
   uint8_t hi = color >> 8, lo = color;
   DC_HI;
@@ -746,36 +734,35 @@ void ili9340_drawFastHLine(int16_t x, int16_t y, int16_t w,
 }
 
 
-void ili9340_drawFastVLine(int16_t x, int16_t y, int16_t h,
+void ili9340_drawFastVLine(struct ili9340 *self, int16_t x, int16_t y, int16_t h,
   uint16_t color) {
 	
-	ili9340_fillRect((h > 0)?x:(x + h), y, 1, (h > 0)?(x + h):x, color); 
+	ili9340_fillRect(self, (h > 0)?x:(x + h), y, 1, (h > 0)?(x + h):x, color); 
 }
 
-void ili9340_setRotation(uint8_t m) {
-	struct ili9340 *t = &term; 
-  _wr_command(ILI9340_MADCTL);
+void ili9340_setRotation(struct ili9340 *self, uint8_t m) {
+  _wr_command(self, ILI9340_MADCTL);
   int rotation = m % 4; // can't be higher than 3
   switch (rotation) {
    case 0:
-     _wr_data(ILI9340_MADCTL_MX | ILI9340_MADCTL_BGR);
-     t->screen_width  = ILI9340_TFTWIDTH;
-     t->screen_height = ILI9340_TFTHEIGHT;
+     _wr_data(self, ILI9340_MADCTL_MX | ILI9340_MADCTL_BGR);
+     self->screen_width  = ILI9340_TFTWIDTH;
+     self->screen_height = ILI9340_TFTHEIGHT;
      break;
    case 1:
-     _wr_data(ILI9340_MADCTL_MV | ILI9340_MADCTL_BGR);
-     t->screen_width  = ILI9340_TFTHEIGHT;
-     t->screen_height = ILI9340_TFTWIDTH;
+     _wr_data(self, ILI9340_MADCTL_MV | ILI9340_MADCTL_BGR);
+     self->screen_width  = ILI9340_TFTHEIGHT;
+     self->screen_height = ILI9340_TFTWIDTH;
      break;
   case 2:
-    _wr_data(ILI9340_MADCTL_MY | ILI9340_MADCTL_BGR);
-     t->screen_width  = ILI9340_TFTWIDTH;
-     t->screen_height = ILI9340_TFTHEIGHT;
+    _wr_data(self, ILI9340_MADCTL_MY | ILI9340_MADCTL_BGR);
+     self->screen_width  = ILI9340_TFTWIDTH;
+     self->screen_height = ILI9340_TFTHEIGHT;
     break;
    case 3:
-     _wr_data(ILI9340_MADCTL_MV | ILI9340_MADCTL_MY | ILI9340_MADCTL_MX | ILI9340_MADCTL_BGR);
-     t->screen_width  = ILI9340_TFTHEIGHT;
-     t->screen_height = ILI9340_TFTWIDTH;
+     _wr_data(self, ILI9340_MADCTL_MV | ILI9340_MADCTL_MY | ILI9340_MADCTL_MX | ILI9340_MADCTL_BGR);
+     self->screen_width  = ILI9340_TFTHEIGHT;
+     self->screen_height = ILI9340_TFTWIDTH;
      break;
   }
 }

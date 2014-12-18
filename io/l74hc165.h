@@ -1,27 +1,39 @@
-/*
-l74hc165 lib 0x01
+/**
+	input shift register driver for generic parallel port
 
-copyright (c) Davide Gironi, 2011
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-Released under GPLv3.
-Please refer to LICENSE file for licensing information.
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
+
+	Special thanks to:
+	* Davide Gironi, original implementation
 */
 
 #ifndef L74HC165_H_
 #define L74HC165_H_
 
-//setup ports
-#define L74HC165_DDR DDRD
-#define L74HC165_PORT PORTD
-#define L74HC165_PIN PIND
-#define L74HC165_CLOCKPIN PD2
-#define L74HC165_LOADPIN PD3
-#define L74HC165_DATAPIN PD4
+struct l74hc165 {
+	struct parallel_interface *port; 
+	gpio_pin_t clock_pin;
+	gpio_pin_t load_pin;
+	gpio_pin_t data_pin; 
+};
 
-//setup number of chip attached to the board
-#define L74HC165_ICNUMBER 2
-
-extern void l74hc165_init(void);
-extern void l74hc165_shiftin(uint8_t *bytearray);
+void l74hc165_init(struct l74hc165 *self, struct parallel_interface *port,
+		gpio_pin_t clock_pin, gpio_pin_t load_pin, gpio_pin_t data_pin);
+void l74hc165_read(struct l74hc165 *self, uint8_t *data, uint8_t count);
 
 #endif

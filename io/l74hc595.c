@@ -1,15 +1,26 @@
-/*
-l74hc595 lib 0x01
+/**
+	output shift register driver for generic parallel port
 
-copyright (c) Davide Gironi, 2011
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-References: bildr 74hc595 library for arduino
-	http://bildr.org/2011/08/74hc595-breakout-arduino/
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-Released under GPLv3.
-Please refer to LICENSE file for licensing information.
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
+
+	Special thanks to:
+	* Davide Gironi, original implementation
 */
-
 
 #include <stdio.h>
 
@@ -21,31 +32,33 @@ Please refer to LICENSE file for licensing information.
 #define CONFIG_L74HC595_STC_PIN GPIO_NONE
 #endif
 
-#undef spi_init
-#undef spi_writereadbyte
+#define spi_writereadbyte(b) (s_putc(self->spi, b), s_getc(self->spi))
 
-#define spi_init() PFCALL(CONFIG_SPI0_NAME, init)
-#define spi_writereadbyte(b) (__spi0_putc__(0, b), __spi0_getc__(0))
-/*
-#define L74HC595_STCLo {L74HC595_PORT &= ~_BV(L74HC595_STCPIN);}
-#define L74HC595_STCHi {L74HC595_PORT |= _BV(L74HC595_STCPIN);}
-*/
-#define L74HC595_STCLo gpio_write_pin(CONFIG_L74HC595_STC_PIN, 0)
-#define L74HC595_STCHi gpio_write_pin(CONFIG_L74HC595_STC_PIN, 1)
+#define L74HC595_CELo self->gpio->write_pin(self->gpio, self->ce_pin, 0)
+#define L74HC595_CEHi self->gpio->write_pin(self->gpio, self->ce_pin, 1)
+
+#define L74HC595_STCLo self->gpio->write_pin(self->gpio, self->stc_pin, 0)
+#define L74HC595_STCHi self->gpio->write_pin(self->gpio, self->stc_pin, 1)
 /*
  * init the shift register
  */
-void l74hc595_init(void) {
-	spi_init(); 
-
-	gpio_configure(CONFIG_L74HC595_STC_PIN, GP_OUTPUT);
+void l74hc595_init(struct l74hc595 *self, struct serial_interface *spi, struct parallel_interface *gpio, gpio_pin_t ce_pin, gpio_pin_t stc_pin) {
+	self->spi = spi;
+	self->gpio = gpio; 
+	self->stc_pin = stc_pin;
+	self->ce_pin = ce_pin; 
+	
+	gpio->configure_pin(gpio, ce_pin, GP_OUTPUT); 
+	gpio->configure_pin(gpio, stc_pin, GP_OUTPUT); 
 	
 	L74HC595_STCLo;  
 }
 
-void l74hc595_write(uint8_t data) {
-	spi_writereadbyte(data); 
-	L74HC595_STCHi; 
-	delay_us(1); // not needed but still for safety (16ns is minimum high period)
-	L74HC595_STCLo; 
+void l74hc595_write(struct l74hc595 *self, uint8_t data) {
+	L74HC595_CEHi; 
+		spi_writereadbyte(data); 
+		L74HC595_STCHi; 
+		delay_us(1); // not needed but still for safety (16ns is minimum high period)
+		L74HC595_STCLo;
+	L74HC595_CELo; 
 }

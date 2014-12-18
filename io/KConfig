@@ -12,6 +12,5 @@ menu "IO logic support"
 		bool "L74HC595 serial to parallel shift register"
 		
 	config PCF8574
-		depends on HAVE_I2C
 		bool "PCF8574 I2C io expander"
 endmenu

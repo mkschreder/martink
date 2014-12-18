@@ -16,6 +16,8 @@ Please refer to LICENSE file for licensing information.
 #define PCF8574_MAXDEVICES 8 //max devices, depends on address (3 bit)
 #define PCF8574_MAXPINS 8 //max pin per device
 
+#define PCF8574_LCD_DEVICEID 7
+
 //settings
 #define PCF8574_I2CFLEURYPATH "i2cmaster.h" //define the path to i2c fleury lib
 

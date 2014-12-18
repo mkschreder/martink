@@ -1,10 +1,25 @@
-/*
-l74hc4051 lib 0x01
+/**
+	8 bit multiplexer driver
 
-copyright (c) Davide Gironi, 2011
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-Released under GPLv3.
-Please refer to LICENSE file for licensing information.
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
+
+	Special thanks to:
+	* Davide Gironi, original implementation
 */
 
 #ifndef L74HC4051_H_
@@ -12,15 +27,15 @@ Please refer to LICENSE file for licensing information.
 
 #define L74HC4051_MAXCH 8
 
-//setup ports
-#define L74HC4051_DDR DDRD
-#define L74HC4051_PORT PORTD
-#define L74HC4051_PIN PIND
-#define L74HC4051_S0PIN PD2
-#define L74HC4051_S1PIN PD3
-#define L74HC4051_S2PIN PD4
+struct l74hc4051 {
+	struct parallel_interface *port; 
+	gpio_pin_t s0_pin;
+	gpio_pin_t s1_pin;
+	gpio_pin_t s2_pin; 
+};
 
-extern void l74hc4051_init(void);
-extern void l74hc4051_setchannel(uint8_t channel);
+extern void l74hc4051_init(struct l74hc4051 *self, struct parallel_interface *port,
+		gpio_pin_t s0_pin, gpio_pin_t s1_pin, gpio_pin_t s2_pin);
+extern void l74hc4051_setchannel(struct l74hc4051 *self, uint8_t channel);
 
 #endif

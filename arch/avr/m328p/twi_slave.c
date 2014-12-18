@@ -182,8 +182,15 @@ ISR(TWI_vect)
   switch (TWSR)
   {
     case TWI_STX_ADR_ACK:            // Own SLA+R has been received; ACK has been returned
-//    case TWI_STX_ADR_ACK_M_ARB_LOST: // Arbitration lost in SLA+R/W as Master; own SLA+R has been received; ACK has been returned
-      TWI_bufPtr   = 0;                                 // Set buffer pointer to first data location
+			// case TWI_STX_ADR_ACK_M_ARB_LOST: // Arbitration lost in SLA+R/W as Master; own SLA+R has been received; ACK has been returned
+      TWI_bufPtr   = 0; // Set buffer pointer to first data location
+      // Martin: hold the bus busy until application writes data to the buffer
+      TWCR = (1<<TWEN)|                                 // TWI Interface enabled
+             (1<<TWIE)|(0<<TWINT)|                      // Enable TWI Interupt but do not send anything yet
+             (1<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|           // Answer next request
+             (0<<TWWC);
+			TWI_busy = 1;
+			break; 
     case TWI_STX_DATA_ACK:           // Data byte in TWDR has been transmitted; ACK has been received
       TWDR = TWI_buf[TWI_bufPtr++];
       TWCR = (1<<TWEN)|                                 // TWI Interface enabled
@@ -211,10 +218,10 @@ ISR(TWI_vect)
       TWI_busy = 0;   // Transmit is finished, we are not busy anymore
       break;     
     case TWI_SRX_GEN_ACK:            // General call address has been received; ACK has been returned
-//    case TWI_SRX_GEN_ACK_M_ARB_LOST: // Arbitration lost in SLA+R/W as Master; General call address has been received; ACK has been returned
+			//    case TWI_SRX_GEN_ACK_M_ARB_LOST: // Arbitration lost in SLA+R/W as Master; General call address has been received; ACK has been returned
       TWI_statusReg.flags.genAddressCall = TRUE;
     case TWI_SRX_ADR_ACK:            // Own SLA+W has been received ACK has been returned
-//    case TWI_SRX_ADR_ACK_M_ARB_LOST: // Arbitration lost in SLA+R/W as Master; own SLA+W has been received; ACK has been returned    
+			//    case TWI_SRX_ADR_ACK_M_ARB_LOST: // Arbitration lost in SLA+R/W as Master; own SLA+W has been received; ACK has been returned    
                                                         // Dont need to clear TWI_S_statusRegister.generalAddressCall due to that it is the default state.
       TWI_statusReg.flags.RxDataInBuf = TRUE;      
       TWI_bufPtr   = 0;                                 // Set buffer pointer to first data location

@@ -27,9 +27,7 @@ static uint16_t NextPacketPtr;
 #define CSPASSIVE gpio_write_pin(CONFIG_ENC28J60_CS_PIN, 1)
 
 #undef spi_writereadbyte
-#undef spi_init
 
-#define spi_init() PFCALL(CONFIG_ILI9340_SPI_NAME, init)
 #define spi_writereadbyte(ch) (__spi0_putc__(0, ch), __spi0_getc__(0))
 
 //*****************************************************************************
@@ -183,8 +181,6 @@ void enc28j60_Init(uint8_t* macaddr)
    gpio_configure(CONFIG_ENC28J60_CS_PIN, GP_OUTPUT); 
    //ENC28J60_CONTROL_DDR |= (1 << ENC28J60_CONTROL_CS);
    CSPASSIVE; // ss=0
-   
-   spi_init(); 
    
    // perform system reset
    enc28j60_WriteOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);

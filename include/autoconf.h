@@ -2,7 +2,7 @@
  * Automatically generated C config: don't edit
  * version: 
  */
-#define AUTOCONF_TIMESTAMP "2014-12-18 07:02:46 CET"
+#define AUTOCONF_TIMESTAMP "2014-12-18 12:33:18 CET"
 
 
 /*
@@ -77,17 +77,15 @@
  * Display support
  */
 #define CONFIG_ILI9340 1
-#define CONFIG_ILI9340_SPI_NAME spi0
-#define CONFIG_ILI9340_RST_PIN GPIO_NONE
-#define CONFIG_ILI9340_CS_PIN GPIO_NONE
-#define CONFIG_ILI9340_DC_PIN GPIO_NONE
-#define CONFIG_LCDPCF8574 1
+#define CONFIG_LCDPAR 1
 #define CONFIG_LEDMATRIX88 1
 #define CONFIG_SSD1306 1
+#define CONFIG_SEVSEG 1
 
 /*
  * HID support
  */
+#define CONFIG_WIINUNCHUK 1
 
 /*
  * IO logic support
@@ -95,6 +93,7 @@
 #define CONFIG_L74HC165 1
 #define CONFIG_L74HC4051 1
 #define CONFIG_L74HC595 1
+#define CONFIG_PCF8574 1
 
 /*
  * Motor driver support

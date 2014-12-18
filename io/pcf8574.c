@@ -7,23 +7,11 @@ Released under GPLv3.
 Please refer to LICENSE file for licensing information.
 */
 
-
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <util/delay.h>
+#include <arch/soc.h>
 
 #include "pcf8574.h"
 
-//path to i2c fleury lib
-#include <i2c.h>
-
-/*
- * initialize
- */
 void pcf8574_init(void) {
-	//init i2c
-	i2c_init();
-	_delay_us(10);
 
 	//reset the pin status
 	uint8_t i = 0;
@@ -59,13 +47,13 @@ int8_t pcf8574_getoutputpin(uint8_t deviceid, uint8_t pin) {
  * set output pins
  */
 int8_t pcf8574_setoutput(uint8_t deviceid, uint8_t data) {
-	if((deviceid >= 0 && deviceid < PCF8574_MAXDEVICES)) {
+	/*if((deviceid >= 0 && deviceid < PCF8574_MAXDEVICES)) {
 		pcf8574_pinstatus[deviceid] = data;
 		i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_WRITE);
 		i2c_write(data);
 		i2c_stop();
 		return 0;
-	}
+	}*/
 	return -1;
 }
 
@@ -89,9 +77,9 @@ int8_t pcf8574_setoutputpins(uint8_t deviceid, uint8_t pinstart, uint8_t pinleng
 		b |= data;
 	    pcf8574_pinstatus[deviceid] = b;
 	    //update device
-		i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_WRITE);
+		/*i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_WRITE);
 		i2c_write(b);
-		i2c_stop();
+		i2c_stop();*/
 		return 0;
 	}
 	return -1;
@@ -107,9 +95,9 @@ int8_t pcf8574_setoutputpin(uint8_t deviceid, uint8_t pin, uint8_t data) {
 	    b = (data != 0) ? (b | (1 << pin)) : (b & ~(1 << pin));
 	    pcf8574_pinstatus[deviceid] = b;
 	    //update device
-		i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_WRITE);
+		/*i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_WRITE);
 		i2c_write(b);
-		i2c_stop();
+		i2c_stop();*/
 		return 0;
 	}
 	return -1;
@@ -136,9 +124,9 @@ int8_t pcf8574_setoutputpinlow(uint8_t deviceid, uint8_t pin) {
 int8_t pcf8574_getinput(uint8_t deviceid) {
 	int8_t data = -1;
 	if((deviceid >= 0 && deviceid < PCF8574_MAXDEVICES)) {
-		i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_READ);
+		/*i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_READ);
 		data = ~i2c_readNak();
-		i2c_stop();
+		i2c_stop();*/
 	}
 	return data;
 }

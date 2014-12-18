@@ -111,35 +111,45 @@
 extern "C" {
 #endif
 
-void ili9340_init(void);
-void ili9340_drawFastVLine(int16_t x, int16_t y, int16_t h,
+struct ili9340 {
+	struct serial_interface *serial;
+	gpio_pin_t cs_pin, rst_pin, dc_pin;
+
+	uint16_t screen_width, screen_height; 
+	int16_t cursor_x, cursor_y;
+	int8_t char_width, char_height;
+	uint16_t back_color, front_color;
+	uint16_t scroll_start; 
+};
+
+void ili9340_init(struct ili9340 *self,
+	struct serial_interface *spi, gpio_pin_t cs_pin, gpio_pin_t dc_pin, gpio_pin_t rst_pin);
+void ili9340_drawFastVLine(struct ili9340 *self, int16_t x, int16_t y, int16_t h,
  uint16_t color);
-void ili9340_drawFastHLine(int16_t x, int16_t y, int16_t h,
+void ili9340_drawFastHLine(struct ili9340 *self, int16_t x, int16_t y, int16_t h,
  uint16_t color);
-void ili9340_drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, 
+void ili9340_drawLine(struct ili9340 *self, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, 
 	uint16_t col); 
 	
-void ili9340_setRotation(uint8_t m) ;
+void ili9340_setRotation(struct ili9340 *self, uint8_t m) ;
 
-void ili9340_drawString(uint16_t x, uint16_t y, const char *text);
-void ili9340_drawChar(uint16_t x, uint16_t y, uint8_t c);
-void ili9340_drawSprite(uint16_t x, uint16_t y, const uint8_t *sprite, const uint16_t *palette);
+void ili9340_drawString(struct ili9340 *self, uint16_t x, uint16_t y, const char *text);
+void ili9340_drawChar(struct ili9340 *self, uint16_t x, uint16_t y, uint8_t c);
+void ili9340_drawSprite(struct ili9340 *self, uint16_t x, uint16_t y, const uint8_t *sprite, const uint16_t *palette);
 
-void ili9340_setBackColor(uint16_t col); 
-void ili9340_setFrontColor(uint16_t col);
-void ili9340_fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
+void ili9340_setBackColor(struct ili9340 *self, uint16_t col); 
+void ili9340_setFrontColor(struct ili9340 *self, uint16_t col);
+void ili9340_fillRect(struct ili9340 *self, uint16_t x, uint16_t y, uint16_t w, uint16_t h,
   uint16_t color);
 
+void ili9340_readRect(struct ili9340 *self, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *data);
+void ili9340_writeRect(struct ili9340 *self, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *data);
 
-void ili9340_readRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *data);
-void ili9340_writeRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *data);
+void ili9340_setScrollStart(struct ili9340 *self, uint16_t start); 
+void ili9340_setScrollMargins(struct ili9340 *self, uint16_t top, uint16_t bottom);
 
- 
-void ili9340_setScrollStart(uint16_t start); 
-void ili9340_setScrollMargins(uint16_t top, uint16_t bottom);
-
-uint16_t ili9340_width(void);
-uint16_t ili9340_height(void);
+uint16_t ili9340_width(struct ili9340 *self);
+uint16_t ili9340_height(struct ili9340 *self);
 
 #ifdef __cplusplus
 }

@@ -1,0 +1,48 @@
+									LibFirmware Driver Model
+													Dec 2014
+										 Martin K. Schröder
+
+The static driver model
+
+The driver model is responsible for providing a generic API for accessing various types of devices that are connected to the board. Because of the memory constraints of small devices it is necessary to keep the memory use and overhead of the driver API to the minimum. For this reason, I have developed a concept for a static driver model that still allows for clean and readable code, but which compiles into entirely static method calls in the firmware.
+
+Multiple devices
+
+Must have support for multiple devices.
+Must know at compile time which devices are connected or intended to be connected to the bus
+
+Static model
+
+Every device has a set of methods that are statically compiled into the firmware
+No function pointer structures in memory
+
+Pros:
+	devices that are not supported will generate linker errors
+	very small overhead since all methods are statically compiled
+	no extra memory use for support structures
+Cons:
+	slightly bigger code size
+	
+	
+Device types
+
+UART
+	init
+	putc
+	getc
+	notes: multiple uarts, 
+	
+SPI
+	init
+	readwritebyte
+	notes: multiple channels per interface
+	
+I2C
+	init
+	start
+	write
+	read
+	end
+	notes: multiple devices on the bus
+
+

@@ -1,4 +1,4 @@
-Analog to digital converters
+General purpose parallel interface
 ----------------------------
 Martin K. Schröder
 info@fortmax.se

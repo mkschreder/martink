@@ -1,7 +1,11 @@
 Analog to digital converters
 ----------------------------
-Martin K. Schröder
-info@fortmax.se
+Martin K. Schröder | info@fortmax.se
+
+Files:
+
+* arch/<manufacturer>/<model>/adc.h
+* arch/adc.h
 
 These devices are expected to provide a service of reading an analog signal on one of available pins and reporting the value as a digital 16 bit number. Adc implementation is limited to 256 channels (although can easily be extended in the future if one needs more). An adc driver should typically only control one type of device or a few types of devices that are very similar to each other. If a device differs too much, a separate driver should be created.
 

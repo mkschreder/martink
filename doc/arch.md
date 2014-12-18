@@ -28,7 +28,6 @@ But there is one problem: the devices that we are working with are all flash bas
 
 You should think of interfaces as "services" that the device provides as opposed to identifying a specific device. If we make all of our devices "service"-oriented, we can reuse device drivers in many different contexts and pipe data from one driver to another. This is exactly the same philosophy that is used by linux commands where you can create more complex commands easily by simply piping results of one command to the next.
 
-|:--------------------:|:----------------------:|
 | Device               | Interface              |
 |:---------------------|------------------------|
 | ADC                  | [analog_interface](arch_adc.md)       |
@@ -37,4 +36,3 @@ You should think of interfaces as "services" that the device provides as opposed
 | SPI                  | [serial_interface](arch_spi.md)      |
 | I2C                  | [packet_interface](arch_twi.md)       |
 | UART                 | [serial_interface](arch_uart.md)       |
-|----------------------|------------------------|

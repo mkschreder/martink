@@ -1,5 +1,5 @@
 /**
-	This file is part of martink project.
+	Fast macro based uart implementation
 
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ extern "C" {
 
 // Load value for UBRR into registers
 // eg. `uart0_baud(BAUD_PRESCALE_SYNC(57600));`
-#define uart0_baud(ubrr) (UBRR0H = (unsigned char)(ubrr << 8), UBRR0L = (unsigned char)ubrr)
+#define uart0_set_baudrate(ubrr) (UBRR0H = (unsigned char)(ubrr << 8), UBRR0L = (unsigned char)ubrr)
 
 #define uart0_normal_transmission_speed() (uart0_clear_errors(), CLRBIT(UCSR0A, U2X0))
 #define uart0_double_transmission_speed() (uart0_clear_errors(), SETBIT(UCSR0A, U2X0))
@@ -121,10 +121,8 @@ extern "C" {
 #define uart0_data_overrun() (UCSR0A |= _BV(DOR0))
 #define uart0_parity_error() (UCSR0A |= _BV(UPE0))
 
-#define uart0_init(baud) PFCALL(uart0, init, baud)
-
-#define uart0_init_default(baudrate) { \
-  uart0_baud(BAUD_PRESCALE_ASYNC(baudrate)); \
+#define uart0_init_default(baudrate) ({ \
+  uart0_set_baudrate(BAUD_PRESCALE_ASYNC(baudrate)); \
   uart0_mode_async(); \
   uart0_character_size8(); \
   uart0_parity_off(); \
@@ -132,7 +130,7 @@ extern "C" {
   uart0_receiver_enable(); \
   uart0_transmitter_enable(); \
   uart0_interrupt_rx_on(); \
-}
+})
 
 #define uart0_putc_direct(ch) ({\
 	uart0_wait_for_empty_transmit_buffer();\
@@ -147,28 +145,17 @@ extern "C" {
 	UDR0)))\
 )
 
-#define DECLARE_UART0_RX_INTERRUPT(cbuf_rx_buf, u8_err_var) \
-ISR(USART_RX_vect) { \
-	uint8_t err = ( UART0_STATUS & (_BV(FE0)|_BV(DOR0))); \
-	uint8_t data = UDR0; \
-	if(cbuf_is_full(&cbuf_rx_buf)){ \
-		err = UART_BUFFER_FULL >> 8; \
-	} else { \
-		cbuf_put(&cbuf_rx_buf, data); \
-	} \
-	u8_err_var = err; \
-}
-
-#define DECLARE_UART0_TX_INTERRUPT() void _uart0_tx_interrupt__(void){}
-
-#define DECLARE_UART0_DRE_INTERRUPT(cbuf_tx_buf) \
-ISR(USART_UDRE_vect) {\
-	if(cbuf_get_data_count(&cbuf_tx_buf)){\
-		uart0_putc_direct(cbuf_get(&cbuf_tx_buf)); \
-	} else {\
-		uart0_interrupt_dre_off(); \
-	}\
-}
+#if defined(CONFIG_BUFFERED_UART)
+	extern size_t 		uart0_waiting(void); 
+	extern void 			uart0_flush(void);
+	extern uint16_t 	uart0_getc(void);
+	extern uint16_t 	uart0_putc(uint8_t data);
+#else
+	#define uart0_waiting() ((UCSR0A & _BV(RXC0))?1:0)
+	#define uart0_flush() (0)
+	#define uart0_getc() ((uart0_waiting())?UDR0:UART_NO_DATA)
+	#define uart0_putc(data) uart0_putc_direct(data) 
+#endif
 
 #ifdef __cplusplus
 }

@@ -51,7 +51,6 @@ typedef char PROGMEM prog_char;
 #include "m328p/uart.h"
 #endif
 
-#include "m328p/random.h"
 #include "m328p/stack.h"
 #include "m328p/time.h"
 #include "m328p/gpio.h"

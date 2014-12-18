@@ -34,6 +34,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 
 /*
 #define FRONT_PIN PD3
@@ -86,8 +87,7 @@ static void reset_rc(void){
 }
 
 static void compute_rc_values(void){
-	timestamp_t t_up, t_down; 
-	#define abs(x) ((x >= 0)?x:-x)
+	timestamp_t t_up, t_down;
 	
 	#define COMPUTE_RC_CHAN(ch) {\
 		timestamp_t ticks = timestamp_ticks_to_us(t_down - t_up);\

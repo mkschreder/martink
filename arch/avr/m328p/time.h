@@ -1,11 +1,26 @@
+/**
+	This file is part of martink kernel library
+
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
+*/
+
 #pragma once
 
-/** 
- * 	Author: Martin K. Schröder 
- *  Date: 2014
- * 
- * 	info@fortmax.se
- */
 
 #ifdef __cplusplus
 extern "C" {
@@ -237,37 +252,41 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 
 #include "../../types.h"
 
-extern volatile timestamp_t _tsc_ovf;
 
-#define TSC_PRESCALER TIM1_CLOCK_DIV8
-#define TSC_TICKS_PER_US 2 //((timestamp_t)(F_CPU / 8L))
+#if defined(CONFIG_TIMESTAMP_COUNTER)
 
-#define tsc_init(void) (\
-	timer1_mode(TIM1_MODE_NORMAL),\
-	timer1_set_clock(TSC_PRESCALER),\
-	timer1_interrupt_overflow_on()\
-)
+	extern volatile timestamp_t _tsc_ovf;
 
-static inline timestamp_t tsc_read(void){
-	timestamp_t time; 
-	//ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-		time = TCNT1 + _tsc_ovf * 65535L;
-	//}
-	return time;
-}
+	#define TSC_PRESCALER TIM1_CLOCK_DIV8
+	#define TSC_TICKS_PER_US 2 //((timestamp_t)(F_CPU / 8L))
 
-static inline timestamp_t tsc_us_to_ticks(timestamp_t us) {
-	return ((timestamp_t)(TSC_TICKS_PER_US * ((timestamp_t)us)));
-}
+	#define tsc_init(void) (\
+		timer1_mode(TIM1_MODE_NORMAL),\
+		timer1_set_clock(TSC_PRESCALER),\
+		timer1_interrupt_overflow_on()\
+	)
 
-static inline timestamp_t tsc_ticks_to_us(timestamp_t ticks){
-	return (((timestamp_t)ticks) / TSC_TICKS_PER_US);
-}
+	static inline timestamp_t tsc_read(void){
+		timestamp_t time; 
+		//ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+			time = TCNT1 + _tsc_ovf * 65535L;
+		//}
+		return time;
+	}
 
-#define tsc_reset(void) (\
-	_tsc_ovf = 0,\
-	TCNT1 = 0 \
-)
+	static inline timestamp_t tsc_us_to_ticks(timestamp_t us) {
+		return ((timestamp_t)(TSC_TICKS_PER_US * ((timestamp_t)us)));
+	}
+
+	static inline timestamp_t tsc_ticks_to_us(timestamp_t ticks){
+		return (((timestamp_t)ticks) / TSC_TICKS_PER_US);
+	}
+
+	#define tsc_reset(void) (\
+		_tsc_ovf = 0,\
+		TCNT1 = 0 \
+	)
+#endif
 
 //#define static_delay_us(us) _delay_us(us)
 

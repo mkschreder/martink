@@ -24,7 +24,7 @@ CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
 LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS)
 OUTDIRS := build build/crypto/aes
-APPNAME := built-in.o
+APPNAME := libk.a
 
 # SHELL used by kbuild
 CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \

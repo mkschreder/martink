@@ -115,6 +115,16 @@ extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0];
 #define RSET(reg, bit) (reg |= _BV(bit))
 #define RCLR(reg, bit) (reg &= ~_BV(bit))
 
+#if defined(CONFIG_GPIO_PIN_STATES)
+#define gpio_init_pin_states() (timestamp_init())
+#else
+#define gpio_init_pin_states() (0)
+#endif
+
+#define gpio_init() (\
+	gpio_init_pin_states()\
+)
+
 #define gpio_configure(pin, fun) (\
 	((fun) & GP_OUTPUT)\
 		?RSET(DREG(pin), PIDX(pin))\
@@ -125,19 +135,6 @@ extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0];
 	((fun) & GP_PCINT)?gpio_enable_pcint(pin):(0)\
 )
 
-static inline uint8_t gpio_get_status(gpio_pin_t pin, 
-	timestamp_t *ch_up, timestamp_t *ch_down){
-	pin = (pin < GPIO_PB0)?GPIO_PB0:((pin > GPIO_PD7)?GPIO_PD7:pin); 
-	uint8_t ret = 0;
-	volatile struct pin_state *st = &gPinState[pin - GPIO_PB0]; 
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-		ret = st->status; 
-		*ch_up = st->t_up; 
-		*ch_down = st->t_down; 
-		st->status = 0; 
-	}
-	return ret; 
-}
 
 #define gpio_write_word(addr, value) (\
 	((addr) >= 0 && (addr) < 4)?(*gPinPorts[addr].out_reg = ((value) & 0xff), 0):(1)\
@@ -178,3 +175,11 @@ static inline uint8_t gpio_get_status(gpio_pin_t pin,
 				?(PCICR &= ~_BV(PCINT2), PCMSK2 = PCMSK2 & ~ _BV((pin) - GPIO_PD0))\
 				:(-1)\
 )
+
+#if defined(CONFIG_GPIO_PIN_STATES)
+	extern uint8_t gpio_get_status(gpio_pin_t pin, 
+		timestamp_t *ch_up, timestamp_t *ch_down);
+#endif
+
+// attempt to gather entropy from floating gpio pin
+extern uint32_t gpio_read_prng(gpio_pin_t pin);

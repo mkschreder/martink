@@ -35,8 +35,8 @@ void serial_debugger_init(
 	dbg->buf_ptr = 0; 
 	dbg->last_is_read = 2; 
 	dbg->interface = (struct serial_interface){
-		.getc = serial_debugger_getc, 
-		.putc = serial_debugger_putc, 
+		.get = serial_debugger_getc, 
+		.put = serial_debugger_putc, 
 		.getn = serial_debugger_getn, 
 		.putn = serial_debugger_putn, 
 		.waiting = serial_debugger_waiting, 

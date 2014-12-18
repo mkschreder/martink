@@ -52,25 +52,28 @@
 	timer0_set_channel_b(map(speed, 0, 2000, 0, 127))\
 )
 
-#define pwm2_enable() (\
-	timer1_mode(TIM1_MODE_FASTPWM8_TOPMAX),\
-	timer1_outa_mode(TIM1_OUTA_MODE_CLEAR),\
-	timer1_set_clock(TIM1_CLOCK_DIV256)\
-)
+#if !defined(CONFIG_TIMESTAMP_COUNTER)
+	// pwm 2 and 3 can only be used if timer1 is free (timestamp uses timer 1!)
+	#define pwm2_enable() (\
+		timer1_mode(TIM1_MODE_FASTPWM8_TOPMAX),\
+		timer1_outa_mode(TIM1_OUTA_MODE_CLEAR),\
+		timer1_set_clock(TIM1_CLOCK_DIV256)\
+	)
 
-#define pwm2_set(speed) (\
-	timer1_set_channel_a(map(speed, 0, 2000, 0, 127))\
-)
+	#define pwm2_set(speed) (\
+		timer1_set_channel_a(map(speed, 0, 2000, 0, 127))\
+	)
 
-#define pwm3_enable() (\
-	timer1_mode(TIM1_MODE_FASTPWM8_TOPMAX),\
-	timer1_outb_mode(TIM0_OUTB_MODE_CLEAR),\
-	timer1_set_clock(TIM1_CLOCK_DIV256)\
-)
+	#define pwm3_enable() (\
+		timer1_mode(TIM1_MODE_FASTPWM8_TOPMAX),\
+		timer1_outb_mode(TIM0_OUTB_MODE_CLEAR),\
+		timer1_set_clock(TIM1_CLOCK_DIV256)\
+	)
 
-#define pwm3_set(speed) (\
-	timer1_set_channel_b(map(speed, 0, 2000, 0, 127))\
-)
+	#define pwm3_set(speed) (\
+		timer1_set_channel_b(map(speed, 0, 2000, 0, 127))\
+	)
+#endif
 
 #define pwm4_enable() (\
 	timer2_mode(TIM2_MODE_FASTPWM_TOPMAX),\

@@ -65,9 +65,6 @@ extern void 		twi0_init_default(void);
 /// sends a missing stop and prepares the device for receiving more data
 #define twi0_begin() ({}) 
 
-uint8_t twi0_busy(void); 
-uint8_t twi0_success(void); 
-
 /// sends stop signal on the bus
 void twi0_end(void);
 
@@ -75,31 +72,13 @@ void twi0_end(void);
 extern void 		twi0_start_write(uint8_t *data, uint8_t data_sz);
 /// address is the first byte of data
 extern void 		twi0_start_read(uint8_t *data, uint8_t data_sz);
-/// waits until current transaction has completed
-//extern void 		twi0_wait_until_transaction_completed(void);
 
-//#define twi0_status() (_twi0_status)
-//void twi0_sync(void); 
+/// returns 1 if twi bus is processing another transaction
+uint8_t twi0_busy(void);
 
-//extern void 		twi0_start_transaction(i2c_op_list_t);
-/*
-#define twi0_is_busy() PFCALL(CONFIG_TWI0_NAME, is_busy)
-#define twi0_wait() ({ while(twi0_is_busy()); })
-#define twi0_start_transaction(op_list) PFCALL(CONFIG_TWI0_NAME, start_transaction, op_list)
+/// returns 1 if previous transaction was successful
+uint8_t twi0_success(void); 
 
-extern void PFDECL(CONFIG_TWI0_NAME, init, void);
-extern uint8_t PFDECL(CONFIG_TWI0_NAME, is_busy, void);
-extern void PFDECL(CONFIG_TWI0_NAME, start_transaction, i2c_op_list_t);
-*/
-/*
-extern void PFDECL(CONFIG_TWI0_NAME, stop, void);
-extern unsigned char PFDECL(CONFIG_TWI0_NAME, start, unsigned char addr);
-extern unsigned char PFDECL(CONFIG_TWI0_NAME, rep_start, unsigned char addr);
-extern uint8_t PFDECL(CONFIG_TWI0_NAME, start_wait, unsigned char addr);
-extern unsigned char PFDECL(CONFIG_TWI0_NAME, write, unsigned char data);
-extern unsigned char PFDECL(CONFIG_TWI0_NAME, readAck, void);
-extern unsigned char PFDECL(CONFIG_TWI0_NAME, readNak, void);
-*/
 
 #ifdef __cplusplus
 }

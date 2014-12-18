@@ -26,9 +26,6 @@
 
 #include "time.h"
 
-#undef getc
-#undef putc
-
 /**
  * A serial interface is any device that is capable of sending and receiving
  * data over some kind of channel. A serial interface is typically a stream
@@ -45,12 +42,12 @@
 struct serial_interface {
 	/// getc reads one character from the interface
 	/// returns UART_NO_DATA if none available
-	uint16_t 			(*getc)(struct serial_interface *self); 
+	uint16_t 			(*get)(struct serial_interface *self); 
 	/// putc writes a character into the interface
 	/// waits for a timeout of 1-2 bytes if output buffer is full 
 	/// discards data if tx buffer is full and no data can be sent
 	/// Returns status of transaction. must return reasonably immidiately. 
-	uint16_t 			(*putc)(struct serial_interface *self, uint8_t ch); 
+	uint16_t 			(*put)(struct serial_interface *self, uint8_t ch); 
 	/// putn writes a buffer into the interface
 	/// returns number of bytes written
 	/// should return only when data has been at least copied into internal buffer of the driver
@@ -70,8 +67,8 @@ struct serial_interface {
 
 typedef struct serial_interface serial_t; 
 
-#define s_putc(ptr_iface, ch) ptr_iface->putc(ptr_iface, ch)
-#define s_getc(ptr_iface) ptr_iface->getc(ptr_iface)
+#define s_putc(ptr_iface, ch) ptr_iface->put(ptr_iface, ch)
+#define s_getc(ptr_iface) ptr_iface->get(ptr_iface)
 #define s_putn(ptr_iface, data, size) ptr_iface->putn(ptr_iface, data, size)
 #define s_getn(ptr_iface, data, size) ptr_iface->getn(ptr_iface, data, size)
 #define s_flush(ptr_iface) ptr_iface->flush(ptr_iface)

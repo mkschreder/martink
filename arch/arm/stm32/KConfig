@@ -1,4 +1,5 @@
-choice 
+choice
+	depends on ARM
 	prompt "STM32 Model" 
 	default STM32F10X
 	

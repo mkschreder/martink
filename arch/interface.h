@@ -224,3 +224,18 @@ struct pwm_interface {
 	/// returns actual period that has been set. 
 	uint16_t 		(*set_channel_period)(struct pwm_interface *self, uint8_t channel, uint16_t value_us);
 }; 
+
+/**
+ * Used for any device that can read an analog signal and report it as 16 bit value.
+ * Since many adc peripherals have multiple channels, you specify which channel you want
+ * to read. How the data is read is up to the implementation. Your actual driver may for
+ * example use adc interrupt and read adc in the background and load it into a cache,
+ * making your read_pin call return directly. Others may block until the adc value is
+ * converted.
+ **/
+struct adc_interface {
+	/// must return the value of the pin left justified (meaning that the values are
+	/// converted to 16 bit value regardless of the resolution of the adc). Most hardware
+	/// allows you to left adjust the result in hardware. 
+	uint16_t 	(*read_pin)(struct adc_interface *self, uint8_t pin); 
+}; 

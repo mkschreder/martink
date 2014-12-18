@@ -71,8 +71,11 @@ app: build
 
 fixdep: 
 	find build -type f -iname '*.d' -exec sh -c 'scripts/basic/fixdep "$${1%.*}.d" "$${1%.*}.o" "" > $${1%.*}.cmd' convert {} \;
+
+fixdirs: 
+	mkdir -p build
 	
-build: fixdep check $(obj-y)
+build: fixdirs fixdep check $(obj-y)
 	ar rs $(APPNAME) $(obj-y)
 
 $(BUILD_DIR)/%.o: %.cpp .config
@@ -84,6 +87,7 @@ $(BUILD_DIR)/%.o: %.c .config
 	$(CC) -c $(CFLAGS) $< -o $@
 
 check: GCC-exists
+	
 GCC-exists: ; @which $(CC) > /dev/null
 
 clean: 

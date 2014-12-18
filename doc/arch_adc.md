@@ -8,7 +8,9 @@ These devices are expected to provide a service of reading an analog signal on o
 Public interface
 ----------------
 
-* int16_t adc->read_pin(adc, pin_number) - reads adc pin and returns it's integer representation. 
+| struct analog_interface method | Description |
+|--------------------------------|-------------|
+int16_t (*read_pin)(adc, pin_number) | reads adc pin and returns it's integer representation. 
 
 Implementation macro guidelines
 ----------------------

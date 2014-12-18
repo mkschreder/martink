@@ -233,7 +233,7 @@ struct pwm_interface {
  * making your read_pin call return directly. Others may block until the adc value is
  * converted.
  **/
-struct adc_interface {
+struct analog_interface {
 	/// must return the value of the pin left justified (meaning that the values are
 	/// converted to 16 bit value regardless of the resolution of the adc). Most hardware
 	/// allows you to left adjust the result in hardware. 

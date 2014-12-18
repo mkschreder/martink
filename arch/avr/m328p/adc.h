@@ -61,11 +61,12 @@
 
 #define adc0_set_alignment(adc_align) (ADMUX = (ADMUX & ~(_BV(ADLAR))) | ((adc_align) & _BV(ADLAR))
 
-#define adc0_disable() ({ADCSRA &= ~_BV(ADEN);})
-#define adc0_enable() (\
+#define adc0_enable() (ADCSRA |= _BV(ADEN))
+#define adc0_disable() (ADCSRA &= ~_BV(ADEN))
+#define adc0_init_default() (\
 	adc0_set_vref(ADCREF_AVCC_CAP_AREF),\
 	adc0_set_prescaler(ADC_CLOCK_DIV128),\
-	adc0_set_alignment(ADC_ALIGN_RIGHT), \
+	adc0_set_alignment(ADC_ALIGN_LEFT), \
 	adc0_enable()\
 )
 
@@ -96,7 +97,7 @@
 #define adc0_conversion_in_progress() (ADCSRA & _BV(ADSC))
 #define adc0_wait_for_completed_conversion() ({while(adc0_conversion_in_progress());})
 
-#define adc0_read_selected() (uint16_t)(\
+#define adc0_read() (uint16_t)(\
 	adc0_wait_for_completed_conversion(), \
 ADC)
 
@@ -108,7 +109,7 @@ ADC)
 	(_adc_mode == ADC_MODE_AUTOMATIC)\
 		?(adc0_interrupt_on(), adc0_start_conversion())\
 		:(0)\
-}, adc0_read_selected())
+}, adc0_read())
 
 #define ADC_MODE_MANUAL (0)
 extern uint8_t _adc_mode;

@@ -1,17 +1,20 @@
 Architecture layer
 ------------------
+Martin K. Schröder
+info@fortmax.se
 
 When you want to implement support for a new chip, what you would need to do is implement all of the interfaces defined in arch/interface.h file. We will take a look at these interfaces in turn below. But first a little on how things are put together.
 
 This layer consists of following devices:
 
-* [ADC](arch_adc.md) 
-* [GPIO](arch_gpio.md)  
-* [PWM](arch_pwm.md)         
-* [SPI](arch_spi.md)      
-* [I2C/TWI](arch_twi.md)       
-* [UART](arch_uart.md)
-* CAN
+* [ADC](arch_adc.md) - analog to digital converters
+* [DAC](arch_dac.md) - digital to analog converters
+* [GPIO](arch_gpio.md) - on chip general purpose io driver
+* [PWM](arch_pwm.md) - pulse width modulation peripherals       
+* [SPI](arch_spi.md) - on board serial peripheral interface peripherals
+* [I2C/TWI](arch_twi.md) - i2c interfaces  
+* [UART](arch_uart.md) - asynchronous serial interfaces
+* [CAN](arch_can.md) - controller area network interfaces
 
 The arch layer is built around the idea of being really fast. Because this is the absolutely lowest layer that is closest to hardware, the methods of this layer get called a lot of times. This layer is responsible for providing a human readable interface to chip register operations.
 
@@ -36,7 +39,9 @@ You should think of interfaces as "services" that the device provides as opposed
 | packet_interface     | begin, end, write, read, sync, packets_available | A packet interface is similar to a serial interface but instead operates on chunks of data. Whereas a serial interface guarantees that you either get or not get an individual byte of data, a packet interface does the same for chunks, meaning that you either get or not get a packet - there is no possibility to only get a partial packet.
 | serial_interface     | get, put, getn, putn, flush, waiting | A serial interface is any device that is capable of sending and receiving data over some kind of channel. A serial interface is typically a stream it is not a transaction based interface, but rather a stream based one. Data can usually be transfered in both directions and we do not use any  kind of addressing scheme. A serial interface is a point to point channel between two devices.
 
-Here are some examples of what interfaces different core devices can export: 
+Here are some examples of what interfaces different core devices can export:
+
+Click on the device name to read more!
 
 | Device               | Interfaces exported    | 
 |:---------------------|------------------------|
@@ -44,5 +49,5 @@ Here are some examples of what interfaces different core devices can export:
 | [GPIO](arch_gpio.md) | parallel_interface   	|
 | [PWM](arch_pwm.md)   | pwm_interface         	|
 | [SPI](arch_spi.md)   | serial_interface      	|
-| [I2C](arch_i2c.md    | packet_interface       |
+| [I2C](arch_i2c.md)   | packet_interface       |
 | [UART](arch_uart.md) | serial_interface       |

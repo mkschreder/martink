@@ -237,5 +237,5 @@ struct adc_interface {
 	/// must return the value of the pin left justified (meaning that the values are
 	/// converted to 16 bit value regardless of the resolution of the adc). Most hardware
 	/// allows you to left adjust the result in hardware. 
-	uint16_t 	(*read_pin)(struct adc_interface *self, uint8_t pin); 
+	int16_t 	(*read_pin)(struct adc_interface *self, uint8_t pin); 
 }; 

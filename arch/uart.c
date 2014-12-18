@@ -27,97 +27,74 @@
 
 #include <static_cbuf.h>
 
-static struct {
-	uint8_t error;
-} uart0;
+static FILE _fd; 
+FILE *uart0_fd = &_fd;
 
-DECLARE_STATIC_CBUF(uart0_tx_buf, uint8_t, UART_TX_BUFFER_SIZE);
-DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-
-DECLARE_UART0_RX_INTERRUPT(uart0_rx_buf, uart0.error); 
-DECLARE_UART0_TX_INTERRUPT()
-DECLARE_UART0_DRE_INTERRUPT(uart0_tx_buf); 
-
-void PFDECL(CONFIG_UART0_NAME, init, uint32_t baudrate) {
-	uart0_init_default(baudrate); 
+int _uart0_fd_get(FILE *fd){
+	return uart0_getc();
 }
 
-size_t PFDECL(CONFIG_UART0_NAME, waiting, struct serial_interface *self){
-	uart0_interrupt_rx_off(); 
-	int wait = cbuf_get_data_count(&uart0_rx_buf);
-	uart0_interrupt_rx_on();
-	return wait; 
+int _uart0_fd_put(char data, FILE *fd){
+	return uart0_putc(data);
 }
 
-void PFDECL(CONFIG_UART0_NAME, flush, struct serial_interface *self){
-	uint16_t timeout = 2000; 
-	while(timeout--){
-		uart0_interrupt_dre_off(); 
-		int empty = cbuf_is_empty(&uart0_tx_buf);
-		uart0_interrupt_dre_on();
-		if(empty) break; 
-		time_static_delay_us(1); 
-	}
+void uart0_init(uint32_t baudrate) {
+	uart0_init_default(baudrate);
+	uart0_fd->get = _uart0_fd_get;
+	uart0_fd->put = _uart0_fd_put; 
 }
 
-uint16_t PFDECL(CONFIG_UART0_NAME, getc, struct serial_interface *self)
-{
-	uart0_interrupt_rx_off(); 
-	if(cbuf_is_empty(&uart0_rx_buf)) {
-		uart0_interrupt_rx_on(); 
-		return UART_NO_DATA;
-	}
-	uint8_t data = cbuf_get(&uart0_rx_buf);
-	uart0_interrupt_rx_on(); 
-	return data;
+/// *************************
+/// UART0 interface functions
+/// *************************
+
+size_t _uart0_waiting(struct serial_interface *self){
+	return uart0_waiting(); 
 }
 
-uint16_t PFDECL(CONFIG_UART0_NAME, putc, struct serial_interface *self, unsigned char data)
-{
-	// the strategy when the buffer is full is to wait for a time and then discard
-	// although it could be: discard always, or wait forever
-	int timeout = 2000;
-	do {
-		uart0_interrupt_dre_off();
-		int ret = cbuf_put(&uart0_tx_buf, data);
-		uart0_interrupt_dre_on();
-		if(ret == -1) _delay_us(1);
-		else return 0; 
-	} while(timeout--);
-	return UART_BUFFER_FULL; 
+void _uart0_flush(struct serial_interface *self){
+	uart0_flush(); 
 }
 
-size_t PFDECL(CONFIG_UART0_NAME, putn, struct serial_interface *self, const uint8_t *s, size_t c)
+uint16_t _uart0_getc(struct serial_interface *self){
+	return uart0_getc(); 
+}
+
+uint16_t _uart0_putc(struct serial_interface *self, unsigned char data){
+	return uart0_putc(data);
+}
+
+size_t _uart0_putn(struct serial_interface *self, const uint8_t *s, size_t c)
 {
 	size_t t = c; 
 	while (c--) 
-		PFCALL(CONFIG_UART0_NAME, putc, self, *s++);
+		uart0_putc(*s++);
 	return t; 
 }
 
-size_t PFDECL(CONFIG_UART0_NAME, getn, struct serial_interface *self, uint8_t *s, size_t c)
+size_t _uart0_getn(struct serial_interface *self, uint8_t *s, size_t c)
 {
 	size_t t = 0; 
 	while (t < c) {
-		uint16_t d = PFCALL(CONFIG_UART0_NAME, getc, self);
+		uint16_t d = uart0_getc();
 		if(d == UART_NO_DATA) return t; 
 		t++; 
 	}
 	return t; 
 }
-
-size_t PFDECL(CONFIG_UART0_NAME, puts, const char *s )
+/*
+size_t _uart0_puts(const char *s )
 {
 	size_t count = 0; 
 	while (*s) {
-		PFCALL(CONFIG_UART0_NAME, putc, 0, *s++);
+		uart0_putc(*s++);
 		count++; 
 	}
 	return count; 
 }
 
-
-uint16_t PFDECL(CONFIG_UART0_NAME, printf, const char *fmt, ...){
+uint16_t uart0_printf(const char *fmt, ...){
+	
 	char buf[uart0_tx_buf.total_size * 2]; 
 	
 	uint16_t n; 
@@ -125,14 +102,7 @@ uint16_t PFDECL(CONFIG_UART0_NAME, printf, const char *fmt, ...){
 	va_start(vl, fmt);
 	n = vsnprintf(buf, sizeof(buf)-1, fmt, vl); 
 	va_end(vl);
-	PFCALL(CONFIG_UART0_NAME, puts, buf);
+	uart0_puts(buf);
 	return n; 
 }
-
-void PFDECL(CONFIG_UART0_NAME, puts_p, const char *progmem_s )
-{ 
-	register char c;
-	while ( (c = pgm_read_byte(progmem_s++)) ) 
-		PFCALL(CONFIG_UART0_NAME, putc, 0, c);
-}
-
+*/

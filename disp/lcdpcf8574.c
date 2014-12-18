@@ -43,7 +43,7 @@ static void toggle_e(void);
 *************************************************************************/
 static inline void _delayFourCycles(unsigned int __count)
 {
-	time_delay(__count); 
+	timestamp_delay_us(__count); 
 	/*
     if ( __count == 0 )    
         __asm__ __volatile__( "rjmp 1f\n 1:" );    // 2 cycles

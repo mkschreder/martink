@@ -1,12 +1,23 @@
-/*
-ADC Library 0x05
+/**
+	Fast ADC implementation using macros
 
-copyright (c) Davide Gironi, 2013
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-Released under GPLv3.
-Please refer to LICENSE file for licensing information.
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
 */
-
 
 #ifndef ADC_H
 #define ADC_H
@@ -25,38 +36,89 @@ Please refer to LICENSE file for licensing information.
 #define ADC_BANDGAPVOLTAGE 1300L
 #endif
 
-#define hwadc0_disable() ({ADCSRA &= ~_BV(ADEN);})
-#define hwadc0_enable() ({ADCSRA |= _BV(ADEN);})
+#define ADCREF_AREF (0)
+#define ADCREF_AVCC_CAP_AREF (_BV(REFS0))
+#define ADCREF_INTERNAL_2_56V (_BV(REFS1) | _BV(REFS0))
+#define ADCREF_BITS ADCREF_INTERNAL_2_56V
 
-#define hwadc0_set_channel(u8_chan) ({\
-	hwadc0_disable(); \
-	ADMUX = (ADMUX & 0xf8) | (u8_chan & 0x07); \
-	hwadc0_enable(); \
+#define adc0_set_vref(adcref) (ADMUX = (ADMUX & ~ADCREF_BITS) | (adcref & ADCREF_BITS))
+
+#define ADC_CLOCK_DIV2 (_BV(ADPS0))
+#define ADC_CLOCK_DIV4 (_BV(ADPS1))
+#define ADC_CLOCK_DIV8 (_BV(ADPS1) | _BV(ADPS0))
+#define ADC_CLOCK_DIV16 (_BV(ADPS2))
+#define ADC_CLOCK_DIV32 (_BV(ADPS2) | _BV(ADPS0))
+#define ADC_CLOCK_DIV64 (_BV(ADPS2) | _BV(ADPS1))
+#define ADC_CLOCK_DIV128 (_BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0))
+#define ADC_CLOCK_BITS ADC_CLOCK_DIV128
+
+#define adc0_set_prescaler(adc_clock) (\
+	ADCSRA = (ADCSRA &  ~ADC_CLOCK_BITS) | ((adc_clock) & ADC_CLOCK_BITS)\
+)
+
+#define ADC_ALIGN_LEFT (_BV(ADLAR))
+#define ADC_ALIGN_RIGHT (0)
+
+#define adc0_set_alignment(adc_align) (ADMUX = (ADMUX & ~(_BV(ADLAR))) | ((adc_align) & _BV(ADLAR))
+
+#define adc0_disable() ({ADCSRA &= ~_BV(ADEN);})
+#define adc0_enable() (\
+	adc0_set_vref(ADCREF_AVCC_CAP_AREF),\
+	adc0_set_prescaler(ADC_CLOCK_DIV128),\
+	adc0_set_alignment(ADC_ALIGN_RIGHT), \
+	adc0_enable()\
+)
+
+#define adc0_interrupt_on() (ADCSRA |= _BV(ADIE))
+#define adc0_interrupt_off() (ADCSRA &= ~_BV(ADIE))
+
+#define ADC_CH0 (0)
+#define ADC_CH1 (1)
+#define ADC_CH2 (2)
+#define ADC_CH3 (3)
+#define ADC_CH4 (4)
+#define ADC_CH5 (5)
+#define ADC_CH6 (6)
+#define ADC_CH7 (7)
+#define ADC_CH_VREF (14)
+#define ADC_CH_GND (15)
+#define ADC_CH_BITS (0x0f)
+
+#define adc0_set_channel(adc_chan) ({\
+	adc0_disable(); \
+	ADMUX = (ADMUX & ~ADC_CH_BITS) | ((adc_chan) & ADC_CH_BITS); \
+	adc0_enable(); \
 })
 
-#define hwadc0_start_conversion() ({ADCSRA |= (1 << ADSC);})
-#define hwadc0_conversion_in_progress() (ADCSRA & _BV(ADSC))
-#define hwadc0_wait_for_completed_conversion() ({while(ADCSRA & _BV(ADSC));})
+#define adc0_get_channel() (ADMUX & 0x07)
 
-#define hwadc0_read_selected() ({\
-	if(hwadc0_conversion_in_progress()) \
-		hwadc0_wait_for_completed_conversion(); \
-}, ADC)
+#define adc0_start_conversion() (ADCSRA |= (1 << ADSC))
+#define adc0_conversion_in_progress() (ADCSRA & _BV(ADSC))
+#define adc0_wait_for_completed_conversion() ({while(adc0_conversion_in_progress());})
 
-#define hwadc0_sample_channel(chan) (\
-	hwadc0_wait_for_completed_conversion(); \
-	hwadc0_set_channel(chan); \
-	hwadc0_start_conversion(); \
-}, hwadc0_read_selected())
+#define adc0_read_selected() (uint16_t)(\
+	adc0_wait_for_completed_conversion(), \
+ADC)
 
-//functions
-extern void adc_setchannel(uint8_t channel);
-extern uint16_t adc_read(uint8_t channel);
-extern uint16_t adc_readsel(void);
-extern void adc_init(void);
-extern double acd_getrealvref(void);
-extern long adc_getresistence(uint16_t adcread, uint16_t adcbalanceresistor);
-extern double adc_getvoltage(uint16_t adcread, double adcvref);
-extern unsigned int adc_emafilter(unsigned int newvalue, unsigned int value);
+#define adc0_read_immediate(chan) (\
+	adc0_wait_for_completed_conversion(), \
+	adc0_interrupt_off(),\
+	adc0_set_channel(chan), \
+	adc0_start_conversion(), \
+	(_adc_mode == ADC_MODE_AUTOMATIC)\
+		?(adc0_interrupt_on(), adc0_start_conversion())\
+		:(0)\
+}, adc0_read_selected())
+
+#define ADC_MODE_MANUAL (0)
+extern uint8_t _adc_mode;
+#define adc0_set_mode(adc_mode) (_adc_mode = adc_mode)
+
+#if defined(CONFIG_ADC_MODE_AUTOMATIC)
+	#define ADC_MODE_AUTOMATIC (1)
+	extern uint16_t _adc_values[8];
+
+	#define adc0_read_cached(chan) (_adc_values[(chan) & 0x07])
+#endif
 
 #endif

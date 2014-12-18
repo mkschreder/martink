@@ -23,6 +23,8 @@
 
 #include "autoconf.h"
 
+#include "../util.h"
+
 #include <inttypes.h>
 #include <stddef.h>
 
@@ -52,9 +54,6 @@ extern "C" {
 
 #define __init __attribute__((constructor))
 
-#include "interface.h"
-#include "static_cbuf.h"
-
 #ifdef CONFIG_ATMEGA328P
 #include "avr/m328p.h"
 #endif
@@ -67,11 +66,15 @@ extern "C" {
 #include "native/native.h"
 #endif
 
+#include "interface.h"
+#include "static_cbuf.h"
+
 #include "time.h"
 #include "uart.h"
 #include "twi.h"
 #include "spi.h"
 #include "gpio.h"
+#include "pwm.h"
 
 /*
 struct d_char {

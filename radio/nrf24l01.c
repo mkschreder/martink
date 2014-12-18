@@ -29,13 +29,13 @@ Please refer to LICENSE file for licensing information.
  * read one register
  */
 uint8_t nrf24l01_readregister(struct nrf24l01 *nrf, uint8_t reg) {
-	time_delay(10); 
+	delay_us(10); 
 	nrf24l01_CSNlo; //low CSN
-	time_delay(10); 
+	delay_us(10); 
 	spi_writereadbyte(NRF24L01_CMD_R_REGISTER | (NRF24L01_CMD_REGISTER_MASK & reg));
-	time_delay(10); 
+	delay_us(10); 
 	uint8_t result = spi_writereadbyte(NRF24L01_CMD_NOP); //read write register
-	time_delay(10); 
+	delay_us(10); 
 	nrf24l01_CSNhi; //high CSN
 	return result;
 }
@@ -45,14 +45,14 @@ uint8_t nrf24l01_readregister(struct nrf24l01 *nrf, uint8_t reg) {
  */
 void nrf24l01_readregisters(struct nrf24l01 *nrf, uint8_t reg, uint8_t *value, uint8_t len) {
 	uint8_t i = 0;
-	time_delay(10); 
+	delay_us(10); 
 	nrf24l01_CSNlo; //low CSN
-	time_delay(10); 
+	delay_us(10); 
 	spi_writereadbyte(NRF24L01_CMD_R_REGISTER | (NRF24L01_CMD_REGISTER_MASK & reg));
-	time_delay(10); 
+	delay_us(10); 
 	for(i=0; i<len; i++){
 		value[i] = spi_writereadbyte(NRF24L01_CMD_NOP); //read write register
-		time_delay(10); 
+		delay_us(10); 
 	}
 	nrf24l01_CSNhi; //high CSN
 }
@@ -61,13 +61,13 @@ void nrf24l01_readregisters(struct nrf24l01 *nrf, uint8_t reg, uint8_t *value, u
  * write one register
  */
 void nrf24l01_writeregister(struct nrf24l01 *nrf, uint8_t reg, uint8_t value) {
-	time_delay(10); 
+	delay_us(10); 
 	nrf24l01_CSNlo; //low CSN
-	time_delay(10); 
+	delay_us(10); 
 	spi_writereadbyte(NRF24L01_CMD_W_REGISTER | (NRF24L01_CMD_REGISTER_MASK & reg));
-	time_delay(10); 
+	delay_us(10); 
 	spi_writereadbyte(value); //write register
-	time_delay(10); 
+	delay_us(10); 
 	nrf24l01_CSNhi; //high CSN
 }
 
@@ -76,14 +76,14 @@ void nrf24l01_writeregister(struct nrf24l01 *nrf, uint8_t reg, uint8_t value) {
  */
 void nrf24l01_writeregisters(struct nrf24l01 *nrf, uint8_t reg, uint8_t *value, uint8_t len) {
 	uint8_t i = 0;
-	time_delay(10); 
+	delay_us(10); 
 	nrf24l01_CSNlo; //low CSN
-	time_delay(10); 
+	delay_us(10); 
   spi_writereadbyte(NRF24L01_CMD_W_REGISTER | (NRF24L01_CMD_REGISTER_MASK & reg));
-	time_delay(10); 
+	delay_us(10); 
 	for(i=0; i<len; i++){
 		 spi_writereadbyte(value[i]); //write register
-		time_delay(10); 
+		delay_us(10); 
 	}
 	nrf24l01_CSNhi; //high CSN
 }
@@ -167,7 +167,7 @@ void nrf24l01_setRX(struct nrf24l01 *nrf) {
 	nrf24l01_flushRXfifo(nrf); //flush rx fifo
 	nrf24l01_flushTXfifo(nrf); //flush tx fifo
 	nrf24l01_CEhi; //start listening
-	time_delay(150); //wait for the radio to power up
+	delay_us(150); //wait for the radio to power up
 }
 
 /*
@@ -179,7 +179,7 @@ void nrf24l01_setTX(struct nrf24l01 *nrf) {
 	nrf24l01_writeregister(nrf, NRF24L01_REG_CONFIG, nrf24l01_readregister(nrf, NRF24L01_REG_CONFIG) | (1<<NRF24L01_REG_PWR_UP)); //power up
 	nrf24l01_writeregister(nrf, NRF24L01_REG_STATUS, (1<<NRF24L01_REG_RX_DR) | (1<<NRF24L01_REG_TX_DS) | (1<<NRF24L01_REG_MAX_RT)); //reset status
 	nrf24l01_flushTXfifo(nrf); //flush tx fifo
-	time_delay(150); //wait for the radio to power up
+	delay_us(150); //wait for the radio to power up
 }
 
 /*
@@ -297,14 +297,14 @@ uint8_t nrf24l01_write(struct nrf24l01 *nrf, uint8_t *data) {
 
 	//start transmission
 	nrf24l01_CEhi; //high CE
-	time_delay(15);
+	delay_us(15);
 	nrf24l01_CElo; //low CE
 	
 	//stop if max_retries reached or send is ok
 	uint8_t status = 0; 
 	uint32_t timeout = 1500; 
 	do {
-		time_delay(15);
+		delay_us(15);
 		status = nrf24l01_getstatus(nrf); 
 		timeout--; if(timeout == 0) break; 
 	}
@@ -399,8 +399,8 @@ void nrf24l01_init(struct nrf24l01 *nrf, struct serial_interface *spi, gpio_pin_
 	nrf->cs_pin = cs; 
 	nrf->ce_pin = ce; 
 	
-	gpio_set_function(nrf->cs_pin, GP_OUTPUT); 
-	gpio_set_function(nrf->ce_pin, GP_OUTPUT); 
+	gpio_configure(nrf->cs_pin, GP_OUTPUT); 
+	gpio_configure(nrf->ce_pin, GP_OUTPUT); 
 	/*nrf_ddr = ddr;
 	nrf_port = port;
 	nrf_ce_pin = ce_pin;
@@ -415,7 +415,7 @@ void nrf24l01_init(struct nrf24l01 *nrf, struct serial_interface *spi, gpio_pin_
 	nrf24l01_CElo; //low CE
 	nrf24l01_CSNhi; //high CSN
 
-	time_delay(5000L); //wait for the radio to init
+	delay_us(5000L); //wait for the radio to init
 
 	nrf24l01_setpalevel(nrf); //set power level
 	nrf24l01_setdatarate(nrf); //set data rate
@@ -509,7 +509,7 @@ void nrf24l01_scan(struct nrf24l01 *nrf, uint8_t iterations, uint8_t result[NRF2
       nrf24l01_setRX(nrf); 
       
       // wait enough for RX-things to settle
-      time_delay(40);
+      delay_us(40);
       
       // this is actually the point where the RPD-flag
       // is set, when CE goes low

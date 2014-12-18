@@ -30,7 +30,7 @@ static uint16_t NextPacketPtr;
 #undef spi_init
 
 #define spi_init() PFCALL(CONFIG_ILI9340_SPI_NAME, init)
-#define spi_writereadbyte(ch) PFCALL(CONFIG_ILI9340_SPI_NAME, writereadbyte, (ch))
+#define spi_writereadbyte(ch) (__spi0_putc__(0, ch), __spi0_getc__(0))
 
 //*****************************************************************************
 uint8_t enc28j60_ReadOp(uint8_t op, uint8_t address)
@@ -136,7 +136,7 @@ void enc28j60_PhyWrite(uint8_t address, uint16_t data)
    // wait until the PHY write completes
    while(enc28j60_Read(MISTAT) & MISTAT_BUSY)
    {
-      time_delay(15);
+      delay_us(15);
    }
 }
 
@@ -151,27 +151,27 @@ void InitPhy (void)
 	// 0x880 is PHLCON LEDB=on, LEDA=on
 	// enc28j60PhyWrite(PHLCON,0b0000 1000 1000 00 00);
 	enc28j60_PhyWrite(PHLCON,0x880);
-	time_delay(500000L);
+	delay_us(500000L);
 	//
 	// 0x990 is PHLCON LEDB=off, LEDA=off
 	// enc28j60PhyWrite(PHLCON,0b0000 1001 1001 00 00);
 	enc28j60_PhyWrite(PHLCON,0x990);
-	time_delay(500000L);
+	delay_us(500000L);
 	//
 	// 0x880 is PHLCON LEDB=on, LEDA=on
 	// enc28j60PhyWrite(PHLCON,0b0000 1000 1000 00 00);
 	enc28j60_PhyWrite(PHLCON,0x880);
-	time_delay(500000L);
+	delay_us(500000L);
 	//
 	// 0x990 is PHLCON LEDB=off, LEDA=off
 	// enc28j60PhyWrite(PHLCON,0b0000 1001 1001 00 00);
 	enc28j60_PhyWrite(PHLCON,0x990);
-	time_delay(500000L);
+	delay_us(500000L);
 	//
    // 0x476 is PHLCON LEDA=links status, LEDB=receive/transmit
    // enc28j60PhyWrite(PHLCON,0b0000 0100 0111 01 10);
    enc28j60_PhyWrite(PHLCON,0x476);
-	time_delay(100000L);
+	delay_us(100000L);
 }
 
 
@@ -180,7 +180,7 @@ void enc28j60_Init(uint8_t* macaddr)
 {
    // initialize I/O
    // cs as output:
-   gpio_set_function(CONFIG_ENC28J60_CS_PIN, GP_OUTPUT); 
+   gpio_configure(CONFIG_ENC28J60_CS_PIN, GP_OUTPUT); 
    //ENC28J60_CONTROL_DDR |= (1 << ENC28J60_CONTROL_CS);
    CSPASSIVE; // ss=0
    
@@ -188,7 +188,7 @@ void enc28j60_Init(uint8_t* macaddr)
    
    // perform system reset
    enc28j60_WriteOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
-   time_delay(50000L);
+   delay_us(50000L);
    // check CLKRDY bit to see if reset is complete
    // The CLKRDY does not work. See Rev. B4 Silicon Errata point. Just wait.
    //while(!(enc28j60Read(ESTAT) & ESTAT_CLKRDY));

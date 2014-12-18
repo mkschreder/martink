@@ -63,12 +63,12 @@ int main(void){
 	}
 	
 	return; */
-	brd_init(); 
+	//brd_init(); 
 	
 	app_init(); 
 	
 	while(1){
-		brd_process_events(); 
+		//brd_process_events(); 
 		app_loop(); 
 	}
 }

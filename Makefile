@@ -4,7 +4,7 @@ VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty
 
 # define defaults that can be added to in submakefiles
 INCLUDES := -I. -Iinclude -Iinclude/c++ -Ikernel
-COMMON_FLAGS := -MD -ffunction-sections -Wall -Wstrict-prototypes -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -fdata-sections -Os -Wl,--relax,--gc-sections
+COMMON_FLAGS := -MD -ffunction-sections -Wall -Werror=implicit-function-declaration -Werror=strict-prototypes -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -fdata-sections -Os -Wl,--relax,--gc-sections
 CFLAGS := 
 CXXFLAGS := 
 LDFLAGS := 
@@ -24,7 +24,7 @@ CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
 LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS)
 OUTDIRS := build build/crypto/aes
-APPNAME := built-in.o
+APPNAME := libk.a
 
 # SHELL used by kbuild
 CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \

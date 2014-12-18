@@ -21,29 +21,64 @@ extern "C" {
 #include <avr/io.h>
 
 #include "autoconf.h"
-#include "../../twi.h"
+
+
+struct _avr_twi_op {
+  volatile uint8_t address;
+  volatile uint8_t buflen;
+  volatile uint8_t bufpos;
+  volatile uint8_t *buf;
+};
+
+typedef struct _avr_twi_op avr_twi_op;
+
+struct _avr_twi_device {
+	volatile struct _avr_twi_op op; 
+	//volatile uint8_t status;
+};
+
+extern volatile struct _avr_twi_device _twi0;
+extern volatile uint8_t _twi0_status; 
 
 #define hwtwi0_init(speed) ({\
 	TWSR = 0;\
   TWBR = (uint8_t)(((F_CPU/speed)-16)/2);\
 })
-#define twi0_is_busy() PFCALL(CONFIG_TWI0_NAME, is_busy)
-#define twi0_wait() ({ while(twi0_is_busy()); })
-#define twi0_start_transaction(op_list) PFCALL(CONFIG_TWI0_NAME, start_transaction, op_list)
 
-extern void PFDECL(CONFIG_TWI0_NAME, init, void);
-extern uint8_t PFDECL(CONFIG_TWI0_NAME, is_busy, void);
-extern void PFDECL(CONFIG_TWI0_NAME, start_transaction, i2c_op_list_t);
+#define TWCR_DEFAULT (_BV(TWEN) | _BV(TWIE)) //_BV(TWEA)
 
-/*
-extern void PFDECL(CONFIG_TWI0_NAME, stop, void);
-extern unsigned char PFDECL(CONFIG_TWI0_NAME, start, unsigned char addr);
-extern unsigned char PFDECL(CONFIG_TWI0_NAME, rep_start, unsigned char addr);
-extern uint8_t PFDECL(CONFIG_TWI0_NAME, start_wait, unsigned char addr);
-extern unsigned char PFDECL(CONFIG_TWI0_NAME, write, unsigned char data);
-extern unsigned char PFDECL(CONFIG_TWI0_NAME, readAck, void);
-extern unsigned char PFDECL(CONFIG_TWI0_NAME, readNak, void);
-*/
+//#define TWCR_NOT_ACK TWCR_DEFAULT | _BV(TWINT)
+//#define TWCR_ACK (TWCR_NOT_ACK | _BV(TWEA))
+
+#define TWI_ERR_BUSY 				0x0100
+#define TWI_ERR_NO_RESPONSE 0x0200
+
+/// always set when twi bus is ready to receive more data
+#define TWI_READY 0
+/// set when data has been sent but no stop condition has been sent yet
+#define TWI_IDLE	1
+#define TWI_NO_RESPONSE 2
+#define TWI_REP_START_SENT 4
+
+extern void 		twi0_init_default(void);
+
+/// sends a missing stop and prepares the device for receiving more data
+#define twi0_begin() ({}) 
+
+/// sends stop signal on the bus
+void twi0_end(void);
+
+/// address is the first byte of data
+extern void 		twi0_start_write(uint8_t *data, uint8_t data_sz);
+/// address is the first byte of data
+extern void 		twi0_start_read(uint8_t *data, uint8_t data_sz);
+
+/// returns 1 if twi bus is processing another transaction
+uint8_t twi0_busy(void);
+
+/// returns 1 if previous transaction was successful
+uint8_t twi0_success(void); 
+
 
 #ifdef __cplusplus
 }

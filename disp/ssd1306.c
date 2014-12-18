@@ -95,10 +95,14 @@
 #define PACKETSZ (TEXTPACKETSZ * 6 + 1) // 8 chars * 6 bytes each + 1 command byte
 #define debug(msg) {} //uart_printf("SSD1306: %s\n", msg);
 
-void ssd1306_command(uint8_t cmd){
-	uint8_t buf[2] = {0, cmd}; 
-	twi0_start_transaction(TWI_OP_LIST(TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buf, 2))); 
-	twi0_wait(); 
+void ssd1306_command(ssd1306_t *self, uint8_t cmd){
+	uint8_t buf[3] = {DISPLAY_ADDRESS, 0, cmd};
+	p_begin(self->port);
+	p_write(self->port, buf, 3);
+	p_sync(self->port);
+	p_end(self->port);
+	//twi0_start_transaction(TWI_OP_LIST(TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buf, 2))); 
+	//twi0_wait(); 
 	/*
 	i2c_start_wait(DISPLAY_ADDRESS | I2C_WRITE);
 	i2c_write(0x00);
@@ -106,14 +110,13 @@ void ssd1306_command(uint8_t cmd){
 	i2c_stop();*/
 }
 
-void ssd1306_init(ssd1306_t *dev){
-	i2c_init(); 
+void ssd1306_init(ssd1306_t *dev, struct packet_interface *port){
+	dev->port = port;
 	
-	uint8_t buf[2]; buf[0] = 0; 
 	for(int c = 0; c < sizeof(cmd_init); c++){
-		buf[1] = pgm_read_byte(&cmd_init[c]); 
-		twi0_start_transaction(TWI_OP_LIST(TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buf, 2))); 
-		twi0_wait(); 
+		ssd1306_command(dev, pgm_read_byte(&cmd_init[c]));
+		//twi0_start_transaction(TWI_OP_LIST(TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buf, 2))); 
+		//twi0_wait(); 
 		/*
 		i2c_start_wait(DISPLAY_ADDRESS | I2C_WRITE);
 			i2c_write(0x00);
@@ -140,19 +143,19 @@ void ssd1306_gotoChar(ssd1306_t *dev, uint8_t x, uint8_t y){
 		U8G_ESC_END,                // end of sequence 
 	}; 
 	for(int c = 0; c < sizeof(home); c++){
-		ssd1306_command(home[c]); 
+		ssd1306_command(dev, home[c]); 
 	}
 }
 
 void ssd1306_clear(ssd1306_t *dev){
 	//ssd1306_gotoChar(dev, 0, 0); 
-	ssd1306_command(SSD1306_COLUMNADDR);
-  ssd1306_command(0);   // Column start address (0 = reset)
-  ssd1306_command(127); // Column end address (127 = reset)
+	ssd1306_command(dev, SSD1306_COLUMNADDR);
+  ssd1306_command(dev, 0);   // Column start address (0 = reset)
+  ssd1306_command(dev, 127); // Column end address (127 = reset)
 
-  ssd1306_command(SSD1306_PAGEADDR);
-  ssd1306_command(0); // Page start address (0 = reset)
-  ssd1306_command((SSD1306_LCDHEIGHT == 64) ? 7 : 3); // Page end address
+  ssd1306_command(dev, SSD1306_PAGEADDR);
+  ssd1306_command(dev, 0); // Page start address (0 = reset)
+  ssd1306_command(dev, (SSD1306_LCDHEIGHT == 64) ? 7 : 3); // Page end address
 	
 	/*
 	i2c_start_wait(DISPLAY_ADDRESS | I2C_WRITE);
@@ -163,6 +166,7 @@ void ssd1306_clear(ssd1306_t *dev){
 	i2c_stop();*/
 }
 
+/*
 int16_t ssd1306_puts(ssd1306_t *dev, const char *str, uint8_t col){
 	i2c_start_wait(DISPLAY_ADDRESS | I2C_WRITE);
 	i2c_write(0x40);
@@ -179,19 +183,19 @@ int16_t ssd1306_puts(ssd1306_t *dev, const char *str, uint8_t col){
 	i2c_stop();
 	return 1; 
 }
-
+*/
 void ssd1306_set_region(ssd1306_t *dev, uint16_t x0, uint16_t y0, uint16_t w, uint16_t h){
-	ssd1306_command(SSD1306_SETLOWCOLUMN | (x0 & 0x0f)); 
-	ssd1306_command(SSD1306_SETHIGHCOLUMN | ((x0 >> 4) & 0x0f)); 
-	ssd1306_command(SSD1306_SETSTARTPAGE | ((y0 >> 3) & 0x07)); 
+	ssd1306_command(dev, SSD1306_SETLOWCOLUMN | (x0 & 0x0f)); 
+	ssd1306_command(dev, SSD1306_SETHIGHCOLUMN | ((x0 >> 4) & 0x0f)); 
+	ssd1306_command(dev, SSD1306_SETSTARTPAGE | ((y0 >> 3) & 0x07)); 
 	
-	ssd1306_command(SSD1306_COLUMNADDR);
-  ssd1306_command(x0);   // Column start address (0 = reset)
-  ssd1306_command(x0 + w + 1); // Column end address (127 = reset)
+	ssd1306_command(dev, SSD1306_COLUMNADDR);
+  ssd1306_command(dev, x0);   // Column start address (0 = reset)
+  ssd1306_command(dev, x0 + w + 1); // Column end address (127 = reset)
 
-  ssd1306_command(SSD1306_PAGEADDR);
-  ssd1306_command(y0 >> 3); // Page start address (0 = reset)
-  ssd1306_command((y0 + h) >> 3 + 1); // Page end address
+  ssd1306_command(dev, SSD1306_PAGEADDR);
+  ssd1306_command(dev, y0 >> 3); // Page start address (0 = reset)
+  ssd1306_command(dev, ((y0 + h) >> 3) + 1); // Page end address
   
 	/*
 	uint8_t col = x0; 
@@ -234,10 +238,11 @@ void ssd1306_draw(ssd1306_t *dev, uint16_t x, uint16_t y, fb_image_t img){
 				buffer[idx++] = byte;
 				byte = 0; 
 			}
+			/*
 			twi0_start_transaction(TWI_OP_LIST(
 				TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buffer, idx)
 			)); 
-			twi0_wait(); 
+			twi0_wait(); */
 			idx = 0; 
 		}
 	}
@@ -245,7 +250,8 @@ void ssd1306_draw(ssd1306_t *dev, uint16_t x, uint16_t y, fb_image_t img){
 
 void ssd1306_fill(ssd1306_t *dev, fb_color_t col, size_t len){
 	uint8_t color = 0; 
-	uint8_t buf[32] = {0}; 
+	uint8_t _buf[32] = {DISPLAY_ADDRESS};
+	uint8_t *buf = &_buf[1]; 
 	buf[0] = 0x40; 
 	uint8_t bi = 1; 
 	
@@ -253,9 +259,13 @@ void ssd1306_fill(ssd1306_t *dev, fb_color_t col, size_t len){
 	uint8_t byte = 0; 
 	
 	for(size_t c = 0; c < len; c++){
-		if(bi == sizeof(buf)){
-			twi0_start_transaction(TWI_OP_LIST(TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buf, bi))); 
-			twi0_wait(); 
+		if(bi == sizeof(_buf)){
+			p_begin(dev->port);
+			p_write(dev->port, _buf, bi);
+			p_sync(dev->port);
+			p_end(dev->port); 
+			//twi0_start_transaction(TWI_OP_LIST(TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buf, bi))); 
+			//twi0_wait(); 
 			bi = 1; 
 		} 
 		
@@ -271,8 +281,12 @@ void ssd1306_fill(ssd1306_t *dev, fb_color_t col, size_t len){
 			byte <<= 1; 
 		}
 	}
-	twi0_start_transaction(TWI_OP_LIST(TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buf, bi))); 
-	twi0_wait(); 
+	p_begin(dev->port);
+	p_write(dev->port, _buf, bi);
+	p_sync(dev->port);
+	p_end(dev->port); 
+	//twi0_start_transaction(TWI_OP_LIST(TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buf, bi))); 
+	//twi0_wait(); 
 }
 
 int16_t ssd1306_printf(ssd1306_t *dev, uint8_t col, const char *fmt, ...){

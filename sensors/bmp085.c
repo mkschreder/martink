@@ -29,12 +29,19 @@ static long bmp085_rawtemperature, bmp085_rawpressure;
 /*
  * i2c write
  */
-void bmp085_writemem(uint8_t reg, uint8_t value) {
-	char buf[2] = {reg, value}; 
+void bmp085_writemem(struct bmp085 *self, uint8_t reg, uint8_t value) {
+	//uart0_printf("BMP: writing reg %d: %d .. ", reg, value); 
+	
+	uint8_t buf[8] = {BMP085_ADDR, reg, value};
+	p_begin(self->port);
+	p_write(self->port, buf, 3);
+	p_sync(self->port);
+	p_end(self->port);
+	/*
 	twi0_start_transaction(TWI_OP_LIST(
 		TWI_OP(BMP085_ADDR | I2C_WRITE, buf, 2)
 	)); 
-	twi0_wait(); 
+	twi0_wait(); */
 	/*i2c_start_wait(BMP085_ADDR | I2C_WRITE);
 	i2c_write(reg);
 	i2c_write(value);
@@ -44,13 +51,24 @@ void bmp085_writemem(uint8_t reg, uint8_t value) {
 /*
  * i2c read
  */
-void bmp085_readmem(uint8_t reg, uint8_t buff[], uint8_t bytes) {
-	char buf[1] = {reg}; 
-	twi0_start_transaction(TWI_OP_LIST(
+static inline void bmp085_readmem(struct bmp085 *self, uint8_t reg, uint8_t *buff, uint8_t bytes) {
+	//bytes &= 0x07; 
+	//uart0_printf("BMP: reading reg %d:  %d\n", reg, bytes); 
+	uint8_t buf[8] = {BMP085_ADDR, reg, 0, 0, 0, 0, 0, 0};
+	p_begin(self->port);
+	p_write(self->port, buf, 2);
+	p_sync(self->port);
+	_delay_us(10); 
+	p_read(self->port, buf, bytes + 1);
+	p_sync(self->port);
+	p_end(self->port);
+	
+	memcpy(buff, &buf[1], bytes); 
+	/*twi0_start_transaction(TWI_OP_LIST(
 		TWI_OP(BMP085_ADDR | I2C_WRITE, buf, 1),
 		TWI_OP(BMP085_ADDR | I2C_READ, buff, bytes)
 	)); 
-	twi0_wait(); 
+	twi0_wait(); */
 	/*uint8_t i =0;
 	i2c_start_wait(BMP085_ADDR | I2C_WRITE);
 	i2c_write(reg);
@@ -85,46 +103,46 @@ long bmp085_avaragefilter(long input) {
 /*
  * read calibration registers
  */
-void bmp085_getcalibration(void) {
-	uint8_t buff[2];
+void bmp085_getcalibration(struct bmp085 *self) {
+	uint8_t buff[4];
 	memset(buff, 0, sizeof(buff));
 
-	bmp085_readmem(BMP085_REGAC1, buff, 2);
+	bmp085_readmem(self, BMP085_REGAC1, buff, 2);
 	bmp085_regac1 = ((int)buff[0] <<8 | ((int)buff[1]));
-	bmp085_readmem(BMP085_REGAC2, buff, 2);
+	bmp085_readmem(self, BMP085_REGAC2, buff, 2);
 	bmp085_regac2 = ((int)buff[0] <<8 | ((int)buff[1]));
-	bmp085_readmem(BMP085_REGAC3, buff, 2);
+	bmp085_readmem(self, BMP085_REGAC3, buff, 2);
 	bmp085_regac3 = ((int)buff[0] <<8 | ((int)buff[1]));
-	bmp085_readmem(BMP085_REGAC4, buff, 2);
+	bmp085_readmem(self, BMP085_REGAC4, buff, 2);
 	bmp085_regac4 = ((unsigned int)buff[0] <<8 | ((unsigned int)buff[1]));
-	bmp085_readmem(BMP085_REGAC5, buff, 2);
+	bmp085_readmem(self, BMP085_REGAC5, buff, 2);
 	bmp085_regac5 = ((unsigned int)buff[0] <<8 | ((unsigned int)buff[1]));
-	bmp085_readmem(BMP085_REGAC6, buff, 2);
+	bmp085_readmem(self, BMP085_REGAC6, buff, 2);
 	bmp085_regac6 = ((unsigned int)buff[0] <<8 | ((unsigned int)buff[1]));
-	bmp085_readmem(BMP085_REGB1, buff, 2);
+	bmp085_readmem(self, BMP085_REGB1, buff, 2);
 	bmp085_regb1 = ((int)buff[0] <<8 | ((int)buff[1]));
-	bmp085_readmem(BMP085_REGB2, buff, 2);
+	bmp085_readmem(self, BMP085_REGB2, buff, 2);
 	bmp085_regb2 = ((int)buff[0] <<8 | ((int)buff[1]));
-	bmp085_readmem(BMP085_REGMB, buff, 2);
+	bmp085_readmem(self, BMP085_REGMB, buff, 2);
 	bmp085_regmb = ((int)buff[0] <<8 | ((int)buff[1]));
-	bmp085_readmem(BMP085_REGMC, buff, 2);
+	bmp085_readmem(self, BMP085_REGMC, buff, 2);
 	bmp085_regmc = ((int)buff[0] <<8 | ((int)buff[1]));
-	bmp085_readmem(BMP085_REGMD, buff, 2);
+	bmp085_readmem(self, BMP085_REGMD, buff, 2);
 	bmp085_regmd = ((int)buff[0] <<8 | ((int)buff[1]));
 }
 
 /*
  * get raw temperature as read by registers, and do some calculation to convert it
  */
-void bmp085_getrawtemperature(void) {
+void bmp085_getrawtemperature(struct bmp085 *self) {
 	uint8_t buff[2];
 	memset(buff, 0, sizeof(buff));
 	long ut,x1,x2;
 
 	//read raw temperature
-	bmp085_writemem(BMP085_REGCONTROL, BMP085_REGREADTEMPERATURE);
-	time_delay(5000L); // min. 4.5ms read Temp delay
-	bmp085_readmem(BMP085_REGCONTROLOUTPUT, buff, 2);
+	bmp085_writemem(self, BMP085_REGCONTROL, BMP085_REGREADTEMPERATURE);
+	delay_us(5000L); // min. 4.5ms read Temp delay
+	bmp085_readmem(self, BMP085_REGCONTROLOUTPUT, buff, 2);
 	ut = ((long)buff[0] << 8 | ((long)buff[1])); //uncompensated temperature value
 
 	//calculate raw temperature
@@ -136,20 +154,20 @@ void bmp085_getrawtemperature(void) {
 /*
  * get raw pressure as read by registers, and do some calculation to convert it
  */
-void bmp085_getrawpressure(void) {
+void bmp085_getrawpressure(struct bmp085 *self) {
 	uint8_t buff[3];
 	memset(buff, 0, sizeof(buff));
 	long up,x1,x2,x3,b3,b6,p;
 	unsigned long b4,b7;
 
 	#if BMP085_AUTOUPDATETEMP == 1
-	bmp085_getrawtemperature();
+	bmp085_getrawtemperature(self);
 	#endif
 
 	//read raw pressure
-	bmp085_writemem(BMP085_REGCONTROL, BMP085_REGREADPRESSURE+(BMP085_MODE << 6));
-	time_delay((2 + (3<<BMP085_MODE)) * 1000L);
-	bmp085_readmem(BMP085_REGCONTROLOUTPUT, buff, 3);
+	bmp085_writemem(self, BMP085_REGCONTROL, BMP085_REGREADPRESSURE+(BMP085_MODE << 6));
+	delay_us((2 + (3<<BMP085_MODE)) * 1000L);
+	bmp085_readmem(self, BMP085_REGCONTROLOUTPUT, buff, 3);
 	up = ((((long)buff[0] <<16) | ((long)buff[1] <<8) | ((long)buff[2])) >> (8-BMP085_MODE)); // uncompensated pressure value
 
 	//calculate raw pressure
@@ -177,8 +195,8 @@ void bmp085_getrawpressure(void) {
 /*
  * get celsius temperature
  */
-int16_t bmp085_gettemperature(void) {
-	bmp085_getrawtemperature();
+int16_t bmp085_gettemperature(struct bmp085 *self) {
+	bmp085_getrawtemperature(self);
 	/*long x1, x2; 
 	x1 = ((bmp085_rawtemperature - bmp085_regac6) * bmp085_regac5) >> 15; 
 	x2 = (bmp085_regmc << 11) / (x1 + bmp085_regmd); 
@@ -192,31 +210,33 @@ int16_t bmp085_gettemperature(void) {
 /*
  * get pressure
  */
-long bmp085_getpressure(void) {
-	bmp085_getrawpressure();
+long bmp085_getpressure(struct bmp085 *self) {
+	bmp085_getrawpressure(self);
 	return (bmp085_rawpressure + BMP085_UNITPAOFFSET);
 }
 
 /*
  * get altitude
  */
-int16_t bmp085_getaltitude(void) {
-	bmp085_getrawpressure();
+int16_t bmp085_getaltitude(struct bmp085 *self) {
+	bmp085_getrawpressure(self);
 	return ((1 - pow(bmp085_rawpressure/(double)101325, 0.1903 )) / 0.0000225577) + BMP085_UNITMOFFSET; 
 }
 
 /*
  * init bmp085
  */
-void bmp085_init(void) {
-	bmp085_getcalibration(); //get calibration data
-	bmp085_getrawtemperature(); //update raw temperature, at least the first time
+void bmp085_init(struct bmp085 *self, struct packet_interface *port) {
+	self->port = port;
+	
+	bmp085_getcalibration(self); //get calibration data
+	bmp085_getrawtemperature(self); //update raw temperature, at least the first time
 
 	#if BMP085_FILTERPRESSURE == 1
 	//initialize the avarage filter
 	uint8_t i=0;
 	for (i=0; i<BMP085_AVARAGECOEF; i++) {
-		bmp085_getrawpressure();
+		bmp085_getrawpressure(self);
 	}
 	#endif
 }

@@ -49,7 +49,7 @@
 #undef spi_init
 
 #define spi_init() PFCALL(CONFIG_ILI9340_SPI_NAME, init)
-#define spi_writereadbyte(ch) PFCALL(CONFIG_ILI9340_SPI_NAME, writereadbyte, (ch))
+#define spi_writereadbyte(ch) (__spi0_putc__(0, ch), __spi0_getc__(0))
 
 #define CS_HI 		gpio_write_pin(CONFIG_ILI9340_CS_PIN, 1)
 #define CS_LO 		gpio_write_pin(CONFIG_ILI9340_CS_PIN, 0)
@@ -359,19 +359,19 @@ static uint16_t _wr_data16(uint16_t c){
 #define DELAY 0x80
 
 void ili9340_init(void) {
-	gpio_set_function(CONFIG_ILI9340_CS_PIN, GP_OUTPUT); 
-	gpio_set_function(CONFIG_ILI9340_RST_PIN, GP_OUTPUT); 
-	gpio_set_function(CONFIG_ILI9340_DC_PIN, GP_OUTPUT); 
+	gpio_configure(CONFIG_ILI9340_CS_PIN, GP_OUTPUT); 
+	gpio_configure(CONFIG_ILI9340_RST_PIN, GP_OUTPUT); 
+	gpio_configure(CONFIG_ILI9340_DC_PIN, GP_OUTPUT); 
 	RST_LO; 
 
 	spi_init();
 	
   RST_HI; 
-  time_delay(5000); 
+  delay_us(5000); 
   RST_LO; 
-  time_delay(20000);
+  delay_us(20000);
   RST_HI; 
-  time_delay(150000L);
+  delay_us(150000L);
 
   _wr_command(0xEF);
   _wr_data(0x03);
@@ -477,7 +477,7 @@ void ili9340_init(void) {
   _wr_data(0x0F); 
 
   _wr_command(ILI9340_SLPOUT);    //Exit Sleep 
-  time_delay(120000L); 		
+  delay_us(120000L); 		
   _wr_command(ILI9340_DISPON);    //Display on
 
   term.screen_width = ILI9340_TFTWIDTH;

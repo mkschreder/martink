@@ -25,28 +25,25 @@
 extern "C" {
 #endif
 
-typedef int32_t timeout_t;
+#include "types.h"
 
-#ifndef time_static_delay_us
-#warning "time_static_delay_us not declared "
-#define time_static_delay_us(a) do {} while(0); 
-#endif
+#define timestamp_init() (tsc_init())
+#define timestamp_now() (tsc_read())
 
-extern void time_init(void);
-extern timeout_t time_get_clock(void); 
-extern timeout_t time_us_to_clock(timeout_t us);
-extern timeout_t time_clock_to_us(timeout_t clock); 
+#define timestamp_ticks_to_us(ticks) (tsc_ticks_to_us(ticks))
+#define timestamp_us_to_ticks(us) (tsc_us_to_ticks(us))
 
-#define time_before(unknown, known) ((timeout_t)(unknown) - (timeout_t)(known) < 0)
-#define time_after(a,b) time_before(b, a)
-#define timeout_from_now(us) (time_get_clock() + time_us_to_clock(us))
+#define timestamp_before(unknown, known) ((timestamp_t)(unknown) - (timestamp_t)(known) < 0)
+#define timestamp_after(a,b) timestamp_before(b, a)
+#define timestamp_from_now_us(us) ((timestamp_t)(tsc_read() + tsc_us_to_ticks(us)))
 // timeout expired: can handle overflow of timer correctly
-#define timeout_expired(timeout) (time_after(time_get_clock(), timeout))
-#define time_between(a, b) (a - b)
+#define timestamp_expired(timeout) (timestamp_after(tsc_read(), timeout))
 
-void time_delay(timeout_t usec); 
-timeout_t time_clock_since(timeout_t clock);
+void timestamp_delay_us(timestamp_t usec);
 
+#define delay_us(usec) timestamp_delay_us(usec)
+
+#define timestamp_ticks_since(timestamp) (tsc_read() - (timestamp_t)timestamp)
 
 #ifdef __cplusplus
 }

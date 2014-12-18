@@ -63,13 +63,20 @@ extern "C" {
 //avarage filter
 #define BMP085_FILTERPRESSURE 1 //avarage filter for pressure
 
-
+struct bmp085 {
+	struct packet_interface *port;
+};
 
 //functions
-void bmp085_init(void);
-long bmp085_getpressure(void);
-int16_t bmp085_getaltitude(void);
-int16_t bmp085_gettemperature(void);
+/// inits the device over the interface supplied 
+void bmp085_init(struct bmp085 *self, struct packet_interface *port);
+/// returns pressure 
+long bmp085_getpressure(struct bmp085 *self);
+/// returns altitude
+int16_t bmp085_getaltitude(struct bmp085 *self);
+/// returns temperature
+int16_t bmp085_gettemperature(struct bmp085 *self);
+
 #ifdef __cplusplus
 }
 #endif

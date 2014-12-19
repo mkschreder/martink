@@ -4,7 +4,7 @@ Martin K. Schröder | info@fortmax.se
 
 Files:
 
-* arch/<manufacturer>/<model>/twi.h
+* arch/manufacturer/model/twi.h
 * arch/twi.h
 
 Public interface

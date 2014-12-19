@@ -4,7 +4,7 @@ Martin K. Schröder | info@fortmax.se
 
 Files:
 
-* arch/<manufacturer>/<model>/gpio.h
+* arch/manufacturer/model/gpio.h
 * arch/gpio.h
 
 A general purpose io is any kind of parallel device where it is possible to address each bit separately and which can be one or more bytes wide. It must be possible to write individual bits separately and also to write full "words" which are as wide as the width of the gpio interface. For internal devices it may be convenient to group all gpio interfaces together so that the user can use a continuous pin indexing scheme (ie for 3x8 bit on board parallel ports the pins can be numbered 0-24 in order to provide a generic way to access the port). 

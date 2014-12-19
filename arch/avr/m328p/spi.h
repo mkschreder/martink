@@ -80,9 +80,10 @@
 	hwspi0_enable();\
 })
 
-#define hwspi0_putc(ch) ({\
-	SPDR = ch;\
-})
+#define hwspi0_putc(ch) (\
+	hwspi0_wait_for_transmit_complete(),\
+	SPDR = ch\
+)
 
 #define hwspi0_getc(ch) (\
 	hwspi0_wait_for_transmit_complete(),\

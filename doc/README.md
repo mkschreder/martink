@@ -3,6 +3,20 @@ LibK embedded software library
 
 Libk is more than just a firmware library. It is a toolchain, a philosophy, a way to organize your code. It is maximum flexibility at minimum cost. It is a collection of reusable components for writing bare metal embedded applications \^/
 
+Contents
+---------
+
+Architecture specific interfaces and devices
+* [Architecture layer](arch.md)
+** [ADC](arch_adc.md) - analog to digital converters
+** [DAC](arch_dac.md) - digital to analog converters
+** [GPIO](arch_gpio.md) - on chip general purpose io driver
+** [PWM](arch_pwm.md) - pulse width modulation peripherals       
+** [SPI](arch_spi.md) - on board serial peripheral interface peripherals
+** [I2C/TWI](arch_twi.md) - i2c interfaces  
+** [UART](arch_uart.md) - asynchronous serial interfaces
+** [CAN](arch_can.md) - controller area network interfaces
+
 How it works
 -------------
 
@@ -22,7 +36,7 @@ Below is an illustration of how the code is structured. Not all documentation is
 	<tr><td colspan="2">reusable, architecture agnostic, device drivers</td></tr>
 	<tr><td>direct access to macro layer</td><td>generic architecture interface layer</td></tr>
 	<tr><td colspan="2"> <a href="arch.md">Architecture specific macro layer</a> </td></tr>
-	<tr><td> Memory load and store to peripheral registers</td></tr>
+	<tr><td colspan="2"> Memory load and store to peripheral registers</td></tr>
 </table>
 
 LibK license?

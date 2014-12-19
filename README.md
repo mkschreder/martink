@@ -1,32 +1,91 @@
-MartinK IC Firmware Project
+MartinK IC Firmware Project (LibK)
 ===============
 
-MartinK firmware provides a highly configurable software layer between low level integrated circuit hardware and a higher level application. It is designed for making it easy to build projects such as quadcopters, sensor nodes, 3d printers etc. It is designed to be a versatile firmware library aimed at developers writing code for embedded microcontrollers. It is like linux, but designed for very very constrained systems. Many design goals implement this and enable the final application to be <10kb. 
+LibK is more than just a firmware library. It is a toolchain, a philosophy, a way to organize your code. It is maximum flexibility at minimum cost. It is a collection of reusable components for writing bare metal embedded applications.
 
-Do you ever have problems with figuring out how to use 'UDR' or 'UCR' or 'BCC' register just to get something printed on the screen? Yes unfortunately there has not been a good alternative to linux speciffically designed for tiny microcontrollers. This resulted in many people designing their own solutions that are often completely incompatible when you find code from somebody else for another on chip peripheral. 
+For documentation check out the following pages:
 
-MartinK firmware provides a framework for solving all of these problems by using menuconfig just like linux kernel and by structuring the code such that many different peripherals can be supported while still maintaining excellent code readability and final product configurability. 
+* [Detailed hardware and api documentation for libk](arch/README.md)
 
-You compile this firmware just like you compile linux: 
+It is designed for microcontrollers, flash based system on chip devices, small controllers with under 10kb of flash, controllers with as little as 2kb of ram, arm chips and avr chips. For many small devices linux simply does not work. What you wish you had is a library that makes it easy for you to write reusable code and abstracts away the absolutely lowest levels of hardware interaction with minimal overhead. 
+
+Do you ever have problems with figuring out how to use 'UDSR' or 'UCR' or 'BCC' or any other obscure register just to get some piece of hardware configured correctly? Do you ever always have datasheet open for the cpu you are working on just because you can't remember which bits in what registers you need to set?
+
+Yes unfortunately there has not been a good alternative to linux speciffically designed for tiny microcontrollers. This has resulted in many people designing their own solutions that are often completely incompatible when you find code from somebody else for another on chip peripheral. 
+
+LibK provides a framework for solving all of these problems. It comes with specialized build system based on menuconfig that provides a highly fine grained build configuration and lets you only compile the things that you need. It also makes it easy to switch between different targets that require completely different low level implementations.
+
+Prerequisites
+--------------
+
+To build with LibK you need to make sure that you have necessary toolchain installed for your architecture. For avr it's avr-gcc, for arm it's either arm-none-eabi-* or arm-linux-eabi-* packages. You also need libncurses-dev (for menuconfig). 
+
+You can then start build process like this: 
 
     make menuconfig
     make
 
-But what you get is an object file called built-in.o. What you need to do now is link your application against the kernel just like you would otherwise do with any other library. All of this can be done automatically (even updating and compiling the kernel) using a makefile. For an example on how to do this look at the example project below. 
+If everything goes well, the file that will be built will be libk.a. This is a library that you will then link your application with. It is often easier to integrate the build process for libk into the build process for your project. It is also good to make a symbolik link to libk code directory directly inside your project directory. This way you don't have to keep track of multiple copies of libk.
 
+For an example on how to integrate the two build processes using make, you can check out my quadcopter controller project based on libk here: 
 Example project: https://github.com/mkschreder/bettercopter
 
-The way this is done is you check out the kernel source somewhere. Then create a link to this directory in your project directory and then you can even have a KConfig.app file that you copy into kernel directory before each build (in the makefile) in order to support application speciffic settings in the menuconfig settings - just so all settings, both application speciffic and others can be edited using the same menuconfig utilty that you can start using the "make menuconfig" in the kernel directory (see example project Makefile for details). 
+Supported architectures
+------------------
 
-Supported hardware
-===============
+| Manufacturer | Chip | status |
+|==============|======|========|
+| Atmel | ATMega328p | my primary focus right now |
+| Atmel | AT91SAM3 ARM | my secondary focus but now yet fully supported |
+| ST | STM32F103 | peripheral library is included, but device interfaces not implemented yet |
 
-I'm hoping this list will grow but at the moment it is mainly populated by me. New drivers are included as I find working code or write a custom driver for some peripheral that I am currently working with. Thus the codebase may grow rather slowly. 
+Device driver support
+---------------------
 
-There are many files in this codebase that have been adopted from various other open source projects. Thus the license of the code is GPL, just like linux kernel. This is in fact a good thing, because if we want the project to grow, we must all contribute with code that others may not be able to write themselves. And we have to always keep the following design goals in mind:  
+Device drivers in libk operate on a higher level than architecture code. So they are largely architecture agnostic. Device drivers typically use interfaces to access services provided by the architecture and they can also export interfaces to other drivers in order to eliminate dependencies between drivers on each other.
+
+| Device class | Device model | Support | Interfaces used | Interfaces exported | 
+| Board | Multiwii V2.5 | Supported | `flight_controller` interface | |
+| Board | Arduino Pro Mini | Supported | Architecture ATMega328p | |
+| Board | Stm32f103 development board | planned | | |
+| Board | Crius ATmega256 flight control | planned | |  |
+| Crypto | AES 256 | Supported |  | |
+| Display | ILI9340 | Supported | parallel_interface and serial_interface | |
+| Display | Parallel LCD | Supported | parallel_interface | |
+| Display | 7 segment led | Supported | parallel_interface | |
+| Display | 8x8 Led matrix | Supported | parallel_interface | |
+| Display | ssd1306 OLED | Supported | packet_interface (i2c) | |
+| Filesystem |  | Planned | | |
+| HID | WiiNunchuck | Supported | packet_interface (i2c) | |
+| IO | 74HC165 | Supported | serial_interface, parallel_interface | |
+| IO | 74HC4051 | Supported | parallel_interface | |
+| IO | 74HC595 | Supported | serial_interface, parallel_interface | |
+| IO | PCF8574 | Supported | packet_interface (i2c) | planned: parallel_interface |
+| NET | ENC28J60 Supported | serial_interface | planned: packet_interface |
+| NET | TCPIP | Supported | packet_interface | planned: serial_interface |
+| RADIO | NRF24L01 | Supported | serial_interface | planned: packet_interface |
+| SENSOR | ACS712 | (quarantine) | analog_interface | |
+| SENSOR | ADXL345 | (quarantine) | packet_interface (i2c) | |
+| SENSOR | AMT345 | (quarantine) | analog_interface | |
+| SENSOR | BH1750 | (quarantine) | packet_interface (i2c) | |
+| SENSOR | BMP085 | Supported | packet_interface (i2c) | |
+| SENSOR | DHT11 | (quarantine) | parallel_interface | |
+| SENSOR | DS18B20 | (quarantine) | parallel_interface | |
+| SENSOR | FS300A | (quarantine) | | |
+| SENSOR | HCSR04 | (quarantine) | parallel_interface | |
+| SENSOR | HMC5883L | Supported | packet_interface (i2c) | |
+| SENSOR | L3G4200D | (quarantine) | packet_interface (i2c) | |
+| SENSOR | LDR | (quarantine) | analog_interface | |
+| SENSOR | MMA7455 | (quarantine) | packet_interface (i2c) | |
+| SENSOR | MPU6050 | Supported | packet_interface (i2c)| |
+| SENSOR | NTCTEMP | (quarantine) | analog_interface | |
+| SENSOR | TSL235 | (quarantine) | | |
+| TERMINAL | VT100 | Supported | framebuffer_interface | serial_interface |
+
+(devices marked as quarantine are drivers that have not been updated yet after changes to the core api. Code has been included in the source tree but it has not yet been updated to work nicely with other facilities of libk)
 
 Design goals
-===============
+------------
 
 - To make it a portable and highly configurable alternative to linux but for microcontrollers
 - To provide a single place where many smaller driver projects are gathered and thus make these drivers also portable across many different SoCs. 
@@ -34,7 +93,7 @@ Design goals
 - To support compilation for desktop as well as microcontroller to enable efficient testing on desktop before running the code on a microcontroller. 
 
 Architechture
-===============
+--------------
 
 The system uses makefiles for building the projects. This is a good thing because makefiles are extremely powerful and allow for very specialized compilation process. Through use of separate makefiles in different parts of the project we can specify exactly which files are compiled and included. We can also load configuration from menuconfig directly into a makefile and write rules based on the config. This build system is highly influenced by the very efficient build system used by linux kernel. 
 
@@ -49,13 +108,13 @@ Many drivers for out of chip devices (such as I2C peripherals) are completely re
 When arch layer is ported to a different SoC, it should be possible to recompile the kernel and run all other drivers on that platform without any other changes. 
 
 Known issues
-===============
+------------
 
 The way that devices are currently accessed is by using a prefix: ie uart_init() or spi_readwritebyte(). This may become an issue when we begin supporting boards with several uarts. This requires some thinking because it is not possible to use fancy things like dynamically allocated arrays of function pointers that would make every device completely interchangable. All devices in the kernel are sortof hardwired once it is compiled. This allows for very tiny memory footprint and allows the code to run well on small ICs with very little ram. Probably this can be partly solved by simply implementing uart1_x() groups of methods that would allow accesing the uart1 instead of uart0. This is how it has been done in many other microcontroller projects. Options can then be added into menuconfig to allow some higher level peripheral to be configured to use uart1 instead of uart0 and basically the problem may be solved. 
 
 Another issue: drivers need to be revised and fixed so that there are no internal conflicts. Many drivers come from projects where it has been decided that the driver would have exclusive access to some peripheral. But when we have several devices, exclusive access is not possible. So one driver may set a register and another driver may accidentally change it. For the most part this has been fixed, but there are some drivers for components that I have not been able to test. So compile, test, if it works fine, if it doesn't, it should be fairly easy to fix. Then submit a patch so we can get it fixed as well.
 
-Development environment
-===============
+Development tools 
+-----------------
 
 For reasons that using makefiles and utilities that are otherwise standard on linux is hard on other systems, it is recommended that you use linux (or maybe macos) for working on this project. It is simply much easier to write a powerful build system like menuconfig on linux than it is on windows. For compilation use GCC, for scripting use bash, for editing use whatever editor you like. If you are on windows then simply run a version of Ubuntu in VirtualBox and map files from your host system into the emulated linux and build as usual while still using windows for other things. 

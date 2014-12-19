@@ -15,13 +15,13 @@ Layers of abstraction
 
 Below is an illustration of how the code is structured. Not all documentation is completed yet, so you can click on the links that do work to read more about each layer. 
 
-<table>
+<table text-align="center">
 	<tr><th colspan="2">Layers</th></tr>
 	<tr><td colspan="2">your application and it's libraries</td></tr>
 	<tr><td colspan="2">board driver that implements all necessary services for your application</td> </tr>
 	<tr><td colspan="2">reusable, architecture agnostic, device drivers</td></tr>
 	<tr><td>direct access to macro layer</td><td>generic architecture interface layer</td></tr>
-	<tr><td colspan="2">[Architecture specific macro layer](arch.md)</td></tr>
+	<tr><td colspan="2"> <a href="arch.md">Architecture specific macro layer</a> </td></tr>
 	<tr><td> Memory load and store to peripheral registers</td></tr>
 </table>
 

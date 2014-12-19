@@ -5,7 +5,7 @@ LibK is more than just a firmware library. It is a toolchain, a philosophy, a wa
 
 For documentation check out the following pages:
 
-* [Detailed hardware and api documentation for libk](tree/master/arch/arch/README.md)
+* [Detailed hardware and api documentation for libk](blob/tree/master/arch/README.md)
 
 It is designed for microcontrollers, flash based system on chip devices, small controllers with under 10kb of flash, controllers with as little as 2kb of ram, arm chips and avr chips. For many small devices linux simply does not work. What you wish you had is a library that makes it easy for you to write reusable code and abstracts away the absolutely lowest levels of hardware interaction with minimal overhead. 
 

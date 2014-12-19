@@ -6,16 +6,17 @@ Libk is more than just a firmware library. It is a toolchain, a philosophy, a wa
 Contents
 ---------
 
-Architecture specific interfaces and devices
+Architecture specific interfaces and devices:
+
 * [Architecture layer](arch.md)
-** [ADC](arch_adc.md) - analog to digital converters
-** [DAC](arch_dac.md) - digital to analog converters
-** [GPIO](arch_gpio.md) - on chip general purpose io driver
-** [PWM](arch_pwm.md) - pulse width modulation peripherals       
-** [SPI](arch_spi.md) - on board serial peripheral interface peripherals
-** [I2C/TWI](arch_twi.md) - i2c interfaces  
-** [UART](arch_uart.md) - asynchronous serial interfaces
-** [CAN](arch_can.md) - controller area network interfaces
+	* [ADC](arch_adc.md) - analog to digital converters
+	* [DAC](arch_dac.md) - digital to analog converters
+	* [GPIO](arch_gpio.md) - on chip general purpose io driver
+	* [PWM](arch_pwm.md) - pulse width modulation peripherals       
+	* [SPI](arch_spi.md) - on board serial peripheral interface peripherals
+	* [I2C/TWI](arch_twi.md) - i2c interfaces  
+	* [UART](arch_uart.md) - asynchronous serial interfaces
+	* [CAN](arch_can.md) - controller area network interfaces
 
 How it works
 -------------
@@ -30,13 +31,13 @@ Layers of abstraction
 Below is an illustration of how the code is structured. Not all documentation is completed yet, so you can click on the links that do work to read more about each layer. 
 
 <table text-align="center">
-	<tr><th colspan="2">Layers</th></tr>
-	<tr><td colspan="2">your application and it's libraries</td></tr>
-	<tr><td colspan="2">board driver that implements all necessary services for your application</td> </tr>
-	<tr><td colspan="2">reusable, architecture agnostic, device drivers</td></tr>
-	<tr><td>direct access to macro layer</td><td>generic architecture interface layer</td></tr>
-	<tr><td colspan="2"> <a href="arch.md">Architecture specific macro layer</a> </td></tr>
-	<tr><td colspan="2"> Memory load and store to peripheral registers</td></tr>
+	<tr><th text-align="center" colspan="2">Layers</th></tr>
+	<tr><td text-align="center" colspan="2">your application and it's libraries</td></tr>
+	<tr><td text-align="center" colspan="2">board driver that implements all necessary services for your application</td> </tr>
+	<tr><td text-align="center" colspan="2">reusable, architecture agnostic, device drivers</td></tr>
+	<tr><td text-align="center">direct access to macro layer</td><td>generic architecture interface layer</td></tr>
+	<tr><td text-align="center" colspan="2"> <a href="arch.md">Architecture specific macro layer</a> </td></tr>
+	<tr><td text-align="center" colspan="2"> Memory load and store to peripheral registers</td></tr>
 </table>
 
 LibK license?

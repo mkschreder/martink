@@ -30,7 +30,7 @@ Layers of abstraction
 
 Below is an illustration of how the code is structured. Not all documentation is completed yet, so you can click on the links that do work to read more about each layer. 
 
-<table text-align="center">
+<table style="text-align: center !important;">
 	<tr><th text-align="center" colspan="2">Layers</th></tr>
 	<tr><td text-align="center" colspan="2">your application and it's libraries</td></tr>
 	<tr><td text-align="center" colspan="2">board driver that implements all necessary services for your application</td> </tr>

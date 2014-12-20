@@ -377,7 +377,7 @@ STATE(_st_esc_sq_bracket, term, ev, arg){
 						uint16_t x = VT100_CURSOR_X(term);
 						uint16_t y = VT100_CURSOR_Y(term);
 						uint16_t w = term->screen_width / VT100_CHAR_WIDTH;
-						uint16_t h = term->screen_height / VT100_CHAR_HEIGHT;
+						//uint16_t h = term->screen_height / VT100_CHAR_HEIGHT;
 						
 						if(term->narg == 0 || (term->narg == 1 && term->args[0] == 0)){
 							// clear to end of line (to \n or to edge?)

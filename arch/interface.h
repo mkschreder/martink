@@ -116,7 +116,7 @@ extern size_t 	PFDECL(device_name, getn, struct serial_interface*, uint8_t *s, s
  * be passed inside the packet sent over this interface. This is another point
  * in which the packet device differs from a stream device. 
  */
-
+/*
 struct packet_interface {
 	/// must be called every time you want to start sending data. This call allows the
 	/// driver to power on the device and prepare it for accepting new data.
@@ -158,7 +158,7 @@ struct packet_interface {
 #define p_write(ptr_iface, data, size) ptr_iface->write(ptr_iface, data, size)
 #define p_read(ptr_iface, data, size) ptr_iface->read(ptr_iface, data, size)
 #define p_sync(ptr_iface) ptr_iface->sync(ptr_iface)
-
+*/
 #define PK_ERR_INVALID 0x00010000L
 
 /**
@@ -190,7 +190,7 @@ struct parallel_interface {
 	/// useful for writing libraries that need to measure pulse intervals. The values
 	/// of t_up and t_down must be updated by the implementation as way of measuring when
 	/// the pin went high and when it goes low. Default value returned must be 0. 
-	uint8_t (*get_pin_status)(struct parallel_interface *self, timestamp_t *t_up, timestamp_t *t_down);
+	uint8_t (*get_pin_status)(struct parallel_interface *self, uint16_t pin_number, timestamp_t *t_up, timestamp_t *t_down);
 	/// used to write byte or int to an io address. If you have pins PA0, PA1 .. PA7 and
 	/// your registers are 8 bit long then writing to addr 0 should write all of PA pins
 	/// at the same time. For implementations with larger registers, more bits may be
@@ -203,7 +203,17 @@ struct parallel_interface {
 	/// error if it is invalid. 
 	uint8_t (*read_word)(struct parallel_interface *self, uint16_t addr, uint32_t *output); 
 }; 
-	
+
+struct i2c_interface {
+	uint32_t			(*start_write)(struct i2c_interface *self,
+		uint8_t address, uint8_t *data, uint16_t max_sz);
+
+	uint32_t			(*start_read)(struct i2c_interface *self,
+		uint8_t address, uint8_t *data, uint16_t max_sz);
+
+	void 					(*stop)(struct i2c_interface *self); 
+};
+
 /**
  * PWM interface is for controlling pwm hardware. Usually it would be built in, timer
  * driven pwm channels, but the system does not limit you to just on board pwm channel
@@ -211,7 +221,6 @@ struct parallel_interface {
  * this kind of interface and this would allow you to pass it to any component that
  * requires a pwm interface (such as for example a motor speed controller). 
  **/
-
 struct pwm_interface {
 	/// Sets channel "on" time to value specified in microseconds. A pwm controller can have
 	/// several channels. Channel id is implementation specific id of the channel.

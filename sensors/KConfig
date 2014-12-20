@@ -1,21 +1,15 @@
 menu "Sensor drivers"
 	config ACS712
-		depends on HAVE_ADC
 		bool "ACS712 current sensor"
 	config ADXL345
-		depends on HAVE_TWI
 		bool "ADXL345 accelerometer support"
 	config AMT1001
-		depends on HAVE_ADC
 		bool "AMT1001 resistive temperature and humidity sensor"
 	config BH1750
-		depends on HAVE_TWI
 		bool "BH1750 digital light sensor"
 	config BMP085
-		depends on HAVE_TWI
 		bool "BMP085 pressure sensor"
-	config DHT11
-		depends on HAVE_ADC
+	config DHT
 		bool "DHTxx series humidity and temperature sensor"
 	config DS18B20
 		bool "DS18B20 one wire digital termometer sensor"
@@ -24,19 +18,14 @@ menu "Sensor drivers"
 	config HCSR04
 		bool "HCSR04 sonic distance sensor"
 	config HMC5883L
-		depends on HAVE_TWI
 		bool "HMC5883L I2C compass sensor"
 	config IMU10DOF01
-		depends on HAVE_TWI
 		bool "IMU10DOF01 10 deg of freedom module"
 	config L3G4200D
-		depends on HAVE_TWI
 		bool "L3G4200D I2C gyroscope sensor"
 	config MMA7455
-		depends on HAVE_TWI
 		bool "MMA7455 digital accelerometer"
 	config MPU6050
-		depends on HAVE_TWI
 		bool "MPU6050 I2C acc/gyro sensor"
 	config TEMT6000
 		bool "TEMT6000 ambient light sensor"

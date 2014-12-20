@@ -1,17 +1,30 @@
-/*
-ds18b20 lib 0x01
+/**
+	
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-copyright (c) Davide Gironi, 2012
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-Released under GPLv3.
-Please refer to LICENSE file for licensing information.
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
-References:
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
+
+	Special thanks to:
+	* Davide Gironi, original implementation
+
+	References:
   + Using DS18B20 digital temperature sensor on AVR microcontrollers
     by Gerard Marull Paretas, 2007
     http://teslabs.com/openplayer/docs/docs/other/ds18b20_pre1.pdf
 */
-
 
 #ifndef DS18B20_H_
 #define DS18B20_H_
@@ -42,7 +55,13 @@ References:
 #define DS18B20_DECIMALSTEPS_12BIT 625  //0.0625
 #define DS18B20_DECIMALSTEPS DS18B20_DECIMALSTEPS_12BIT
 
-//functions
-extern double ds18b20_gettemp(void);
+struct ds18b20 {
+	struct parallel_interface *gpio;
+	gpio_pin_t data_pin;
+};
+
+void ds18b20_init(struct ds18b20 *self,
+	struct parallel_interface *gpio, gpio_pin_t data_pin); 
+double ds18b20_read_temperature(struct ds18b20 *self);
 
 #endif

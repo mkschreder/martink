@@ -62,16 +62,13 @@ extern volatile uint8_t _twi0_status;
 
 extern void 		twi0_init_default(void);
 
-/// sends a missing stop and prepares the device for receiving more data
-#define twi0_begin() ({}) 
+/// address is the first byte of data
+void 		twi0_start_write(uint8_t addr, uint8_t *data, uint8_t data_sz);
+/// address is the first byte of data
+void 		twi0_start_read(uint8_t addr, uint8_t *data, uint8_t data_sz);
 
 /// sends stop signal on the bus
-void twi0_end(void);
-
-/// address is the first byte of data
-extern void 		twi0_start_write(uint8_t *data, uint8_t data_sz);
-/// address is the first byte of data
-extern void 		twi0_start_read(uint8_t *data, uint8_t data_sz);
+void twi0_stop(void);
 
 /// returns 1 if twi bus is processing another transaction
 uint8_t twi0_busy(void);

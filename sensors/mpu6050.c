@@ -110,18 +110,11 @@ extern volatile uint8_t mpu6050_mpuInterrupt;
  * read bytes from chip register
  */
 int8_t mpu6050_readBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t *data) {
-	uint8_t buf[16] = {MPU6050_ADDR, regAddr};
-	p_begin(self->port);
-	p_write(self->port, buf, 2);
-	p_sync(self->port);
-	
-	delay_us(10); 
-	
-	p_read(self->port, buf, length + 1);
-	p_sync(self->port);
-	p_end(self->port); 
-	memcpy(data, &buf[1], length);
-	
+	struct i2c_interface *i2c = self->i2c;
+	i2c->start_write(i2c, self->addr, &regAddr, 1);
+	delay_us(10);
+	i2c->start_read(i2c, self->addr, data, length);
+	i2c->stop(i2c); 
 	return length; 
 }
 
@@ -136,14 +129,14 @@ int8_t mpu6050_readByte(struct mpu6050 *self, uint8_t regAddr, uint8_t *data) {
  * write bytes to chip register
  */
 void mpu6050_writeBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t* data) {
-	uint8_t wr[16] = {MPU6050_ADDR, regAddr}; 
-	memcpy(&wr[2], data, length); 
+	uint8_t wr[16] = {regAddr};
+	length &= 0x0f; 
+	memcpy(&wr[1], data, length); 
 	
 	if(length > 0) {
-		p_begin(self->port);
-		p_write(self->port, wr, length + 2);
-		p_sync(self->port);
-		p_end(self->port); 
+		struct i2c_interface *i2c = self->i2c;
+		i2c->start_write(i2c, self->addr, wr, length + 1);
+		i2c->stop(i2c); 
 	}
 }
 
@@ -481,8 +474,9 @@ uint8_t mpu6050_probe(struct mpu6050 *self) {
 /*
  * initialize the accel and gyro
  */
-void mpu6050_init(struct mpu6050 *self, struct packet_interface *port) {
-	self->port = port; 
+void mpu6050_init(struct mpu6050 *self, struct i2c_interface *i2c, uint8_t addr) {
+	self->i2c = i2c; 
+	self->addr = addr;
 	
 	//allow mpu6050 chip clocks to start up
 	delay_us(100000L);

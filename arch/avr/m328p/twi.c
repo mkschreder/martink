@@ -180,10 +180,8 @@ void twi0_init_default(void)
 	TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
 }
 
-void twi0_start_write(uint8_t *data, uint8_t bytes_to_send)
+void twi0_start_write(uint8_t adr, uint8_t *data, uint8_t bytes_to_send)
 {
-	uint8_t adr = *data++; bytes_to_send--; 
-	
 	// Wait for previous transaction to finish
 	while(twi0_busy())
 	{
@@ -201,10 +199,8 @@ void twi0_start_write(uint8_t *data, uint8_t bytes_to_send)
 	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 }
 
-void twi0_start_read(uint8_t *data, uint8_t bytes_to_receive)
+void twi0_start_read(uint8_t adr, uint8_t *data, uint8_t bytes_to_receive)
 {
-	uint8_t adr = *data++; bytes_to_receive--; 
-	
 	// Wait for previous transaction to finish
 	while(twi0_busy())
 	{
@@ -251,7 +247,7 @@ uint8_t twi0_get_status(void)
 	return twi_status;
 }
 
-void twi0_end(void)
+void twi0_stop(void)
 {
 	// Wait for transaction to finish
 	while(twi0_busy())

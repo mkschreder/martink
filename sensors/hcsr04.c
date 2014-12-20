@@ -24,15 +24,14 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+#include <arch/soc.h>
+
 #include "hcsr04.h"
 
 //values for state
 #define ST_IDLE 0
-#define ST_SENDING_START_PULSE 1
-#define ST_WAITING_RESPONSE_PULSE 2
-#define ST_MEASURING_RESPONSE_PULSE 3
-#define ST_WAITING_ECHO_FADING_AWAY 4
-
+#define ST_PULSE_SENT 1
+/*
 volatile uint8_t state = ST_IDLE;
 
 //values for oper_mode
@@ -46,9 +45,6 @@ volatile uint16_t resp_pulse_length;
 
 int send_pulse(void);
 
-/**
- * Initialize the timer for a new measurement cycle
- */
 void timer_init(void)
 {
 	//TCCR1A &= ~(1<<WGM11 | 1<<WGM10); //no need to do this, bits are cleared by default
@@ -63,11 +59,6 @@ void timer_init(void)
 	TIMSK1 |= (1 << OCIE1A);	// enable int
 }
 
-/**
- * This int handler is called twice during measurement cycle
- *  - when it is time to generate the trailing edge of the start pulse
- *  - when the measurement cycle ends
- */
 ISR(TIMER1_COMPA_vect)
 {
 
@@ -101,9 +92,6 @@ ISR(TIMER1_COMPA_vect)
 	}
 }
 
-/**
- * Initialize the I/O pins for a new measurement cycle
- */
 void pin_init(void)
 {
 	DDRC |= (1 << PC3);	//output
@@ -119,11 +107,6 @@ void pin_init(void)
 	return;
 }
 
-/**
- * This int handler is called twice during measurement cycle
- *  - when it is time to generate the trailing edge of the start pulse
- *  - when the measurement cycle ends
- */
 ISR(PCINT1_vect)
 {
 	register uint8_t leading_edge = PINC & (1 << PINC2);
@@ -149,71 +132,61 @@ ISR(PCINT1_vect)
 	//should not happen
 	//}
 }
+*/
 
-int send_pulse(void)
+static uint8_t hcsr04_send_pulse(struct hcsr04 *self)
 {
-	if (state != ST_IDLE)
+	if (self->state != ST_IDLE)
 		return 0;
 
-	pin_init();
-	PORTC |= (1 << PC3);	// the leading edge of the pulse
-	timer_init();
-
-	state = ST_SENDING_START_PULSE;
+	self->gpio->write_pin(self->gpio, self->trigger_pin, 1);
+	delay_us(10);
+	self->gpio->write_pin(self->gpio, self->trigger_pin, 0);
+	
+	self->state = ST_PULSE_SENT;
 
 	return 1;
 }
 
-int hcsr04_send_pulse(void)
-{
-	if (oper_mode == CONTINUOUS)
-		return 0;
+void hcsr04_init(struct hcsr04 *self, struct parallel_interface *gpio,
+	gpio_pin_t trigger_pin, gpio_pin_t echo_pin){
+	self->gpio = gpio;
+	self->trigger_pin = trigger_pin;
+	self->echo_pin = echo_pin;
 
-	return send_pulse();
-}
+	self->gpio->configure_pin(self->gpio, self->trigger_pin, GP_OUTPUT);
+	self->gpio->configure_pin(self->gpio, self->trigger_pin,
+		GP_INPUT | GP_PCINT); 
 
-int hcsr04_start_continuous_meas(void)
-{
-	int ret_val = send_pulse();
-
-	if (ret_val)
-		oper_mode = CONTINUOUS;
-
-	return ret_val;
-}
-
-void hcsr04_stop_continuous_meas(void)
-{
-	oper_mode = SINGLE_SHOT;
-}
-
-uint16_t hcsr04_get_pulse_length(void)
-{
-	uint16_t ret_val;
-	ATOMIC_BLOCK(ATOMIC_FORCEON) {
-		ret_val = resp_pulse_length;
-	}
-	return ret_val;
-}
-
-void hcsr04_init(void){
-	gpio_set_function(GPIO_PA10, GP_PULSE_IN); 
-	gpio_read(GPIO_PA10); // returns pulse width in usec. 
+	self->state = ST_IDLE;
+	self->distance = -1;
 	
-	send_pulse(); 
-	//timer_init(); 
-	//pin_init(); 
+	hcsr04_send_pulse(self); 
 }
 
-uint16_t hcsr04_get_distance_in_cm(void)
-{
-	uint16_t tmp_pulse_length;
-	ATOMIC_BLOCK(ATOMIC_FORCEON) {
-		tmp_pulse_length = resp_pulse_length;
+uint8_t hcsr04_check_response(struct hcsr04 *self){
+	timestamp_t t_up, t_down; 
+	uint8_t status = self->gpio->get_pin_status(self->gpio, self->echo_pin, &t_up, &t_down);
+	if(status == GP_WENT_LOW){
+		timestamp_t us = timestamp_ticks_to_us(t_down - t_up);
+		// convert to cm 
+		self->distance = (uint16_t)(us * 0.000001 * 34029.0f);
+		self->state = ST_IDLE; 
+		return 1;
 	}
-	if (tmp_pulse_length == HCSR04_MEAS_FAIL)
-		return tmp_pulse_length;
+	return 0; 
+}
 
-	// 36 pulses per 10 cm, when clock divider is 256 in TCCR1B
-	return (10 * tmp_pulse_length) / 36;
+int16_t hcsr04_read_distance_in_cm(struct hcsr04 *self)
+{
+	if(self->state == ST_IDLE){
+		hcsr04_send_pulse(self);
+	}
+	uint32_t timeout = 50000; 
+	while(!hcsr04_check_response(self)){
+		timeout--;
+		if(timeout == 0) return -1; 
+		delay_us(10);
+	}
+	return self->distance;
 }

@@ -9,7 +9,6 @@ menu "Device driver support"
 	source disp/KConfig
 	source hid/KConfig
 	source io/KConfig
-	source motors/KConfig
 	source net/KConfig
 	source radio/KConfig
 	source rfid/KConfig

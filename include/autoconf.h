@@ -2,12 +2,13 @@
  * Automatically generated C config: don't edit
  * version: 
  */
-#define AUTOCONF_TIMESTAMP "2014-12-18 12:33:18 CET"
+#define AUTOCONF_TIMESTAMP "2014-12-20 21:11:10 CET"
 
 
 /*
  * Hardware
  */
+#define CONFIG_HAVE_ADC 1
 #define CONFIG_HAVE_UART 1
 #define CONFIG_HAVE_UART0 1
 #define CONFIG_HAVE_SPI 1
@@ -96,18 +97,6 @@
 #define CONFIG_PCF8574 1
 
 /*
- * Motor driver support
- */
-#define CONFIG_BLDCSENSORED 1
-#define CONFIG_BLDCSENSORLESS 1
-#define CONFIG_DCMOTOR 1
-#define CONFIG_DCPWM 1
-#define CONFIG_DCSOFTPWM 1
-#define CONFIG_PWM 1
-#define CONFIG_PWMMCD4017 1
-#define CONFIG_STEPPER02 1
-
-/*
  * Network support
  */
 #define CONFIG_ENC28J60 1
@@ -128,9 +117,12 @@
 /*
  * Sensor drivers
  */
+#define CONFIG_ACS712 1
 #define CONFIG_ADXL345 1
+#define CONFIG_AMT1001 1
 #define CONFIG_BH1750 1
 #define CONFIG_BMP085 1
+#define CONFIG_DHT 1
 #define CONFIG_DS18B20 1
 #define CONFIG_FS300A 1
 #define CONFIG_HCSR04 1

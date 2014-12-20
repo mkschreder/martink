@@ -133,35 +133,29 @@
 #define SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL 0x29
 #define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
 
-void ssd1306_command(ssd1306_t *self, uint8_t cmd){
-	uint8_t buf[3] = {DISPLAY_ADDRESS, 0, cmd};
-	p_begin(self->port);
-	p_write(self->port, buf, 3);
-	p_sync(self->port);
-	p_end(self->port);
-	//twi0_start_transaction(TWI_OP_LIST(TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buf, 2))); 
-	//twi0_wait(); 
-	/*
-	i2c_start_wait(DISPLAY_ADDRESS | I2C_WRITE);
-	i2c_write(0x00);
-	i2c_write(cmd); 
-	i2c_stop();*/
+static inline void ssd1306_command(ssd1306_t *self, uint8_t cmd){
+	uint8_t buf[2] = {0, cmd};
+	self->i2c->start_write(self->i2c, DISPLAY_ADDRESS, buf, 2);
+	self->i2c->stop(self->i2c); 
 }
 
-void ssd1306_init(ssd1306_t *dev, struct packet_interface *port){
-	dev->port = port;
+static inline void ssd1306_data(ssd1306_t *self, uint8_t data){
+	uint8_t buf[2] = {0x40, data};
+	self->i2c->start_write(self->i2c, DISPLAY_ADDRESS, buf, 2);
+	self->i2c->stop(self->i2c); 
+}
+
+static inline void ssd1306_data_buffer(ssd1306_t *self, uint8_t *data, uint16_t size){
+	self->i2c->start_write(self->i2c, DISPLAY_ADDRESS, data, size);
+	self->i2c->stop(self->i2c); 
+}
+
+void ssd1306_init(ssd1306_t *dev, struct i2c_interface *i2c){
+	dev->i2c = i2c;
 	
 	for(int c = 0; c < sizeof(cmd_init); c++){
 		ssd1306_command(dev, pgm_read_byte(&cmd_init[c]));
-		//twi0_start_transaction(TWI_OP_LIST(TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buf, 2))); 
-		//twi0_wait(); 
-		/*
-		i2c_start_wait(DISPLAY_ADDRESS | I2C_WRITE);
-			i2c_write(0x00);
-			i2c_write(pgm_read_byte(&cmd_init[c])); 
-		i2c_stop();*/
-		_delay_us(10); 
-		//ssd1306_command(pgm_read_byte(&cmd_init[c])); 
+		delay_us(10); 
 	}
 }
 
@@ -257,12 +251,13 @@ void ssd1306_set_region(ssd1306_t *dev, uint16_t x0, uint16_t y0, uint16_t w, ui
 	}*/
 }
 
-void ssd1306_draw(ssd1306_t *dev, uint16_t x, uint16_t y, fb_image_t img){
-	ssd1306_set_region(dev, x, y, img.w, img.h); 
+void ssd1306_draw(ssd1306_t *self, uint16_t x, uint16_t y, fb_image_t img){
+	ssd1306_set_region(self, x, y, img.w, img.h); 
 	
 	// writing needs to be done in columns of 8 pixels
 	uint8_t byte = 0; 
-	size_t idx = 0, total_size = (img.w * img.h) >> 3; 
+	size_t idx = 0;
+	//size_t total_size = (img.w * img.h) >> 3; 
 	uint8_t buffer[8]; 
 	
 	for(int top = 0; top < img.h; top++){
@@ -276,55 +271,35 @@ void ssd1306_draw(ssd1306_t *dev, uint16_t x, uint16_t y, fb_image_t img){
 				buffer[idx++] = byte;
 				byte = 0; 
 			}
-			/*
-			twi0_start_transaction(TWI_OP_LIST(
-				TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buffer, idx)
-			)); 
-			twi0_wait(); */
+			ssd1306_data_buffer(self, buffer, idx); 
 			idx = 0; 
 		}
 	}
 }
 
-void ssd1306_fill(ssd1306_t *dev, fb_color_t col, size_t len){
+void ssd1306_fill(ssd1306_t *self, fb_color_t col, size_t len){
 	uint8_t color = 0; 
-	uint8_t _buf[32] = {DISPLAY_ADDRESS};
-	uint8_t *buf = &_buf[1]; 
-	buf[0] = 0x40; 
-	uint8_t bi = 1; 
+	uint8_t buf[32];
+	uint8_t bi = 0; 
 	
 	if(col.r || col.g || col.b || col.a) color = 1; else color = 0; 
 	uint8_t byte = 0; 
 	
 	for(size_t c = 0; c < len; c++){
-		if(bi == sizeof(_buf)){
-			p_begin(dev->port);
-			p_write(dev->port, _buf, bi);
-			p_sync(dev->port);
-			p_end(dev->port); 
-			//twi0_start_transaction(TWI_OP_LIST(TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buf, bi))); 
-			//twi0_wait(); 
-			bi = 1; 
+		if(bi == sizeof(buf)){
+			ssd1306_data_buffer(self, buf, bi); 
+			bi = 0; 
 		} 
 		
 		byte |= color; 
 		if((c & 0x07) == 0x07){
 			buf[bi++] = (color)?0xf0:0; 
-			/*i2c_start_wait(DISPLAY_ADDRESS | I2C_WRITE);
-			i2c_write(0x40);
-			i2c_write(byte);
-			i2c_stop();*/
 			byte = 0; 
 		} else {
 			byte <<= 1; 
 		}
 	}
-	p_begin(dev->port);
-	p_write(dev->port, _buf, bi);
-	p_sync(dev->port);
-	p_end(dev->port); 
-	//twi0_start_transaction(TWI_OP_LIST(TWI_OP(DISPLAY_ADDRESS | I2C_WRITE, buf, bi))); 
-	//twi0_wait(); 
+	ssd1306_data_buffer(self, buf, bi);  
 }
 
 int16_t ssd1306_printf(ssd1306_t *dev, uint8_t col, const char *fmt, ...){

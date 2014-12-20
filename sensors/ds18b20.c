@@ -1,94 +1,101 @@
-/*
-ds18b20 lib 0x01
+/**
+	
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-copyright (c) Davide Gironi, 2012
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-Released under GPLv3.
-Please refer to LICENSE file for licensing information.
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
+
+	Special thanks to:
+	* Davide Gironi, original implementation
 */
 
 #include <arch/soc.h>
 
 #include "ds18b20.h"
 
-/*
- * ds18b20 init
- */
-uint8_t ds18b20_reset(void) {
-	uint8_t i;
-	/// TODO: Make portable!
-	/*
-	//low for 480us
-	DS18B20_PORT &= ~ (1<<DS18B20_DQ); //low
-	DS18B20_DDR |= (1<<DS18B20_DQ); //output
-	_delay_us(480);
+#define pin_write(value) self->gpio->write_pin(self->gpio, self->data_pin, value)
+#define pin_dir(dir) self->gpio->configure_pin(self->gpio, self->data_pin, dir)
+#define pin_read() self->gpio->read_pin(self->gpio, self->data_pin)
 
+static uint8_t ds18b20_reset(struct ds18b20 *self) {
+	uint8_t i;
+
+	pin_write(0);
+	pin_dir(GP_OUTPUT);
+	delay_us(480);
+	
 	//release line and wait for 60uS
-	DS18B20_DDR &= ~(1<<DS18B20_DQ); //input
-	_delay_us(60);
+	pin_dir(GP_INPUT); 
+	delay_us(60);
 
 	//get value and wait 420us
-	i = (DS18B20_PIN & (1<<DS18B20_DQ));
-	_delay_us(420);
-*/
-	//return the read value, 0=ok, 1=error
+	i = pin_read(); 
+	delay_us(420);
+
 	return i;
 }
 
 /*
  * write one bit
  */
-void ds18b20_writebit(uint8_t bit){
-	/// TODO: make portable
-	/*
-	//low for 1uS
-	DS18B20_PORT &= ~ (1<<DS18B20_DQ); //low
-	DS18B20_DDR |= (1<<DS18B20_DQ); //output
-	_delay_us(1);
-
+static void ds18b20_writebit(struct ds18b20 *self, uint8_t bit){
+	// low for 1us
+	pin_write(0);
+	pin_dir(GP_OUTPUT);
+	delay_us(1);
+	
 	//if we want to write 1, release the line (if not will keep low)
 	if(bit)
-		DS18B20_DDR &= ~(1<<DS18B20_DQ); //input
+		pin_dir(GP_INPUT); 
 
 	//wait 60uS and release the line
-	_delay_us(60);
-	DS18B20_DDR &= ~(1<<DS18B20_DQ); //input
-	*/
+	delay_us(60);
+	pin_dir(GP_INPUT);
 }
 
 /*
  * read one bit
  */
-uint8_t ds18b20_readbit(void){
+static uint8_t ds18b20_readbit(struct ds18b20 *self){
 	uint8_t bit=0;
-	/// TODO: make portable
-	/*
 	//low for 1uS
-	DS18B20_PORT &= ~ (1<<DS18B20_DQ); //low
-	DS18B20_DDR |= (1<<DS18B20_DQ); //output
-	_delay_us(1);
+	pin_write(0); 
+	pin_dir(GP_OUTPUT); 
+	delay_us(1);
 
 	//release line and wait for 14uS
-	DS18B20_DDR &= ~(1<<DS18B20_DQ); //input
-	_delay_us(14);
+	pin_dir(GP_INPUT); 
+	delay_us(14);
 
 	//read the value
-	if(DS18B20_PIN & (1<<DS18B20_DQ))
+	if(pin_read())
 		bit=1;
 
 	//wait 45uS and return read value
-	_delay_us(45);
-	*/
+	delay_us(45);
+
 	return bit;
 }
 
 /*
  * write one byte
  */
-void ds18b20_writebyte(uint8_t byte){
+static void ds18b20_writebyte(struct ds18b20 *self, uint8_t byte){
 	uint8_t i=8;
 	while(i--){
-		ds18b20_writebit(byte&1);
+		ds18b20_writebit(self, byte&1);
 		byte >>= 1;
 	}
 }
@@ -96,39 +103,46 @@ void ds18b20_writebyte(uint8_t byte){
 /*
  * read one byte
  */
-uint8_t ds18b20_readbyte(void){
+static uint8_t ds18b20_readbyte(struct ds18b20 *self){
 	uint8_t i=8, n=0;
 	while(i--){
 		n >>= 1;
-		n |= (ds18b20_readbit()<<7);
+		n |= (ds18b20_readbit(self)<<7);
 	}
 	return n;
+}
+
+
+void ds18b20_init(struct ds18b20 *self,
+	struct parallel_interface *gpio, gpio_pin_t data_pin){
+	self->gpio = gpio; 
+	self->data_pin = data_pin; 
 }
 
 /*
  * get temperature
  */
-double ds18b20_gettemp(void) {
+double ds18b20_read_temperature(struct ds18b20 *self) {
 	uint8_t temperature[2];
 	int8_t digit;
 	uint16_t decimal;
 	double retd = 0;
 
-	ds18b20_reset(); //reset
-	ds18b20_writebyte(DS18B20_CMD_SKIPROM); //skip ROM
-	ds18b20_writebyte(DS18B20_CMD_CONVERTTEMP); //start temperature conversion
+	ds18b20_reset(self); //reset
+	ds18b20_writebyte(self, DS18B20_CMD_SKIPROM); //skip ROM
+	ds18b20_writebyte(self, DS18B20_CMD_CONVERTTEMP); //start temperature conversion
 
-	while(!ds18b20_readbit()); //wait until conversion is complete
+	while(!ds18b20_readbit(self)); //wait until conversion is complete
 
-	ds18b20_reset(); //reset
-	ds18b20_writebyte(DS18B20_CMD_SKIPROM); //skip ROM
-	ds18b20_writebyte(DS18B20_CMD_RSCRATCHPAD); //read scratchpad
+	ds18b20_reset(self); //reset
+	ds18b20_writebyte(self, DS18B20_CMD_SKIPROM); //skip ROM
+	ds18b20_writebyte(self, DS18B20_CMD_RSCRATCHPAD); //read scratchpad
 
 	//read 2 byte from scratchpad
-	temperature[0] = ds18b20_readbyte();
-	temperature[1] = ds18b20_readbyte();
+	temperature[0] = ds18b20_readbyte(self);
+	temperature[1] = ds18b20_readbyte(self);
 
-	ds18b20_reset(); //reset
+	ds18b20_reset(self); //reset
 
 	//store temperature integer digits
 	digit = temperature[0]>>4;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "iptypes.h"
+#include "nettypes.h"
 
 struct enc28j60 {
 	struct serial_interface *serial; // for serial com

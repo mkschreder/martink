@@ -23,6 +23,8 @@ Please refer to LICENSE file for licensing information.
 #include "hmc5883l.h"
 #include "bmp085.h"
 
+// TODO: make it use new driver functions
+
 //path to i2c fleury lib
 #include IMU10DOF01_I2CFLEURYPATH
 
@@ -331,9 +333,7 @@ void imu10dof01_getRollPitchYaw(double *roll, double *pitch, double *yaw) {
 }
 
 #if IMU10DOF01_BAROMETERENABLED == 1
-/*
- * get pressure
- */
+
 void imu10dof01_getPressure(double *pressure) {
 	*pressure = a0;
 }

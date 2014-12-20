@@ -105,7 +105,7 @@ Many boards can be supported, by providing board speciffic files in the "boards"
 
 Many drivers for out of chip devices (such as I2C peripherals) are completely reusable on many different architectures. For this reason, we group all architecture speciffic files into arch/ directory. The purpose of the architecture speciffic files is to provide an interface for the DRIVERS which they can use to access standard peripherals such as I2C or SPI busses. The arch directory should therefore only contain files that implement ON CHIP peripherals that the IC uses to communicate with the outside world. 
 
-When arch layer is ported to a different SoC, it should be possible to recompile the kernel and run all other drivers on that platform without any other changes. 
+When arch layer is ported to a different SoC, it should be possible to recompile the kernel and run all other drivers on that platform without any other changes.
 
 Known issues
 ------------

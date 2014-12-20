@@ -36,12 +36,12 @@
 #define ADC_BANDGAPVOLTAGE 1300L
 #endif
 
-#define ADCREF_AREF (0)
-#define ADCREF_AVCC_CAP_AREF (_BV(REFS0))
-#define ADCREF_INTERNAL_2_56V (_BV(REFS1) | _BV(REFS0))
-#define ADCREF_BITS ADCREF_INTERNAL_2_56V
+#define ADC_REF_AREF (0)
+#define ADC_REF_AVCC_CAP_AREF (_BV(REFS0))
+#define ADC_REF_INTERNAL_2_56V (_BV(REFS1) | _BV(REFS0))
+#define ADC_REF_BITS ADC_REF_INTERNAL_2_56V
 
-#define adc0_set_vref(adcref) (ADMUX = (ADMUX & ~ADCREF_BITS) | (adcref & ADCREF_BITS))
+#define adc0_set_vref(adcref) (ADMUX = (ADMUX & ~ADC_REF_BITS) | (adcref & ADC_REF_BITS))
 
 #define ADC_CLOCK_DIV2 (_BV(ADPS0))
 #define ADC_CLOCK_DIV4 (_BV(ADPS1))
@@ -64,7 +64,7 @@
 #define adc0_enable() (ADCSRA |= _BV(ADEN))
 #define adc0_disable() (ADCSRA &= ~_BV(ADEN))
 #define adc0_init_default() (\
-	adc0_set_vref(ADCREF_AVCC_CAP_AREF),\
+	adc0_set_vref(ADC_REF_AVCC_CAP_AREF),\
 	adc0_set_prescaler(ADC_CLOCK_DIV128),\
 	adc0_set_alignment(ADC_ALIGN_LEFT), \
 	adc0_enable()\
@@ -109,17 +109,33 @@ ADC)
 	(_adc_mode == ADC_MODE_AUTOMATIC)\
 		?(adc0_interrupt_on(), adc0_start_conversion())\
 		:(0)\
-}, adc0_read())
+, adc0_read())
+
+#define adc0_read_immediate_ref(chan, ref) (\
+	adc0_wait_for_completed_conversion(), \
+	adc0_interrupt_off(),\
+	adc0_set_channel(chan), \
+	adc0_set_vref(ref), \
+	adc0_start_conversion(), \
+	adc0_set_mode(_adc_mode)\
+, adc0_read())
 
 #define ADC_MODE_MANUAL (0)
+#define ADC_MODE_AUTOMATIC (1)
 extern uint8_t _adc_mode;
-#define adc0_set_mode(adc_mode) (_adc_mode = adc_mode)
 
 #if defined(CONFIG_ADC_MODE_AUTOMATIC)
-	#define ADC_MODE_AUTOMATIC (1)
+
 	extern uint16_t _adc_values[8];
 
 	#define adc0_read_cached(chan) (_adc_values[(chan) & 0x07])
 #endif
+
+#define adc0_set_mode(adc_mode) (\
+	_adc_mode = adc_mode,\
+	(_adc_mode == ADC_MODE_AUTOMATIC)\
+		?(adc0_interrupt_on(), adc0_start_conversion())\
+		:(0) \
+)
 
 #endif

@@ -13,43 +13,87 @@ Please refer to LICENSE file for licensing information.
 #include <arch/soc.h>
 #include "hmc5883l.h"
 
-static double hmc5883l_scale = 0;
+
+//registers
+#define HMC5883L_CONFREGA 0x00
+#define HMC5883L_CONFREGB 0x01
+#define HMC5883L_MODEREG 0x02
+#define HMC5883L_DATAREGBEGIN 0x03
+
+//setup measurement mode
+#define HMC5883L_MEASURECONTINOUS 0x00
+#define HMC5883L_MEASURESINGLESHOT 0x01
+#define HMC5883L_MEASUREIDLE 0x03
+#define HMC5883L_MEASUREMODE HMC5883L_MEASURECONTINOUS
+
+//setup scale
+#define HMC5883L_SCALE088 0 //0.88
+#define HMC5883L_SCALE13 1 //1.3
+#define HMC5883L_SCALE19 2 //1.9
+#define HMC5883L_SCALE25 3 //2.5
+#define HMC5883L_SCALE40 4 //4.0
+#define HMC5883L_SCALE47 5 //4.7
+#define HMC5883L_SCALE56 6 //5.6
+#define HMC5883L_SCALE81 7 //8.1
+#define HMC5883L_SCALE HMC5883L_SCALE88
+
+#define HMC5883L_CALIBRATED 0 //enable this if this magn is calibrated
+
+//calibration values
+#if HMC5883L_CALIBRATED == 1
+#define HMC5883L_OFFSETX -72
+#define HMC5883L_OFFSETY -43
+#define HMC5883L_OFFSETZ 460
+#define HMC5883L_GAINX1 0.952017
+#define HMC5883L_GAINX2 0.00195895
+#define HMC5883L_GAINX3 0.0139661
+#define HMC5883L_GAINY1 0.00195895
+#define HMC5883L_GAINY2 0.882824
+#define HMC5883L_GAINY3 0.00760243
+#define HMC5883L_GAINZ1 0.0139661
+#define HMC5883L_GAINZ2 0.00760243
+#define HMC5883L_GAINZ3 0.995365
+#endif
 
 /*
  * init the hmc5883l
  */
-void hmc5883l_init(void) {
+void hmc5883l_init(struct hmc5883l *self, struct i2c_interface *i2c, uint8_t addr, uint8_t scale) {
+	self->i2c = i2c;
+	self->addr = addr;
+	
 	delay_us(50000L); 
 	
 	//set scale
-	hmc5883l_scale = 0;
-	uint8_t regValue = 0x00;
-	#if HMC5883L_SCALE == HMC5883L_SCALE088
-		regValue = 0x00;
-		hmc5883l_scale = 0.73;
-	#elif HMC5883L_SCALE == HMC5883L_SCALE13
-		regValue = 0x01;
-		hmc5883l_scale = 0.92;
-	#elif HMC5883L_SCALE == HMC5883L_SCALE19
-		regValue = 0x02;
-		hmc5883l_scale = 1.22;
-	#elif HMC5883L_SCALE == HMC5883L_SCALE25
-		regValue = 0x03;
-		hmc5883l_scale = 1.52;
-	#elif HMC5883L_SCALE == HMC5883L_SCALE40
-		regValue = 0x04;
-		hmc5883l_scale = 2.27;
-	#elif HMC5883L_SCALE == HMC5883L_SCALE47
-		regValue = 0x05;
-		hmc5883l_scale = 2.56;
-	#elif HMC5883L_SCALE == HMC5883L_SCALE56
-		regValue = 0x06;
-		hmc5883l_scale = 3.03;
-	#elif HMC5883L_SCALE == HMC5883L_SCALE81
-		regValue = 0x07;
-		hmc5883l_scale = 4.35;
-	#endif
+	self->scale = 0;
 
+	switch(scale) {
+		case HMC5883L_SCALE088: 
+			self->scale = 0.73;
+			break; 
+		case HMC5883L_SCALE13: 
+			self->scale = 0.92;
+			break;
+		case HMC5883L_SCALE19: 
+			self->scale = 1.22;
+			break;
+		case HMC5883L_SCALE25: 
+			self->scale = 1.52;
+			break;
+		case HMC5883L_SCALE40: 
+			self->scale = 2.27;
+			break;
+		case HMC5883L_SCALE47: 
+			self->scale = 2.56;
+			break; 
+		case HMC5883L_SCALE56: 
+			self->scale = 3.03;
+			break;
+		case HMC5883L_SCALE81: 
+			self->scale = 4.35;
+			break;
+	}
+	
   delay_us(50000L);  //Wait before start
   
   uint8_t buf[] = {
@@ -59,7 +103,10 @@ void hmc5883l_init(void) {
 		0x20, //Configuration Register B  -- 001 00000    configuration gain 1.3Ga
 		HMC5883L_MODEREG,
 		0x00 //Mode register             -- 000000 00    continuous Conversion Mode
-	}; 
+	};
+	i2c->start_write(i2c, addr, buf, sizeof(buf));
+	i2c->stop(i2c);
+	
 	/*twi0_start_transaction(TWI_OP_LIST(
 		TWI_OP(HMC5883L_ADDR | I2C_WRITE, buf, 6)
 	)); 
@@ -93,30 +140,12 @@ void hmc5883l_init(void) {
 /*
  * get raw data
  */
-void hmc5883l_getrawdata(int16_t *mxraw, int16_t *myraw, int16_t *mzraw) {
-	uint8_t wr[1] = {HMC5883L_DATAREGBEGIN}; 
-	uint8_t buff[6];
-	/*twi0_start_transaction(TWI_OP_LIST(
-		TWI_OP(HMC5883L_ADDR | I2C_WRITE, wr, 1),
-		TWI_OP(HMC5883L_ADDR | I2C_READ, buff, 6)
-	)); 
-	twi0_wait(); */
-	/*
-	uint8_t i = 0;
-	uint8_t buff[6];
-
-	i2c_start_wait(HMC5883L_ADDR | I2C_WRITE);
-	i2c_write(HMC5883L_DATAREGBEGIN);
-	i2c_stop();
-	i2c_start_wait(HMC5883L_ADDR | I2C_READ);
-	for(i=0; i<6; i++) {
-		if(i==6-1)
-			buff[i] = i2c_readNak();
-		else
-			buff[i] = i2c_readAck();
-	}
-	i2c_stop();
-*/
+void hmc5883l_read_raw(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, int16_t *mzraw) {
+	uint8_t buff[6] = {HMC5883L_DATAREGBEGIN};
+	self->i2c->start_write(self->i2c, self->addr, buff, 1);
+	self->i2c->start_read(self->i2c, self->addr, buff, 6);
+	self->i2c->stop(self->i2c);
+	
 	*mxraw = (int16_t)((buff[0] << 8) | buff[1]);
 	*mzraw = (int16_t)((buff[2] << 8) | buff[3]);
 	*myraw = (int16_t)((buff[4] << 8) | buff[5]);
@@ -125,11 +154,11 @@ void hmc5883l_getrawdata(int16_t *mxraw, int16_t *myraw, int16_t *mzraw) {
 /*
  * get scaled data
  */
-void hmc5883l_getdata(double *mx, double *my, double *mz) {
+void hmc5883l_read_adjusted(struct hmc5883l *self, float *mx, float *my, float *mz) {
 	int16_t mxraw = 0;
 	int16_t myraw = 0;
 	int16_t mzraw = 0;
-	hmc5883l_getrawdata(&mxraw, &myraw, &mzraw);
+	hmc5883l_read_raw(self, &mxraw, &myraw, &mzraw);
 
 	#if HMC5883L_CALIBRATED == 1
 	float mxt = mxraw - HMC5883L_OFFSETX;
@@ -140,9 +169,9 @@ void hmc5883l_getdata(double *mx, double *my, double *mz) {
 	*mz = HMC5883L_GAINZ1 * mxt + HMC5883L_GAINZ2 * myt + HMC5883L_GAINZ3 * mzt;
 	#else
 	/*
-	*mx = mxraw * hmc5883l_scale;
-	*my = myraw * hmc5883l_scale;
-	*mz = mzraw * hmc5883l_scale;*/
+	*mx = mxraw * self->scale;
+	*my = myraw * self->scale;
+	*mz = mzraw * self->scale;*/
 	*mx = mxraw;
 	*my = myraw;
 	*mz = mzraw; 

@@ -1,9 +1,0 @@
-obj-$(CONFIG_BLDCSENSORED) += bldcsensored.o 
-obj-$(CONFIG_DCMOTOR) += dcmotor.o 
-obj-$(CONFIG_DCMOTORSOFTPWM) += dcmotorpwmsoft.o 
-obj-$(CONFIG_PWMCD4017) += pwmcd4017.o 
-obj-$(CONFIG_STEPPER04MULTI) += stepper04multi.o 
-obj-$(CONFIG_BLDCSENSORLESS) += bldcsensorless.o 
-obj-$(CONFIG_DCPWM) += dcmotorpwm.o 
-obj-$(CONFIG_PWM) += pwm.o 
-obj-$(CONFIG_STEPPER02) += stepper02.o

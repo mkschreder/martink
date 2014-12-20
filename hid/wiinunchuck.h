@@ -27,7 +27,7 @@ Please refer to LICENSE file for licensing information.
 #define WIINUNCHUCK_ANGLEAVARAGECOEF 21 //number of samples to avarage
 
 struct wiinunchuck {
-	struct packet_interface *port;
+	struct i2c_interface *i2c;
 	
 	uint8_t joyX;
 	uint8_t joyY;
@@ -49,7 +49,7 @@ struct wiinunchuck {
 
 //functions
 extern void wiinunchuck_calibratejoy(struct wiinunchuck *self);
-extern void wiinunchuck_init(struct wiinunchuck *self, struct packet_interface *i2c);
+extern void wiinunchuck_init(struct wiinunchuck *self, struct i2c_interface *i2c);
 extern int wiinunchuck_getjoyX(struct wiinunchuck *self);
 extern int wiinunchuck_getjoyY(struct wiinunchuck *self);
 extern uint8_t wiinunchuck_getbuttonZ(struct wiinunchuck *self);

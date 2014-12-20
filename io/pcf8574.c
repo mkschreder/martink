@@ -33,25 +33,22 @@
 
 //#define PCF8574_LCD_DEVICEID 7
 
-void pcf8574_init(struct pcf8574 *self, struct packet_interface *i2c, uint8_t device_id) {
+void pcf8574_init(struct pcf8574 *self, struct i2c_interface *i2c, uint8_t device_id) {
 	self->i2c = i2c;
 	self->device_id = device_id;
 	self->in_reg = self->out_reg = 0xff; 
 }
 
 void _pcf8574_flush(struct pcf8574 *self){
-	uint8_t data[] = {((PCF8574_ADDRBASE+self->device_id)<<1), self->out_reg};
-	p_begin(self->i2c);
-	p_write(self->i2c, data, 2);
-	p_end(self->i2c);
+	self->i2c->start_write(self->i2c,
+		((PCF8574_ADDRBASE+self->device_id)<<1), &self->out_reg, 1);
+	self->i2c->stop(self->i2c);
 }
 
 void _pcf8574_read(struct pcf8574 *self){
-	uint8_t data[] = {((PCF8574_ADDRBASE+self->device_id)<<1), 0};
-	p_begin(self->i2c);
-	p_read(self->i2c, data, 2);
-	p_end(self->i2c);
-	self->in_reg = data[1]; 
+	self->i2c->start_read(self->i2c,
+		((PCF8574_ADDRBASE+self->device_id)<<1), &self->in_reg, 1);
+	self->i2c->stop(self->i2c);
 }
 
 uint8_t pcf8574_write_word(struct pcf8574 *self, uint8_t data) {

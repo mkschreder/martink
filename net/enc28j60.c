@@ -578,6 +578,7 @@ uint16_t enc28j60_recv(struct enc28j60 *self, uint8_t* packet, uint16_t maxlen)
 	return(len);
 }
 
+/*
 static uint16_t 			_get(struct serial_interface *self){
 	return SERIAL_NO_DATA; 
 }
@@ -617,3 +618,4 @@ struct serial_interface *enc28j60_get_serial_interface(struct enc28j60 *self){
 	}; 
 	return s; 
 }
+*/

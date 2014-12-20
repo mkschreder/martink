@@ -70,7 +70,8 @@ struct multiwii_board {
 	timestamp_t 		rc_reset_timeout; 
 	struct parallel_interface gpio0; 
 	struct bmp085 bmp;
-	struct mpu6050 mpu; 
+	struct mpu6050 mpu;
+	struct hmc5883l hmc; 
 	struct twi_device twi0; 
 	struct ssd1306 ssd;
 	struct fc_quad_interface interface; 
@@ -116,6 +117,29 @@ static void compute_rc_values(void){
 	}
 }
 
+/*
+#include <lwip/api.h>
+#include <lwip/ip.h>
+#include <lwip/udp.h>
+*/
+/*
+// Function gets called when we recieve data
+err_t RecvUTPCallBack(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip_addr *addr, u16_t port){
+   
+    volatile int totaal_lengte=0;
+    totaal_lengte = p->tot_len;
+    volatile int line=40;
+
+    while(1){
+        line+=8;
+        if(p->len != p->tot_len){
+            p=p->next;
+        }
+        else break;
+    }
+    pbuf_free(p);
+}
+*/
 void mwii_init(void){
 	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
 	//gpio_set(GPIO_MWII_LED); 
@@ -152,10 +176,10 @@ void mwii_init(void){
 	}
 	
 	//hmc5883l_init(); 
-	mpu6050_init(&brd->mpu, &brd->twi0.interface); 
+	mpu6050_init(&brd->mpu, &brd->twi0.interface, MPU6050_ADDR); 
 	uart0_printf("MPU6050 .. %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
 	
-	bmp085_init(&brd->bmp, &brd->twi0.interface); 
+	bmp085_init(&brd->bmp, &brd->twi0.interface, BMP085_ADDR); 
 	
 	reset_rc();
 	
@@ -164,13 +188,46 @@ void mwii_init(void){
 	pwm4_enable();
 	pwm5_enable();
 	
-	int16_t pres = bmp085_getpressure(&brd->bmp); 
-	int16_t temp = bmp085_gettemperature(&brd->bmp); 
+	int16_t pres = bmp085_read_pressure(&brd->bmp); 
+	int16_t temp = bmp085_read_temperature(&brd->bmp); 
 	uart0_printf("Pressure: %d\n", pres); 
 	uart0_printf("Temperature: %d\n", temp); 
 	
-	uart0_puts("multiwii board!\n"); 
+	uart0_puts("multiwii board!\n");
+
+/*
+	struct ip_addr dstaddr;
+	struct ip_addr srcaddr;
+	struct udp_pcb * pcb;
+	u16_t * dst_port;
+	struct pbuf * pb;
+
+	char str[512]="Test Sander";
+	IP4_ADDR(&dstaddr,65,55,21,24); // time.windows.com
+	IP4_ADDR(&srcaddr,192,168,1,10); // cortex
+	dst_port = 123;
+
+	pcb = udp_new();
+
+	udp_bind(pcb,&srcaddr,&dst_port);
+	udp_connect(pcb,&dstaddr,&dst_port);
+
+	pb = pbuf_alloc(PBUF_TRANSPORT, 512, PBUF_REF);
+	pb->payload = str;
+	pb->len = pb->tot_len = 512;
+
+	udp_sendto(pcb, &pb,&dstaddr,dst_port);
+	//udp_send(pcb, &pb);
+
+	udp_recv(pcb, RecvUTPCallBack, NULL);
+
+	pbuf_free(pb);
+
+	udp_remove(pcb);
+*/
 }
+
+
 
 void mwii_process_events(void){
 	compute_rc_values(); 
@@ -202,21 +259,21 @@ void _mwii_read_gyroscope(struct fc_quad_interface *self, float *x, float *y, fl
 }
 
 void _mwii_read_magnetometer(struct fc_quad_interface *self, float *x, float *y, float *z){
-	double mx, my, mz; 
-	hmc5883l_getdata(&mx, &my, &mz); 
+	float mx, my, mz; 
+	hmc5883l_read_adjusted(&brd->hmc, &mx, &my, &mz); 
 	*x = mx; *y = my; *z = mz; 
 }
 
 int16_t _mwii_read_altitude(struct fc_quad_interface *self){
-	return bmp085_getaltitude(&brd->bmp); 
+	return bmp085_read_altitude(&brd->bmp); 
 }
 
 int16_t _mwii_read_pressure(struct fc_quad_interface *self){
-	return bmp085_getpressure(&brd->bmp) / 10; 
+	return bmp085_read_pressure(&brd->bmp) / 10; 
 }
 
 int16_t _mwii_read_temperature(struct fc_quad_interface *self){
-	return bmp085_gettemperature(&brd->bmp); 
+	return bmp085_read_temperature(&brd->bmp); 
 }
 
 void _mwii_write_motors(struct fc_quad_interface *self,
@@ -240,7 +297,9 @@ uint8_t _mwii_read_receiver(struct fc_quad_interface *self,
 	// prevent small changes when stick is not touched
 	if(abs(*rc_pitch - 1500) < 20) *rc_pitch = 1500; 
 	if(abs(*rc_roll - 1500) < 20) *rc_roll = 1500; 
-	if(abs(*rc_yaw - 1500) < 20) *rc_yaw = 1500; 
+	if(abs(*rc_yaw - 1500) < 20) *rc_yaw = 1500;
+
+	return 0; 
 }
 
 struct fc_quad_interface mwii_get_fc_quad_interface(void){

@@ -9,6 +9,7 @@ obj-$(CONFIG_NTCTEMP) += ntctemp.o
 obj-$(CONFIG_TSL235) += tsl235.o 
 obj-$(CONFIG_ADXL345) += adxl345.o 
 obj-$(CONFIG_BH1750) += bh1750.o 
+obj-$(CONFIG_HCSR04) += hcsr04.o 
 obj-$(CONFIG_DHT) += dht.o 
 obj-$(CONFIG_FS300A) += fs300a.o 
 obj-$(CONFIG_L3G4200D) += l3g4200d.o  

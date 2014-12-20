@@ -12,12 +12,12 @@ Please refer to LICENSE file for licensing information.
 #define PCF8574_H_
 
 struct pcf8574 {
-	struct packet_interface *i2c;
+	struct i2c_interface *i2c;
 	uint8_t device_id;
 	uint8_t in_reg, out_reg; 
 };
 
-void pcf8574_init(struct pcf8574 *self, struct packet_interface *i2c, uint8_t device_id);
+void pcf8574_init(struct pcf8574 *self, struct i2c_interface *i2c, uint8_t device_id);
 
 uint8_t pcf8574_write_word(struct pcf8574 *self, uint8_t data);
 uint8_t pcf8574_write_pin(struct pcf8574 *self, uint8_t pin, uint8_t value);

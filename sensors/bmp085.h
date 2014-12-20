@@ -1,19 +1,27 @@
-/*
-bmp085 lib 0x01
+/**
+	
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-copyright (c) Davide Gironi, 2012
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-Released under GPLv3.
-Please refer to LICENSE file for licensing information.
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
-References:
-  - this library is a porting of the bmp085driver 0.4 ardunio library
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
+
+	Special thanks to:
+	* this library is a porting of the bmp085driver 0.4 ardunio library
     http://code.google.com/p/bmp085driver/
-
-Notes:
-  - to compile with avrgcc you may define -lm flag for some math functions
+	* Davide Gironi, original implementation
 */
-
 
 #ifndef BMP085_H_
 #define BMP085_H_
@@ -26,56 +34,22 @@ extern "C" {
 
 #define BMP085_ADDR (0x77<<1) //0x77 default I2C address
 
-#define BMP085_I2CFLEURYPATH "i2cmaster.h" //define the path to i2c fleury lib
-#define BMP085_I2CINIT 0 //init i2c
-
-//registers
-#define BMP085_REGAC1 0xAA
-#define BMP085_REGAC2 0xAC
-#define BMP085_REGAC3 0xAE
-#define BMP085_REGAC4 0xB0
-#define BMP085_REGAC5 0xB2
-#define BMP085_REGAC6 0xB4
-#define BMP085_REGB1 0xB6
-#define BMP085_REGB2 0xB8
-#define BMP085_REGMB 0xBA
-#define BMP085_REGMC 0xBC
-#define BMP085_REGMD 0xBE
-#define BMP085_REGCONTROL 0xF4 //control
-#define BMP085_REGCONTROLOUTPUT 0xF6 //output 0xF6=MSB, 0xF7=LSB, 0xF8=XLSB
-#define BMP085_REGREADTEMPERATURE 0x2E //read temperature
-#define BMP085_REGREADPRESSURE 0x34 //read pressure
-
-//modes
-#define BMP085_MODEULTRALOWPOWER 0 //oversampling=0, internalsamples=1, maxconvtimepressure=4.5ms, avgcurrent=3uA, RMSnoise_hPA=0.06, RMSnoise_m=0.5
-#define BMP085_MODESTANDARD 1 //oversampling=1, internalsamples=2, maxconvtimepressure=7.5ms, avgcurrent=5uA, RMSnoise_hPA=0.05, RMSnoise_m=0.4
-#define BMP085_MODEHIGHRES 2 //oversampling=2, internalsamples=4, maxconvtimepressure=13.5ms, avgcurrent=7uA, RMSnoise_hPA=0.04, RMSnoise_m=0.3
-#define BMP085_MODEULTRAHIGHRES 3 //oversampling=3, internalsamples=8, maxconvtimepressure=25.5ms, avgcurrent=12uA, RMSnoise_hPA=0.03, RMSnoise_m=0.25
-
-//autoupdate temperature enabled
-#define BMP085_AUTOUPDATETEMP 1 //autoupdate temperature every read
-
-//setup parameters
-#define BMP085_MODE BMP085_MODESTANDARD //define a mode
-#define BMP085_UNITPAOFFSET 0 //define a unit offset (pa)
-#define BMP085_UNITMOFFSET 0 //define a unit offset (m)
-
-//avarage filter
-#define BMP085_FILTERPRESSURE 1 //avarage filter for pressure
-
 struct bmp085 {
-	struct packet_interface *port;
+	struct i2c_interface *i2c;
+	uint8_t addr;
+	int regac1, regac2, regac3, regb1, regb2, regmb, regmc, regmd;
+	unsigned int regac4, regac5, regac6;
 };
 
 //functions
 /// inits the device over the interface supplied 
-void bmp085_init(struct bmp085 *self, struct packet_interface *port);
+void bmp085_init(struct bmp085 *self, struct i2c_interface *i2c, uint8_t addr);
 /// returns pressure 
-long bmp085_getpressure(struct bmp085 *self);
+long bmp085_read_pressure(struct bmp085 *self);
 /// returns altitude
-int16_t bmp085_getaltitude(struct bmp085 *self);
+int16_t bmp085_read_altitude(struct bmp085 *self);
 /// returns temperature
-int16_t bmp085_gettemperature(struct bmp085 *self);
+int16_t bmp085_read_temperature(struct bmp085 *self);
 
 #ifdef __cplusplus
 }

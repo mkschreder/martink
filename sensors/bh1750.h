@@ -1,33 +1,38 @@
-/*
-bh1750 lib 0x02
+/**
+	Light sensor driver
 
-copyright (c) Davide Gironi, 2013
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-Released under GPLv3.
-Please refer to LICENSE file for licensing information.
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
+
+	Special thanks to:
+	* Davide Gironi, original implementation
 */
-
 
 #ifndef BH1750_H_
 #define BH1750_H_
 
-
 #define BH1750_ADDR (0x23<<1) //device address
 
-//i2c settings
-#define BH1750_I2CFLEURYPATH "i2cmaster.h" //define the path to i2c fleury lib
-#define BH1750_I2CINIT 1 //init i2c
+struct bh1750 {
+	struct i2c_interface *i2c;
+	uint8_t addr; 
+};
 
-//resolution modes
-#define BH1750_MODEH 0x10 //continuously h-resolution mode, 1lx resolution, 120ms
-#define BH1750_MODEH2 0x11 //continuously h-resolution mode, 0.5lx resolution, 120ms
-#define BH1750_MODEL 0x13 //continuously l-resolution mode, 4x resolution, 16ms
-//define active resolution mode
-#define BH1750_MODE BH1750_MODEH
-
-//functions
-extern void bh1750_init(void);
-extern uint16_t bh1750_getlux(void);
-
+void bh1750_init(struct bh1750 *self, struct i2c_interface *i2c, uint8_t addr);
+uint16_t bh1750_read_intensity_lux(struct bh1750 *self);
 
 #endif

@@ -6,7 +6,6 @@ include crypto/Makefile
 include disp/Makefile
 include hid/Makefile
 include io/Makefile
-include motors/Makefile
 include net/Makefile
 include radio/Makefile
 include rfid/Makefile

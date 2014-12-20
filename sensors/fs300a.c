@@ -1,16 +1,27 @@
-/*
-fs300a water flow sensor lib 0x01
+/**
+	
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-copyright (c) Davide Gironi, 2012
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-Released under GPLv3.
-Please refer to LICENSE file for licensing information.
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
-References:
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
+
+	Special thanks to:
+	* Davide Gironi, original implementation
+	
+	References:
   * http://www.seeedstudio.com/wiki/G3/4_Water_Flow_sensor
-Notes:
-  edit timer setting, to fit to your F_CPU
-
 */
 
 #ifdef FS300A
@@ -21,13 +32,13 @@ Notes:
 
 #include "fs300a.h"
 
+/*
+ * TODO: figure out how to read it without using timers directly
+ *
+ 
 volatile uint16_t fs300a_flowpulsecount = 0;
 volatile uint16_t fs300a_timer0counter = 0;
 
-/*
- * timer0 interrupt
- * here we count the pulse coming out from our fs300a hall sensor
- */
 ISR(TIMER0_OVF_vect) {
 	//we are here every TIMER0_MSREPEATMS
 	static uint8_t input_state;
@@ -47,9 +58,6 @@ ISR(TIMER0_OVF_vect) {
 	tflowpulsecount += i; //increment count if state is changed
 }
 
-/*
- * init fs300a
- */
 void fs300a_init(void) {
 	//set timer0
 	TCCR0B = TIMER0_PRESCALER;
@@ -58,12 +66,10 @@ void fs300a_init(void) {
 	FS300A_DDR &= ~(1 << FS300A_INPUT1);
 }
 
-/*
- * get fs300a flow (litre\hour)
- */
 uint16_t fs300a_getflow(void) {
 	//(Pulse frequency x 60) / FS300A_CONVERSIONSENSITIVITY = flow rate
 	return ((fs300a_flowpulsecount*60)/FS300A_CONVERSIONSENSITIVITY);
 }
+*/
 
 #endif

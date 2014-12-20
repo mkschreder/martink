@@ -4,6 +4,7 @@ choice
 	
 	config ATMEGA328P
 		depends on AVR
+		select HAVE_ADC
 		select HAVE_UART
 		select HAVE_UART0
 		select HAVE_I2C
@@ -30,30 +31,34 @@ menu "Configure ATMega328P driver"
 		default y
 		bool "Enable timestamp subsystem (timer1 configured as cpu clock counter)"
 		help
-			Uses timer1 for microsecond time measurement tasks. This is very useful for many
-			other features so leave this enabled (although you will not be able to use timer1
-			for anything else)
+			Uses timer1 for microsecond time measurement tasks. This is
+			very useful for many other features so leave this enabled
+			(although you will not be able to use timer1 for anything else)
 			
 	config ADC_MODE_AUTOMATIC
 		default n
 		bool "Enable continuous automatic adc measurement on all channels"
 		help
-			Uses 16 bytes more memory but monitors all adc channels continously using ADC
-			interrupt. These values can then be read immediately using adc0_read_cached(chan)
-			instead of having to wait for each conversion to complete.
+			Uses 16 bytes more memory but monitors all adc channels
+			continously using ADC interrupt. These values can then be read
+			immediately using adc0_read_cached(chan) instead of having to
+			wait for each conversion to complete.
 
 	config GPIO_PIN_STATES
 		select TIMESTAMP_COUNTER
 		default y
 		bool "Enable GPIO pin states"
 		help
-			Enables gpio_get_status() and state change recording for GPIO pins with timestamp
-			for when the change occured. For this PCINT handlers are used. This lets you use
-			gpio_get_status() to read last gpioio event and time for last leading and trailing
-			edge with microsecond precision. This in turn lets you easily measure pulse widths
-			on gpio pins and read various sensors that report values using pulse width signal,
-			 without having to implement all this functionality yourself. The drawback: it
-			 currently uses ~200 bytes of memory for state information.
+			Enables gpio_get_status() and state change recording for GPIO
+			pins with timestamp for when the change occured. For this
+			PCINT handlers are used. This lets you use gpio_get_status()
+			to read last gpioio event and time for last leading and
+			trailing edge with microsecond precision. This in turn lets
+			you easily measure pulse widths on gpio pins and read various
+			sensors that report values using pulse width signal, without
+			having to implement all this functionality yourself. The
+			drawback: it currently uses ~200 bytes of memory for state
+			information.
 
 	comment "UART Config ---"
 	
@@ -61,23 +66,24 @@ menu "Configure ATMega328P driver"
 		default y
 		bool "Use buffered uart"
 		help
-			Enables interrupt driven buffered uart using circular buffer. Enables fast writes
-			without having to wait for the data to be sent. All data is instead sent in the
-			background.
+			Enables interrupt driven buffered uart using circular buffer.
+			Enables fast writes without having to wait for the data to be
+			sent. All data is instead sent in the background.
 
 	config UART0_TX_BUF_SIZE
 		depends on BUFFERED_UART
 		default 32
-		int "Uart TX buffer size (power of 2!)
+		int "Uart TX buffer size (power of 2!)"
 		help
-			Set the size of the outgoing data buffer in bytes. If you enter value that is not
-			power of two, the value will be increased so that it becomes power of 2 in code (for
-			fast modulo operation)
+			Set the size of the outgoing data buffer in bytes. If you
+			enter value that is not power of two, the value will be
+			increased so that it becomes power of 2 in code (for fast
+			modulo operation)
 
 	config UART0_RX_BUF_SIZE
 		depends on BUFFERED_UART
 		default 32
-		int "Uart RX buffer size (power of 2!)
+		int "Uart RX buffer size (power of 2!)"
 		help
 			Set the size of the incoming buffer for received data.
 

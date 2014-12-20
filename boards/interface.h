@@ -36,7 +36,7 @@ struct fc_quad_interface {
 	int16_t			(*read_pressure)(struct fc_quad_interface *self);
 	int16_t 		(*read_temperature)(struct fc_quad_interface *self);
 
-	void 				(*read_receiver)(struct fc_quad_interface *self,
+	uint8_t 				(*read_receiver)(struct fc_quad_interface *self,
 		uint16_t *rc_thr, uint16_t *rc_pitch, uint16_t *rc_yaw, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1); 
 	void				(*write_motors)(struct fc_quad_interface *self,

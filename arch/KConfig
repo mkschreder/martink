@@ -1,4 +1,6 @@
 menu "Hardware"
+	config HAVE_ADC
+		bool
 	config HAVE_UART 
 		bool
 	config HAVE_UART0

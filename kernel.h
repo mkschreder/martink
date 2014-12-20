@@ -30,7 +30,7 @@
 
 //#include "accel_docalibration.h"
 
-
+/*
 #ifdef CONFIG_SSD1306
 #include "disp/ssd1306.h"
 #endif
@@ -166,15 +166,10 @@
 #include "disp/ssd1306_priv.h"
 #endif
 
-//#include "stepper02.h"
-//#include "stepper04multi.h"
-#if defined(CONFIG_TCPIP) | defined(CONFIG_TCP) | defined(CONFIG_UDP)
-#include "net/tcpip.h"
-#endif
-
 #ifdef CONFIG_VT100
 #include "tty/vt100.h"
 #endif
+*/
 
 #ifdef CONFIG_HAVE_UART
 	#define kprintf(a, ...) uart0_printf(a, ##__VA_ARGS__) 

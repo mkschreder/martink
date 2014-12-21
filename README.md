@@ -22,17 +22,18 @@ LibK provides a framework for solving all of these problems. It comes with speci
 Building
 --------------
 
+Building libk can be a little tricky for a first timer. It is usually easier to call libk Makefile from within your own application Makefile. For how to do this, you can have a look at quadcopter example project using libk: 
+
+[https://github.com/mkschreder/bettercopter](https://github.com/mkschreder/bettercopter)
+
 To build with LibK you need to make sure that you have necessary toolchain installed for your architecture. For avr it's avr-gcc, for arm it's either arm-none-eabi-* or arm-linux-eabi-* packages. You also need libncurses-dev (for menuconfig). 
 
-You can then start build process like this: 
+You can then build the library like this: 
 
     make menuconfig
-    make
+    make build
 
 If everything goes well, the file that will be built will be libk.a. This is a library that you will then link your application with. It is often easier to integrate the build process for libk into the build process for your project. It is also good to make a symbolik link to libk code directory directly inside your project directory. This way you don't have to keep track of multiple copies of libk.
-
-For an example on how to integrate the two build processes using make, you can check out my quadcopter controller project based on libk here: 
-Example project: https://github.com/mkschreder/bettercopter
 
 Supported architectures
 ------------------

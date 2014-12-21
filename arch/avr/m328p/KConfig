@@ -1,7 +1,10 @@
 choice 
 	prompt "AVR Model" 
 	default ATMEGA328P
-	
+
+	config AVRMEGA
+		bool
+		
 	config ATMEGA328P
 		depends on AVR
 		select HAVE_ADC
@@ -16,11 +19,114 @@ choice
 		select HAVE_TIMER1
 		select HAVE_TIMER2
 		bool "AVR ATMega328P"
+
+	config ATMEGA103
+		depends on AVR
+		select HAVE_ADC
+		select HAVE_UART
+		select HAVE_UART0
+		select HAVE_I2C
+		select HAVE_TWI
+		select HAVE_TWI0
+		select HAVE_SPI
+		select HAVE_SPI0
+		select HAVE_TIMER0
+		select HAVE_TIMER1
+		select HAVE_TIMER2
+		bool "AVR ATMega103"
 		
 	config ATMEGA88
 		depends on AVR
+		select HAVE_ADC
+		select HAVE_UART
+		select HAVE_UART0
+		select HAVE_I2C
+		select HAVE_TWI
+		select HAVE_TWI0
+		select HAVE_SPI
+		select HAVE_SPI0
+		select HAVE_TIMER0
+		select HAVE_TIMER1
+		select HAVE_TIMER2
 		bool "AVR ATMega88"
 
+	config ATMEGA128
+		depends on AVR
+		select HAVE_ADC
+		select HAVE_UART
+		select HAVE_UART0
+		select HAVE_I2C
+		select HAVE_TWI
+		select HAVE_TWI0
+		select HAVE_SPI
+		select HAVE_SPI0
+		select HAVE_TIMER0
+		select HAVE_TIMER1
+		select HAVE_TIMER2
+		bool "AVR ATMega128"
+
+	config ATMEGA168
+		depends on AVR
+		select HAVE_ADC
+		select HAVE_UART
+		select HAVE_UART0
+		select HAVE_I2C
+		select HAVE_TWI
+		select HAVE_TWI0
+		select HAVE_SPI
+		select HAVE_SPI0
+		select HAVE_TIMER0
+		select HAVE_TIMER1
+		select HAVE_TIMER2
+		bool "AVR ATMega168"
+
+	config ATMEGA2560
+		depends on AVR
+		select HAVE_ADC
+		select HAVE_UART
+		select HAVE_UART0
+		select HAVE_UART1
+		select HAVE_UART2
+		select HAVE_I2C
+		select HAVE_TWI
+		select HAVE_TWI0
+		select HAVE_SPI
+		select HAVE_SPI0
+		select HAVE_TIMER0
+		select HAVE_TIMER1
+		select HAVE_TIMER2
+		bool "AVR ATMega2560"
+
+	config ATMEGA644
+		depends on AVR
+		select HAVE_ADC
+		select HAVE_UART
+		select HAVE_UART0
+		select HAVE_UART1
+		select HAVE_I2C
+		select HAVE_TWI
+		select HAVE_TWI0
+		select HAVE_SPI
+		select HAVE_SPI0
+		select HAVE_TIMER0
+		select HAVE_TIMER1
+		select HAVE_TIMER2
+		bool "AVR ATMega644"
+
+	config ATMEGA48
+		depends on AVR
+		select HAVE_ADC
+		select HAVE_UART
+		select HAVE_UART0
+		select HAVE_I2C
+		select HAVE_TWI
+		select HAVE_TWI0
+		select HAVE_SPI
+		select HAVE_SPI0
+		select HAVE_TIMER0
+		select HAVE_TIMER1
+		select HAVE_TIMER2
+		bool "AVR ATMega48"
 endchoice 
 
 menu "Configure ATMega328P driver"

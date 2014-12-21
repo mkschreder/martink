@@ -54,7 +54,7 @@ extern "C" {
 
 #define __init __attribute__((constructor))
 
-#ifdef CONFIG_ATMEGA328P
+#ifdef CONFIG_AVR
 #include "avr/m328p.h"
 #endif
 

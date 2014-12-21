@@ -2,7 +2,7 @@ obj-y += \
 arch/time.o arch/soc.o arch/uart.o arch/spi.o \
 arch/twi.o arch/gpio.o
 
-ifeq ($(CONFIG_ATMEGA328P), y)
+ifeq ($(CONFIG_AVR), y)
 	include $(srctree)/arch/avr/m328p/Makefile
 endif
 

@@ -268,9 +268,9 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 
 	static inline timestamp_t tsc_read(void){
 		timestamp_t time; 
-		//ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
 			time = TCNT1 + _tsc_ovf * 65535L;
-		//}
+		}
 		return time;
 	}
 

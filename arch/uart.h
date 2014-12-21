@@ -36,9 +36,10 @@ extern FILE *uart0_fd;
 void uart0_init(uint32_t baudrate);
 
 size_t uart0_puts(const char *s );
+uint16_t uart0_printf(const char *fmt, ...); 
 
-#define uart0_printf(format, ...) fprintf((uart0_fd), format, ## __VA_ARGS__)
-#define uart0_puts(str) fputs(str, uart0_fd)
+//#define uart0_printf(format, ...) fprintf((uart0_fd), format, ## __VA_ARGS__)
+//#define uart0_puts(str) fputs(str, uart0_fd)
 
 #define UART_PARITY_ERROR			SERIAL_PARITY_ERROR
 #define UART_FRAME_ERROR      SERIAL_FRAME_ERROR              

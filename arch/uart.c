@@ -82,8 +82,8 @@ size_t _uart0_getn(struct serial_interface *self, uint8_t *s, size_t c)
 	}
 	return t; 
 }
-/*
-size_t _uart0_puts(const char *s )
+
+size_t uart0_puts(const char *s )
 {
 	size_t count = 0; 
 	while (*s) {
@@ -94,8 +94,7 @@ size_t _uart0_puts(const char *s )
 }
 
 uint16_t uart0_printf(const char *fmt, ...){
-	
-	char buf[uart0_tx_buf.total_size * 2]; 
+	char buf[64]; 
 	
 	uint16_t n; 
 	va_list vl; 
@@ -105,4 +104,4 @@ uint16_t uart0_printf(const char *fmt, ...){
 	uart0_puts(buf);
 	return n; 
 }
-*/
+

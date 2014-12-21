@@ -141,6 +141,22 @@ err_t RecvUTPCallBack(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip
 }
 */
 void mwii_init(void){
+	// disable external ints
+	EICRA = 0;
+	EIMSK = 0;
+	
+	uart0_init(38400);
+	
+	sei(); 
+	
+	timestamp_init(); 
+	
+	uart0_puts("booting..\n"); 
+	delay_us(5000); 
+	
+	twi0_init_default(); 
+	spi0_init(); 
+	
 	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
 	//gpio_set(GPIO_MWII_LED); 
 	
@@ -156,20 +172,6 @@ void mwii_init(void){
 
 	brd->gpio0 = gpio_get_parallel_interface();
 	
-	// disable external ints
-	EICRA = 0;
-	EIMSK = 0;
-	
-	sei(); 
-	
-	timestamp_init(); 
-	uart0_init(38400);
-	
-	uart0_puts("booting..\n"); 
-	
-	twi0_init_default(); 
-	spi0_init(); 
-
 	if(!twi_get_interface(0, &brd->twi0)){
 		uart0_puts("NO I2C!\n"); 
 		while(1); 
@@ -188,9 +190,9 @@ void mwii_init(void){
 	pwm4_enable();
 	pwm5_enable();
 	
-	int16_t pres = bmp085_read_pressure(&brd->bmp); 
+	long pres = bmp085_read_pressure(&brd->bmp); 
 	int16_t temp = bmp085_read_temperature(&brd->bmp); 
-	uart0_printf("Pressure: %d\n", pres); 
+	uart0_printf("Pressure: %lu\n", pres); 
 	uart0_printf("Temperature: %d\n", temp); 
 	
 	uart0_puts("multiwii board!\n");
@@ -315,32 +317,3 @@ struct fc_quad_interface mwii_get_fc_quad_interface(void){
 	}; 
 }
 
-/*
-void mwii_write_pin(uint8_t pin, uint16_t value){
-	if(pin == LED_PIN) {
-		if(value) PORTB |= _BV(5); 
-		else PORTB &= ~_BV(5); 
-	} else if(pin == MWII_PWM_FRONT){
-		pwm0_set(value); 
-	} else if(pin == MWII_PWM_BACK){
-		pwm1_set(value); 
-	} else if(pin == MWII_PWM_LEFT){
-		pwm4_set(value); 
-	} else if(pin == MWII_PWM_RIGHT){
-		pwm5_set(value); 
-	} 
-}
-
-uint16_t mwii_read_pin(uint8_t pin){
-	if(pin >= MWII_RC_IN0 && pin <= MWII_RC_IN4){
-		uint16_t val;
-		//ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-			val = brd->rc_value[pin - MWII_RC_IN0]; 
-		//}
-		if(val > RC_MAX) return RC_MAX; 
-		if(val < RC_MIN) return RC_MIN; 
-		return val; 
-	}
-	return 0; 
-}
-*/

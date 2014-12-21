@@ -7,6 +7,8 @@ For documentation check out the following pages:
 
 * [Detailed hardware and api documentation for libk](https://github.com/mkschreder/martink/tree/master/doc/)
 
+It is distributed under the GNU General Public License - see the accompanying LICENSE.txt file for more details.
+  
 It is designed for microcontrollers, flash based system on chip devices, small controllers with under 10kb of flash, controllers with as little as 2kb of ram, arm chips and avr chips. For many small devices linux simply does not work. What you wish you had is a library that makes it easy for you to write reusable code and abstracts away the absolutely lowest levels of hardware interaction with minimal overhead. 
 
 Do you ever have problems with figuring out how to use 'UDSR' or 'UCR' or 'BCC' or any other obscure register just to get some piece of hardware configured correctly? Do you ever always have datasheet open for the cpu you are working on just because you can't remember which bits in what registers you need to set?

@@ -39,27 +39,3 @@ Below is an illustration of how the code is structured. Not all documentation is
 	<tr><td text-align="center" colspan="2"> <a href="arch.md">Architecture specific macro layer</a> </td></tr>
 	<tr><td text-align="center" colspan="2"> Memory load and store to peripheral registers</td></tr>
 </table>
-
-LibK license?
--------------
-
-LibK is licensed under GPLv3. But with a few clarifications.
-
-First of all, just like on linux, for maximum flexibility we need you to feel that it's ok for you to build software that makes system calls into LibK without having to release source code to that software. But it should also be clear that any extensions or contributions to LibK must comply with GPLv3 and be open source. Therefore a few clarifications have been added. 
-
-- You may build software on top of LibK without having to release source code to that software as long as:
-	- all calls made to libk from your program only go one way into libk without any code from any of libk modules calling any callbacks that reside in your main application. Code that does this usually implements some device driver or an interface anyway, and thus belongs in libk itself and should thus be submitted to the main repository. The situation of libk calling back into your code occurs for instance when you write a custom device driver that exports one of libk's standard interfaces and then you pass that interface to another driver within libk. If you want to use LibK in this way, you need to either comply with GPLv3 and make it open source or purchase consulting from us and get code for free. For contributions to libk made by others, special rules may apply (ie that some code may only be used in open source context). To be really sure, follow guidelines listed below. 
-- if you write code that implements device support, you should submit it into the main tree. 
-- if you make any changes or improvements to link, you should submit pull request to get it merged into main tree as well. 
-- you can not take code from libk and make it part of an exclusively closed source project. 
-- you can purchase consulting and you will get code for free. Send a request to info@fortmax.se.
-- all code within libk, and all code that it calls directly or through a callback is released without warranty and under the terms of gnu public license. 
-
-To achieve the best balance between project interests and your own business interests, here is what you can do:
-
-- implement support for your hardware as a board driver, submit this driver into the public tree.
-- if you find open source code, manufacturer code, or any other library or your own code that implements hardware support for some sort of device that you want to use on your board, submit it also to the public tree. 
-- write your application so that it accesses all required services through the board driver which you have open sourced earlier (or which probably already was open source code when you started anyway - due to it usually being released as such from the manufacturer). Following these guidelines, you can keep your actual application safely separated from libk and use any licensing terms you want for code that belongs strictly to your specific project.
-
-Fortmax reserve the right to make any changes to these terms as we deem necessary in order to achive the best possible balance between the open source nature of the project and your need to keep some parts of your application private. 
-

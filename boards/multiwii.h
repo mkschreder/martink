@@ -66,6 +66,12 @@ enum {
 	RC_MODE2		= 5
 };
 
+// flight controller interface
+#define fc_init() mwii_init()
+#define fc_process_events() mwii_process_events()
+#define fc_get_interface() mwii_get_fc_quad_interface()
+#define FC_LED_PIN MWII_LED_PIN
+
 /*
 enum {
 	RC_IN0 = 0, 

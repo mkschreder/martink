@@ -22,17 +22,15 @@
 #pragma once
 
 
-/** defines the data direction (reading from I2C device) in i2c_start(),i2c_rep_start() */
-#define I2C_READ    1
+extern void 		twi0_init_default(void);
 
-/** defines the data direction (writing to I2C device) in i2c_start(),i2c_rep_start() */
-#define I2C_WRITE   0
+/// address is the first byte of data
+void 		twi0_start_write(uint8_t addr, uint8_t *data, uint8_t data_sz);
+/// address is the first byte of data
+void 		twi0_start_read(uint8_t addr, uint8_t *data, uint8_t data_sz);
 
-void __twi0_init__(void);
-void __twi0_stop__(void);
-unsigned char __twi0_start__(unsigned char addr);
-unsigned char __twi0_rep_start__(unsigned char addr);
-unsigned char __twi0_start_wait__(unsigned char addr);
-unsigned char __twi0_write__(unsigned char data);
-unsigned char __twi0_readAck__(void);
-unsigned char __twi0_readNak__(void);
+/// sends stop signal on the bus
+void twi0_stop(void);
+
+/// returns 1 if twi bus is processing another transaction
+uint8_t twi0_busy(void);

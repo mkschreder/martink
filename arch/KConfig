@@ -51,7 +51,7 @@ menu "Hardware"
 	endchoice 
 		
 	menu "Processor type"
-		source arch/avr/m328p/KConfig
+		source arch/avr/mega/KConfig
 		source arch/arm/KConfig
 		source arch/native/KConfig
 	endmenu

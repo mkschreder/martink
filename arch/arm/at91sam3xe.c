@@ -128,7 +128,7 @@ void cpu_init(void)
    * GCC libc init, also done in Reset_Handler()
    */
 }
-
+/*
 timeout_t time_get_clock(void){
 	return GetTickCount(); 
 }
@@ -261,11 +261,7 @@ uint8_t gpio_is_valid(gpio_pin_t pin){
 }
 
 void 		gpio_write_pin(gpio_pin_t pin, uint8_t value){
-	/*if(value){
-		gpio_set(pin); 
-	} else {
-		gpio_clear(pin); 
-	}*/
+
 	//if(!gpio_is_valid(pin)) return; 
 	struct PinDecl *p = &_pins[pin]; 
 	if(value != 0)
@@ -294,3 +290,4 @@ void 		gpio_set_pullup(gpio_pin_t pin, uint8_t pullup){
 	
 }
 
+*/

@@ -1,7 +1,7 @@
 #pragma once 
 
 extern void cpu_init(void); 
-
+/*
 #define GPIO_NONE					-1
 #define GPIO_PA0          0
 #define GPIO_PA1          1
@@ -110,11 +110,6 @@ extern void cpu_init(void);
 
 typedef uint16_t gpio_pin_t; 
 
-/***************
- * These are static macros that are 10x faster than a method call
- * BUT this only is faster for pins known at compile time! 
- **********/ 
- 
 #define GPPIO(pin) ((pin >= 0 && pin <= 31)?PIOA:(\
 	(pin >= 32 && pin <= 63)?PIOB:(\
 	(pin >= 64 && pin <= 94)?PIOC:(\
@@ -125,3 +120,4 @@ typedef uint16_t gpio_pin_t;
 #define gpio_set(pin) {GPPIO(pin)->PIO_SODR = GPMASK(pin);}
 #define gpio_clear(pin) {GPPIO(pin)->PIO_CODR = GPMASK(pin);}
 #define gpio_read(pin) ((GPPIO(pin)->PIO_ODSR & GPMASK(pin))?1:0)
+*/

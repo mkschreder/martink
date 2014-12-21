@@ -19,8 +19,6 @@
 	Github: https://github.com/mkschreder
 */
 
-#include <avr/io.h>
-
 #include <arch/soc.h>
 
 #define DEVICE_CAST(from, to) struct twi_device *to = container_of(from, struct twi_device, interface);  

@@ -69,7 +69,7 @@ extern uint32_t TimeTick_Configure( uint32_t dwNew_MCK ) ;
 
 extern void TimeTick_Increment( void ) ;
 
-extern uint32_t GetTickCount( void ) ;
+extern int32_t GetTickCount( void ) ;
 
 extern void Wait( volatile uint32_t dwMs ) ;
 

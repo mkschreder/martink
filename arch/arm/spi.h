@@ -1,8 +1,19 @@
 #pragma once
 
-#ifndef CONFIG_SPI0_NAME
-#define CONFIG_SPI0_NAME spi0
-#endif
+void hwspi0_init_default(void); 
 
-void PFDECL(CONFIG_SPI0_NAME, init, void);
-uint8_t PFDECL(CONFIG_SPI0_NAME, writereadbyte, uint8_t b); 
+#define hwspi0_wait_for_transmit_complete() ({\
+	while ((SPI0->SPI_SR & SPI_SR_TDRE) == 0);\
+})
+
+#define hwspi0_putc(ch) (\
+	hwspi0_wait_for_transmit_complete(),\
+	SPI0->SPI_TDR = ch\
+)
+
+#define hwspi0_getc(ch) (\
+	hwspi0_wait_for_transmit_complete(),\
+	SPI0->SPI_RDR & 0xff \
+)
+
+uint8_t hwspi0_transfer(uint8_t data); 

@@ -27,6 +27,7 @@
 
 #include <static_cbuf.h>
 
+#ifdef CONFIG_AVR
 static FILE _fd; 
 FILE *uart0_fd = &_fd;
 
@@ -37,11 +38,12 @@ int _uart0_fd_get(FILE *fd){
 int _uart0_fd_put(char data, FILE *fd){
 	return uart0_putc(data);
 }
+#endif
 
 void uart0_init(uint32_t baudrate) {
 	uart0_init_default(baudrate);
-	uart0_fd->get = _uart0_fd_get;
-	uart0_fd->put = _uart0_fd_put; 
+	//uart0_fd->get = _uart0_fd_get;
+	//uart0_fd->put = _uart0_fd_put; 
 }
 
 /// *************************

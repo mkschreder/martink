@@ -22,9 +22,6 @@
 
 #include "autoconf.h"
 
-#define SPI_DEVICE_INTERFACE(spi_device) CONSTRUCT_SERIAL_INTERFACE(spi_device)
-
-DECLARE_SERIAL_INTERFACE(CONFIG_SPI0_NAME); 
 /*
 extern uint16_t PFDECL(CONFIG_SPI0_NAME, waiting, void); 
 extern uint16_t PFDECL(CONFIG_SPI0_NAME, getc, void);

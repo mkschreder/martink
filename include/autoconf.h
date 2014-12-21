@@ -2,67 +2,40 @@
  * Automatically generated C config: don't edit
  * version: 
  */
-#define AUTOCONF_TIMESTAMP "2014-12-21 01:41:39 CET"
+#define AUTOCONF_TIMESTAMP "2014-12-21 16:03:58 CET"
 
 
 /*
  * Hardware
  */
-#define CONFIG_HAVE_ADC 1
 #define CONFIG_HAVE_UART 1
 #define CONFIG_HAVE_UART0 1
 #define CONFIG_HAVE_SPI 1
 #define CONFIG_HAVE_SPI0 1
 #define CONFIG_HAVE_TWI 1
 #define CONFIG_HAVE_TWI0 1
-#define CONFIG_HAVE_TIMER0 1
-#define CONFIG_HAVE_TIMER1 1
-#define CONFIG_HAVE_TIMER2 1
-#define CONFIG_AVR 1
+#define CONFIG_ARM 1
 
 /*
  * Processor type
  */
-#define CONFIG_ATMEGA328P 1
-
-/*
- * Configure ATMega328P driver
- */
-
-/*
- * ATmega328P general options
- */
-#define CONFIG_TIMESTAMP_COUNTER 1
-#define CONFIG_GPIO_PIN_STATES 1
-
-/*
- * UART Config ---
- */
-#define CONFIG_BUFFERED_UART 1
-#define CONFIG_UART0_TX_BUF_SIZE 32
-#define CONFIG_UART0_RX_BUF_SIZE 32
-#define CONFIG_UART0_NAME uart0
+#define CONFIG_UART0_TX_BUF_SIZE 0
+#define CONFIG_UART0_RX_BUF_SIZE 0
+#define CONFIG_UART0_NAME 
 #define CONFIG_UART1_NAME 
 #define CONFIG_UART2_NAME 
-
-/*
- * SPI config ---
- */
-#define CONFIG_SPI0_NAME spi0
+#define CONFIG_SPI0_NAME 
 #define CONFIG_SPI1_NAME 
 #define CONFIG_SPI2_NAME 
-
-/*
- * I2C/TWI config ---
- */
-#define CONFIG_TWI0_NAME twi0
+#define CONFIG_TWI0_NAME 
 #define CONFIG_TWI1_NAME 
+#define CONFIG_AT91SAM3 1
 
 /*
  * Board support
  */
-#define CONFIG_BOARD_MULTIWII 1
-#define CONFIG_MULTIWII_ACC mpu6050
+#define CONFIG_BOARD_ARDUINO_DUE 1
+#define CONFIG_MULTIWII_ACC 
 
 /*
  * Device driver support

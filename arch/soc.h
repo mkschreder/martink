@@ -55,7 +55,7 @@ extern "C" {
 #define __init __attribute__((constructor))
 
 #ifdef CONFIG_AVR
-#include "avr/m328p.h"
+#include "avr/mega.h"
 #endif
 
 #ifdef CONFIG_ARM
@@ -148,7 +148,7 @@ extern const struct d_soc cpu;
 #define PSTR(a) (a)
 #define pgm_read_byte(a) (*a)
 #define pgm_read_word(a) (*((short int*)a))
-#define pgm_read_word(a) (*((short int*)a))
+#define pgm_read_float(a) (*((float*)a))
 #endif
 
 #ifdef __cplusplus

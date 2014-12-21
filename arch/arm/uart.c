@@ -52,7 +52,7 @@ void UART0_Handler(void) {
    }*/
 }
 
-void PFDECL(CONFIG_UART0_NAME, init, uint32_t baud){
+void uart0_init_default(uint16_t baud){
 	pmc_enable_periph_clk(ID_PIOA);
   pmc_enable_periph_clk(ID_USART0);
 	PIO_Configure(PIOA,PIO_PERIPH_A,(PIO_PA10A_RXD0|PIO_PA11A_TXD0),PIO_DEFAULT);
@@ -69,6 +69,7 @@ size_t PFDECL(CONFIG_UART0_NAME, write, const uint8_t *data, size_t max_size){
 	for(int c = 0; c < max_size; c++){
 		USART_PutChar(USART0, data[c]); 
 	}
+	return max_size; 
 	//return USART_WriteBuffer(USART0, data, max_size);
 }
 

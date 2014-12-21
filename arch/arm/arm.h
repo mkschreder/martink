@@ -34,3 +34,5 @@
 #include "twi.h"
 #include "spi.h"
 #include "gpio.h"
+#include "time.h"
+#include "adc.h"

@@ -43,7 +43,7 @@
  *----------------------------------------------------------------------------*/
 
 /** Tick Counter united by ms */
-static volatile uint32_t _dwTickCount=0 ;
+static volatile int32_t _dwTickCount=0 ;
 
 /*----------------------------------------------------------------------------
  *         Exported Functions
@@ -73,7 +73,7 @@ extern uint32_t TimeTick_Configure( uint32_t dwNew_MCK )
 /**
  *  \brief Get current Tick Count, in ms.
  */
-extern uint32_t GetTickCount( void )
+extern int32_t GetTickCount( void )
 {
     return _dwTickCount ;
 }
@@ -115,17 +115,3 @@ extern void Sleep( volatile uint32_t dwMs )
         __WFI() ;
     } while( 1 ) ;
 }
-/*
-uint32_t time_get_clock(){
-	return GetTickCount(); 
-}
-
-uint32_t time_us_to_clock(uint32_t us){
-	return us / 1000; 
-}
-
-
-uint32_t time_clock_to_us(uint32_t clock){
-	return clock * 1000; 
-}
-*/

@@ -21,6 +21,8 @@
 
 #pragma once 
 
+#include "interface.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,43 +32,17 @@ extern "C" {
 #define PWM_MIN MINCOMMAND
 #define PWM_MAX 2000
 
-void get_accelerometer(float *x, float *y, float *z); 
-void get_gyroscope(float *x, float *y, float *z); 
-void get_magnetometer(int16_t *x, int16_t *y, int16_t *z); 
-void get_altitude(int16_t *alt);
-void get_pressure(int16_t *pres);
-void get_temperature(int16_t *temp);
-uint8_t get_rc_commands(int16_t *throt, int16_t *yaw, int16_t *pitch, int16_t *roll); 
+void due_init(void); 
+void due_process_events(void);
+struct fc_quad_interface due_get_fc_quad_interface(void);
 
-enum {
-	RC_IN0 = 0, 
-	RC_IN1, 
-	RC_IN2, 
-	RC_IN3, 
-	RC_IN4, 
-	RC_IN5, 
-	PWM_FRONT, 
-	PWM_BACK, 
-	PWM_LEFT, 
-	PWM_RIGHT, 
-	PWM_GIMBAL,
-	PWM_COUNT, 
-	LED_PIN
-}; 
+#define DUE_LED_PIN GPIO_PB5
 
-enum {
-	RC_THROTTLE = RC_IN0, 
-	RC_YAW 			= RC_IN1, 
-	RC_PITCH 		= RC_IN2,
-	RC_ROLL 		= RC_IN3,
-	RC_MODE 		= RC_IN4
-}; 
-
-void brd_init(void); 
-void brd_process_events(void); 
-
-void set_pin(uint8_t pin, uint16_t value);
-uint16_t get_pin(uint8_t pin);
+// flight controller interface
+#define fc_init() due_init()
+#define fc_process_events() due_process_events()
+#define fc_get_interface() due_get_fc_quad_interface()
+#define FC_LED_PIN DUE_LED_PIN
 
 #ifdef __cplusplus
 }

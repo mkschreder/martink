@@ -19,7 +19,7 @@
 #define SPI_MODE2 0x03
 #define SPI_MODE3 0x01
 
-void PFDECL(CONFIG_SPI0_NAME, init, void){
+void hwspi0_init_default(void){
 	pmc_enable_periph_clk(ID_SPI0);
 	
 	PIO_Configure(PIOA, PIO_PERIPH_A, PIO_MOSI, PIO_DEFAULT); 
@@ -36,7 +36,8 @@ void PFDECL(CONFIG_SPI0_NAME, init, void){
 	//SPI_ConfigureNPCS(SPI0, 0, SPI_BITS_8 | SCBR);
 }
 
-uint8_t PFDECL(CONFIG_SPI0_NAME, writereadbyte, uint8_t data){
+
+uint8_t hwspi0_transfer(uint8_t data){
 	uint32_t ch = 0;
 	uint32_t d = data | SPI_PCS(0);
 	/*if (_mode == SPI_LAST)

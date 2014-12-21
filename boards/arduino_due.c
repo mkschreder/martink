@@ -26,6 +26,8 @@
 #include <arch/soc.h>
 #include "../util.h"
 
+#include "interface.h"
+
 #include <sensors/hmc5883l.h>
 #include <sensors/bmp085.h>
 #include <sensors/mpu6050.h>
@@ -34,6 +36,9 @@
 
 #include <math.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define FRONT_PIN PD3
 #define RIGHT_PIN PB1
@@ -51,55 +56,78 @@
 const static uint16_t rc_defaults[6] = {1000, 1500, 1500, 1500, 1500, 1500}; 
 
 struct board {
-	volatile uint16_t pwm[6]; 
-	timeout_t rc_time[6]; 
-	uint16_t 	rc_value[6]; 
-	volatile timeout_t ch_timeout[6]; 
-	volatile timeout_t pwm_timeout; 
-	timeout_t signal_timeout; 
-	timeout_t last_rc_update; 
-	uint16_t pwm_pulse_delay_us; 
-	volatile uint8_t pwm_lock; 
+	uint16_t 				rc_values[6]; 
+	timestamp_t 		rc_reset_timeout; 
+	struct parallel_interface gpio0; 
+	struct bmp085 bmp;
+	struct mpu6050 mpu;
+	struct hmc5883l hmc; 
+	struct twi_device twi0; 
+	struct ssd1306 ssd;
+	struct fc_quad_interface interface; 
 }; 
 
 static struct board _brd; 
 static struct board *brd = &_brd; 
 
-void get_accelerometer(float *x, float *y, float *z){
+void _due_read_accelerometer(struct fc_quad_interface *self, float *x, float *y, float *z){
 	
 }
 
-void get_gyroscope(float *x, float *y, float *z){
+void _due_read_gyroscope(struct fc_quad_interface *self, float *x, float *y, float *z){
 	
 }
 
-void get_magnetometer(int16_t *x, int16_t *y, int16_t *z){
+void _due_read_magnetometer(struct fc_quad_interface *self, float *x, float *y, float *z){
 	
 }
 
-void get_altitude(int16_t *alt){
+int16_t _due_read_altitude(struct fc_quad_interface *self){
 	
 }
 
-void get_pressure(int16_t *pres){
+int16_t _due_read_pressure(struct fc_quad_interface *self){
 	
 }
 
-void get_temperature(int16_t *temp){
+int16_t _due_read_temperature(struct fc_quad_interface *self){
 	
 }
 
-uint8_t get_rc_commands(int16_t *throt, int16_t *yaw, int16_t *pitch, int16_t *roll){
+
+void _due_write_motors(struct fc_quad_interface *self,
+	uint16_t front, uint16_t back, uint16_t left, uint16_t right){
+	/*pwm0_set(front);
+	pwm1_set(back);
+	pwm4_set(left);
+	pwm5_set(right); */
+}
+
+uint8_t _due_read_receiver(struct fc_quad_interface *self, 
+		uint16_t *rc_thr, uint16_t *rc_pitch, uint16_t *rc_yaw, uint16_t *rc_roll,
+		uint16_t *rc_aux0, uint16_t *rc_aux1) {
+	*rc_thr = 		brd->rc_values[RC_THROTTLE]; 
+	*rc_pitch = 	brd->rc_values[RC_PITCH]; 
+	*rc_yaw = 		brd->rc_values[RC_YAW]; 
+	*rc_roll = 		brd->rc_values[RC_ROLL]; 
+	*rc_aux0 = 		brd->rc_values[RC_MODE]; 
+	*rc_aux1 = 		brd->rc_values[RC_MODE2];
+	
+	// prevent small changes when stick is not touched
+	if(abs(*rc_pitch - 1500) < 20) *rc_pitch = 1500; 
+	if(abs(*rc_roll - 1500) < 20) *rc_roll = 1500; 
+	if(abs(*rc_yaw - 1500) < 20) *rc_yaw = 1500;
+
 	return 0; 
 }
 
 void reset_rc(void){
 	for(int c = 0; c < 6; c++){
-		brd->rc_value[c] = rc_defaults[c]; 
+		brd->rc_values[c] = rc_defaults[c]; 
 	}
 }
 
-void brd_init(void){
+void due_init(void){
 	/* The general init (clock, libc, watchdog disable) */
   cpu_init();
  
@@ -119,9 +147,8 @@ void brd_init(void){
 	NVIC_DisableIRQ(USART0_IRQn);
 	NVIC_ClearPendingIRQ(USART0_IRQn);
 	NVIC_SetPriority(USART0_IRQn,5);
-	NVIC_EnableIRQ(USART0_IRQn);*/
+	NVIC_EnableIRQ(USART0_IRQn);
 
-  /* Board pin 13 == PB27 */
   PIO_Configure(PIOB, PIO_OUTPUT_1, PIO_PB27, PIO_DEFAULT);
   
   PIO_Configure(PIOA, PIO_PERIPH_A, PIO_PA13A_TXD1, PIO_DEFAULT);
@@ -149,25 +176,25 @@ void brd_init(void){
 
 	// Enable receiver and transmitter
 	USART1->US_CR = US_CR_RXEN | US_CR_TXEN ;
-
-	i2c_init(); 
+*/
+	twi0_init_default(); 
 	spi0_init(); 
 	
 	//struct nrf24l01 nrf1;  
 	//nrf24l01_init(&nrf1, &cpu.spi0, GPIO_PA15, GPIO_PD1); 
 	
-	gpio_set_function(GPIO_PB26, GP_OUTPUT); 
-	gpio_set_function(GPIO_PA16, GP_OUTPUT); 
+	gpio_configure(GPIO_PB26, GP_OUTPUT); 
+	gpio_configure(GPIO_PA16, GP_OUTPUT); 
 	
   while(1) {
 		uint8_t buf[NRF24L01_PAYLOAD]; 
 		//nrf24l01_write(&nrf1, buf); 
 		
-    time_delay(250000L);
-    
-    i2c_start_wait(0x11 | I2C_WRITE);
-		i2c_write(0x40);
-		i2c_stop();
+    delay_us(250000L);
+
+    uint8_t data = 0x11; 
+    twi0_start_write(0x11, &data, 1);
+		twi0_stop();
 		
 		//spi0_writereadbyte(0x11); 
 		
@@ -180,7 +207,7 @@ void brd_init(void){
     USART_PutChar(USART1, 'D'); 
     //USART_PutChar(USART0, 'D'); 
     
-    if(gpio_read(GPIO_PB27)){
+    if(gpio_read_pin(GPIO_PB27)){
 			gpio_clear(GPIO_PB27); 
 		} else {
 			gpio_set(GPIO_PB27); 
@@ -188,27 +215,27 @@ void brd_init(void){
   }
 }
 
-void brd_process_events(void){
+void due_process_events(void){
 	
+}
+
+
+struct fc_quad_interface due_get_fc_quad_interface(void){
+	return (struct fc_quad_interface){
+		.read_accelerometer = _due_read_accelerometer,
+		.read_gyroscope = _due_read_gyroscope,
+		.read_magnetometer = _due_read_magnetometer,
+		.read_pressure = _due_read_pressure,
+		.read_altitude = _due_read_altitude,
+		.read_temperature = _due_read_temperature, 
+		.read_receiver = _due_read_receiver, 
+		.write_motors = _due_write_motors
+	}; 
 }
 
 static volatile uint8_t ch = 0; 
 
 
-void set_pin(uint8_t pin, uint16_t value){
-	if(pin == LED_PIN) {
-		if(value) PIOB->PIO_SODR = PIO_PB27; 
-		else PIOB->PIO_CODR = PIO_PB27; 
-	}
+#ifdef __cplusplus
 }
-
-uint16_t get_pin(uint8_t pin){
-	if(pin >= RC_IN0 && pin <= RC_IN4){
-		uint16_t val;
-		val = brd->rc_value[pin - RC_IN0]; 
-		if(val > RC_MAX) return RC_MAX; 
-		if(val < RC_MIN) return RC_MIN; 
-		return val; 
-	}
-	return 0; 
-}
+#endif

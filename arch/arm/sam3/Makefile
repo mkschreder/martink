@@ -17,13 +17,14 @@ LDFLAGS += \
 -Wl,--entry=Reset_Handler -Wl,--unresolved-symbols=report-all -Wl,--warn-common \
 -Wl,--warn-section-align  \
 
-EXTRALIBSS += $(curdir)/../../../lib/newlib-2.1.0/bin/arm-none-eabi/lib/libm.a \
-$(curdir)/../../../lib/newlib-2.1.0/bin/arm-none-eabi/lib/libc.a \
-$(curdir)/../../../lib/newlib-2.1.0/bin/arm-none-eabi/lib/libg.a \
+#EXTRALIBSS += $(curdir)/../../../lib/newlib-2.1.0/bin/arm-none-eabi/lib/libm.a \
+#$(curdir)/../../../lib/newlib-2.1.0/bin/arm-none-eabi/lib/libc.a \
+#$(curdir)/../../../lib/newlib-2.1.0/bin/arm-none-eabi/lib/libg.a \
 
 CPU_FLAGS := 
 
-COMMON_FLAGS += -DF_CPU=84000000L -DARDUINO=10600 -DARDUINO_SAM_DUE -DARDUINO_ARCH_SAM -D__SAM3X8E__ -DUSB_VID=0x2341 -DUSB_PID=0x003e -DUSBCON -DUSB_MANUFACTURER="Unknown" -DUSB_PRODUCT="Arduino Due" -I$(curdir)/CMSIS/sam/sam3xa/include/ -I$(curdir)/CMSIS/ -I$(curdir)/../../../lib/newlib-2.1.0/newlib/libc/include/
+COMMON_FLAGS += -DF_CPU=84000000L -DARDUINO=10600 -DARDUINO_SAM_DUE -DARDUINO_ARCH_SAM -D__SAM3X8E__ -DUSB_VID=0x2341 -DUSB_PID=0x003e -DUSBCON -DUSB_MANUFACTURER="Unknown" -DUSB_PRODUCT="Arduino Due" -I$(curdir)/CMSIS/sam/sam3xa/include/ -I$(curdir)/CMSIS/
+#-I$(curdir)/../../../lib/newlib-2.1.0/newlib/libc/include/
 #arm-none-eabi/include/ -I$(curdir)/../arm-none-eabi/gcc/arm-none-eabi/4.8.3/include/
 
 COMMON_FLAGS += --param max-inline-insns-single=500 -mcpu=cortex-m3 -mthumb -mlong-calls -ffunction-sections -fdata-sections -std=c99

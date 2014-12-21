@@ -32,18 +32,18 @@ void PFDECL(CONFIG_SPI0_NAME, init, void) {
 	hwspi0_init_default(); 
 }
 
-uint16_t PFDECL(CONFIG_SPI0_NAME, putc, struct serial_interface *self, uint8_t ch){
+uint16_t _spi0_putc(struct serial_interface *self, uint8_t ch){
 	uint8_t data = hwspi0_transfer(ch); 
 	cbuf_put(&spi0_rx_buf, data); 
 	return 0; 
 }
 
-uint16_t PFDECL(CONFIG_SPI0_NAME, getc, struct serial_interface *self) {
+uint16_t _spi0_getc(struct serial_interface *self) {
 	if(!cbuf_get_data_count(&spi0_rx_buf)) return SERIAL_NO_DATA; 
 	return cbuf_get(&spi0_rx_buf); 
 }
 
-size_t PFDECL(CONFIG_SPI0_NAME, putn, struct serial_interface *self, const uint8_t *data, size_t sz){
+size_t _spi0_putn(struct serial_interface *self, const uint8_t *data, size_t sz){
 	size_t size = sz; 
 	while(sz--){
 		hwspi0_transfer(*data++); 
@@ -51,7 +51,7 @@ size_t PFDECL(CONFIG_SPI0_NAME, putn, struct serial_interface *self, const uint8
 	return size; 
 }
 
-size_t PFDECL(CONFIG_SPI0_NAME, getn, struct serial_interface *self, uint8_t *data, size_t sz){
+size_t _spi0_getn(struct serial_interface *self, uint8_t *data, size_t sz){
 	size_t count = 0; 
 	while(sz--){
 		*data = hwspi0_transfer(0); 

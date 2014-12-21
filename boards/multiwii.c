@@ -155,10 +155,13 @@ void mwii_init(void){
 	delay_us(5000); 
 	
 	twi0_init_default(); 
-	spi0_init(); 
+	//spi0_init(); 
 	
 	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
-	//gpio_set(GPIO_MWII_LED); 
+	
+	uart0_printf("GPIO_LED %d, bit: %d, port: %p, portb: %p\n", 
+		GPIO_MWII_LED, PIDX(GPIO_MWII_LED), OREG(GPIO_MWII_LED), PORTB); 
+	gpio_set(GPIO_MWII_LED); 
 	
 	gpio_configure(GPIO_MWII_MOTOR0, GP_OUTPUT);
 	gpio_configure(GPIO_MWII_MOTOR1, GP_OUTPUT);

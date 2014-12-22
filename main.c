@@ -22,7 +22,7 @@
 #include "kernel.h"
 
 extern void app_init(void); 
-extern void app_loop(void); 
+extern void app_process_events(void); 
 
 int main(void){
 	/*struct ssd1306 ssd; 
@@ -69,7 +69,7 @@ int main(void){
 	
 	while(1){
 		//brd_process_events(); 
-		app_loop(); 
+		app_process_events(); 
 	}
 }
 

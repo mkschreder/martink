@@ -21,7 +21,7 @@
 
 ////// THIS IS ONLY A TEST FILE FOR TESTING //////
 
-#include "multiwii.h"
+#include "arduino_due.h"
 
 #include <arch/soc.h>
 #include "../util.h"
@@ -134,7 +134,7 @@ void due_init(void){
   //soc_init(&cpu); 
   
   uart0_init(38400); 
-  uart0_printf("Foo %d\n", 10); 
+  //uart0_printf("Foo %d\n", 10); 
 	
 	pmc_enable_periph_clk(ID_PIOA); 
 	pmc_enable_periph_clk(ID_PIOB); 
@@ -182,6 +182,8 @@ void due_init(void){
 	
 	//struct nrf24l01 nrf1;  
 	//nrf24l01_init(&nrf1, &cpu.spi0, GPIO_PA15, GPIO_PD1); 
+
+	gpio_configure(DUE_LED_PIN, GP_OUTPUT);
 	
 	gpio_configure(GPIO_PB26, GP_OUTPUT); 
 	gpio_configure(GPIO_PA16, GP_OUTPUT); 
@@ -196,21 +198,22 @@ void due_init(void){
     twi0_start_write(0x11, &data, 1);
 		twi0_stop();
 		
-		//spi0_writereadbyte(0x11); 
+		spi0_writereadbyte(0x11); 
 		
-		uart0_printf("Bar %d\r\n", 10); 
+		uart0_printf("Bar %d\r\n", 10);
+		uart1_putc('D'); 
 		///struct d_char *uart = &cpu.uart0; 
 		//uart->putc('D'); 
 		//cpu.uart0.putc('D'); 
 		//cpu.uart0.write("Test\n", 5); 
 		
-    USART_PutChar(USART1, 'D'); 
+    //USART_PutChar(USART1, 'D'); 
     //USART_PutChar(USART0, 'D'); 
     
-    if(gpio_read_pin(GPIO_PB27)){
-			gpio_clear(GPIO_PB27); 
+    if(gpio_read_pin(DUE_LED_PIN)){
+			gpio_clear(DUE_LED_PIN); 
 		} else {
-			gpio_set(GPIO_PB27); 
+			gpio_set(DUE_LED_PIN); 
 		}
   }
 }

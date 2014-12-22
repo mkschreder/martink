@@ -36,7 +36,7 @@ void due_init(void);
 void due_process_events(void);
 struct fc_quad_interface due_get_fc_quad_interface(void);
 
-#define DUE_LED_PIN GPIO_PB5
+#define DUE_LED_PIN GPIO_PB27
 
 // flight controller interface
 #define fc_init() due_init()

@@ -72,7 +72,7 @@ uint8_t twi_get_interface(uint8_t id, struct twi_device *dev){
 }
 
 
-void twi_init(){
+static void __init _twi_init(void){
 	kdebug("TWI: starting interfaces: ");
 #ifdef CONFIG_HAVE_TWI0
 	twi0_init_default(); kdebug("0 ");

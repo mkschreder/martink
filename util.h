@@ -21,6 +21,8 @@
 
 #pragma once 
 
+#include "autoconf.h"
+
 #define wrap_pi(x) (x < -M_PI ? x+M_PI*2 : (x > M_PI ? x - M_PI*2: x))
 
 inline long map(long x, long in_min, long in_max, long out_min, long out_max)
@@ -49,3 +51,16 @@ inline long constrain(long x, long a, long b){
         (type *)( (char *)__mptr - offsetof(type,member) );})
 
 #define __init __attribute__((constructor))
+
+#ifdef CONFIG_HAVE_UART
+	#define kprintf(a, ...) uart0_printf(a, ##__VA_ARGS__) 
+	
+	#ifdef CONFIG_DEBUG
+		#define kdebug(a, args...) uart0_printf(a, args) 
+	#else
+		#define kdebug(a, ...) {}
+	#endif
+#else 
+	#define kprintf(a, ...) {}
+	#define kdebug(a, ...) {}
+#endif

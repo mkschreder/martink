@@ -57,6 +57,6 @@ struct parallel_interface gpio_get_parallel_interface(void){
 	}; 
 }
 
-static void __init gpio_init(void){
+static void __init _gpio_init(void){
 	kdebug("GPIO: chip has %d gpio pins\n", GPIO_COUNT); 
 }

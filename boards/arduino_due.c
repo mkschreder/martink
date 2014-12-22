@@ -21,11 +21,6 @@
 
 ////// THIS IS ONLY A TEST FILE FOR TESTING //////
 
-<<<<<<< HEAD
-#include "arduino_due.h"
-
-=======
->>>>>>> d8a4d1ae669fa77367ff6ca26e2028f8c5b80a50
 #include <arch/soc.h>
 #include "../util.h"
 
@@ -135,15 +130,8 @@ void reset_rc(void){
 void due_init(void){
 	/* The general init (clock, libc, watchdog disable) */
   cpu_init();
-<<<<<<< HEAD
- 
-  //soc_init(&cpu); 
-  
-  uart0_init(38400); 
-  //uart0_printf("Foo %d\n", 10); 
-=======
+
 	timestamp_init(); 
->>>>>>> d8a4d1ae669fa77367ff6ca26e2028f8c5b80a50
 	
   //soc_init(&cpu); 
   /*

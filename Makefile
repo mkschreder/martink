@@ -76,6 +76,7 @@ fixdirs:
 	mkdir -p build
 	
 build: fixdirs fixdep check $(obj-y)
+	rm -f $(APPNAME)
 	ar rs $(APPNAME) $(obj-y)
 
 $(BUILD_DIR)/%.o: %.cpp .config

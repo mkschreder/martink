@@ -57,10 +57,10 @@ void uart0_init_default(uint16_t baud){
   pmc_enable_periph_clk(ID_USART0);
 	PIO_Configure(PIOA,PIO_PERIPH_A,(PIO_PA10A_RXD0|PIO_PA11A_TXD0),PIO_DEFAULT);
 	USART_Configure(USART0, USART_MODE_ASYNCHRONOUS, baud, SystemCoreClock);
-	USART_DisableIt(USART0,0xFFFFFFFF);
+	//USART_DisableIt(USART0,0xFFFFFFFF);
 	USART_SetTransmitterEnabled(USART0, 1);
 	USART_SetReceiverEnabled(USART0, 1);
-	USART_EnableIt(USART0,UART_IER_ENDRX);
+	//USART_EnableIt(USART0,UART_IER_ENDRX);
 }
 
 size_t PFDECL(CONFIG_UART0_NAME, write, const uint8_t *data, size_t max_size){
@@ -109,4 +109,17 @@ uint16_t PFDECL(CONFIG_UART0_NAME, printf, const char *fmt, ...){
 	PFCALL(CONFIG_UART0_NAME, write, buf, n); 
 	
 	return n; 
+}
+
+void uart1_init_default(uint16_t baud){
+	pmc_enable_periph_clk(ID_PIOA);
+  pmc_enable_periph_clk(ID_USART1);
+  PIO_Configure(PIOA, PIO_PERIPH_A, PIO_PA13A_TXD1, PIO_DEFAULT);
+  PIO_Configure(PIOA, PIO_PERIPH_A, PIO_PA12A_RXD1, PIO_DEFAULT);
+  
+	USART_Configure(USART1, USART_MODE_ASYNCHRONOUS, baud, SystemCoreClock);
+	//USART_DisableIt(USART0,0xFFFFFFFF);
+	USART_SetTransmitterEnabled(USART1, 1);
+	USART_SetReceiverEnabled(USART1, 1);
+	//USART_EnableIt(USART0,UART_IER_ENDRX);
 }

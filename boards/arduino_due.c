@@ -21,10 +21,10 @@
 
 ////// THIS IS ONLY A TEST FILE FOR TESTING //////
 
-#include "multiwii.h"
-
 #include <arch/soc.h>
 #include "../util.h"
+
+#include "arduino_due.h"
 
 #include "interface.h"
 
@@ -83,15 +83,15 @@ void _due_read_magnetometer(struct fc_quad_interface *self, float *x, float *y, 
 }
 
 int16_t _due_read_altitude(struct fc_quad_interface *self){
-	
+	return 0; 
 }
 
 int16_t _due_read_pressure(struct fc_quad_interface *self){
-	
+	return 0; 
 }
 
 int16_t _due_read_temperature(struct fc_quad_interface *self){
-	
+	return 0; 
 }
 
 
@@ -130,19 +130,32 @@ void reset_rc(void){
 void due_init(void){
 	/* The general init (clock, libc, watchdog disable) */
   cpu_init();
- 
-  //soc_init(&cpu); 
-  
-  uart0_init(38400); 
-  uart0_printf("Foo %d\n", 10); 
+	timestamp_init(); 
 	
+  //soc_init(&cpu); 
+  /*
 	pmc_enable_periph_clk(ID_PIOA); 
 	pmc_enable_periph_clk(ID_PIOB); 
 	pmc_enable_periph_clk(ID_PIOC); 
 	pmc_enable_periph_clk(ID_PIOD); 
   pmc_enable_periph_clk(ID_USART0);
   pmc_enable_periph_clk(ID_USART1);
+  pmc_enable_periph_clk(ID_TWI0);
+  pmc_enable_periph_clk(ID_TWI1);
+  */
   
+  gpio_configure(DUE_LED_PIN, GP_OUTPUT); 
+  
+  gpio_set(DUE_LED_PIN); 
+  Sleep(250); 
+  gpio_clear(DUE_LED_PIN); 
+  Sleep(250);
+  
+  uart0_init(38400); 
+  uart1_init(38400); 
+  
+  uart0_printf("Foo %d\n", 10); 
+	
 /*
 	NVIC_DisableIRQ(USART0_IRQn);
 	NVIC_ClearPendingIRQ(USART0_IRQn);
@@ -151,8 +164,12 @@ void due_init(void){
 
   PIO_Configure(PIOB, PIO_OUTPUT_1, PIO_PB27, PIO_DEFAULT);
   
+  PIO_Configure(PIOA, PIO_PERIPH_A, PIO_PA10A_RXD0, PIO_DEFAULT);
+  PIO_Configure(PIOA, PIO_PERIPH_A, PIO_PA11A_TXD0, PIO_DEFAULT);
   PIO_Configure(PIOA, PIO_PERIPH_A, PIO_PA13A_TXD1, PIO_DEFAULT);
   PIO_Configure(PIOA, PIO_PERIPH_A, PIO_PA12A_RXD1, PIO_DEFAULT);
+  PIO_Configure(PIOA, PIO_PERIPH_A, PIO_PA18A_TWCK0, PIO_DEFAULT);
+  PIO_Configure(PIOA, PIO_PERIPH_A, PIO_PA17A_TWD0, PIO_DEFAULT);
   
 	// Disable PDC channel
 	//USART1->US_PTCR = US_PTCR_RXTDIS | US_PTCR_TXTDIS ;
@@ -186,32 +203,40 @@ void due_init(void){
 	gpio_configure(GPIO_PB26, GP_OUTPUT); 
 	gpio_configure(GPIO_PA16, GP_OUTPUT); 
 	
+	gpio_set(DUE_LED_PIN); 
+  Sleep(250); 
+  gpio_clear(DUE_LED_PIN); 
+  Sleep(250);
+  
   while(1) {
 		uint8_t buf[NRF24L01_PAYLOAD]; 
 		//nrf24l01_write(&nrf1, buf); 
 		
-    delay_us(250000L);
-
     uint8_t data = 0x11; 
     twi0_start_write(0x11, &data, 1);
 		twi0_stop();
 		
-		//spi0_writereadbyte(0x11); 
+		hwspi0_transfer(0x11); 
 		
-		uart0_printf("Bar %d\r\n", 10); 
+		//uart0_printf("Bar %d\r\n", 10); 
 		///struct d_char *uart = &cpu.uart0; 
 		//uart->putc('D'); 
 		//cpu.uart0.putc('D'); 
 		//cpu.uart0.write("Test\n", 5); 
 		
-    USART_PutChar(USART1, 'D'); 
-    //USART_PutChar(USART0, 'D'); 
+    uart0_printf("Hello World!"); 
+    uart1_putc('D'); 
     
-    if(gpio_read_pin(GPIO_PB27)){
-			gpio_clear(GPIO_PB27); 
+    gpio_set(DUE_LED_PIN); 
+		Sleep(250); 
+		gpio_clear(DUE_LED_PIN); 
+		Sleep(250);
+/*
+    if(gpio_read_pin(DUE_LED_PIN)){
+			gpio_clear(DUE_LED_PIN); 
 		} else {
-			gpio_set(GPIO_PB27); 
-		}
+			gpio_set(DUE_LED_PIN); 
+		}*/
   }
 }
 

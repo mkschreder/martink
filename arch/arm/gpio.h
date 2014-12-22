@@ -21,10 +21,17 @@ enum {
 #undef P
 #undef PDEF
 
+
+#define PPIO_(pin) ((pin >= 0 && pin <= 31)?PIOA:(\
+	(pin >= 32 && pin <= 63)?PIOB:(\
+	(pin >= 64 && pin <= 94)?PIOC:(\
+	(pin >= 95 && pin <= 106)?PIOD:PIOD))))
+#define PPIO(pin) PPIO_((pin - 1))
+
 #define PIO_BANK(n) ((Pio*[]){PIOA, PIOB, PIOC, PIOD}[(n) & 0x03])
-#define PPIO(pin) (PIO_BANK((pin - 1) >> 5))
+//#define PPIO(pin) (PIO_BANK((pin - 1) >> 5))
 #define PIDX(pin) ((uint32_t)(pin - 1) & 0x1f)
-#define PMASK(pin) (1 << PIDX(pin))
+#define PMASK(pin) (uint32_t)(1 << PIDX(pin))
 //static inline uint8_t PIDX(uint16_t pin) {
 //	return ((1 << ((uint32_t)(pin - 1) & 0x1fL))
 
@@ -34,7 +41,7 @@ enum {
 
 #define gpio_configure(pin, fun) (\
 	((fun) & GP_OUTPUT)\
-		?PIO_Configure(PPIO(pin), PIO_OUTPUT_0, PMASK(pin), PIO_DEFAULT)\
+		?PIO_Configure(PPIO(pin), PIO_OUTPUT_1, PMASK(pin), PIO_DEFAULT)\
 		:PIO_Configure(PPIO(pin), PIO_INPUT, PMASK(pin), PIO_DEFAULT), \
 	(((fun) & GP_PULL) && ((fun) & GP_PULLUP))\
 		?PIO_PullUp(PPIO(pin), PMASK(pin), 1)\
@@ -46,7 +53,7 @@ enum {
 
 
 #define gpio_write_word(addr, value) (\
-	PIO_Set(PIO_BANK(addr), value), 0 \
+	(PIO_BANK(addr)->PIO_ODSR = value), 0 \
 )
 
 #define gpio_read_word(addr, value) (uint32_t)(\
@@ -54,7 +61,7 @@ enum {
 )
 
 #define gpio_write_pin(pin, val) (\
-	PIO_Set(PPIO(pin), PMASK(pin))\
+	(val)?PIO_Set(PPIO(pin), PMASK(pin)):PIO_Clear(PPIO(pin), PMASK(pin))\
 )
 
 #define gpio_read_pin(pin) (\

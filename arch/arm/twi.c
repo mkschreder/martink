@@ -35,10 +35,10 @@ void twi0_init_default(){
 	PIO_Configure(PIOA, PIO_PERIPH_A, 
 		(PIO_PA18A_TWCK0|PIO_PA17A_TWD0), PIO_DEFAULT); 
 	
-	NVIC_DisableIRQ(TWI0_IRQn);
-	NVIC_ClearPendingIRQ(TWI0_IRQn);
-	NVIC_SetPriority(TWI0_IRQn, 0);
-	NVIC_EnableIRQ(TWI0_IRQn);
+	//NVIC_DisableIRQ(TWI0_IRQn);
+	//NVIC_ClearPendingIRQ(TWI0_IRQn);
+	//NVIC_SetPriority(TWI0_IRQn, 0);
+	//NVIC_EnableIRQ(TWI0_IRQn);
 
 	TWI_ConfigureMaster(TWI0, 100000L, SystemCoreClock); 
 }

@@ -41,6 +41,8 @@ uint16_t uart0_printf(const char *fmt, ...);
 //#define uart0_printf(format, ...) fprintf((uart0_fd), format, ## __VA_ARGS__)
 //#define uart0_puts(str) fputs(str, uart0_fd)
 
+#define uart1_init(baud) uart1_init_default(baud)
+
 #define UART_PARITY_ERROR			SERIAL_PARITY_ERROR
 #define UART_FRAME_ERROR      SERIAL_FRAME_ERROR              
 #define UART_OVERRUN_ERROR    SERIAL_OVERRUN_ERROR              

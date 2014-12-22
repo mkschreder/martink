@@ -21,6 +21,7 @@
 
 void hwspi0_init_default(void){
 	pmc_enable_periph_clk(ID_SPI0);
+	pmc_enable_periph_clk(ID_PIOA);
 	
 	PIO_Configure(PIOA, PIO_PERIPH_A, PIO_MOSI, PIO_DEFAULT); 
 	PIO_Configure(PIOA, PIO_PERIPH_A, PIO_MISO, PIO_DEFAULT); 

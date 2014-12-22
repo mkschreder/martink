@@ -39,7 +39,7 @@ Supported architectures
 ------------------
 
 | Manufacturer | Chip | status |
-|==============|======|========|
+|--------------|------|--------|
 | Atmel | ATMega328p | my primary focus right now |
 | Atmel | AT91SAM3 ARM | my secondary focus but now yet fully supported |
 | ST | STM32F103 | peripheral library is included, but device interfaces not implemented yet |
@@ -49,7 +49,8 @@ Device driver support
 
 Device drivers in libk operate on a higher level than architecture code. So they are largely architecture agnostic. Device drivers typically use interfaces to access services provided by the architecture and they can also export interfaces to other drivers in order to eliminate dependencies between drivers on each other.
 
-| Device class | Device model | Support | Interfaces used | Interfaces exported | 
+| Device class | Device model | Support | Interfaces used | Interfaces exported |
+|--------------|--------------|---------|-----------------|---------------------| 
 | Board | Multiwii V2.5 | Supported | `flight_controller` interface | |
 | Board | Arduino Pro Mini | Supported | Architecture ATMega328p | |
 | Board | Stm32f103 development board | planned | | |
@@ -59,33 +60,35 @@ Device drivers in libk operate on a higher level than architecture code. So they
 | Display | Parallel LCD | Supported | parallel_interface | |
 | Display | 7 segment led | Supported | parallel_interface | |
 | Display | 8x8 Led matrix | Supported | parallel_interface | |
-| Display | ssd1306 OLED | Supported | packet_interface (i2c) | |
+| Display | ssd1306 OLED | Supported | i2c_interface | |
 | Filesystem |  | Planned | | |
-| HID | WiiNunchuck | Supported | packet_interface (i2c) | |
+| HID | WiiNunchuck | Supported | i2c_interface | |
 | IO | 74HC165 | Supported | serial_interface, parallel_interface | |
 | IO | 74HC4051 | Supported | parallel_interface | |
 | IO | 74HC595 | Supported | serial_interface, parallel_interface | |
-| IO | PCF8574 | Supported | packet_interface (i2c) | planned: parallel_interface |
-| NET | ENC28J60 Supported | serial_interface | planned: packet_interface |
-| NET | TCPIP | Supported | packet_interface | planned: serial_interface |
-| RADIO | NRF24L01 | Supported | serial_interface | planned: packet_interface |
-| SENSOR | ACS712 | (quarantine) | analog_interface | |
-| SENSOR | ADXL345 | (quarantine) | packet_interface (i2c) | |
-| SENSOR | AMT345 | (quarantine) | analog_interface | |
-| SENSOR | BH1750 | (quarantine) | packet_interface (i2c) | |
-| SENSOR | BMP085 | Supported | packet_interface (i2c) | |
-| SENSOR | DHT11 | (quarantine) | parallel_interface | |
-| SENSOR | DS18B20 | (quarantine) | parallel_interface | |
-| SENSOR | FS300A | (quarantine) | | |
-| SENSOR | HCSR04 | (quarantine) | parallel_interface | |
-| SENSOR | HMC5883L | Supported | packet_interface (i2c) | |
-| SENSOR | L3G4200D | (quarantine) | packet_interface (i2c) | |
-| SENSOR | LDR | (quarantine) | analog_interface | |
-| SENSOR | MMA7455 | (quarantine) | packet_interface (i2c) | |
-| SENSOR | MPU6050 | Supported | packet_interface (i2c)| |
-| SENSOR | NTCTEMP | (quarantine) | analog_interface | |
-| SENSOR | TSL235 | (quarantine) | | |
+| IO | PCF8574 | Supported | i2c_interface | planned: parallel_interface |
+| NET | ENC28J60 Supported | serial_interface | planned: i2c_interface |
+| NET | TCPIP | Supported | i2c_interface | planned: serial_interface |
+| RADIO | NRF24L01 | Supported | serial_interface | planned: i2c_interface |
+| SENSOR | ACS712 | Supported | analog_interface | |
+| SENSOR | ADXL345 | Supported | i2c_interface | |
+| SENSOR | AMT345 | Supported | analog_interface | |
+| SENSOR | BH1750 | Supported | i2c_interface | |
+| SENSOR | BMP085 | Supported | i2c_interface | |
+| SENSOR | DHT11 | Supported | parallel_interface | |
+| SENSOR | DS18B20 | Supported | parallel_interface | |
+| SENSOR | FS300A | Supported | | |
+| SENSOR | HCSR04 | Supported | parallel_interface | |
+| SENSOR | HMC5883L | Supported | i2c_interface | |
+| SENSOR | L3G4200D | Supported | i2c_interface | |
+| SENSOR | LDR | Supported | analog_interface | |
+| SENSOR | MMA7455 | Supported | i2c_interface | |
+| SENSOR | MPU6050 | Supported | i2c_interface| |
+| SENSOR | NTCTEMP | Supported | analog_interface | |
+| SENSOR | TSL235 | Supported | | |
 | TERMINAL | VT100 | Supported | framebuffer_interface | serial_interface |
+
+Drivers are tested on avr. Other architectures may not have full drivers support until there is stable architecture abstraction layer written for that architecture. 
 
 (devices marked as quarantine are drivers that have not been updated yet after changes to the core api. Code has been included in the source tree but it has not yet been updated to work nicely with other facilities of libk)
 

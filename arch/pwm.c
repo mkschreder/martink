@@ -45,3 +45,26 @@ struct pwm_interface pwm_get_interface(void){
 		.set_channel_period = _pwm_set_channel_period
 	}; 
 }
+
+static void __init pwm_init(void){
+	kdebug("PWM: starting channels: ");
+#ifdef pwm0_init
+	pwm0_init(); kdebug("0 ");
+#endif
+#ifdef pwm1_init
+	pwm1_init(); kdebug("1 ");
+#endif
+#ifdef pwm2_init
+	pwm2_init(); kdebug("2 ");
+#endif
+#ifdef pwm3_init
+	pwm3_init(); kdebug("3 ");
+#endif
+#ifdef pwm4_init
+	pwm4_init(); kdebug("4 ");
+#endif
+#ifdef pwm5_init
+	pwm5_init(); kdebug("5 ");
+#endif
+	kdebug("\n");
+}

@@ -27,6 +27,8 @@
 
 #include <static_cbuf.h>
 
+#define UART_DEFAULT_BAUDRATE 38400
+
 #ifdef CONFIG_AVR
 static FILE _fd; 
 FILE *uart0_fd = &_fd;
@@ -107,3 +109,19 @@ uint16_t uart0_printf(const char *fmt, ...){
 	return n; 
 }
 
+static void __init uart_init(void){
+	kdebug("UART: starting interfaces: "); 
+#ifdef CONFIG_HAVE_UART0
+	uart0_init(UART_DEFAULT_BAUDRATE); kdebug("0 "); 
+#endif
+#ifdef CONFIG_HAVE_UART1
+	uart1_init(UART_DEFAULT_BAUDRATE); kdebug("1 "); 
+#endif
+#ifdef CONFIG_HAVE_UART2
+	uart2_init(UART_DEFAULT_BAUDRATE); kdebug("2 "); 
+#endif
+#ifdef CONFIG_HAVE_UART3
+	uart3_init(UART_DEFAULT_BAUDRATE); kdebug("3 "); 
+#endif
+	kdebug("\n"); 
+}

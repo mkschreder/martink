@@ -140,96 +140,6 @@ err_t RecvUTPCallBack(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip
     pbuf_free(p);
 }
 */
-void mwii_init(void){
-	// disable external ints
-	EICRA = 0;
-	EIMSK = 0;
-	
-	uart0_init(38400);
-	
-	sei(); 
-	
-	timestamp_init(); 
-	
-	uart0_puts("booting..\n"); 
-	delay_us(5000); 
-	
-	twi0_init_default(); 
-	spi0_init(); 
-	
-	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
-	//gpio_set(GPIO_MWII_LED); 
-	
-	gpio_configure(GPIO_MWII_MOTOR0, GP_OUTPUT);
-	gpio_configure(GPIO_MWII_MOTOR1, GP_OUTPUT);
-	gpio_configure(GPIO_MWII_MOTOR2, GP_OUTPUT);
-	gpio_configure(GPIO_MWII_MOTOR3, GP_OUTPUT);
-	
-	gpio_configure(GPIO_MWII_RX0, GP_INPUT | GP_PULLUP | GP_PCINT);
-	gpio_configure(GPIO_MWII_RX1, GP_INPUT | GP_PULLUP | GP_PCINT);
-	gpio_configure(GPIO_MWII_RX2, GP_INPUT | GP_PULLUP | GP_PCINT);
-	gpio_configure(GPIO_MWII_RX3, GP_INPUT | GP_PULLUP | GP_PCINT);
-
-	brd->gpio0 = gpio_get_parallel_interface();
-	
-	if(!twi_get_interface(0, &brd->twi0)){
-		uart0_puts("NO I2C!\n"); 
-		while(1); 
-	}
-	
-	//hmc5883l_init(); 
-	mpu6050_init(&brd->mpu, &brd->twi0.interface, MPU6050_ADDR); 
-	uart0_printf("MPU6050 .. %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
-	
-	bmp085_init(&brd->bmp, &brd->twi0.interface, BMP085_ADDR); 
-	
-	reset_rc();
-	
-	pwm0_enable();
-	pwm1_enable();
-	pwm4_enable();
-	pwm5_enable();
-	
-	long pres = bmp085_read_pressure(&brd->bmp); 
-	int16_t temp = bmp085_read_temperature(&brd->bmp); 
-	uart0_printf("Pressure: %lu\n", pres); 
-	uart0_printf("Temperature: %d\n", temp); 
-	
-	uart0_puts("multiwii board!\n");
-
-/*
-	struct ip_addr dstaddr;
-	struct ip_addr srcaddr;
-	struct udp_pcb * pcb;
-	u16_t * dst_port;
-	struct pbuf * pb;
-
-	char str[512]="Test Sander";
-	IP4_ADDR(&dstaddr,65,55,21,24); // time.windows.com
-	IP4_ADDR(&srcaddr,192,168,1,10); // cortex
-	dst_port = 123;
-
-	pcb = udp_new();
-
-	udp_bind(pcb,&srcaddr,&dst_port);
-	udp_connect(pcb,&dstaddr,&dst_port);
-
-	pb = pbuf_alloc(PBUF_TRANSPORT, 512, PBUF_REF);
-	pb->payload = str;
-	pb->len = pb->tot_len = 512;
-
-	udp_sendto(pcb, &pb,&dstaddr,dst_port);
-	//udp_send(pcb, &pb);
-
-	udp_recv(pcb, RecvUTPCallBack, NULL);
-
-	pbuf_free(pb);
-
-	udp_remove(pcb);
-*/
-}
-
-
 
 void mwii_process_events(void){
 	compute_rc_values(); 
@@ -317,3 +227,60 @@ struct fc_quad_interface mwii_get_fc_quad_interface(void){
 	}; 
 }
 
+static void __init board_init(void){
+	// first thing must enable interrupts
+	sei();
+	
+	kdebug("Booting MultiWii Board\n");
+	
+	// disable external ints
+	//EICRA = 0;
+	//EIMSK = 0;
+	
+	//uart0_init(38400);
+	
+	//timestamp_init(); 
+	
+	//uart0_puts("booting..\n"); 
+	//delay_us(5000); 
+	
+	//twi0_init_default(); 
+	//spi0_init(); 
+	
+	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
+	//gpio_set(GPIO_MWII_LED); 
+	
+	gpio_configure(GPIO_MWII_MOTOR0, GP_OUTPUT);
+	gpio_configure(GPIO_MWII_MOTOR1, GP_OUTPUT);
+	gpio_configure(GPIO_MWII_MOTOR2, GP_OUTPUT);
+	gpio_configure(GPIO_MWII_MOTOR3, GP_OUTPUT);
+	
+	gpio_configure(GPIO_MWII_RX0, GP_INPUT | GP_PULLUP | GP_PCINT);
+	gpio_configure(GPIO_MWII_RX1, GP_INPUT | GP_PULLUP | GP_PCINT);
+	gpio_configure(GPIO_MWII_RX2, GP_INPUT | GP_PULLUP | GP_PCINT);
+	gpio_configure(GPIO_MWII_RX3, GP_INPUT | GP_PULLUP | GP_PCINT);
+
+	brd->gpio0 = gpio_get_parallel_interface();
+	
+	if(!twi_get_interface(0, &brd->twi0)){
+		kprintf("NO I2C!\n"); 
+		while(1); 
+	}
+	
+	//hmc5883l_init(); 
+	mpu6050_init(&brd->mpu, &brd->twi0.interface, MPU6050_ADDR); 
+	kdebug("MPU6050 .. %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
+	
+	bmp085_init(&brd->bmp, &brd->twi0.interface, BMP085_ADDR); 
+	kdebug("BMP085: reading pressure: %lu, reading temp: %d\n",
+		bmp085_read_pressure(&brd->bmp), bmp085_read_temperature(&brd->bmp));
+		
+	reset_rc();
+	
+	//pwm0_enable();
+	//pwm1_enable();
+	//pwm4_enable();
+	//pwm5_enable();
+	
+	kdebug("MultiWii initialized!\n");
+}

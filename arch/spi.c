@@ -69,3 +69,16 @@ void PFDECL(CONFIG_SPI0_NAME, flush, struct serial_interface *self){
 	// do nothing (but may be useful for interrupt driven version) 
 }
 
+static void __init spi_init(void){
+	kdebug("SPI: starting interface: ");
+#ifdef CONFIG_HAVE_SPI0
+	spi0_init(); kdebug("0 "); 
+#endif
+#ifdef CONFIG_HAVE_SPI1
+	spi1_init(); kdebug("1 "); 
+#endif
+#ifdef CONFIG_HAVE_SPI0
+	spi2_init(); kdebug("2 "); 
+#endif
+	kdebug("\n");
+}

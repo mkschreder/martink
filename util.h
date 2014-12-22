@@ -48,3 +48,4 @@ inline long constrain(long x, long a, long b){
         const __typeof__( ((type *)0)->member ) *__mptr = (ptr);    \
         (type *)( (char *)__mptr - offsetof(type,member) );})
 
+#define __init __attribute__((constructor))

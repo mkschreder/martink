@@ -27,3 +27,10 @@ void timestamp_delay_us(timestamp_t usec) {
 	timestamp_t t = timestamp_from_now_us(usec); 
 	while(!timestamp_expired(t));
 }
+
+static void __init time_init(void){
+#ifdef CONFIG_TIMESTAMP_COUNTER
+	timestamp_init();
+	kdebug("TIME: using timestamp counter!\n");
+#endif
+}

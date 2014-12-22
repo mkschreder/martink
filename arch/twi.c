@@ -23,15 +23,6 @@
 
 #define DEVICE_CAST(from, to) struct twi_device *to = container_of(from, struct twi_device, interface);  
 
-void twi_init(uint8_t dev){
-	switch(dev){
-		case 0: twi0_init_default(); break;
-#ifdef CONFIG_HAVE_TWI1
-		case 1: twi1_init_default(); break;
-#endif
-	}
-}
-
 void 			_twi_stop(struct i2c_interface *self){
 	DEVICE_CAST(self, dev);
 	switch(dev->id){
@@ -78,4 +69,19 @@ uint8_t twi_get_interface(uint8_t id, struct twi_device *dev){
 		}
 	}; 
 	return 1; 
+}
+
+
+void twi_init(){
+	kdebug("TWI: starting interfaces: ");
+#ifdef CONFIG_HAVE_TWI0
+	twi0_init_default(); kdebug("0 ");
+#endif
+#ifdef CONFIG_HAVE_TWI1
+	twi1_init_default(); kdebug("1 "); 
+#endif
+#ifdef CONFIG_HAVE_TWI2
+	twi2_init_default(); kdebug("2 "); 
+#endif
+	kdebug("\n"); 
 }

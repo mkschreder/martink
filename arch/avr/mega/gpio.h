@@ -149,7 +149,7 @@ extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0];
 )
 
 #define gpio_read_pin(pin) (\
-	(IREG(pin) & PIDX(pin))?1:0 \
+	(IREG(pin) & _BV(PIDX(pin)))?1:0 \
 )
 
 #define gpio_clear(pin) gpio_write_pin(pin, 0)

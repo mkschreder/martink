@@ -32,6 +32,15 @@ extern "C" {
 #define PWM_MIN MINCOMMAND
 #define PWM_MAX 2000
 
+enum {
+	RC_THROTTLE = 0, 
+	RC_YAW 			= 1, 
+	RC_PITCH 		= 2,
+	RC_ROLL 		= 3,
+	RC_MODE 		= 4,
+	RC_MODE2		= 5
+};
+
 void due_init(void); 
 void due_process_events(void);
 struct fc_quad_interface due_get_fc_quad_interface(void);

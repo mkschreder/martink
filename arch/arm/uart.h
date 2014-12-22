@@ -27,3 +27,10 @@ void uart0_init_default(uint16_t baudrate);
 #define uart0_flush() do {} while(0)
 #define uart0_getc() ((uart0_waiting())?USART_GetChar(USART0):UART_NO_DATA)
 #define uart0_putc(data) (USART_PutChar(USART0, data), 0)
+
+void uart1_init_default(uint16_t baud); 
+#define uart1_waiting() (USART_IsDataAvailable(USART1))
+#define uart1_flush() do {} while(0)
+#define uart1_getc() ((uart0_waiting())?USART_GetChar(USART1):UART_NO_DATA)
+#define uart1_putc(data) (USART_PutChar(USART1, data), 0)
+

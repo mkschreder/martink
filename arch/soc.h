@@ -52,7 +52,7 @@ extern "C" {
 // used for declaring driver functions
 #define PFDECL(P, F, args...) PFCALL(P, F, args )
 
-#define __init __attribute__((constructor))
+#define initproc //__attribute__((constructor))
 
 #ifdef CONFIG_AVR
 #include "avr/mega.h"

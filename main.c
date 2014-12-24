@@ -55,10 +55,9 @@
 extern void app_init(void); 
 extern void app_process_events(void); 
 
+void board_init(void); 
+
 int main(void){
-	jmp_buf jump;
-	setjmp(jump);
-	
 	/*struct ssd1306 ssd; 
 	sei(); 
 	
@@ -99,6 +98,7 @@ int main(void){
 	return; */
 	//brd_init(); 
 	
+	board_init(); 
 	app_init(); 
 	
 	while(1){

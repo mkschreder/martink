@@ -122,16 +122,16 @@ serial_dev_t spi_get_serial_interface(uint8_t dev){
 	return &_spi[dev].serial; 
 }
 
-static void __init _spi_init(void){
+void initproc spi_init(void){
 	kdebug("SPI: starting interface: ");
 #ifdef CONFIG_HAVE_SPI0
-	hwspi0_init_default(); kdebug("0 "); 
+	hwspi0_init_default(); kdebug("spi0 "); 
 #endif
 #ifdef CONFIG_HAVE_SPI1
-	hwspi1_init_default(); kdebug("1 "); 
+	hwspi1_init_default(); kdebug("spi1 "); 
 #endif
 #ifdef CONFIG_HAVE_SPI2
-	hwspi2_init_default(); kdebug("2 "); 
+	hwspi2_init_default(); kdebug("spi2 "); 
 #endif
 	kdebug("\n");
 }

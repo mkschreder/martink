@@ -46,25 +46,25 @@ struct pwm_interface pwm_get_interface(void){
 	}; 
 }
 
-static void __init pwm_init(void){
+void initproc pwm_init(void){
 	kdebug("PWM: starting channels: ");
-#ifdef pwm0_init
-	pwm0_init(); kdebug("0 ");
+#ifdef pwm0_enable
+	pwm0_enable(); kdebug("pwm0 ");
 #endif
-#ifdef pwm1_init
-	pwm1_init(); kdebug("1 ");
+#ifdef pwm1_enable
+	pwm1_enable(); kdebug("pwm1 ");
 #endif
-#ifdef pwm2_init
-	pwm2_init(); kdebug("2 ");
+#ifdef pwm2_enable
+	pwm2_enable(); kdebug("pwm2 ");
 #endif
-#ifdef pwm3_init
-	pwm3_init(); kdebug("3 ");
+#ifdef pwm3_enable
+	pwm3_enable(); kdebug("pwm3 ");
 #endif
-#ifdef pwm4_init
-	pwm4_init(); kdebug("4 ");
+#ifdef pwm4_enable
+	pwm4_enable(); kdebug("pwm4 ");
 #endif
-#ifdef pwm5_init
-	pwm5_init(); kdebug("5 ");
+#ifdef pwm5_enable
+	pwm5_enable(); kdebug("pwm5 ");
 #endif
 	kdebug("\n");
 }

@@ -109,19 +109,24 @@ uint16_t uart0_printf(const char *fmt, ...){
 	return n; 
 }
 
-static void __init uart_init(void){
-	kdebug("UART: starting interfaces: "); 
+void initproc uart_init(void){
+	int c = 0; 
 #ifdef CONFIG_HAVE_UART0
-	uart0_init(UART_DEFAULT_BAUDRATE); kdebug("0 "); 
+	uart0_init(UART_DEFAULT_BAUDRATE); 
+	c++; 
 #endif
 #ifdef CONFIG_HAVE_UART1
-	uart1_init(UART_DEFAULT_BAUDRATE); kdebug("1 "); 
+	uart1_init(UART_DEFAULT_BAUDRATE); 
+	c++; 
 #endif
 #ifdef CONFIG_HAVE_UART2
-	uart2_init(UART_DEFAULT_BAUDRATE); kdebug("2 "); 
+	uart2_init(UART_DEFAULT_BAUDRATE);  
+	c++; 
 #endif
 #ifdef CONFIG_HAVE_UART3
-	uart3_init(UART_DEFAULT_BAUDRATE); kdebug("3 "); 
+	uart3_init(UART_DEFAULT_BAUDRATE); 
+	c++; 
 #endif
-	kdebug("\n"); 
+	sei(); 
+	kdebug("UART: started %d uarts\n", c); 
 }

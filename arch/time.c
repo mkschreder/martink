@@ -28,9 +28,9 @@ void timestamp_delay_us(timestamp_t usec) {
 	while(!timestamp_expired(t));
 }
 
-static void __init time_init(void){
+void initproc time_init(void){
 #ifdef CONFIG_TIMESTAMP_COUNTER
 	timestamp_init();
-	kdebug("TIME: using timestamp counter!\n");
 #endif
+	sei(); 
 }

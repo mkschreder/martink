@@ -50,15 +50,15 @@ inline long constrain(long x, long a, long b){
         const __typeof__( ((type *)0)->member ) *__mptr = (ptr);    \
         (type *)( (char *)__mptr - offsetof(type,member) );})
 
-#define __init __attribute__((constructor))
+//#define __init //__attribute__((constructor))
 
 #ifdef CONFIG_HAVE_UART
 	#define kprintf(a, ...) uart0_printf(a, ##__VA_ARGS__) 
 	
 	#ifdef CONFIG_DEBUG
-		#define kdebug(a, args...) uart0_printf(a, args) 
+		#define kdebug(a, ...) uart0_printf(a, ##__VA_ARGS__) 
 	#else
-		#define kdebug(a, ...) {}
+		#define kdebug(a, ...) //uart0_printf(a, ##__VA_ARGS__) 
 	#endif
 #else 
 	#define kprintf(a, ...) {}

@@ -204,12 +204,15 @@ struct fc_quad_interface mwii_get_fc_quad_interface(void){
 	}; 
 }
 
-static void __init board_init(void){
-	// first thing must enable interrupts
-	sei();
+void soc_init(void); 
+
+void initproc board_init(void){
+	soc_init(); 
 	
+	// first thing must enable interrupts
 	kdebug("Booting MultiWii Board\n");
 	
+	//while(1); 
 	// disable external ints
 	//EICRA = 0;
 	//EIMSK = 0;

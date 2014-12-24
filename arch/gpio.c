@@ -60,6 +60,7 @@ pio_dev_t gpio_get_parallel_interface(void){
 	return &_pio; 
 }
 
-static void __init _gpio_init(void){
+void gpio_init(void){
+	gpio_init_default(); 
 	kdebug("GPIO: chip has %d gpio pins\n", GPIO_COUNT); 
 }

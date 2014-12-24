@@ -1,9 +1,10 @@
-obj-y += arch/uart.o
 obj-y += arch/time.o
+obj-y += arch/uart.o
 obj-y += arch/gpio.o
 obj-y += arch/spi.o 
 obj-y += arch/twi.o
 obj-y += arch/soc.o
+obj-y += arch/pwm.o
 
 ifeq ($(CONFIG_AVR), y)
 	include $(srctree)/arch/avr/mega/Makefile

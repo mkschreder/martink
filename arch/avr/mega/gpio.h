@@ -121,7 +121,7 @@ extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0];
 #define gpio_init_pin_states() (0)
 #endif
 
-#define gpio_init() (\
+#define gpio_init_default() (\
 	gpio_init_pin_states()\
 )
 

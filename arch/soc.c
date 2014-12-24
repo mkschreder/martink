@@ -21,3 +21,18 @@
 
 #include "soc.h"
 
+void time_init(void); 
+void uart_init(void); 
+void gpio_init(void); 
+void spi_init(void); 
+void twi_init(void); 
+void pwm_init(void); 
+
+void soc_init(void){
+	time_init(); 
+	uart_init(); 
+	gpio_init();
+	spi_init(); 
+	twi_init(); 
+	pwm_init(); 
+}

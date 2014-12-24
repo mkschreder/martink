@@ -73,16 +73,16 @@ i2c_dev_t twi_get_interface(uint8_t id){
 	return &_twi[id].interface; 
 }
 
-static void __init _twi_init(void){
+void initproc twi_init(void){
 	kdebug("TWI: starting interfaces: ");
 #ifdef CONFIG_HAVE_TWI0
-	twi0_init_default(); kdebug("0 ");
+	twi0_init_default(); kdebug("twi0 ");
 #endif
 #ifdef CONFIG_HAVE_TWI1
-	twi1_init_default(); kdebug("1 "); 
+	twi1_init_default(); kdebug("twi1 "); 
 #endif
 #ifdef CONFIG_HAVE_TWI2
-	twi2_init_default(); kdebug("2 "); 
+	twi2_init_default(); kdebug("twi2 "); 
 #endif
 	kdebug("\n"); 
 }

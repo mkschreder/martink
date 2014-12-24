@@ -52,23 +52,23 @@ void uart0_init(uint32_t baudrate) {
 /// UART0 interface functions
 /// *************************
 
-size_t _uart0_waiting(struct serial_interface *self){
+size_t _uart0_waiting(serial_dev_t self){
 	return uart0_waiting(); 
 }
 
-void _uart0_flush(struct serial_interface *self){
+void _uart0_flush(serial_dev_t self){
 	uart0_flush(); 
 }
 
-uint16_t _uart0_getc(struct serial_interface *self){
+uint16_t _uart0_getc(serial_dev_t self){
 	return uart0_getc(); 
 }
 
-uint16_t _uart0_putc(struct serial_interface *self, unsigned char data){
+uint16_t _uart0_putc(serial_dev_t self, unsigned char data){
 	return uart0_putc(data);
 }
 
-size_t _uart0_putn(struct serial_interface *self, const uint8_t *s, size_t c)
+size_t _uart0_putn(serial_dev_t self, const uint8_t *s, size_t c)
 {
 	size_t t = c; 
 	while (c--) 
@@ -76,7 +76,7 @@ size_t _uart0_putn(struct serial_interface *self, const uint8_t *s, size_t c)
 	return t; 
 }
 
-size_t _uart0_getn(struct serial_interface *self, uint8_t *s, size_t c)
+size_t _uart0_getn(serial_dev_t self, uint8_t *s, size_t c)
 {
 	size_t t = 0; 
 	while (t < c) {

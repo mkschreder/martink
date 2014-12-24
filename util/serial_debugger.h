@@ -27,25 +27,17 @@
 
 struct serial_debugger {
 	/// connection to the device we will forward data to
-	struct serial_interface *device; 
+	serial_dev_t device; 
 	/// connection to the debug console 
-	struct serial_interface *console; 
-	/// our serial interface that can be passed to another device
-	struct serial_interface interface; 
+	serial_dev_t console; 
 	/// a line buffer to store bytes in (call flush to render all)
 	uint8_t buffer[16]; 
 	uint8_t buf_ptr; 
 	uint8_t last_is_read; // 1 read 0 write
+
+	struct serial_if *_ex_serial; 
 }; 
 
-void serial_debugger_init(
-	struct serial_debugger *dbg, 
-	struct serial_interface *device, 
-	struct serial_interface *console); 
-uint16_t 	serial_debugger_getc(struct serial_interface *self);
-uint16_t 	serial_debugger_putc(struct serial_interface *self, uint8_t ch);
-size_t 		serial_debugger_putn(struct serial_interface *self, const uint8_t *data, size_t max_sz); 
-size_t 		serial_debugger_getn(struct serial_interface *self, uint8_t *data, size_t max_sz);
-void 			serial_debugger_flush(struct serial_interface *self);
-size_t 		serial_debugger_waiting(struct serial_interface *self);
-
+void serial_debugger_init(struct serial_debugger *dbg,
+	serial_dev_t device, serial_dev_t console);
+serial_dev_t serial_debugger_get_serial_interface(struct serial_debugger *self); 

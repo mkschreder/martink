@@ -73,19 +73,18 @@ static long bmp085_rawtemperature, bmp085_rawpressure;
 static void bmp085_writemem(struct bmp085 *self, uint8_t reg, uint8_t value) {
 	//uart0_printf("BMP: writing reg %d: %d .. ", reg, value);
 	uint8_t buf[2] = {reg, value};
-	self->i2c->start_write(self->i2c, self->addr, buf, 2);
-	self->i2c->stop(self->i2c); 
+	i2c_start_write(self->i2c, self->addr, buf, 2);
+	i2c_stop(self->i2c); 
 }
 
 /*
  * i2c read
  */
 static void bmp085_readmem(struct bmp085 *self, uint8_t reg, uint8_t *buff, uint8_t bytes) {
-	struct i2c_interface *i2c = self->i2c;
-	i2c->start_write(i2c, self->addr, &reg, 1);
+	i2c_start_write(self->i2c, self->addr, &reg, 1);
 	delay_us(10);
-	i2c->start_read(i2c, self->addr, buff, bytes);
-	i2c->stop(i2c); 
+	i2c_start_read(self->i2c, self->addr, buff, bytes);
+	i2c_stop(self->i2c); 
 }
 
 
@@ -207,7 +206,7 @@ int16_t bmp085_read_altitude(struct bmp085 *self) {
 	return ((1 - pow(pressure/(double)101325, 0.1903 )) / 0.0000225577) + BMP085_UNITMOFFSET; 
 }
 
-void bmp085_init(struct bmp085 *self, struct i2c_interface *i2c, uint8_t addr) {
+void bmp085_init(struct bmp085 *self, i2c_dev_t i2c, uint8_t addr) {
 	self->i2c = i2c;
 	self->addr = addr; 
 	bmp085_getcalibration(self); //get calibration data

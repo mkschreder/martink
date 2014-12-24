@@ -29,13 +29,13 @@
 #define MMA7455_ADDR (0x1D<<1) //device address
 
 struct mma7455 {
-	struct i2c_interface *i2c;
+	i2c_dev_t i2c;
 	uint8_t addr;
 	uint8_t mode; 
 };
 
 //functions declarations
-void mma7455_init(struct mma7455 *self, struct i2c_interface *i2c, uint8_t addr, uint8_t mode);
+void mma7455_init(struct mma7455 *self, i2c_dev_t i2c, uint8_t addr, uint8_t mode);
 void mma7455_getdata(struct mma7455 *self, float *ax, float *ay, float *az);
 #if MMA7455_GETATTITUDE == 1
 void mma7455_getpitchroll(struct mma7455 *self, float ax, float ay, float az, float *pitch, float *roll);

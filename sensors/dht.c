@@ -28,7 +28,7 @@
 
 #include "dht.h"
 
-void dht_init(struct dht *self, struct parallel_interface *gpio, gpio_pin_t signal_pin, uint8_t sensor_type){
+void dht_init(struct dht *self, pio_dev_t gpio, gpio_pin_t signal_pin, uint8_t sensor_type){
 	self->gpio = gpio;
 	self->signal_pin = signal_pin;
 
@@ -43,24 +43,23 @@ static int8_t dht_read_data(struct dht *self, int8_t *temperature, int8_t *humid
 
 	memset(bits, 0, sizeof(bits));
 
-	struct parallel_interface *gpio = self->gpio; 
 	//reset port
 
-	gpio->configure_pin(gpio, self->signal_pin, GP_OUTPUT); 
-	gpio->write_pin(gpio, self->signal_pin, 1);
+	pio_configure_pin(self->gpio, self->signal_pin, GP_OUTPUT); 
+	pio_write_pin(self->gpio, self->signal_pin, 1);
 	delay_us(100000L);
 
 	// send request
-	gpio->write_pin(gpio, self->signal_pin, 0);
+	pio_write_pin(self->gpio, self->signal_pin, 0);
 	if(self->sensor_type == DHT_DHT11)
 		delay_us(18000L);
 	else
 		delay_us(500);
 
-	gpio->configure_pin(gpio, self->signal_pin, GP_INPUT | GP_PULLUP); 
+	pio_configure_pin(self->gpio, self->signal_pin, GP_INPUT | GP_PULLUP); 
 	delay_us(40);
 
-	#define read_pin() gpio->read_pin(gpio, self->signal_pin)
+	#define read_pin() pio_read_pin(self->gpio, self->signal_pin)
 	// start condition 1
 	if(read_pin())
 		return -1;
@@ -97,8 +96,8 @@ static int8_t dht_read_data(struct dht *self, int8_t *temperature, int8_t *humid
 	}
 
 	//reset port
-	gpio->configure_pin(gpio, self->signal_pin, GP_OUTPUT); 
-	gpio->write_pin(gpio, self->signal_pin, 0);
+	pio_configure_pin(self->gpio, self->signal_pin, GP_OUTPUT); 
+	pio_write_pin(self->gpio, self->signal_pin, 0);
 	
 	//check checksum
 	if ((uint8_t)(bits[0] + bits[1] + bits[2] + bits[3]) == bits[4]) {

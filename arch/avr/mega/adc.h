@@ -1,4 +1,4 @@
-/**
+/*
 	Fast ADC implementation using macros
 
 	martink firmware project is free software: you can redistribute it and/or modify
@@ -18,7 +18,22 @@
 	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
 */
+/**
+	\ingroup driver
+	\defgroup avr-adc AVR mega ADC abstraction layer (arch/mega/adc.h)
+	\code #include "avr/mega/adc.h" \endcode
+	\par Overview
 
+	This mostly macro based library provides a human readable
+	abstraction layer for the AVR Mega series analog to digital
+	converter. It is fast, it compiles directly to simple expressions
+	and it results in almost no extra overhead when used. The
+	resulting code is mostly exactly the same as it would be if you
+	were accessing AVR specific registers directly.
+
+	This library provides hardware abstraction layer for the generic
+	ARCH layer.
+**/
 #ifndef ADC_H
 #define ADC_H
 

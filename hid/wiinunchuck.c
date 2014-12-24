@@ -177,9 +177,9 @@ void wiinunchuck_update(struct wiinunchuck *self) {
 	memset(buff, 0, sizeof(buff));
 	
 	//request data
-	self->i2c->start_write(self->i2c, WIINUNCHUCK_ADDR, buff, 1);
-	self->i2c->start_read(self->i2c, WIINUNCHUCK_ADDR, buff, WIINUNCHUCK_READBYTES);
-	self->i2c->stop(self->i2c);
+	i2c_start_write(self->i2c, WIINUNCHUCK_ADDR, buff, 1);
+	i2c_start_read(self->i2c, WIINUNCHUCK_ADDR, buff, WIINUNCHUCK_READBYTES);
+	i2c_stop(self->i2c);
 	
 	/*
 	i2c_start_wait(WIINUNCHUCK_ADDR | I2C_WRITE);
@@ -232,7 +232,7 @@ void wiinunchuck_update(struct wiinunchuck *self) {
 /*
  * init wiinunchuck
  */ 
-void wiinunchuck_init(struct wiinunchuck *self, struct i2c_interface *i2c) {
+void wiinunchuck_init(struct wiinunchuck *self, i2c_dev_t i2c) {
 	memset(self, 0, sizeof(struct wiinunchuck));
 	
 	self->i2c = i2c;
@@ -242,11 +242,11 @@ void wiinunchuck_init(struct wiinunchuck *self, struct i2c_interface *i2c) {
 	//alternative init: 0xF0 -> 0x55 followed by 0xFB -> 0x00, lets us use 3rd party nunchucks
 	//no longer need to decode bytes in _nunchuk_decode_byte
 	buf[0] = 0xF0; buf[1] = 0x55;
-	self->i2c->start_write(self->i2c, WIINUNCHUCK_ADDR, buf, 2);
-	self->i2c->stop(self->i2c);
+	i2c_start_write(self->i2c, WIINUNCHUCK_ADDR, buf, 2);
+	i2c_stop(self->i2c);
 	buf[0] = 0xFB; buf[1] = 0x00;
-	self->i2c->start_write(self->i2c, WIINUNCHUCK_ADDR, buf, 2);
-	self->i2c->stop(self->i2c);
+	i2c_start_write(self->i2c, WIINUNCHUCK_ADDR, buf, 2);
+	i2c_stop(self->i2c);
 	//update
 	wiinunchuck_update(self);
 }

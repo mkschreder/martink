@@ -1,4 +1,4 @@
-/**
+/*
 	This file is part of martink project.
 
 	martink firmware project is free software: you can redistribute it and/or modify
@@ -17,27 +17,41 @@
 	Author: Martin K. Schröder
 	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
-*/
 
+	\file
+
+	Architecture independent GPIO driver
+*/
 #pragma once
 
 // GPIO pin functions
+/// configures a gpio pin as input
 #define GP_INPUT 		(0)
+/// configures a gpio pin as output
 #define GP_OUTPUT 	(1 << 0)
+/// enables pull(up/down) on gpio pin
 #define GP_PULL 		(1 << 1)
+/// no pullup on gpio pin
 #define GP_HIZ			(0 << 1)
+/// enable pullup
 #define GP_PULLUP 	(GP_PULL | (1 << 2))
+/// enable pulldown (if arch supports it)
 #define GP_PULLDOWN (GP_PULL | (0 << 2))
-// pin change interrupt will run when pin gets toggled
+/// pin change interrupt will run when pin gets toggled
+/// make sure that pin change handler is defined
 #define GP_PCINT		(1 << 3)
 
 // GPIO status flags
+/// gpio status: pin level has changed
 #define GP_CHANGED 		(1 << 0)
+/// gpio status: pin went high
 #define GP_WENT_HIGH 	(GP_CHANGED | (1 << 1))
+/// gpio status: pin went low
 #define GP_WENT_LOW 	(GP_CHANGED | (1 << 2))
 
 /// returns a standard parallel interface for the hardware gpio pins
-struct parallel_interface gpio_get_parallel_interface(void); 
+/// as a \ref struct parallel_interface
+pio_dev_t gpio_get_parallel_interface(void); 
 /*
 #define gpio_set(pin, value) PFCALL(gpio, set, value)
 #define gpio_set_direction(pin, dir)

@@ -32,24 +32,24 @@
 #define CONFIG_L74HC595_STC_PIN GPIO_NONE
 #endif
 
-#define spi_writereadbyte(b) (s_putc(self->spi, b), s_getc(self->spi))
+#define spi_writereadbyte(b) (serial_putc(self->spi, b), serial_getc(self->spi))
 
-#define L74HC595_CELo self->gpio->write_pin(self->gpio, self->ce_pin, 0)
-#define L74HC595_CEHi self->gpio->write_pin(self->gpio, self->ce_pin, 1)
+#define L74HC595_CELo pio_write_pin(self->gpio, self->ce_pin, 0)
+#define L74HC595_CEHi pio_write_pin(self->gpio, self->ce_pin, 1)
 
-#define L74HC595_STCLo self->gpio->write_pin(self->gpio, self->stc_pin, 0)
-#define L74HC595_STCHi self->gpio->write_pin(self->gpio, self->stc_pin, 1)
+#define L74HC595_STCLo pio_write_pin(self->gpio, self->stc_pin, 0)
+#define L74HC595_STCHi pio_write_pin(self->gpio, self->stc_pin, 1)
 /*
  * init the shift register
  */
-void l74hc595_init(struct l74hc595 *self, struct serial_interface *spi, struct parallel_interface *gpio, gpio_pin_t ce_pin, gpio_pin_t stc_pin) {
+void l74hc595_init(struct l74hc595 *self, serial_dev_t spi, pio_dev_t gpio, gpio_pin_t ce_pin, gpio_pin_t stc_pin) {
 	self->spi = spi;
 	self->gpio = gpio; 
 	self->stc_pin = stc_pin;
 	self->ce_pin = ce_pin; 
 	
-	gpio->configure_pin(gpio, ce_pin, GP_OUTPUT); 
-	gpio->configure_pin(gpio, stc_pin, GP_OUTPUT); 
+	pio_configure_pin(gpio, ce_pin, GP_OUTPUT); 
+	pio_configure_pin(gpio, stc_pin, GP_OUTPUT); 
 	
 	L74HC595_STCLo;  
 }

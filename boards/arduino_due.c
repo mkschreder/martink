@@ -58,11 +58,11 @@ const static uint16_t rc_defaults[6] = {1000, 1500, 1500, 1500, 1500, 1500};
 struct board {
 	uint16_t 				rc_values[6]; 
 	timestamp_t 		rc_reset_timeout; 
-	struct parallel_interface gpio0; 
+	pio_dev_t gpio0; 
 	struct bmp085 bmp;
 	struct mpu6050 mpu;
 	struct hmc5883l hmc; 
-	struct twi_device twi0; 
+	i2c_dev_t twi0; 
 	struct ssd1306 ssd;
 	struct fc_quad_interface interface; 
 }; 
@@ -195,8 +195,8 @@ void due_init(void){
 	// Enable receiver and transmitter
 	USART1->US_CR = US_CR_RXEN | US_CR_TXEN ;
 */
-	twi0_init_default(); 
-	spi0_init(); 
+	//twi0_init_default(); 
+	//spi0_init(); 
 	
 	//struct nrf24l01 nrf1;  
 	//nrf24l01_init(&nrf1, &cpu.spi0, GPIO_PA15, GPIO_PD1); 

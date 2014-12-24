@@ -135,22 +135,22 @@
 
 static inline void ssd1306_command(ssd1306_t *self, uint8_t cmd){
 	uint8_t buf[2] = {0, cmd};
-	self->i2c->start_write(self->i2c, DISPLAY_ADDRESS, buf, 2);
-	self->i2c->stop(self->i2c); 
+	i2c_start_write(self->i2c, DISPLAY_ADDRESS, buf, 2);
+	i2c_stop(self->i2c); 
 }
 
 static inline void ssd1306_data(ssd1306_t *self, uint8_t data){
 	uint8_t buf[2] = {0x40, data};
-	self->i2c->start_write(self->i2c, DISPLAY_ADDRESS, buf, 2);
-	self->i2c->stop(self->i2c); 
+	i2c_start_write(self->i2c, DISPLAY_ADDRESS, buf, 2);
+	i2c_stop(self->i2c); 
 }
 
 static inline void ssd1306_data_buffer(ssd1306_t *self, uint8_t *data, uint16_t size){
-	self->i2c->start_write(self->i2c, DISPLAY_ADDRESS, data, size);
-	self->i2c->stop(self->i2c); 
+	i2c_start_write(self->i2c, DISPLAY_ADDRESS, data, size);
+	i2c_stop(self->i2c); 
 }
 
-void ssd1306_init(ssd1306_t *dev, struct i2c_interface *i2c){
+void ssd1306_init(ssd1306_t *dev, i2c_dev_t i2c){
 	dev->i2c = i2c;
 	
 	for(int c = 0; c < sizeof(cmd_init); c++){

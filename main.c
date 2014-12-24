@@ -1,4 +1,4 @@
-/**
+/*
 	This file is part of martink project.
 
 	martink firmware project is free software: you can redistribute it and/or modify
@@ -19,12 +19,46 @@
 	Github: https://github.com/mkschreder
 */
 
+/**
+ \mainpage LibK firmware development library
+
+ <b>Introduction</b>
+
+ LibK is a driver support library providing portable device driver
+ support for embedded applications.
+
+ It is distributed under the GNU General Public License - see the
+ accompanying LICENSE.txt file for more details.
+
+ It is designed to even be able to compile on a desktop. The future
+ may very well involve using libk to use the same device drivers for
+ both arduino and a linux based board that uses linux to access i2c
+ ports and other ports. LibK can basically be compiled as a native
+ library. All that is necessary to run it on any board is to
+ implement the arch interface for that board. For a native version
+ this layer would use linux system calls to access i2c or SPI ports
+ instead of accessing hardware registers directly - but for the
+ drivers it does not matter.
+
+ <b>Download source code</b>
+
+ You can get libk source code from the project github page:
+
+ https://github.com/mkschreder
+
+ 
+*/
 #include "kernel.h"
+
+#include <setjmp.h>
 
 extern void app_init(void); 
 extern void app_process_events(void); 
 
 int main(void){
+	jmp_buf jump;
+	setjmp(jump);
+	
 	/*struct ssd1306 ssd; 
 	sei(); 
 	

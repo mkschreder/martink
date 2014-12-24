@@ -21,16 +21,25 @@
 
 #include <arch/soc.h>
 
+#include "twi.h"
+
 #define DEVICE_CAST(from, to) struct twi_device *to = container_of(from, struct twi_device, interface);  
 
-void 			_twi_stop(struct i2c_interface *self){
+static struct twi_device _twi[4] = {
+	{.id = 0, .interface = 0},
+	{.id = 1, .interface = 0},
+	{.id = 2, .interface = 0},
+	{.id = 3, .interface = 0}
+}; 
+
+void 			_twi_stop(i2c_dev_t self){
 	DEVICE_CAST(self, dev);
 	switch(dev->id){
 		case 0: twi0_stop(); break;
 	}
 }
 
-uint32_t	_twi_write(struct i2c_interface *self, uint8_t adr, uint8_t *data, uint16_t max_sz){
+uint32_t	_twi_write(i2c_dev_t self, uint8_t adr, uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
 	switch(dev->id){
 		case 0: twi0_start_write(adr, data, max_sz); return 0;
@@ -38,7 +47,7 @@ uint32_t	_twi_write(struct i2c_interface *self, uint8_t adr, uint8_t *data, uint
 	return PK_ERR_INVALID; 
 }
 
-uint32_t	_twi_read(struct i2c_interface *self, uint8_t adr, uint8_t *data, uint16_t max_sz){
+uint32_t	_twi_read(i2c_dev_t self, uint8_t adr, uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
 	switch(dev->id){
 		case 0: twi0_start_read(adr, data, max_sz); return 0;
@@ -46,31 +55,23 @@ uint32_t	_twi_read(struct i2c_interface *self, uint8_t adr, uint8_t *data, uint1
 	return PK_ERR_INVALID; 
 }
 
-void			_twi_sync(struct i2c_interface *self){
+void			_twi_sync(i2c_dev_t self){
 	DEVICE_CAST(self, dev);
 	switch(dev->id){
 		case 0: while(twi0_busy()); break;
 	}
 }
 
-uint16_t 	_twi_packets_available(struct i2c_interface *self){
-	// for twi interfaces there is always data availbale because we clock it out of the slave. 
-	return 1; 
+i2c_dev_t twi_get_interface(uint8_t id){
+	static struct i2c_interface _if;
+	_if = (struct i2c_interface) {
+		.start_write = 	_twi_write,
+		.start_read = 	_twi_read,
+		.stop = 		_twi_stop, 
+	};
+	_twi[id].interface = &_if; 
+	return &_twi[id].interface; 
 }
-
-uint8_t twi_get_interface(uint8_t id, struct twi_device *dev){
-	if(id != 0) return 0;
-	*dev = (struct twi_device) {
-		.id = id,
-		.interface = (struct i2c_interface) {
-			.start_write = 	_twi_write,
-			.start_read = 	_twi_read,
-			.stop = 		_twi_stop, 
-		}
-	}; 
-	return 1; 
-}
-
 
 static void __init _twi_init(void){
 	kdebug("TWI: starting interfaces: ");

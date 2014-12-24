@@ -78,9 +78,9 @@ static const uint8_t PROGMEM sevsegascii_table[] = {
 	SEGN, SEGN, SEGN, SEGN
 };
 
-#define set_data(data) (self->port->write_word(self->port, self->data_port, data))
-#define set_cs_pin() (self->port->write_pin(self->port, self->cs_pin, 1))
-#define clear_cs_pin() (self->port->write_pin(self->port, self->cs_pin, 0))
+#define set_data(data) (pio_write_word(self->port, self->data_port, data))
+#define set_cs_pin() (pio_write_pin(self->port, self->cs_pin, 1))
+#define clear_cs_pin() (pio_write_pin(self->port, self->cs_pin, 0))
 
 void led7seg_off(struct led7seg *self){
 	if(self->type == SEVSEG_TYPECC || self->type == SEVSEG_TYPECAT)
@@ -103,7 +103,7 @@ void led7seg_on(struct led7seg *self){
 		clear_cs_pin();
 }
  
-void led7seg_init(struct led7seg *self, struct parallel_interface *port, uint8_t data_port, gpio_pin_t cs_pin, lcd7seg_type type) {
+void led7seg_init(struct led7seg *self, pio_dev_t port, uint8_t data_port, gpio_pin_t cs_pin, lcd7seg_type type) {
 	self->port = port;
 	self->data_port = data_port;
 	self->cs_pin = cs_pin;

@@ -31,35 +31,35 @@
 /*
  * init the shift register
  */
-void l74hc4051_init(struct l74hc4051 *self, struct parallel_interface *port,
+void l74hc4051_init(struct l74hc4051 *self, pio_dev_t port,
 		gpio_pin_t s0_pin, gpio_pin_t s1_pin, gpio_pin_t s2_pin) {
 	self->port = port;
 	self->s0_pin = s0_pin;
 	self->s1_pin = s1_pin;
 	self->s2_pin = s2_pin;
 	
-	port->configure_pin(port, s0_pin, GP_OUTPUT);
-	port->configure_pin(port, s1_pin, GP_OUTPUT);
-	port->configure_pin(port, s2_pin, GP_OUTPUT);
-	port->write_pin(port, s0_pin, 0);
-	port->write_pin(port, s1_pin, 0);
-	port->write_pin(port, s2_pin, 0);
+	pio_configure_pin(port, s0_pin, GP_OUTPUT);
+	pio_configure_pin(port, s1_pin, GP_OUTPUT);
+	pio_configure_pin(port, s2_pin, GP_OUTPUT);
+	pio_write_pin(port, s0_pin, 0);
+	pio_write_pin(port, s1_pin, 0);
+	pio_write_pin(port, s2_pin, 0);
 }
 
 void l74hc4051_set_channel(struct l74hc4051 *self, uint8_t channel) {
 	//bit 1
 	if((channel & (1 << 0)) >> 0)
-		self->port->write_pin(self->port, self->s0_pin, 1);
+		pio_write_pin(self->port, self->s0_pin, 1);
 	else
-		self->port->write_pin(self->port, self->s0_pin, 0);
+		pio_write_pin(self->port, self->s0_pin, 0);
 	//bit 2
 	if((channel & (1 << 1)) >> 1)
-		self->port->write_pin(self->port, self->s1_pin, 1);
+		pio_write_pin(self->port, self->s1_pin, 1);
 	else
-		self->port->write_pin(self->port, self->s1_pin, 0);
+		pio_write_pin(self->port, self->s1_pin, 0);
 	//bit 3
 	if((channel & (1 << 2)) >> 2)
-		self->port->write_pin(self->port, self->s2_pin, 1);
+		pio_write_pin(self->port, self->s2_pin, 1);
 	else
-		self->port->write_pin(self->port, self->s2_pin, 0);
+		pio_write_pin(self->port, self->s2_pin, 0);
 }

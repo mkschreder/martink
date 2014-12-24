@@ -58,7 +58,7 @@ Please refer to LICENSE file for licensing information.
 /*
  * init the hmc5883l
  */
-void hmc5883l_init(struct hmc5883l *self, struct i2c_interface *i2c, uint8_t addr, uint8_t scale) {
+void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr, uint8_t scale) {
 	self->i2c = i2c;
 	self->addr = addr;
 	
@@ -104,8 +104,8 @@ void hmc5883l_init(struct hmc5883l *self, struct i2c_interface *i2c, uint8_t add
 		HMC5883L_MODEREG,
 		0x00 //Mode register             -- 000000 00    continuous Conversion Mode
 	};
-	i2c->start_write(i2c, addr, buf, sizeof(buf));
-	i2c->stop(i2c);
+	i2c_start_write(i2c, addr, buf, sizeof(buf));
+	i2c_stop(i2c);
 	
 	/*twi0_start_transaction(TWI_OP_LIST(
 		TWI_OP(HMC5883L_ADDR | I2C_WRITE, buf, 6)
@@ -142,9 +142,9 @@ void hmc5883l_init(struct hmc5883l *self, struct i2c_interface *i2c, uint8_t add
  */
 void hmc5883l_read_raw(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, int16_t *mzraw) {
 	uint8_t buff[6] = {HMC5883L_DATAREGBEGIN};
-	self->i2c->start_write(self->i2c, self->addr, buff, 1);
-	self->i2c->start_read(self->i2c, self->addr, buff, 6);
-	self->i2c->stop(self->i2c);
+	i2c_start_write(self->i2c, self->addr, buff, 1);
+	i2c_start_read(self->i2c, self->addr, buff, 6);
+	i2c_stop(self->i2c);
 	
 	*mxraw = (int16_t)((buff[0] << 8) | buff[1]);
 	*mzraw = (int16_t)((buff[2] << 8) | buff[3]);

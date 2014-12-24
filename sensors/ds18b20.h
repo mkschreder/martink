@@ -56,12 +56,12 @@
 #define DS18B20_DECIMALSTEPS DS18B20_DECIMALSTEPS_12BIT
 
 struct ds18b20 {
-	struct parallel_interface *gpio;
+	pio_dev_t gpio;
 	gpio_pin_t data_pin;
 };
 
 void ds18b20_init(struct ds18b20 *self,
-	struct parallel_interface *gpio, gpio_pin_t data_pin); 
+	pio_dev_t gpio, gpio_pin_t data_pin); 
 double ds18b20_read_temperature(struct ds18b20 *self);
 
 #endif

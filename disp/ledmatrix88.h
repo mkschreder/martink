@@ -28,7 +28,7 @@
 #include <arch/interface.h>
 
 struct ledmatrix88 {
-	struct parallel_interface *port;
+	pio_dev_t port;
 	uint8_t x_bank, y_bank;
 	uint8_t data[8]; // pixel data
 	uint8_t cur_x, cur_y; // for updates
@@ -36,7 +36,7 @@ struct ledmatrix88 {
 
 //functions
 extern void ledmatrix88_init(struct ledmatrix88 *self,
-	struct parallel_interface *port, uint8_t x_bank, uint8_t y_bank);
+	pio_dev_t port, uint8_t x_bank, uint8_t y_bank);
 extern void ledmatrix88_write_row(struct ledmatrix88 *self, uint8_t row, uint8_t data);
 extern uint8_t ledmatrix88_read_row(struct ledmatrix88 *self, uint8_t row);
 extern void ledmatrix88_clear(struct ledmatrix88 *self);

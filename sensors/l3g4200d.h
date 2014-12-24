@@ -32,14 +32,14 @@
 #define L3G4200D_ADDR (0x69<<1) //device address
 
 struct l3g4200d {
-	struct i2c_interface *i2c;
+	i2c_dev_t i2c;
 	uint8_t addr;
 	int8_t temperatureref;
 	float offsetx, offsety, offsetz; 
 };
 
 //functions
-void l3g4200d_init(struct l3g4200d *self, struct i2c_interface *i2c, uint8_t addr);
+void l3g4200d_init(struct l3g4200d *self, i2c_dev_t i2c, uint8_t addr);
 void l3g4200d_setoffset(struct l3g4200d *self, float offsetx, float offsety, float offsetz);
 void l3g4200d_getrawdata(struct l3g4200d *self,
 	int16_t *gxraw, int16_t *gyraw, int16_t *gzraw);

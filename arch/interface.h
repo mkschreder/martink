@@ -38,41 +38,68 @@
  * This pointer can later be converted to device specific context pointer using
  * container_of() macro (currently defined in util.h)
  */
- 
-struct serial_interface {
+
+struct serial_if;
+
+typedef struct serial_if **serial_dev_t;
+
+struct serial_if {
 	/// getc reads one character from the interface
 	/// returns UART_NO_DATA if none available
-	uint16_t 			(*get)(struct serial_interface *self); 
+	uint16_t 			(*get)(serial_dev_t self); 
 	/// putc writes a character into the interface
 	/// waits for a timeout of 1-2 bytes if output buffer is full 
 	/// discards data if tx buffer is full and no data can be sent
 	/// Returns status of transaction. must return reasonably immidiately. 
-	uint16_t 			(*put)(struct serial_interface *self, uint8_t ch); 
+	uint16_t 			(*put)(serial_dev_t self, uint8_t ch); 
 	/// putn writes a buffer into the interface
 	/// returns number of bytes written
 	/// should return only when data has been at least copied into internal buffer of the driver
 	/// is not required to wait until data has been transmitted on wire
-	size_t				(*putn)(struct serial_interface *self, const uint8_t *data, size_t max_sz);
+	size_t				(*putn)(serial_dev_t self, const uint8_t *data, size_t max_sz);
 	/// reads a number of characters from device
 	/// returns number of bytes read
 	/// returns always without waiting for more data to arrive
 	/// always works with internal rx buffer of the interface
-	size_t				(*getn)(struct serial_interface *self, uint8_t *data, size_t max_sz);
+	size_t				(*getn)(serial_dev_t self, uint8_t *data, size_t max_sz);
 	/// flushes the output buffer and returns only when completed
 	/// must ensure that all data has been sent on wire
-	void					(*flush)(struct serial_interface *self);
+	void					(*flush)(serial_dev_t self);
 	/// returns current number of bytes available for reading
-	size_t 				(*waiting)(struct serial_interface *self);
+	size_t 				(*waiting)(serial_dev_t self);
 }; 
 
-typedef struct serial_interface serial_t; 
+/// writes one character to a generic serial interface
+inline uint16_t serial_putc(serial_dev_t dev, uint8_t ch){
+	return (*dev)->put(dev, ch); 
+}
 
-#define s_putc(ptr_iface, ch) ptr_iface->put(ptr_iface, ch)
-#define s_getc(ptr_iface) ptr_iface->get(ptr_iface)
-#define s_putn(ptr_iface, data, size) ptr_iface->putn(ptr_iface, data, size)
-#define s_getn(ptr_iface, data, size) ptr_iface->getn(ptr_iface, data, size)
-#define s_flush(ptr_iface) ptr_iface->flush(ptr_iface)
-#define s_waiting(ptr_iface) ptr_iface->waiting(ptr_iface)
+/// reads one character form a generic serial interface
+inline uint16_t serial_getc(serial_dev_t dev){
+	return (*dev)->get(dev);
+}
+
+/// writes a string of characters to a generic serial interface
+inline size_t	  serial_putn(serial_dev_t dev,
+	const uint8_t *data, size_t max_sz){
+	return (*dev)->putn(dev, data, max_sz);
+}
+
+/// reads a string of characters from a generic serial interface
+inline size_t serial_getn(serial_dev_t dev,
+	uint8_t *data, size_t max_sz){
+	return (*dev)->getn(dev, data, max_sz); 
+}
+
+/// flushes the pipe
+inline void	 serial_flush(serial_dev_t dev){
+	(*dev)->flush(dev);
+}
+
+/// gets number of bytes waiting in rx buffer
+inline size_t  serial_waiting(serial_dev_t dev){
+	return (*dev)->waiting(dev);
+}
 
 /// status codes returned by methods of the interface
 #define SERIAL_PARITY_ERROR			0x1000
@@ -82,25 +109,6 @@ typedef struct serial_interface serial_t;
 #define SERIAL_BUFFER_FULL  		0x0200             
 /// returned by getc if no data is available
 #define SERIAL_NO_DATA          0x0100
-
-#define DECLARE_SERIAL_INTERFACE(device_name) \
-extern void 		PFDECL(device_name, flush, struct serial_interface *);\
-extern size_t PFDECL(device_name, waiting, struct serial_interface *); \
-extern uint16_t PFDECL(device_name, getc, struct serial_interface*);\
-extern uint16_t PFDECL(device_name, putc, struct serial_interface*, uint8_t data);\
-extern size_t 	PFDECL(device_name, putn, struct serial_interface*, const uint8_t *s, size_t c); \
-extern size_t 	PFDECL(device_name, getn, struct serial_interface*, uint8_t *s, size_t c); 
-
-//extern void PFDECL(device_name, puts, const char *s );
-
-#define CONSTRUCT_SERIAL_INTERFACE(device_name) (struct serial_interface){\
-	.getc = PFNAME(device_name, getc), \
-	.putc = PFNAME(device_name, putc), \
-	.getn = PFNAME(device_name, getn), \
-	.putn = PFNAME(device_name, putn), \
-	.flush = PFNAME(device_name, flush), \
-	.waiting = PFNAME(device_name, waiting), \
-}
 
 /**
  * A packet interface is similar to a serial interface but instead operates on
@@ -161,6 +169,9 @@ struct packet_interface {
 */
 #define PK_ERR_INVALID 0x00010000L
 
+struct pio_if;
+typedef struct pio_if **pio_dev_t;
+
 /**
  * GPIO interface is for implementing any type of bit wise parallel io. A lot 
  * of device can implement this kind of interface - i2c parallel io chips, shift 
@@ -172,14 +183,14 @@ struct packet_interface {
  * bit-wise fashion. It is therefore not designed for direct byte wise or word wise write
  * or read operations. 
  **/
-struct parallel_interface {
+struct pio_if {
 	/// set pin of the output port either high or low. 
-	void 		(*write_pin)(struct parallel_interface *self, uint16_t pin_number, uint8_t value);
+	void 		(*write_pin)(pio_dev_t self, uint16_t pin_number, uint8_t value);
 	/// used to read an input pin. Always returns 0 when reading an output pin. 
-	uint8_t (*read_pin)(struct parallel_interface *self, uint16_t pin_number);
+	uint8_t (*read_pin)(pio_dev_t self, uint16_t pin_number);
 	/// configure pin to be input, output, pulled up, pulled down etc. Not all options may
 	/// be supported by implementation. Function returns 0 on success and 1 on failure. 
-	uint8_t	(*configure_pin)(struct parallel_interface *self, uint16_t pin_number, uint16_t flags);
+	uint8_t	(*configure_pin)(pio_dev_t self, uint16_t pin_number, uint16_t flags);
 	/// used to get status of the pin. Interface allows the implementation to track pin
 	/// changes in the background and report values to the user of the interface.
 	/// Returns pin status (went high/low etc.) and writes time in ticks for when pin
@@ -190,29 +201,89 @@ struct parallel_interface {
 	/// useful for writing libraries that need to measure pulse intervals. The values
 	/// of t_up and t_down must be updated by the implementation as way of measuring when
 	/// the pin went high and when it goes low. Default value returned must be 0. 
-	uint8_t (*get_pin_status)(struct parallel_interface *self, uint16_t pin_number, timestamp_t *t_up, timestamp_t *t_down);
+	uint8_t (*get_pin_status)(pio_dev_t self, uint16_t pin_number, timestamp_t *t_up, timestamp_t *t_down);
 	/// used to write byte or int to an io address. If you have pins PA0, PA1 .. PA7 and
 	/// your registers are 8 bit long then writing to addr 0 should write all of PA pins
 	/// at the same time. For implementations with larger registers, more bits may be
 	/// written. This method is used to write multiple bits in one operation. 
-	uint8_t (*write_word)(struct parallel_interface *self, uint16_t addr, uint32_t value);
+	uint8_t (*write_word)(pio_dev_t self, uint16_t addr, uint32_t value);
 	/// user to read word from an io register. The size of the word depends on the
 	/// implementation. It may be 8 bit or 16 bit or 32 bit. The size is equivalent to
 	/// the full size of io registers of implementation. addr is the index of the io
 	/// register. Implementation must check this value for a valid range and return
 	/// error if it is invalid. 
-	uint8_t (*read_word)(struct parallel_interface *self, uint16_t addr, uint32_t *output); 
+	uint8_t (*read_word)(pio_dev_t self, uint16_t addr, uint32_t *output); 
 }; 
 
+/// set pin of the output port either high or low. 
+inline void 		pio_write_pin(pio_dev_t self, uint16_t pin_number, uint8_t value){
+	(*self)->write_pin(self, pin_number, value);
+}
+
+/// used to read an input pin. Always returns 0 when reading an output pin. 
+inline uint8_t pio_read_pin(pio_dev_t self, uint16_t pin_number){
+	return (*self)->read_pin(self, pin_number);
+}
+
+/// configure pin to be input, output, pulled up, pulled down etc. Not all options may
+/// be supported by implementation. Function returns 0 on success and 1 on failure. 
+inline uint8_t	pio_configure_pin(pio_dev_t self, uint16_t pin_number, uint16_t flags){
+	return (*self)->configure_pin(self, pin_number, flags);
+}
+
+/// used to get status of the pin. 
+inline uint8_t pio_get_pin_status(pio_dev_t self, uint16_t pin_number, timestamp_t *t_up, timestamp_t *t_down){
+	return (*self)->get_pin_status(self, pin_number, t_up, t_down);
+}
+
+/// used to write byte or int to an io address. If you have pins PA0, PA1 .. PA7 and
+/// your registers are 8 bit long then writing to addr 0 should write all of PA pins
+/// at the same time. For implementations with larger registers, more bits may be
+/// written. This method is used to write multiple bits in one operation. 
+inline uint8_t pio_write_word(pio_dev_t self, uint16_t addr, uint32_t value){
+	return (*self)->write_word(self, addr, value);
+}
+
+/// user to read word from an io register. The size of the word depends on the
+/// implementation. It may be 8 bit or 16 bit or 32 bit. The size is equivalent to
+/// the full size of io registers of implementation. addr is the index of the io
+/// register. Implementation must check this value for a valid range and return
+/// error if it is invalid. 
+inline uint8_t pio_read_word(pio_dev_t self, uint16_t addr, uint32_t *output){
+	return (*self)->read_word(self, addr, output);
+}
+
+/// ===========================================
+
+struct i2c_interface;
+typedef struct i2c_interface **i2c_dev_t;
+
+/**
+ * I2C device interface used for reading and writing i2c devices.
+ */
 struct i2c_interface {
-	uint32_t			(*start_write)(struct i2c_interface *self,
+	uint32_t			(*start_write)(i2c_dev_t self,
 		uint8_t address, uint8_t *data, uint16_t max_sz);
 
-	uint32_t			(*start_read)(struct i2c_interface *self,
+	uint32_t			(*start_read)(i2c_dev_t self,
 		uint8_t address, uint8_t *data, uint16_t max_sz);
 
-	void 					(*stop)(struct i2c_interface *self); 
+	void 					(*stop)(i2c_dev_t self); 
 };
+
+inline uint32_t i2c_start_write(i2c_dev_t dev,
+	uint8_t address, uint8_t *data, uint16_t max_sz){
+	return (*dev)->start_write(dev, address, data, max_sz);
+}
+
+inline uint32_t	i2c_start_read(i2c_dev_t dev,
+	uint8_t address, uint8_t *data, uint16_t max_sz){
+	return (*dev)->start_read(dev, address, data, max_sz);
+}
+
+inline void 		i2c_stop(i2c_dev_t dev){
+	(*dev)->stop(dev); 
+}
 
 /**
  * PWM interface is for controlling pwm hardware. Usually it would be built in, timer

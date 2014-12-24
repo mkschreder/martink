@@ -103,9 +103,9 @@ float l3g4200d_gtemp = 0; //temperature used for compensation
  */
 void l3g4200d_settemperatureref(struct l3g4200d *self) {
 	uint8_t data = L3G4200D_OUT_TEMP;
-	self->i2c->start_write(self->i2c, self->addr, &data, 1);
-	self->i2c->start_read(self->i2c, self->addr, &data, 1);
-	self->i2c->stop(self->i2c); 
+	i2c_start_write(self->i2c, self->addr, &data, 1);
+	i2c_start_read(self->i2c, self->addr, &data, 1);
+	i2c_stop(self->i2c); 
 	self->temperatureref = (int8_t) data;
 	//#if L3G4200D_CALIBRATED == 1 && L3G4200D_CALIBRATEDDOTEMPCOMP == 1
 	//l3g4200d_gtemp = (float)rawtemp;
@@ -117,9 +117,9 @@ void l3g4200d_settemperatureref(struct l3g4200d *self) {
  */
 int8_t l3g4200d_gettemperaturediff(struct l3g4200d *self) {
 	uint8_t data = L3G4200D_OUT_TEMP;
-	self->i2c->start_write(self->i2c, self->addr, &data, 1);
-	self->i2c->start_read(self->i2c, self->addr, &data, 1);
-	self->i2c->stop(self->i2c); 
+	i2c_start_write(self->i2c, self->addr, &data, 1);
+	i2c_start_read(self->i2c, self->addr, &data, 1);
+	i2c_stop(self->i2c); 
 	return self->temperatureref - (int8_t)data;
 }
 
@@ -138,9 +138,9 @@ void l3g4200d_setoffset(struct l3g4200d *self, float offsetx, float offsety, flo
 void l3g4200d_read_raw(struct l3g4200d *self, int16_t *gxraw, int16_t *gyraw, int16_t *gzraw) {
 	uint8_t buff[6];
 	uint8_t reg = L3G4200D_OUT_X_L | (1 << 7);
-	self->i2c->start_write(self->i2c, self->addr, &reg, 1);
-	self->i2c->start_read(self->i2c, self->addr, buff, 6);
-	self->i2c->stop(self->i2c); 
+	i2c_start_write(self->i2c, self->addr, &reg, 1);
+	i2c_start_read(self->i2c, self->addr, buff, 6);
+	i2c_stop(self->i2c); 
 	
 	*gxraw = ((buff[1] << 8) | buff[0]);
 	*gyraw = ((buff[3] << 8) | buff[2]);
@@ -181,17 +181,17 @@ void l3g4200d_read_converted(struct l3g4200d *self, float* gx, float* gy, float*
 /*
  * init L3G4200D_
  */
-void l3g4200d_init(struct l3g4200d *self, struct i2c_interface *i2c, uint8_t addr) {
+void l3g4200d_init(struct l3g4200d *self, i2c_dev_t i2c, uint8_t addr) {
 	//enable chip
 	uint8_t reg[] = {L3G4200D_CTRL_REG1, 0};
 	reg[1] = 0x0f; // normal power mode, all axes
-	self->i2c->start_write(self->i2c, self->addr, reg, 2);
-	self->i2c->stop(self->i2c); 
+	i2c_start_write(self->i2c, self->addr, reg, 2);
+	i2c_stop(self->i2c); 
 
 	
 	reg[1] = L3G4200D_CTRL_REG4; reg[1] = L3G4200D_RANGE<<4; // normal power mode, all axes
-	self->i2c->start_write(self->i2c, self->addr, reg, 2);
-	self->i2c->stop(self->i2c);
+	i2c_start_write(self->i2c, self->addr, reg, 2);
+	i2c_stop(self->i2c);
 	/*
 	#if L3G4200D_CALIBRATED == 1
 	//init offset

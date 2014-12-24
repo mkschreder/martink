@@ -24,26 +24,40 @@
 #include "../util.h"
 #include "serial_debugger.h"
 
-#define DEVICE_CAST(from, to) struct serial_debugger *to = container_of(from, struct serial_debugger, interface);  
+#define DEVICE_CAST(from, to) struct serial_debugger *to = container_of(from, struct serial_debugger, _ex_serial);  
+
+static struct serial_if sdbg;
+
+uint16_t 	serial_debugger_getc(serial_dev_t self);
+uint16_t 	serial_debugger_putc(serial_dev_t self, uint8_t ch);
+size_t 		serial_debugger_putn(serial_dev_t self, const uint8_t *data, size_t max_sz); 
+size_t 		serial_debugger_getn(serial_dev_t self, uint8_t *data, size_t max_sz);
+void 			serial_debugger_flush(serial_dev_t self);
+size_t 		serial_debugger_waiting(serial_dev_t self);
 
 void serial_debugger_init(
 	struct serial_debugger *dbg, 
-	struct serial_interface *device, 
-	struct serial_interface *console){
+	serial_dev_t device, 
+	serial_dev_t console){
 	dbg->device = device; 
 	dbg->console = console; 
 	dbg->buf_ptr = 0; 
 	dbg->last_is_read = 2; 
-	dbg->interface = (struct serial_interface){
+	dbg->_ex_serial = 0; 
+}
+
+serial_dev_t serial_debugger_get_serial_interface(struct serial_debugger *self){
+	sdbg = (struct serial_if){
 		.get = serial_debugger_getc, 
 		.put = serial_debugger_putc, 
 		.getn = serial_debugger_getn, 
 		.putn = serial_debugger_putn, 
 		.waiting = serial_debugger_waiting, 
 		.flush = serial_debugger_flush
-	}; 
+	};
+	self->_ex_serial = &sdbg;
+	return &self->_ex_serial; 	
 }
-
 
 static void _do_flush(struct serial_debugger *dbg){
 	if(dbg->last_is_read == 1){
@@ -82,46 +96,46 @@ static void _on_get(struct serial_debugger *dbg, uint16_t ch){
 	dbg->last_is_read = 1; 
 }
 
-uint16_t serial_debugger_getc(struct serial_interface *self){
+uint16_t serial_debugger_getc(serial_dev_t self){
 	DEVICE_CAST(self, dbg); 
 	//assert(dbg->device); 
-	uint16_t d = s_getc(dbg->device); 
+	uint16_t d = serial_getc(dbg->device); 
 	_on_get(dbg, d); 
 	return d; 
 }
 
-uint16_t serial_debugger_putc(struct serial_interface *self, uint8_t ch){
+uint16_t serial_debugger_putc(serial_dev_t self, uint8_t ch){
 	DEVICE_CAST(self, dbg); 
 	//assert(dbg->device); 
-	uint16_t r = s_putc(dbg->device, ch); 
+	uint16_t r = serial_putc(dbg->device, ch); 
 	_on_put(dbg, ch); 
 	return r; 
 }
 
-size_t serial_debugger_putn(struct serial_interface *self, const uint8_t *data, size_t max_sz){
+size_t serial_debugger_putn(serial_dev_t self, const uint8_t *data, size_t max_sz){
 	DEVICE_CAST(self, dbg); 
 	for(int c = 0; c < max_sz; c++) _on_put(dbg, *data++); 
 	//assert(dbg->device);
-	return s_putn(dbg->device, data, max_sz); 
+	return serial_putn(dbg->device, data, max_sz); 
 }
 
-size_t serial_debugger_getn(struct serial_interface *self, uint8_t *data, size_t max_sz){
+size_t serial_debugger_getn(serial_dev_t self, uint8_t *data, size_t max_sz){
 	DEVICE_CAST(self, dbg); 
 	//assert(dbg->device);
-	size_t ret = s_getn(dbg->device, data, max_sz); 
+	size_t ret = serial_getn(dbg->device, data, max_sz); 
 	for(int c = 0; c < max_sz; c++) _on_get(dbg, *data++); 
 	return ret; 
 }
 
-void serial_debugger_flush(struct serial_interface *self){
+void serial_debugger_flush(serial_dev_t self){
 	DEVICE_CAST(self, dbg); 
 	//assert(dbg->device);
-	s_flush(dbg->device); 
+	serial_flush(dbg->device); 
 	_do_flush(dbg); 
 }
 
-size_t serial_debugger_waiting(struct serial_interface *self){
+size_t serial_debugger_waiting(serial_dev_t self){
 	DEVICE_CAST(self, dbg); 
 	//assert(dbg->device);
-	return s_waiting(dbg->device); 
+	return serial_waiting(dbg->device); 
 }

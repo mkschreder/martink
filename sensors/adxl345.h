@@ -25,10 +25,10 @@
 #define ADXL345_ADDR (0x53<<1) //device address
 
 struct adxl345 {
-	struct i2c_interface *i2c;
+	i2c_dev_t i2c;
 	uint8_t addr; 
 };
 
-void adxl345_init(struct adxl345 *self, struct i2c_interface *i2c, uint8_t addr);
+void adxl345_init(struct adxl345 *self, i2c_dev_t i2c, uint8_t addr);
 int8_t adxl345_read_raw(struct adxl345 *self, int16_t *ax, int16_t *ay, int16_t *az); 
 int8_t adxl345_read_adjusted(struct adxl345 *self, float *ax, float *ay, float *az); 

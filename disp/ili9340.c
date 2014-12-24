@@ -296,7 +296,7 @@ static const unsigned char font[] PROGMEM = {
 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-#define spi_writereadbyte(ch) (s_putc(self->serial, (ch)), s_getc(self->serial))
+#define spi_writereadbyte(ch) (serial_putc(self->sdev, (ch)), serial_getc(self->sdev))
 
 /*
 static struct ili9340 {
@@ -341,8 +341,8 @@ static uint16_t _wr_data16(struct ili9340 *self, uint16_t c){
 // than the equivalent code.  Companion function follows.
 #define DELAY 0x80
 
-void ili9340_init(struct ili9340 *self, struct serial_interface *spi, gpio_pin_t cs_pin, gpio_pin_t dc_pin, gpio_pin_t rst_pin) {
-	self->serial = spi;
+void ili9340_init(struct ili9340 *self, serial_dev_t spi, gpio_pin_t cs_pin, gpio_pin_t dc_pin, gpio_pin_t rst_pin) {
+	self->sdev = spi;
 	self->cs_pin = cs_pin;
 	self->dc_pin = dc_pin;
 	self->rst_pin = rst_pin;

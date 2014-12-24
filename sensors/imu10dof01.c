@@ -109,12 +109,6 @@ void imu10dof01_calibrategyrooffset(void) {
  * initialize dof components
  */
 void imu10dof01_init(void) {
-	#if IMU10DOF01_I2CINIT == 1
-	//init i2c
-	i2c_init();
-	_delay_us(10);
-	#endif
-
 	//init accellerometer
 	adxl345_init();
 	//init gyroscope

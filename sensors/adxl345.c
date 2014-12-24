@@ -99,21 +99,21 @@ static uint8_t firstread = 1;
 /*
  * initialize the accellerometer
  */
-void adxl345_init(struct adxl345 *self, struct i2c_interface *i2c, uint8_t addr) {
+void adxl345_init(struct adxl345 *self, i2c_dev_t i2c, uint8_t addr) {
 	self->i2c = i2c;
 	self->addr = (addr)?addr:ADXL345_ADDR; 
 	uint8_t data[2];
 	data[0] = 0x31; data[1] = ADXL345_RANGE | (ADXL345_FULLRANGE<<3);
-	i2c->start_write(i2c, self->addr, data, 2);
+	i2c_start_write(i2c, self->addr, data, 2);
 	data[0] = 0x2D; data[1] = 0x00; // disable
-	i2c->start_write(i2c, self->addr, data, 2);
+	i2c_start_write(i2c, self->addr, data, 2);
 	data[0] = 0x2D; data[1] = 0x16; // standby
-	i2c->start_write(i2c, self->addr, data, 2);
+	i2c_start_write(i2c, self->addr, data, 2);
 	data[0] = 0x2D; data[1] = 0x08; // enable
-	i2c->start_write(i2c, self->addr, data, 2);
+	i2c_start_write(i2c, self->addr, data, 2);
 	data[0] = 0x2E; data[1] = 0x80; // data_ready on int2
-	i2c->start_write(i2c, self->addr, data, 2);
-	i2c->stop(i2c); 
+	i2c_start_write(i2c, self->addr, data, 2);
+	i2c_stop(i2c); 
 }
 
 /*
@@ -122,19 +122,19 @@ void adxl345_init(struct adxl345 *self, struct i2c_interface *i2c, uint8_t addr)
 void adxl345_write_offset(struct adxl345 *self, int8_t offsetx, int8_t offsety, int8_t offsetz) {
 	uint8_t data[2];
 	data[0] = 0x1E; data[1] = offsetx; 
-	self->i2c->start_write(self->i2c, self->addr, data, 2);
+	i2c_start_write(self->i2c, self->addr, data, 2);
 	data[0] = 0x1F; data[1] = offsety; 
-	self->i2c->start_write(self->i2c, self->addr, data, 2);
+	i2c_start_write(self->i2c, self->addr, data, 2);
 	data[0] = 0x20; data[1] = offsetz;
-	self->i2c->start_write(self->i2c, self->addr, data, 2);
-	self->i2c->stop(self->i2c); 
+	i2c_start_write(self->i2c, self->addr, data, 2);
+	i2c_stop(self->i2c); 
 }
 
 static uint8_t _adxl345_read_register(struct adxl345 *self, uint8_t reg) {
 	uint8_t value; 
-	self->i2c->start_write(self->i2c, self->addr, &reg, 1);
-	self->i2c->start_read(self->i2c, self->addr, &value, 1);
-	self->i2c->stop(self->i2c);
+	i2c_start_write(self->i2c, self->addr, &reg, 1);
+	i2c_start_read(self->i2c, self->addr, &value, 1);
+	i2c_stop(self->i2c);
 	return value;
 }
 

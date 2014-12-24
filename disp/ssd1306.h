@@ -10,11 +10,11 @@ extern "C" {
 // #define SSD1306_128_32
 
 typedef struct ssd1306 {
-	struct i2c_interface *i2c; 
+	i2c_dev_t i2c; 
 	uint8_t r_row_start, r_row_end; 
 } ssd1306_t;
 
-void ssd1306_init(ssd1306_t *dev, struct i2c_interface *i2c);
+void ssd1306_init(ssd1306_t *dev, i2c_dev_t i2c);
 void ssd1306_set_region(ssd1306_t *dev, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1); 
 void ssd1306_fill(ssd1306_t *dev, fb_color_t color, size_t len); 
 void ssd1306_draw(ssd1306_t *dev, uint16_t x, uint16_t y, fb_image_t img); 

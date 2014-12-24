@@ -24,11 +24,13 @@
 
 struct twi_device {
 	uint8_t id;
-	struct i2c_interface interface; 
+	struct i2c_interface *interface; 
 };
 
 #define I2C_READ    1
 #define I2C_WRITE   0
 
-void twi_init(uint8_t dev);
-uint8_t twi_get_interface(uint8_t id, struct twi_device *dev);
+i2c_dev_t twi_get_interface(uint8_t id);
+
+//void twi_init(uint8_t dev);
+//uint8_t twi_get_interface(uint8_t id, struct twi_device *dev);

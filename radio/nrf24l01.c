@@ -38,7 +38,7 @@
 #undef spi_init
 #define spi_init() {}
 #undef spi_writereadbyte
-#define spi_writereadbyte(ch) (s_putc(nrf->spi, ch), s_getc(nrf->spi))
+#define spi_writereadbyte(ch) (serial_putc(nrf->spi, ch), serial_getc(nrf->spi))
 
 /*
  * read one register
@@ -409,22 +409,14 @@ void nrf24l01_setcrclength(struct nrf24l01 *nrf) {
 /*
  * init nrf24l01
  */
-void nrf24l01_init(struct nrf24l01 *nrf, struct serial_interface *spi, gpio_pin_t cs, gpio_pin_t ce) {
+void nrf24l01_init(struct nrf24l01 *nrf, serial_dev_t spi, gpio_pin_t cs, gpio_pin_t ce) {
 	nrf->spi = spi; 
 	nrf->cs_pin = cs; 
 	nrf->ce_pin = ce; 
 	
 	gpio_configure(nrf->cs_pin, GP_OUTPUT); 
 	gpio_configure(nrf->ce_pin, GP_OUTPUT); 
-	/*nrf_ddr = ddr;
-	nrf_port = port;
-	nrf_ce_pin = ce_pin;
-	nrf_cs_pin = cs_pin;
 	
-	//setup port
-	NRF24L01_DDR |= (1<<NRF24L01_CSN); //output
-	NRF24L01_DDR |= (1<<NRF24L01_CE); //output
-*/
 	spi_init(); //init spi
 
 	nrf24l01_CElo; //low CE

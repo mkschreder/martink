@@ -30,12 +30,13 @@
 #define L74HC595_STCPIN PB1
 //#define L74HC595_CEPIN PB2
 struct l74hc595 {
-	struct serial_interface *spi;
-	struct parallel_interface *gpio;
+	serial_dev_t spi;
+	pio_dev_t gpio;
 	gpio_pin_t ce_pin;
 	gpio_pin_t stc_pin;
 }; 
 
-void l74hc595_init(struct l74hc595 *self, struct serial_interface *spi, struct parallel_interface *gpio, gpio_pin_t ce_pin, gpio_pin_t stc_pin);
+void l74hc595_init(struct l74hc595 *self, serial_dev_t spi,
+	pio_dev_t gpio, gpio_pin_t ce_pin, gpio_pin_t stc_pin);
 void l74hc595_write(struct l74hc595 *self, uint8_t val);
  

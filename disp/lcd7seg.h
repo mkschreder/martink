@@ -20,7 +20,7 @@ typedef enum {
 } lcd7seg_type;
 
 struct led7seg {
-	struct parallel_interface *port; 
+	pio_dev_t port; 
 	uint8_t type;
 	uint8_t cs_pin;
 	uint8_t data_port;
@@ -29,7 +29,7 @@ struct led7seg {
 
 //functions
 void led7seg_init(struct led7seg *self, 
-	struct parallel_interface *port, uint8_t data_port, gpio_pin_t cs_pin, lcd7seg_type type);
+	pio_dev_t port, uint8_t data_port, gpio_pin_t cs_pin, lcd7seg_type type);
 void led7seg_putc(struct led7seg *self, uint8_t c, uint8_t dot);
 
 void led7seg_on(struct led7seg *self);

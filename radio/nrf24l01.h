@@ -33,43 +33,13 @@ extern "C" {
 #endif
 
 struct nrf24l01 {
-	struct serial_interface *spi; 
+	serial_dev_t spi; 
 	gpio_pin_t cs_pin; 
 	gpio_pin_t ce_pin; 
 }; 
 
-//CE and CSN port definitions
-/*#define FX_RADIO*/
-/*
-#ifdef FX_FLIGHT_CONTROL
-#define NRF24L01_DDR DDRD
-#define NRF24L01_PORT PORTD
-#define NRF24L01_CE PD2
-#define NRF24L01_CSN PD3
-#elif FX_RADIO
-#define NRF24L01_DDR DDRB
-#define NRF24L01_PORT PORTB
-#define NRF24L01_CE PB0
-#define NRF24L01_CSN PB1
-#else
-#error "FX_FLIGHT_CONTROL or FX_RADIO needs to be defined!"
-#endif
-*/
-/*
-#define NRF24L01_DDR *nrf_ddr
-#define NRF24L01_PORT *nrf_port
-#define NRF24L01_CE nrf_ce_pin
-#define NRF24L01_CSN nrf_cs_pin
-*/
 #define NRF24L01_MAX_CHANNEL 128
 
-/*
-//CE and CSN functions
-#define nrf24l01_CSNhi NRF24L01_PORT |= (1<<NRF24L01_CSN);
-#define nrf24l01_CSNlo NRF24L01_PORT &= ~(1<<NRF24L01_CSN);
-#define nrf24l01_CEhi NRF24L01_PORT |=  (1<<NRF24L01_CE);
-#define nrf24l01_CElo NRF24L01_PORT &= ~(1<<NRF24L01_CE);
-*/
 //power setup
 #define NRF24L01_RF24_PA_MIN 1
 #define NRF24L01_RF24_PA_LOW 2
@@ -126,8 +96,7 @@ struct nrf24l01 {
 #define NRF24L01_PRINTENABLE 0
 
 extern void nrf24l01_init(struct nrf24l01 *nrf, 
-	struct serial_interface *spi, 
-	gpio_pin_t cs, gpio_pin_t ce);
+	serial_dev_t spi, gpio_pin_t cs, gpio_pin_t ce);
 extern uint8_t nrf24l01_getstatus(struct nrf24l01 *nrf);
 extern uint8_t nrf24l01_readready(struct nrf24l01 *nrf, uint8_t* pipe); 
 extern void nrf24l01_read(struct nrf24l01 *nrf, uint8_t *data);

@@ -22,15 +22,8 @@
 
 #include "autoconf.h"
 
-/*
-extern uint16_t PFDECL(CONFIG_SPI0_NAME, waiting, void); 
-extern uint16_t PFDECL(CONFIG_SPI0_NAME, getc, void);
-extern void PFDECL(CONFIG_SPI0_NAME, putc, uint8_t data);
-extern void PFDECL(CONFIG_SPI0_NAME, puts, const char *s );
-extern size_t PFDECL(CONFIG_SPI0_NAME, putn, const char *s, size_t c); 
-extern size_t PFDECL(CONFIG_SPI0_NAME, getn, char *s, size_t c); 
-*/
-//DEFINE_SERIAL_INTERFACE(CONFIG_SPI0_NAME); 
+uint8_t spi_putc(uint8_t dev, uint8_t ch);
 
-void PFDECL(CONFIG_SPI0_NAME, init, void);
+serial_dev_t spi_get_serial_interface(uint8_t dev);
+
 #define spi0_init() PFCALL(CONFIG_SPI0_NAME, init)

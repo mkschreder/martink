@@ -106,10 +106,10 @@ Please refer to LICENSE file for licensing information.
 #define LCD_FUNCTION_DEFAULT    LCD_FUNCTION_4BIT_2LINES 
 #endif
 
-#define set_pin(pin) self->port->write_pin(self->port, pin, 1)
-#define clear_pin(pin) self->port->write_pin(self->port, pin, 0)
-#define write_byte(byte) self->port->write_word(self->port, 0, (byte) & 0xff)
-#define read_pin(pin) self->port->read_pin(self->port, (pin))
+#define set_pin(pin) pio_write_pin(self->port, pin, 1)
+#define clear_pin(pin) pio_write_pin(self->port, pin, 0)
+#define write_byte(byte) pio_write_word(self->port, 0, (byte) & 0xff)
+#define read_pin(pin) pio_read_pin(self->port, (pin))
 
 /* toggle Enable Pin to initiate write */
 static void toggle_e(struct lcd *self)
@@ -438,7 +438,7 @@ Input:    dispAttr LCD_DISP_OFF            display off
                    LCD_DISP_CURSOR_BLINK   display on, cursor on flashing
 Returns:  none
 *************************************************************************/
-void lcd_init(struct lcd *self, struct parallel_interface *port, uint8_t dispAttr)
+void lcd_init(struct lcd *self, pio_dev_t port, uint8_t dispAttr)
 {
 	self->port = port;
 	

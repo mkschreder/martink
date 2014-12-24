@@ -80,14 +80,14 @@ static float azold = 0;
 static uint8_t firstread = 1;
 #endif
 
-void mma7455_init(struct mma7455 *self, struct i2c_interface *i2c, uint8_t addr, uint8_t mode) {
+void mma7455_init(struct mma7455 *self, i2c_dev_t i2c, uint8_t addr, uint8_t mode) {
 	self->i2c = i2c;
 	self->addr = addr;
 	self->mode = mode;
 	
 	uint8_t data[2] = {0x16, MMA7455_RANGE};
-	i2c->start_write(i2c, addr, data, 2);
-	i2c->stop(i2c);
+	i2c_start_write(i2c, addr, data, 2);
+	i2c_stop(i2c);
 }
 
 #if MMA7455_GETATTITUDE == 1
@@ -106,9 +106,9 @@ void mma7455_getpitchroll(struct mma7455 *self, float ax, float ay, float az, fl
 
 static uint8_t mma7455_read_reg(struct mma7455 *self, uint8_t reg){
 	uint8_t data; 
-	self->i2c->start_write(self->i2c, self->addr, &reg, 1);
-	self->i2c->start_read(self->i2c, self->addr, &data, 1);
-	self->i2c->stop(self->i2c);
+	i2c_start_write(self->i2c, self->addr, &reg, 1);
+	i2c_start_read(self->i2c, self->addr, &data, 1);
+	i2c_stop(self->i2c);
 	return data; 
 }
 

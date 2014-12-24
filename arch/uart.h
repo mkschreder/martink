@@ -28,7 +28,6 @@
 
 #ifdef __cplusplus
 extern "C" {
-#include <cstdlib>
 #endif
 
 extern FILE *uart0_fd;

@@ -23,7 +23,7 @@ References:
 
 
 struct mpu6050{
-	struct i2c_interface *i2c;
+	i2c_dev_t i2c;
 	uint8_t addr; 
 }; 
 
@@ -32,7 +32,7 @@ struct mpu6050{
 #define MPU6050_GETATTITUDE 0
 
 //functions
-void mpu6050_init(struct mpu6050 *self, struct i2c_interface *i2c, uint8_t addr);
+void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr);
 uint8_t mpu6050_probe(struct mpu6050 *self);
 
 #if MPU6050_GETATTITUDE == 0

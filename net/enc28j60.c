@@ -240,13 +240,13 @@
 // default mac. (A random D-link mac) 
 const eth_mac_t default_mac = {0x00, 0x05, 0x5D, 0x12, 0x43, 0x85};
 
-#define CS_LO(self) self->port->write_pin(self->port, self->cs_pin, 0)
+#define CS_LO(self) pio_write_pin(self->port, self->cs_pin, 0)
 // set CS to 1 = passive
-#define CS_HI(self) self->port->write_pin(self->port, self->cs_pin, 1)
+#define CS_HI(self) pio_write_pin(self->port, self->cs_pin, 1)
 
 #define enc28j60_writereadbyte(self, ch) (\
-	self->serial->put(self->serial, ch),\
-	self->serial->get(self->serial)\
+	serial_putc(self->serial, ch),\
+	serial_getc(self->serial)\
 )
 
 static uint8_t _enc28j60_read_reg(struct enc28j60 *self, uint8_t op, uint8_t address)
@@ -394,7 +394,8 @@ void enc28j60_set_mac_addr(struct enc28j60 *self, const eth_mac_t macaddr){
 }
 
 //*****************************************************************************
-void enc28j60_init(struct enc28j60 *self, struct serial_interface *serial, struct parallel_interface *port, gpio_pin_t cs_pin)
+void enc28j60_init(struct enc28j60 *self, serial_dev_t serial,
+	pio_dev_t port, gpio_pin_t cs_pin)
 {
 	self->serial = serial;
 	self->cs_pin = cs_pin;
@@ -402,7 +403,7 @@ void enc28j60_init(struct enc28j60 *self, struct serial_interface *serial, struc
 	
 	// initialize I/O
 	// cs as output:
-	port->configure_pin(port, cs_pin, GP_OUTPUT);
+	pio_configure_pin(port, cs_pin, GP_OUTPUT);
 	
 	//ENC28J60_CONTROL_DDR |= (1 << ENC28J60_CONTROL_CS);
 	CS_HI(self); // ss=0

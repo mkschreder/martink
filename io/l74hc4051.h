@@ -28,13 +28,13 @@
 #define L74HC4051_MAXCH 8
 
 struct l74hc4051 {
-	struct parallel_interface *port; 
+	pio_dev_t port; 
 	gpio_pin_t s0_pin;
 	gpio_pin_t s1_pin;
 	gpio_pin_t s2_pin; 
 };
 
-extern void l74hc4051_init(struct l74hc4051 *self, struct parallel_interface *port,
+extern void l74hc4051_init(struct l74hc4051 *self, pio_dev_t port,
 		gpio_pin_t s0_pin, gpio_pin_t s1_pin, gpio_pin_t s2_pin);
 extern void l74hc4051_setchannel(struct l74hc4051 *self, uint8_t channel);
 

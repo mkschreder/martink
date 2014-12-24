@@ -23,13 +23,13 @@ extern "C" {
 #define HMC5883L_ADDR (0x1E<<1) //device address
 
 struct hmc5883l {
-	struct i2c_interface *i2c;
+	i2c_dev_t i2c;
 	uint8_t addr;
 	float scale; 
 };
 
 //functions
-void hmc5883l_init(struct hmc5883l *self, struct i2c_interface *i2c, uint8_t addr, uint8_t scale);
+void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr, uint8_t scale);
 void hmc5883l_read_raw(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, int16_t *mzraw);
 void hmc5883l_read_adjusted(struct hmc5883l *self, float *mx, float *my, float *mz);
 

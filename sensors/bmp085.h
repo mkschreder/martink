@@ -35,7 +35,7 @@ extern "C" {
 #define BMP085_ADDR (0x77<<1) //0x77 default I2C address
 
 struct bmp085 {
-	struct i2c_interface *i2c;
+	i2c_dev_t i2c;
 	uint8_t addr;
 	int regac1, regac2, regac3, regb1, regb2, regmb, regmc, regmd;
 	unsigned int regac4, regac5, regac6;
@@ -43,7 +43,7 @@ struct bmp085 {
 
 //functions
 /// inits the device over the interface supplied 
-void bmp085_init(struct bmp085 *self, struct i2c_interface *i2c, uint8_t addr);
+void bmp085_init(struct bmp085 *self, i2c_dev_t i2c, uint8_t addr);
 /// returns pressure 
 long bmp085_read_pressure(struct bmp085 *self);
 /// returns altitude

@@ -51,13 +51,13 @@ extern "C" {
 #endif
 
 struct dht {
-	struct parallel_interface *gpio;
+	pio_dev_t gpio;
 	gpio_pin_t signal_pin;
 	uint8_t sensor_type; 
 };
 
 void dht_init(struct dht *self,
-	struct parallel_interface *gpio, gpio_pin_t signal_pin, uint8_t sensor_type); 
+	pio_dev_t gpio, gpio_pin_t signal_pin, uint8_t sensor_type); 
 int8_t dht_read(struct dht *self, int8_t *temperature, int8_t *humidity);
 
 #ifdef __cplusplus

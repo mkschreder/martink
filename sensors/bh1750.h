@@ -28,11 +28,11 @@
 #define BH1750_ADDR (0x23<<1) //device address
 
 struct bh1750 {
-	struct i2c_interface *i2c;
+	i2c_dev_t i2c;
 	uint8_t addr; 
 };
 
-void bh1750_init(struct bh1750 *self, struct i2c_interface *i2c, uint8_t addr);
+void bh1750_init(struct bh1750 *self, i2c_dev_t i2c, uint8_t addr);
 uint16_t bh1750_read_intensity_lux(struct bh1750 *self);
 
 #endif

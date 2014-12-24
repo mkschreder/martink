@@ -68,11 +68,11 @@ const static uint16_t rc_defaults[6] = {1000, 1500, 1500, 1500, 1500, 1500};
 struct multiwii_board {
 	uint16_t 				rc_values[6]; 
 	timestamp_t 		rc_reset_timeout; 
-	struct parallel_interface gpio0; 
+	pio_dev_t gpio0; 
+	i2c_dev_t twi0; 
 	struct bmp085 bmp;
 	struct mpu6050 mpu;
 	struct hmc5883l hmc; 
-	struct twi_device twi0; 
 	struct ssd1306 ssd;
 	struct fc_quad_interface interface; 
 }; 
@@ -117,29 +117,6 @@ static void compute_rc_values(void){
 	}
 }
 
-/*
-#include <lwip/api.h>
-#include <lwip/ip.h>
-#include <lwip/udp.h>
-*/
-/*
-// Function gets called when we recieve data
-err_t RecvUTPCallBack(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip_addr *addr, u16_t port){
-   
-    volatile int totaal_lengte=0;
-    totaal_lengte = p->tot_len;
-    volatile int line=40;
-
-    while(1){
-        line+=8;
-        if(p->len != p->tot_len){
-            p=p->next;
-        }
-        else break;
-    }
-    pbuf_free(p);
-}
-*/
 
 void mwii_process_events(void){
 	compute_rc_values(); 
@@ -262,16 +239,13 @@ static void __init board_init(void){
 
 	brd->gpio0 = gpio_get_parallel_interface();
 	
-	if(!twi_get_interface(0, &brd->twi0)){
-		kprintf("NO I2C!\n"); 
-		while(1); 
-	}
+	brd->twi0 = twi_get_interface(0);
 	
 	//hmc5883l_init(); 
-	mpu6050_init(&brd->mpu, &brd->twi0.interface, MPU6050_ADDR); 
+	mpu6050_init(&brd->mpu, brd->twi0, MPU6050_ADDR); 
 	kdebug("MPU6050 .. %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
 	
-	bmp085_init(&brd->bmp, &brd->twi0.interface, BMP085_ADDR); 
+	bmp085_init(&brd->bmp, brd->twi0, BMP085_ADDR); 
 	kdebug("BMP085: reading pressure: %lu, reading temp: %d\n",
 		bmp085_read_pressure(&brd->bmp), bmp085_read_temperature(&brd->bmp));
 		

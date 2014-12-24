@@ -39,7 +39,7 @@ void ledmatrix88_clear(struct ledmatrix88 *self) {
 	memset(self->data, 0, sizeof(self->data)); 
 }
 
-void ledmatrix88_init(struct ledmatrix88 *self, struct parallel_interface *port, uint8_t x_bank, uint8_t y_bank) {
+void ledmatrix88_init(struct ledmatrix88 *self, pio_dev_t port, uint8_t x_bank, uint8_t y_bank) {
 	self->port = port; 
 	self->x_bank = x_bank;
 	self->y_bank = y_bank;
@@ -58,8 +58,8 @@ uint8_t ledmatrix88_read_row(struct ledmatrix88 *self, uint8_t row){
 void ledmatrix88_update(struct ledmatrix88 *self) {
 	//emit column data
 	for(int row = 0; row < 8; row++){
-		self->port->write_word(self->port, self->x_bank, self->data[row]);
-		self->port->write_word(self->port, self->y_bank, (1 << row));
+		pio_write_word(self->port, self->x_bank, self->data[row]);
+		pio_write_word(self->port, self->y_bank, (1 << row));
 	}
 }
 

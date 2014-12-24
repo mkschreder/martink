@@ -25,9 +25,9 @@
 
 #include "ds18b20.h"
 
-#define pin_write(value) self->gpio->write_pin(self->gpio, self->data_pin, value)
-#define pin_dir(dir) self->gpio->configure_pin(self->gpio, self->data_pin, dir)
-#define pin_read() self->gpio->read_pin(self->gpio, self->data_pin)
+#define pin_write(value) pio_write_pin(self->gpio, self->data_pin, value)
+#define pin_dir(dir) pio_configure_pin(self->gpio, self->data_pin, dir)
+#define pin_read() pio_read_pin(self->gpio, self->data_pin)
 
 static uint8_t ds18b20_reset(struct ds18b20 *self) {
 	uint8_t i;
@@ -114,7 +114,7 @@ static uint8_t ds18b20_readbyte(struct ds18b20 *self){
 
 
 void ds18b20_init(struct ds18b20 *self,
-	struct parallel_interface *gpio, gpio_pin_t data_pin){
+	pio_dev_t gpio, gpio_pin_t data_pin){
 	self->gpio = gpio; 
 	self->data_pin = data_pin; 
 }

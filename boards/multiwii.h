@@ -39,20 +39,9 @@ extern "C" {
 #define PWM_MIN MINCOMMAND
 #define PWM_MAX 2000
 
-/*
-void mwii_read_accelerometer(double *x, double *y, double *z);
-void mwii_read_gyroscope(double *x, double *y, double *z);
-void mwii_read_magnetometer(int16_t *x, int16_t *y, int16_t *z);
-int16_t mwii_read_altitude(void); 
-int16_t mwii_read_pressure(void); 
-int16_t mwii_read_temperature(void);
-*/
 void mwii_init(void); 
 void mwii_process_events(void);
-/*
-void mwii_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right);
-uint8_t mwii_read_receiver(struct rx_receiver_values *in);
-*/
+
 struct fc_quad_interface mwii_get_fc_quad_interface(void);
 
 #define MWII_LED_PIN GPIO_PB5
@@ -71,38 +60,6 @@ enum {
 #define fc_process_events() mwii_process_events()
 #define fc_get_interface() mwii_get_fc_quad_interface()
 #define FC_LED_PIN MWII_LED_PIN
-
-/*
-enum {
-	RC_IN0 = 0, 
-	RC_IN1, 
-	RC_IN2, 
-	RC_IN3, 
-	RC_IN4, 
-	RC_IN5, 
-	PWM_FRONT, 
-	PWM_BACK, 
-	PWM_LEFT, 
-	PWM_RIGHT, 
-	PWM_GIMBAL,
-	PWM_COUNT, 
-	LED_PIN
-}; 
-
-enum {
-	RC_THROTTLE = RC_IN0, 
-	RC_YAW 			= RC_IN1, 
-	RC_PITCH 		= RC_IN2,
-	RC_ROLL 		= RC_IN3,
-	RC_MODE 		= RC_IN4
-}; 
-
-void brd_init(void); 
-void brd_process_events(void); 
-
-void set_pin(uint8_t pin, uint16_t value);
-uint16_t get_pin(uint8_t pin);
-*/
 
 #ifdef __cplusplus
 }

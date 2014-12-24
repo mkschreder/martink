@@ -112,7 +112,7 @@ extern "C" {
 #endif
 
 struct ili9340 {
-	struct serial_interface *serial;
+	serial_dev_t sdev;
 	gpio_pin_t cs_pin, rst_pin, dc_pin;
 
 	uint16_t screen_width, screen_height; 
@@ -122,8 +122,7 @@ struct ili9340 {
 	uint16_t scroll_start; 
 };
 
-void ili9340_init(struct ili9340 *self,
-	struct serial_interface *spi, gpio_pin_t cs_pin, gpio_pin_t dc_pin, gpio_pin_t rst_pin);
+void ili9340_init(struct ili9340 *self, serial_dev_t spi, gpio_pin_t cs_pin, gpio_pin_t dc_pin, gpio_pin_t rst_pin);
 void ili9340_drawFastVLine(struct ili9340 *self, int16_t x, int16_t y, int16_t h,
  uint16_t color);
 void ili9340_drawFastHLine(struct ili9340 *self, int16_t x, int16_t y, int16_t h,

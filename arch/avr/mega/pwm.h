@@ -61,7 +61,7 @@
 	)
 
 	#define pwm2_set(speed) (\
-		timer1_set_channel_a(map(speed, 0, 2000, 0, 127))\
+		timer1_set_channel_a(map(speed, 0, 2000, 0, 250))\
 	)
 
 	#define pwm3_enable() (\
@@ -71,26 +71,26 @@
 	)
 
 	#define pwm3_set(speed) (\
-		timer1_set_channel_b(map(speed, 0, 2000, 0, 127))\
+		timer1_set_channel_b(map(speed, 0, 2000, 0, 250))\
 	)
 #endif
 
 #define pwm4_enable() (\
 	timer2_mode(TIM2_MODE_FASTPWM_TOPMAX),\
 	timer2_outa_mode(TIM2_OUTA_MODE_CLEAR),\
-	timer2_set_clock(TIM2_CLOCK_DIV128)\
+	timer2_set_clock(TIM2_CLOCK_DIV256)\
 )
 
 #define pwm4_set(speed) (\
-	timer2_set_channel_a(map(speed, 0, 2000, 0, 250))\
+	timer2_set_channel_a(map(speed, 0, 2000, 0, 127))\
 )
 
 #define pwm5_enable() (\
 	timer2_mode(TIM2_MODE_FASTPWM_TOPMAX),\
 	timer2_outb_mode(TIM2_OUTB_MODE_CLEAR),\
-	timer2_set_clock(TIM2_CLOCK_DIV128)\
+	timer2_set_clock(TIM2_CLOCK_DIV256)\
 )
 
 #define pwm5_set(speed) (\
-	timer2_set_channel_b(map(speed, 0, 2000, 0, 250))\
+	timer2_set_channel_b(map(speed, 0, 2000, 0, 127))\
 )

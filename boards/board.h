@@ -21,8 +21,10 @@
 
 #pragma once
 
+#include "interface.h"
+
 #if defined(CONFIG_BOARD_MULTIWII)
-#include "multiwii.h"
+#include "flight_control/multiwii.h"
 #elif defined(CONFIG_BOARD_PROMINI_RXTX)
 #include "promini_rftrx.h"
 #elif defined(CONFIG_BOARD_ARDUINO_DUE)

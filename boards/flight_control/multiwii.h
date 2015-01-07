@@ -32,7 +32,7 @@ extern "C" {
 #define BOARD
 
 #include <inttypes.h>
-#include "interface.h"
+#include "../interface.h"
 
 #define MINCOMMAND 800
 

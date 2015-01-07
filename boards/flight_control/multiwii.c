@@ -36,6 +36,14 @@
 #include <string.h>
 #include <stdlib.h>
 
+
+void time_init(void); 
+void uart_init(void); 
+void gpio_init(void); 
+void spi_init(void); 
+void twi_init(void); 
+void pwm_init(void); 
+
 /*
 #define FRONT_PIN PD3
 #define RIGHT_PIN PB1
@@ -174,7 +182,7 @@ void _mwii_write_motors(struct fc_quad_interface *self,
 }
 
 uint8_t _mwii_read_receiver(struct fc_quad_interface *self, 
-		uint16_t *rc_thr, uint16_t *rc_pitch, uint16_t *rc_yaw, uint16_t *rc_roll,
+		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1) {
 	*rc_thr = 		brd->rc_values[RC_THROTTLE]; 
 	*rc_pitch = 	brd->rc_values[RC_PITCH]; 
@@ -206,26 +214,18 @@ struct fc_quad_interface mwii_get_fc_quad_interface(void){
 
 void soc_init(void); 
 
-void initproc board_init(void){
-	soc_init(); 
+void board_init(void){
+	//soc_init(); 
+	time_init(); 
+	uart_init(); 
+	gpio_init();
+	//spi_init(); 
+	twi_init(); 
+	pwm_init(); 
+	sei(); 
 	
 	// first thing must enable interrupts
 	kdebug("Booting MultiWii Board\n");
-	
-	//while(1); 
-	// disable external ints
-	//EICRA = 0;
-	//EIMSK = 0;
-	
-	//uart0_init(38400);
-	
-	//timestamp_init(); 
-	
-	//uart0_puts("booting..\n"); 
-	//delay_us(5000); 
-	
-	//twi0_init_default(); 
-	//spi0_init(); 
 	
 	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
 	//gpio_set(GPIO_MWII_LED); 
@@ -260,4 +260,7 @@ void initproc board_init(void){
 	//pwm5_enable();
 	
 	kdebug("MultiWii initialized!\n");
+	
+	// let the escs init as well
+	delay_us(500000L); 
 }

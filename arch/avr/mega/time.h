@@ -59,13 +59,13 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 
 #define TIM0_OUTA_MODE_NONE				(0)
 #define TIM0_OUTA_MODE_TOGGLE			(_BV(COM0A0))
-#define TIM0_OUTA_MODE_SET				(_BV(COM0A1))
-#define TIM0_OUTA_MODE_CLEAR			(_BV(COM0A1) | _BV(COM0A0))
+#define TIM0_OUTA_MODE_CLEAR			(_BV(COM0A1))
+#define TIM0_OUTA_MODE_SET				(_BV(COM0A1) | _BV(COM0A0))
 
 #define TIM0_OUTB_MODE_NONE				(0)
 #define TIM0_OUTB_MODE_TOGGLE			(_BV(COM0B0))
-#define TIM0_OUTB_MODE_SET				(_BV(COM0B1))
-#define TIM0_OUTB_MODE_CLEAR			(_BV(COM0B1) | _BV(COM0B0))
+#define TIM0_OUTB_MODE_CLEAR			(_BV(COM0B1))
+#define TIM0_OUTB_MODE_SET				(_BV(COM0B1) | _BV(COM0B0))
 
 // wgm02 is in tccr0b, but one bit to the right
 #define timer0_mode(tim0_mode) (\
@@ -130,13 +130,13 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 
 #define TIM1_OUTA_MODE_NONE				(0)
 #define TIM1_OUTA_MODE_TOGGLE			(_BV(COM1A0))
-#define TIM1_OUTA_MODE_SET				(_BV(COM1A1))
-#define TIM1_OUTA_MODE_CLEAR			(_BV(COM1A1) | _BV(COM1A0))
+#define TIM1_OUTA_MODE_CLEAR			(_BV(COM1A1))
+#define TIM1_OUTA_MODE_SET				(_BV(COM1A1) | _BV(COM1A0))
 
 #define TIM1_OUTB_MODE_NONE				(0)
 #define TIM1_OUTB_MODE_TOGGLE			(_BV(COM1B0))
-#define TIM1_OUTB_MODE_SET				(_BV(COM1B1))
-#define TIM1_OUTB_MODE_CLEAR			(_BV(COM1B1) | _BV(COM1B0))
+#define TIM1_OUTB_MODE_CLEAR			(_BV(COM1B1))
+#define TIM1_OUTB_MODE_SET				(_BV(COM1B1) | _BV(COM1B0))
 
 // wgm02 is in tccr0b, but one bit to the right
 #define timer1_mode(tim1_mode) (\
@@ -197,13 +197,13 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 
 #define TIM2_OUTA_MODE_NONE				(0)
 #define TIM2_OUTA_MODE_TOGGLE			(_BV(COM2A0))
-#define TIM2_OUTA_MODE_SET				(_BV(COM2A1))
-#define TIM2_OUTA_MODE_CLEAR			(_BV(COM2A1) | _BV(COM2A0))
+#define TIM2_OUTA_MODE_CLEAR			(_BV(COM2A1))
+#define TIM2_OUTA_MODE_SET				(_BV(COM2A1) | _BV(COM2A0))
 
 #define TIM2_OUTB_MODE_NONE				(0)
 #define TIM2_OUTB_MODE_TOGGLE			(_BV(COM2B0))
-#define TIM2_OUTB_MODE_SET				(_BV(COM2B1))
-#define TIM2_OUTB_MODE_CLEAR			(_BV(COM2B1) | _BV(COM2B0))
+#define TIM2_OUTB_MODE_CLEAR			(_BV(COM2B1))
+#define TIM2_OUTB_MODE_SET				(_BV(COM2B1) | _BV(COM2B0))
 
 // wgm02 is in tccr0b, but one bit to the right
 #define timer2_mode(tim2_mode) (\

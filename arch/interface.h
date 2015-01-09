@@ -286,6 +286,31 @@ inline void 		i2c_stop(i2c_dev_t dev){
 }
 
 /**
+ * Memory interface can be used for any storage medium
+ */ 
+ 
+struct memory_if; 
+typedef struct memory_if **memory_dev_t; 
+
+struct memory_if {
+	/// writes a buffer into the interface
+	/// returns number of bytes written
+	/// always returns only when data has actually been written
+	/// TODO: make it asynchronous, as with i2c_start_write
+	size_t				(*write)(memory_dev_t self, size_t address, const uint8_t *data, size_t max_sz);
+	/// reads a number of characters from device
+	/// returns number of bytes read
+	/// TODO: make it ascyncronous, as with i2c_start_read
+	size_t				(*read)(memory_dev_t self, size_t address, uint8_t *data, size_t max_sz);
+	
+	/// reads device info and stores it in supplied variables
+	void 					(*readInfo)(uint16_t *block_size, size_t *device_size); 
+}; 
+
+#define mem_write(mem, addr, data, size) (*mem)->write(mem, addr, data, size)
+#define mem_read(mem, addr, data, size) (*mem)->read(mem, addr, data, size)
+
+/**
  * PWM interface is for controlling pwm hardware. Usually it would be built in, timer
  * driven pwm channels, but the system does not limit you to just on board pwm channel
  * You could just as easily have a driver for an i2c or spi pwm controller export

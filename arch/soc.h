@@ -75,6 +75,7 @@ extern "C" {
 #include "spi.h"
 #include "gpio.h"
 #include "pwm.h"
+#include "eeprom.h"
 
 #ifndef PROGMEM
 #define PROGMEM
@@ -82,6 +83,11 @@ extern "C" {
 #define pgm_read_byte(a) (*a)
 #define pgm_read_word(a) (*((short int*)a))
 #define pgm_read_float(a) (*((float*)a))
+#define pgm_streq(str, pstr) (strcmp(str, pstr) == 0)
+#define pgm_snprintf(str, size, fmt, ...) snprintf(str, size, fmt, ##__VA_ARGS__)
+#else
+#define pgm_streq(str, pstr) (strcmp_P(str, pstr) == 0)
+#define pgm_snprintf(str, size, fmt, ...) snprintf_P(str, size, fmt, ##__VA_ARGS__)
 #endif
 
 #ifdef __cplusplus

@@ -33,6 +33,13 @@
 static FILE _fd; 
 FILE *uart0_fd = &_fd;
 
+struct uart_device {
+	uint8_t id; 
+	struct serial_if *serial; 
+}; 
+
+struct uart_device _uart[1]; 
+
 int _uart0_fd_get(FILE *fd){
 	return uart0_getc();
 }
@@ -52,6 +59,7 @@ void uart0_init(uint32_t baudrate) {
 /// UART0 interface functions
 /// *************************
 
+/*
 size_t _uart0_waiting(serial_dev_t self){
 	return uart0_waiting(); 
 }
@@ -86,7 +94,7 @@ size_t _uart0_getn(serial_dev_t self, uint8_t *s, size_t c)
 	}
 	return t; 
 }
-
+*/
 size_t uart0_puts(const char *s )
 {
 	size_t count = 0; 
@@ -107,6 +115,96 @@ uint16_t uart0_printf(const char *fmt, ...){
 	va_end(vl);
 	uart0_puts(buf);
 	return n; 
+}
+
+
+#define GET_DEV(s, dev) \
+	struct uart_device *dev = container_of((s), struct uart_device, serial)
+	
+uint16_t _uart_putc(serial_dev_t self, uint8_t ch){
+	GET_DEV(self, dev);
+	switch(dev->id){
+		case 0: {
+			uart0_putc(ch); 
+			return 1; 
+			break;
+		}
+	}
+	return 0; 
+}
+
+uint16_t _uart_getc(serial_dev_t self) {
+	GET_DEV(self, dev);
+	switch(dev->id){
+		case 0: {
+			int c = uart0_getc(); 
+			if(c == UART_NO_DATA) return SERIAL_NO_DATA; 
+			return c; 
+			break;
+		}
+	}
+	return -1; 
+}
+
+size_t _uart_putn(serial_dev_t self, const uint8_t *data, size_t sz){
+	size_t size = sz;
+	GET_DEV(self, dev);
+	switch(dev->id){
+		case 0: 
+			while(sz--){
+				uart0_putc(*data++); 
+			}
+			break;
+	}
+	return size; 
+}
+
+size_t _uart_getn(serial_dev_t self, uint8_t *data, size_t sz){
+	size_t count = 0;
+	GET_DEV(self, dev);
+	switch(dev->id){
+		case 0: 
+			while(sz--){
+				int c = uart0_getc(); 
+				if(c == UART_NO_DATA){
+					return count; 
+				}
+				*data = c; 
+				data++; 
+				count++; 
+			}
+			break;
+	}
+	return count; 
+}
+
+size_t _uart_waiting(serial_dev_t self){
+	GET_DEV(self, dev);
+	switch(dev->id){
+		case 0: 
+			return uart0_waiting(); 
+			break;
+	}
+	return 0; 
+}
+
+void _uart_flush(serial_dev_t self){
+	// do nothing (but may be useful for interrupt driven version) 
+}
+
+serial_dev_t uart_get_serial_interface(uint8_t dev){
+	if(dev != 0) return 0;  // currently only one device TODO
+	static struct serial_if _if;
+	_if = (struct serial_if) {
+		.put = _uart_putc,
+		.get = _uart_getc,
+		.putn = _uart_putn,
+		.getn = _uart_getn,
+		.flush = _uart_flush,
+		.waiting = _uart_waiting
+	}; 
+	_uart[dev].serial = &_if;
+	return &_uart[dev].serial; 
 }
 
 void initproc uart_init(void){

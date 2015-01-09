@@ -201,7 +201,7 @@ long bmp085_read_pressure(struct bmp085 *self) {
 	return (pressure + BMP085_UNITPAOFFSET);
 }
 
-int16_t bmp085_read_altitude(struct bmp085 *self) {
+float bmp085_read_altitude(struct bmp085 *self) {
 	long pressure = bmp085_getrawpressure(self);
 	return ((1 - pow(pressure/(double)101325, 0.1903 )) / 0.0000225577) + BMP085_UNITMOFFSET; 
 }

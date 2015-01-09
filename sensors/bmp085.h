@@ -47,7 +47,7 @@ void bmp085_init(struct bmp085 *self, i2c_dev_t i2c, uint8_t addr);
 /// returns pressure 
 long bmp085_read_pressure(struct bmp085 *self);
 /// returns altitude
-int16_t bmp085_read_altitude(struct bmp085 *self);
+float bmp085_read_altitude(struct bmp085 *self);
 /// returns temperature
 int16_t bmp085_read_temperature(struct bmp085 *self);
 

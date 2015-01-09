@@ -48,6 +48,7 @@ uint16_t uart0_printf(const char *fmt, ...);
 #define UART_BUFFER_FULL  		SERIAL_BUFFER_FULL             
 #define UART_NO_DATA          SERIAL_NO_DATA              
 
+serial_dev_t uart_get_serial_interface(uint8_t dev);
 
 #ifdef __cplusplus
 }

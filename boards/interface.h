@@ -21,6 +21,8 @@
 
 #pragma once
 
+#include "../arch/interface.h"
+
 struct fc_quad_rx_input {
 	uint16_t 		channel[6];
 };
@@ -32,13 +34,23 @@ struct fc_quad_interface {
 		float *gx, float *gy, float *gz);
 	void 				(*read_magnetometer)(struct fc_quad_interface *self,
 		float *mx, float *my, float *mz);
-	int16_t			(*read_altitude)(struct fc_quad_interface *self);
-	int16_t			(*read_pressure)(struct fc_quad_interface *self);
-	int16_t 		(*read_temperature)(struct fc_quad_interface *self);
+	/// returns altitude in meters
+	float				(*read_altitude)(struct fc_quad_interface *self);
+	/// returns pressure in Pa 
+	long				(*read_pressure)(struct fc_quad_interface *self);
+	/// returns temperature in degrees C
+	float 			(*read_temperature)(struct fc_quad_interface *self);
 
 	uint8_t 				(*read_receiver)(struct fc_quad_interface *self,
 		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1); 
 	void				(*write_motors)(struct fc_quad_interface *self,
 		uint16_t front, uint16_t back, uint16_t left, uint16_t right);
+		
+	void (*write_config)(struct fc_quad_interface *self, const uint8_t *data, uint16_t size);
+	void (*read_config)(struct fc_quad_interface *self, uint8_t *data, uint16_t size);
+	
+	/// should return a serial interface to the communication channel with PC
+	serial_dev_t (*get_pc_link_interface)(struct fc_quad_interface *self); 
 }; 
+

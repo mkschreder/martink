@@ -51,8 +51,8 @@ void pwm_init(void);
 #define BACK_PIN PB3
 */
 
-#define RC_MAX 2000
-#define RC_MIN 1000
+#define RC_MAX 2500
+#define RC_MIN 500
 
 #define GPIO_MWII_MOTOR0 	GPIO_PD3
 #define GPIO_MWII_MOTOR1 	GPIO_PD5
@@ -101,7 +101,7 @@ static void compute_rc_values(void){
 	#define COMPUTE_RC_CHAN(ch) {\
 		timestamp_t ticks = timestamp_ticks_to_us(t_down - t_up);\
 		if(abs(brd->rc_values[ch] - ticks) > 10 && ticks > RC_MIN && ticks < RC_MAX)\
-			brd->rc_values[ch] = ticks;\
+			brd->rc_values[ch] = constrain(ticks, 1000, 2000);\
 	}
 	uint8_t active = 0; 
 	if(gpio_get_status(GPIO_RC0, &t_up, &t_down) & GP_WENT_LOW){
@@ -125,6 +125,12 @@ static void compute_rc_values(void){
 	}
 }
 
+static inline void mwii_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right){
+	pwm0_set(front);
+	pwm1_set(back);
+	pwm4_set(left);
+	pwm5_set(right); 
+}
 
 void mwii_process_events(void){
 	compute_rc_values(); 
@@ -137,7 +143,7 @@ void mwii_process_events(void){
 }
 
 
-void _mwii_read_accelerometer(struct fc_quad_interface *self, float *x, float *y, float *z){
+static void _mwii_read_accelerometer(struct fc_quad_interface *self, float *x, float *y, float *z){
 	double ax, ay, az; 
 	//CALL(foo, 10); 
 	mpu6050_getConvAcc(&brd->mpu, &ax, &ay, &az); 
@@ -146,7 +152,7 @@ void _mwii_read_accelerometer(struct fc_quad_interface *self, float *x, float *y
 	*z = az; 
 }
 
-void _mwii_read_gyroscope(struct fc_quad_interface *self, float *x, float *y, float *z){
+static void _mwii_read_gyroscope(struct fc_quad_interface *self, float *x, float *y, float *z){
 	double gx, gy, gz; 
 	mpu6050_getConvGyr(&brd->mpu, &gx, &gy, &gz);   
 	*x = gx; 
@@ -155,33 +161,30 @@ void _mwii_read_gyroscope(struct fc_quad_interface *self, float *x, float *y, fl
 	//mpu6050_getRawData(&ax, &ay, &az, x, y, z); 
 }
 
-void _mwii_read_magnetometer(struct fc_quad_interface *self, float *x, float *y, float *z){
+static void _mwii_read_magnetometer(struct fc_quad_interface *self, float *x, float *y, float *z){
 	float mx, my, mz; 
 	hmc5883l_read_adjusted(&brd->hmc, &mx, &my, &mz); 
 	*x = mx; *y = my; *z = mz; 
 }
 
-int16_t _mwii_read_altitude(struct fc_quad_interface *self){
+static float _mwii_read_altitude(struct fc_quad_interface *self){
 	return bmp085_read_altitude(&brd->bmp); 
 }
 
-int16_t _mwii_read_pressure(struct fc_quad_interface *self){
-	return bmp085_read_pressure(&brd->bmp) / 10; 
+static long _mwii_read_pressure(struct fc_quad_interface *self){
+	return bmp085_read_pressure(&brd->bmp); 
 }
 
-int16_t _mwii_read_temperature(struct fc_quad_interface *self){
+static float _mwii_read_temperature(struct fc_quad_interface *self){
 	return bmp085_read_temperature(&brd->bmp); 
 }
 
-void _mwii_write_motors(struct fc_quad_interface *self,
+static void _mwii_write_motors(struct fc_quad_interface *self,
 	uint16_t front, uint16_t back, uint16_t left, uint16_t right){
-	pwm0_set(front);
-	pwm1_set(back);
-	pwm4_set(left);
-	pwm5_set(right); 
+	mwii_write_motors(front, back, left, right); 
 }
 
-uint8_t _mwii_read_receiver(struct fc_quad_interface *self, 
+static uint8_t _mwii_read_receiver(struct fc_quad_interface *self, 
 		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1) {
 	*rc_thr = 		brd->rc_values[RC_THROTTLE]; 
@@ -191,12 +194,28 @@ uint8_t _mwii_read_receiver(struct fc_quad_interface *self,
 	*rc_aux0 = 		brd->rc_values[RC_MODE]; 
 	*rc_aux1 = 		brd->rc_values[RC_MODE2];
 	
+	//kprintf("RAW_YAW: %4d, ", brd->rc_values[RC_YAW]); 
+	
 	// prevent small changes when stick is not touched
 	if(abs(*rc_pitch - 1500) < 20) *rc_pitch = 1500; 
 	if(abs(*rc_roll - 1500) < 20) *rc_roll = 1500; 
 	if(abs(*rc_yaw - 1500) < 20) *rc_yaw = 1500;
 
 	return 0; 
+}
+
+static void _mwii_write_config(struct fc_quad_interface *self, const uint8_t *data, uint16_t size){
+	memory_dev_t ee = eeprom_get_memory_interface(); 
+	mem_write(ee, 0, data, size); 
+}
+
+static void _mwii_read_config(struct fc_quad_interface *self, uint8_t *data, uint16_t size){
+	memory_dev_t ee = eeprom_get_memory_interface(); 
+	mem_read(ee, 0, data, size); 
+}
+
+static serial_dev_t _mwii_get_pc_link_interface(struct fc_quad_interface *self){
+	return uart_get_serial_interface(0); 
 }
 
 struct fc_quad_interface mwii_get_fc_quad_interface(void){
@@ -208,11 +227,32 @@ struct fc_quad_interface mwii_get_fc_quad_interface(void){
 		.read_altitude = _mwii_read_altitude,
 		.read_temperature = _mwii_read_temperature, 
 		.read_receiver = _mwii_read_receiver, 
-		.write_motors = _mwii_write_motors
+		.write_motors = _mwii_write_motors,
+		
+		.write_config = _mwii_write_config, 
+		.read_config = _mwii_read_config, 
+		
+		.get_pc_link_interface = _mwii_get_pc_link_interface
 	}; 
 }
 
 void soc_init(void); 
+
+static void mwii_calibrate(void){
+	// set all outputs to maximum
+	mwii_write_motors(2000, 2000, 2000, 2000); 
+	// wait for the escs to initialize
+	_delay_ms(3000); 
+	// now step them down to mincommand within a second
+	uint8_t led = 0; 
+	for(int c = 2000; c > 1000; c-=10){
+		mwii_write_motors(c, c, c, c); 
+		_delay_ms(20); 
+	}
+	_delay_ms(1000); 
+	// reset the motors
+	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 
+}
 
 void board_init(void){
 	//soc_init(); 
@@ -239,7 +279,13 @@ void board_init(void){
 	gpio_configure(GPIO_MWII_RX1, GP_INPUT | GP_PULLUP | GP_PCINT);
 	gpio_configure(GPIO_MWII_RX2, GP_INPUT | GP_PULLUP | GP_PCINT);
 	gpio_configure(GPIO_MWII_RX3, GP_INPUT | GP_PULLUP | GP_PCINT);
-
+	
+	// set initial motor speeds
+	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 
+	
+	// calibrate escs
+	//mwii_calibrate(); 
+	
 	brd->gpio0 = gpio_get_parallel_interface();
 	
 	brd->twi0 = twi_get_interface(0);
@@ -253,11 +299,6 @@ void board_init(void){
 		bmp085_read_pressure(&brd->bmp), bmp085_read_temperature(&brd->bmp));
 		
 	reset_rc();
-	
-	//pwm0_enable();
-	//pwm1_enable();
-	//pwm4_enable();
-	//pwm5_enable();
 	
 	kdebug("MultiWii initialized!\n");
 	

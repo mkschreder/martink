@@ -1,5 +1,5 @@
-/**
-	This file is part of martink project.
+/*
+	EEPROM avr, generic macros
 
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,40 +19,6 @@
 	Github: https://github.com/mkschreder
 */
 
-#pragma once 
+#pragma once
 
-#include <avr/io.h>
-#include <avr/pgmspace.h>
-#include <avr/interrupt.h>
-
-#include <util/crc16.h>
-#include <util/delay.h>
-#include <util/atomic.h>
-
-typedef char PROGMEM prog_char; 
-
-#include "autoconf.h"
-
-#ifdef CONFIG_HAVE_ADC
-#include "mega/adc.h"
-#endif
-
-#ifdef CONFIG_HAVE_TWI
-#include "mega/twi.h"
-#include "mega/twi_slave.h"
-#include "mega/twi_slave.h"
-#endif
-
-#ifdef CONFIG_HAVE_SPI
-#include "mega/spi.h"
-#endif
-
-#ifdef CONFIG_HAVE_UART
-#include "mega/uart.h"
-#endif
-
-#include "mega/stack.h"
-#include "mega/time.h"
-#include "mega/gpio.h"
-#include "mega/pwm.h"
-#include "mega/eeprom.h"
+#include <avr/eeprom.h>

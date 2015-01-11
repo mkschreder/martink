@@ -63,9 +63,6 @@ obj-y := $(patsubst %, $(BUILD_DIR)/%, $(obj-y))
 # To avoid any implicit rule to kick in, define an empty command.
 scripts/basic/%: scripts_basic ;
 
-config %config: scripts_basic FORCE
-	$(Q)$(MAKE) $(build)=scripts/kconfig $@
-
 app: build
 	make -C $(APP) build
 

@@ -42,7 +42,7 @@ extern "C" {
 void mwii_init(void); 
 void mwii_process_events(void);
 
-struct fc_quad_interface mwii_get_fc_quad_interface(void);
+fc_board_t mwii_get_fc_quad_interface(void);
 
 #define MWII_LED_PIN GPIO_PB5
 

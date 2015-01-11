@@ -143,7 +143,7 @@ void mwii_process_events(void){
 }
 
 
-static void _mwii_read_accelerometer(struct fc_quad_interface *self, float *x, float *y, float *z){
+static void _mwii_read_accelerometer(fc_board_t self, float *x, float *y, float *z){
 	double ax, ay, az; 
 	//CALL(foo, 10); 
 	mpu6050_getConvAcc(&brd->mpu, &ax, &ay, &az); 
@@ -152,7 +152,7 @@ static void _mwii_read_accelerometer(struct fc_quad_interface *self, float *x, f
 	*z = az; 
 }
 
-static void _mwii_read_gyroscope(struct fc_quad_interface *self, float *x, float *y, float *z){
+static void _mwii_read_gyroscope(fc_board_t self, float *x, float *y, float *z){
 	double gx, gy, gz; 
 	mpu6050_getConvGyr(&brd->mpu, &gx, &gy, &gz);   
 	*x = gx; 
@@ -161,30 +161,30 @@ static void _mwii_read_gyroscope(struct fc_quad_interface *self, float *x, float
 	//mpu6050_getRawData(&ax, &ay, &az, x, y, z); 
 }
 
-static void _mwii_read_magnetometer(struct fc_quad_interface *self, float *x, float *y, float *z){
+static void _mwii_read_magnetometer(fc_board_t self, float *x, float *y, float *z){
 	float mx, my, mz; 
 	hmc5883l_read_adjusted(&brd->hmc, &mx, &my, &mz); 
 	*x = mx; *y = my; *z = mz; 
 }
 
-static float _mwii_read_altitude(struct fc_quad_interface *self){
+static float _mwii_read_altitude(fc_board_t self){
 	return bmp085_read_altitude(&brd->bmp); 
 }
 
-static long _mwii_read_pressure(struct fc_quad_interface *self){
+static long _mwii_read_pressure(fc_board_t self){
 	return bmp085_read_pressure(&brd->bmp); 
 }
 
-static float _mwii_read_temperature(struct fc_quad_interface *self){
+static float _mwii_read_temperature(fc_board_t self){
 	return bmp085_read_temperature(&brd->bmp); 
 }
 
-static void _mwii_write_motors(struct fc_quad_interface *self,
+static void _mwii_write_motors(fc_board_t self,
 	uint16_t front, uint16_t back, uint16_t left, uint16_t right){
 	mwii_write_motors(front, back, left, right); 
 }
 
-static uint8_t _mwii_read_receiver(struct fc_quad_interface *self, 
+static uint8_t _mwii_read_receiver(fc_board_t self, 
 		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1) {
 	*rc_thr = 		brd->rc_values[RC_THROTTLE]; 
@@ -204,36 +204,41 @@ static uint8_t _mwii_read_receiver(struct fc_quad_interface *self,
 	return 0; 
 }
 
-static void _mwii_write_config(struct fc_quad_interface *self, const uint8_t *data, uint16_t size){
+static void _mwii_write_config(fc_board_t self, const uint8_t *data, uint16_t size){
 	memory_dev_t ee = eeprom_get_memory_interface(); 
 	mem_write(ee, 0, data, size); 
 }
 
-static void _mwii_read_config(struct fc_quad_interface *self, uint8_t *data, uint16_t size){
+static void _mwii_read_config(fc_board_t self, uint8_t *data, uint16_t size){
 	memory_dev_t ee = eeprom_get_memory_interface(); 
 	mem_read(ee, 0, data, size); 
 }
 
-static serial_dev_t _mwii_get_pc_link_interface(struct fc_quad_interface *self){
+static serial_dev_t _mwii_get_pc_link_interface(fc_board_t self){
 	return uart_get_serial_interface(0); 
 }
 
-struct fc_quad_interface mwii_get_fc_quad_interface(void){
-	return (struct fc_quad_interface){
-		.read_accelerometer = _mwii_read_accelerometer,
-		.read_gyroscope = _mwii_read_gyroscope,
-		.read_magnetometer = _mwii_read_magnetometer,
-		.read_pressure = _mwii_read_pressure,
-		.read_altitude = _mwii_read_altitude,
-		.read_temperature = _mwii_read_temperature, 
-		.read_receiver = _mwii_read_receiver, 
-		.write_motors = _mwii_write_motors,
-		
-		.write_config = _mwii_write_config, 
-		.read_config = _mwii_read_config, 
-		
-		.get_pc_link_interface = _mwii_get_pc_link_interface
-	}; 
+fc_board_t mwii_get_fc_quad_interface(void){
+	static struct fc_quad_interface hw = {0}; 
+	if(!hw.read_config){
+		hw = (struct fc_quad_interface){
+			.read_accelerometer = _mwii_read_accelerometer,
+			.read_gyroscope = _mwii_read_gyroscope,
+			.read_magnetometer = _mwii_read_magnetometer,
+			.read_pressure = _mwii_read_pressure,
+			.read_altitude = _mwii_read_altitude,
+			.read_temperature = _mwii_read_temperature, 
+			.read_receiver = _mwii_read_receiver, 
+			.write_motors = _mwii_write_motors,
+			
+			.write_config = _mwii_write_config, 
+			.read_config = _mwii_read_config, 
+			
+			.get_pc_link_interface = _mwii_get_pc_link_interface
+		}; 
+	}
+	// cast, but only because we never actually use any private data in multiwii
+	return (fc_board_t)&hw; 
 }
 
 void soc_init(void); 

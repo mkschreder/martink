@@ -48,15 +48,18 @@ uint8_t _gpio_read_word(pio_dev_t self, uint16_t addr, uint32_t *output){
 
 pio_dev_t gpio_get_parallel_interface(void){
 	static struct pio_if pio;
-	static struct pio_if *_pio = &pio; 
-	pio = (struct pio_if){
-		.configure_pin = _gpio_configure_pin, 
-		.write_pin = 		_gpio_write_pin,
-		.read_pin = 		_gpio_read_pin,
-		.write_word = 	_gpio_write_word,
-		.read_word = 		_gpio_read_word,
-		.get_pin_status = _gpio_get_pin_status
-	};
+	static struct pio_if *_pio = 0; 
+	if(_pio){
+		pio = (struct pio_if){
+			.configure_pin = _gpio_configure_pin, 
+			.write_pin = 		_gpio_write_pin,
+			.read_pin = 		_gpio_read_pin,
+			.write_word = 	_gpio_write_word,
+			.read_word = 		_gpio_read_word,
+			.get_pin_status = _gpio_get_pin_status
+		};
+		_pio = &pio; 
+	}
 	return &_pio; 
 }
 

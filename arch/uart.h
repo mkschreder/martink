@@ -35,6 +35,7 @@ extern FILE *uart0_fd;
 void uart0_init(uint32_t baudrate);
 
 size_t uart0_puts(const char *s );
+size_t uart0_putn(const char *buf, size_t size); 
 uint16_t uart0_printf(const char *fmt, ...); 
 
 //#define uart0_printf(format, ...) fprintf((uart0_fd), format, ## __VA_ARGS__)

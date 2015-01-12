@@ -228,3 +228,7 @@ void initproc uart_init(void){
 	sei(); 
 	kdebug("UART: started %d uarts\n", c); 
 }
+
+size_t uart0_putn(const char *buf, size_t size){
+	serial_putn(uart_get_serial_interface(0), buf, size); 
+}

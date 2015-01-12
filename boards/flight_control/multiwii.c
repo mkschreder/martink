@@ -220,7 +220,8 @@ static serial_dev_t _mwii_get_pc_link_interface(fc_board_t self){
 
 fc_board_t mwii_get_fc_quad_interface(void){
 	static struct fc_quad_interface hw = {0}; 
-	if(!hw.read_config){
+	static struct fc_quad_interface *ptr = 0; 
+	if(!ptr){
 		hw = (struct fc_quad_interface){
 			.read_accelerometer = _mwii_read_accelerometer,
 			.read_gyroscope = _mwii_read_gyroscope,
@@ -236,9 +237,10 @@ fc_board_t mwii_get_fc_quad_interface(void){
 			
 			.get_pc_link_interface = _mwii_get_pc_link_interface
 		}; 
+		ptr = &hw; 
 	}
 	// cast, but only because we never actually use any private data in multiwii
-	return (fc_board_t)&hw; 
+	return &ptr; 
 }
 
 void soc_init(void); 

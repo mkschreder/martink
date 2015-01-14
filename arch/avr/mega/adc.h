@@ -74,7 +74,9 @@
 #define ADC_ALIGN_LEFT (_BV(ADLAR))
 #define ADC_ALIGN_RIGHT (0)
 
-#define adc0_set_alignment(adc_align) (ADMUX = (ADMUX & ~(_BV(ADLAR))) | ((adc_align) & _BV(ADLAR))
+#define adc0_set_alignment(adc_align) (\
+	ADMUX = (ADMUX & ~(_BV(ADLAR))) | ((adc_align) & _BV(ADLAR))\
+)
 
 #define adc0_enable() (ADCSRA |= _BV(ADEN))
 #define adc0_disable() (ADCSRA &= ~_BV(ADEN))
@@ -148,9 +150,9 @@ extern uint8_t _adc_mode;
 
 #define adc0_set_mode(adc_mode) (\
 	_adc_mode = adc_mode,\
-	(_adc_mode == ADC_MODE_AUTOMATIC)\
+	((_adc_mode == ADC_MODE_AUTOMATIC)\
 		?(adc0_interrupt_on(), adc0_start_conversion())\
-		:(0) \
+		:(0)) \
 )
 
 #endif

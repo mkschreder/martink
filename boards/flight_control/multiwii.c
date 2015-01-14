@@ -179,6 +179,10 @@ static float _mwii_read_temperature(fc_board_t self){
 	return bmp085_read_temperature(&brd->bmp); 
 }
 
+static float _mwii_read_battery_monitor(fc_board_t self){
+	return (adc0_read_immediate(2) / 65535.0); 
+}
+
 static void _mwii_write_motors(fc_board_t self,
 	uint16_t front, uint16_t back, uint16_t left, uint16_t right){
 	mwii_write_motors(front, back, left, right); 
@@ -230,6 +234,7 @@ fc_board_t mwii_get_fc_quad_interface(void){
 			.read_altitude = _mwii_read_altitude,
 			.read_temperature = _mwii_read_temperature, 
 			.read_receiver = _mwii_read_receiver, 
+			.read_battery_monitor = _mwii_read_battery_monitor, 
 			.write_motors = _mwii_write_motors,
 			
 			.write_config = _mwii_write_config, 
@@ -269,6 +274,7 @@ void board_init(void){
 	//spi_init(); 
 	twi_init(); 
 	pwm_init(); 
+	adc0_init_default(); 
 	sei(); 
 	
 	// first thing must enable interrupts

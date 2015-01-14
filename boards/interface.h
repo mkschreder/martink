@@ -43,7 +43,9 @@ struct fc_quad_interface {
 	long				(*read_pressure)(fc_board_t self);
 	/// returns temperature in degrees C
 	float 			(*read_temperature)(fc_board_t self);
-
+	/// returns voltage sensor reading
+	float 			(*read_battery_monitor)(fc_board_t self); 
+	
 	uint8_t 				(*read_receiver)(fc_board_t self,
 		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1); 
@@ -55,6 +57,8 @@ struct fc_quad_interface {
 	
 	/// should return a serial interface to the communication channel with PC
 	serial_dev_t (*get_pc_link_interface)(fc_board_t self); 
+	/// 
+	///adc_dev_t (*get_battery_monitor)
 }; 
 
 #define fc_read_accelerometer(self, ax, ay, az) (*self)->read_accelerometer(self, ax, ay, az)
@@ -63,6 +67,7 @@ struct fc_quad_interface {
 #define fc_read_altitude(self) (*self)->read_altitude(self)
 #define fc_read_pressure(self) (*self)->read_pressure(self)
 #define fc_read_temperature(self) (*self)->read_temperature(self)
+#define fc_read_battery_monitor(self) (*self)->read_battery_monitor(self)
 #define fc_read_receiver(self, thr, yaw, pitch, roll, aux0, aux1) \
 	(*self)->read_receiver(self, thr, yaw, pitch, roll, aux0, aux1)
 #define fc_write_motors(self, front, back, left, right) \

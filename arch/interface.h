@@ -268,7 +268,8 @@ struct i2c_interface {
 	uint32_t			(*start_read)(i2c_dev_t self,
 		uint8_t address, uint8_t *data, uint16_t max_sz);
 
-	void 					(*stop)(i2c_dev_t self); 
+	/// returns -1 on fail and 1 on success
+	int16_t 			(*stop)(i2c_dev_t self); 
 };
 
 inline uint32_t i2c_start_write(i2c_dev_t dev,
@@ -281,8 +282,8 @@ inline uint32_t	i2c_start_read(i2c_dev_t dev,
 	return (*dev)->start_read(dev, address, data, max_sz);
 }
 
-inline void 		i2c_stop(i2c_dev_t dev){
-	(*dev)->stop(dev); 
+static inline int16_t i2c_stop(i2c_dev_t dev){
+	return (*dev)->stop(dev); 
 }
 
 /**

@@ -178,6 +178,9 @@ void twi0_init_default(void)
 
 	// Enable TWI peripheral with interrupt disabled
 	TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
+
+	// set pins to internal pullups
+	PORTC |= _BV(5) | _BV(4); 
 }
 
 void twi0_start_write(uint8_t adr, uint8_t *data, uint8_t bytes_to_send)
@@ -247,7 +250,7 @@ uint8_t twi0_get_status(void)
 	return twi_status;
 }
 
-void twi0_stop(void)
+int16_t twi0_stop(void)
 {
 	// Wait for transaction to finish
 	while(twi0_busy())
@@ -266,6 +269,8 @@ void twi0_stop(void)
 
 	// Wait until STOP has finished
 	while(TWCR & _BV(TWSTO));
+	
+	return twi_status == TWI_STATUS_DONE; 
 }
 
 /*

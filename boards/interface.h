@@ -30,7 +30,42 @@ struct fc_quad_rx_input {
 struct fc_quad_interface; 
 typedef struct fc_quad_interface **fc_board_t; 
 
+typedef enum {
+	HAVE_ACC = (1 << 0), 
+	HAVE_GYR = (1 << 1),
+	HAVE_MAG = (1 << 2),
+	HAVE_BAR = (1 << 3),
+	HAVE_BATTERY_MONITOR = (1 << 4),
+	HAVE_TEMP = (1 << 1),
+} fc_flags_t; 
+
+struct fc_data {
+	fc_flags_t flags; 
+	struct {
+		float x, y, z; 
+	} acc_g; 
+	struct {
+		float x, y, z; 
+	} gyr_deg; 
+	struct {
+		float x, y, z; 
+	} mag; 
+	struct {
+		int16_t x, y, z; 
+	} raw_acc; 
+	struct {
+		int16_t x, y, z; 
+	} raw_gyr; 
+	struct {
+		int16_t x, y, z; 
+	} raw_mag; 
+	float altitude, pressure, temperature; 
+	float vbat; 
+}; 
+
 struct fc_quad_interface {
+	uint8_t 		(*read_sensors)(fc_board_t self, struct fc_data *data); 
+	/*
 	void 				(*read_accelerometer)(fc_board_t self,
 		float *ax, float *ay, float *az); 
 	void 				(*read_gyroscope)(fc_board_t self,
@@ -45,8 +80,8 @@ struct fc_quad_interface {
 	float 			(*read_temperature)(fc_board_t self);
 	/// returns voltage sensor reading
 	float 			(*read_battery_monitor)(fc_board_t self); 
-	
-	uint8_t 				(*read_receiver)(fc_board_t self,
+	*/
+	uint8_t 		(*read_receiver)(fc_board_t self,
 		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1); 
 	void				(*write_motors)(fc_board_t self,
@@ -61,6 +96,7 @@ struct fc_quad_interface {
 	///adc_dev_t (*get_battery_monitor)
 }; 
 
+/*
 #define fc_read_accelerometer(self, ax, ay, az) (*self)->read_accelerometer(self, ax, ay, az)
 #define fc_read_gyroscope(self, gx, gy, gz) (*self)->read_gyroscope(self, gx, gy, gz)
 #define fc_read_magnetometer(self, mx, my, mz) (*self)->read_magnetometer(self, mx, my, mz)
@@ -68,6 +104,8 @@ struct fc_quad_interface {
 #define fc_read_pressure(self) (*self)->read_pressure(self)
 #define fc_read_temperature(self) (*self)->read_temperature(self)
 #define fc_read_battery_monitor(self) (*self)->read_battery_monitor(self)
+*/
+#define fc_read_sensors(self, sensors) (*self)->read_sensors(self, sensors)
 #define fc_read_receiver(self, thr, yaw, pitch, roll, aux0, aux1) \
 	(*self)->read_receiver(self, thr, yaw, pitch, roll, aux0, aux1)
 #define fc_write_motors(self, front, back, left, right) \

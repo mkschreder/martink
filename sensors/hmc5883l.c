@@ -9,22 +9,40 @@ Please refer to LICENSE file for licensing information.
 
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <arch/soc.h>
 #include "hmc5883l.h"
 
 
 //registers
-#define HMC5883L_CONFREGA 0x00
-#define HMC5883L_CONFREGB 0x01
-#define HMC5883L_MODEREG 0x02
-#define HMC5883L_DATAREGBEGIN 0x03
+#define HMC5883L_CONFREGA 	0
+#define HMC5883L_CONFREGB 	1
+#define HMC5883L_MODEREG 		2
+#define HMC5883L_DATAREGBEGIN 3
+#define HMC5883L_REG_STATUS 9
+#define HMC5883L_REG_IDA 		10
+#define HMC5883L_REG_IDB 		11
+#define HMC5883L_REG_IDC 		12
 
 //setup measurement mode
 #define HMC5883L_MEASURECONTINOUS 0x00
 #define HMC5883L_MEASURESINGLESHOT 0x01
 #define HMC5883L_MEASUREIDLE 0x03
 #define HMC5883L_MEASUREMODE HMC5883L_MEASURECONTINOUS
+
+#define HMC5883L_NUM_SAMPLES1 (0 << 5)
+#define HMC5883L_NUM_SAMPLES2 (1 << 5)
+#define HMC5883L_NUM_SAMPLES4 (2 << 5)
+#define HMC5883L_NUM_SAMPLES8 (3 << 5)
+
+#define HMC5883L_RATE0_75 (0 << 2)
+#define HMC5883L_RATE1_5 (1 << 2)
+#define HMC5883L_RATE3_0 (2 << 2)
+#define HMC5883L_RATE7_5 (3 << 2)
+#define HMC5883L_RATE15 (4 << 2)
+#define HMC5883L_RATE30 (5 << 2)
+#define HMC5883L_RATE75 (6 << 2)
 
 //setup scale
 #define HMC5883L_SCALE088 0 //0.88
@@ -37,7 +55,7 @@ Please refer to LICENSE file for licensing information.
 #define HMC5883L_SCALE81 7 //8.1
 #define HMC5883L_SCALE HMC5883L_SCALE88
 
-#define HMC5883L_CALIBRATED 0 //enable this if this magn is calibrated
+#define HMC5883L_CALIBRATED 1 //enable this if this magn is calibrated
 
 //calibration values
 #if HMC5883L_CALIBRATED == 1
@@ -55,18 +73,30 @@ Please refer to LICENSE file for licensing information.
 #define HMC5883L_GAINZ3 0.995365
 #endif
 
+static uint8_t hmc5883l_read_reg(struct hmc5883l *self, uint8_t reg){
+	uint8_t res = 0; 
+	i2c_start_write(self->i2c, self->addr, &reg, 1);
+	//delay_us(5000); 
+	i2c_stop(self->i2c);
+	i2c_start_read(self->i2c, self->addr, &res, 1);
+	//delay_us(5000); 
+	i2c_stop(self->i2c); 
+	return res; 
+}
 /*
  * init the hmc5883l
  */
-void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr, uint8_t scale) {
+void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr) {
 	self->i2c = i2c;
 	self->addr = addr;
 	
 	delay_us(50000L); 
 	
 	//set scale
-	self->scale = 0;
-
+	//self->scale = 0;
+	// todo: move out
+	uint8_t regValue; 
+	uint8_t scale = HMC5883L_SCALE13; 
 	switch(scale) {
 		case HMC5883L_SCALE088: 
 			self->scale = 0.73;
@@ -95,46 +125,37 @@ void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr, uint8_t s
 	}
 	
   delay_us(50000L);  //Wait before start
-  
-  uint8_t buf[] = {
-		HMC5883L_CONFREGA, 
-		0x70, //Configuration Register A  -- 0 11 100 00  num samples: 8 ; output rate: 15Hz ; normal measurement mode
-		HMC5883L_CONFREGB, 
-		0x20, //Configuration Register B  -- 001 00000    configuration gain 1.3Ga
+  /*
+	uint8_t buf[] = {
+		HMC5883L_CONFREGA,
+		0x70, //Configuration Register A -- 0 11 100 00 num samples: 8 ; output rate: 15Hz ; normal measurement mode
+		HMC5883L_CONFREGB,
+		0x20, //Configuration Register B -- 001 00000 configuration gain 1.3Ga
 		HMC5883L_MODEREG,
-		0x00 //Mode register             -- 000000 00    continuous Conversion Mode
+		0x00 //Mode register -- 000000 00 continuous Conversion Mode
 	};
 	i2c_start_write(i2c, addr, buf, sizeof(buf));
 	i2c_stop(i2c);
+  */
+  uint8_t buf[2]; 
+  
+	buf[0] = HMC5883L_CONFREGA; 
+	buf[1] = HMC5883L_NUM_SAMPLES4 | HMC5883L_RATE30; 
+	i2c_start_write(i2c, addr, buf, 2);
+	i2c_stop(i2c);
 	
-	/*twi0_start_transaction(TWI_OP_LIST(
-		TWI_OP(HMC5883L_ADDR | I2C_WRITE, buf, 6)
-	)); 
-	twi0_wait(); */
-  // leave test mode
-  /*i2c_start_wait(HMC5883L_ADDR | I2C_WRITE); 
-  i2c_write(HMC5883L_CONFREGA); 
-  i2c_write(0x70); //Configuration Register A  -- 0 11 100 00  num samples: 8 ; output rate: 15Hz ; normal measurement mode
-  i2c_write(HMC5883L_CONFREGB); 
-  i2c_write(0x20); //Configuration Register B  -- 001 00000    configuration gain 1.3Ga
-  i2c_write(HMC5883L_MODEREG); 
-  i2c_write(0x00); //Mode register             -- 000000 00    continuous Conversion Mode
-  i2c_stop(); */
-  
-  delay_us(100000L);
-  
-	/*//setting is in the top 3 bits of the register.
-	regValue = regValue << 5;
-    i2c_start_wait(HMC5883L_ADDR | I2C_WRITE);
-    i2c_write(HMC5883L_CONFREGB);
-    i2c_write(regValue);
-    i2c_stop();
-
+	buf[0] = HMC5883L_CONFREGB; 
+	buf[1] = scale << 5; 
+	i2c_start_write(i2c, addr, buf, 2);
+	i2c_stop(i2c);
+	
 	//set measurement mode
-	i2c_start_wait(HMC5883L_ADDR | I2C_WRITE);
-	i2c_write(HMC5883L_MODEREG);
-	i2c_write(HMC5883L_MEASUREMODE);
-	i2c_stop();*/
+	buf[0] = HMC5883L_MODEREG; 
+	buf[1] = HMC5883L_MEASUREMODE; 
+	i2c_start_write(i2c, addr, buf, 2);
+	i2c_stop(i2c);
+	
+  delay_us(7000L);
 }
 
 /*
@@ -143,6 +164,8 @@ void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr, uint8_t s
 void hmc5883l_read_raw(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, int16_t *mzraw) {
 	uint8_t buff[6] = {HMC5883L_DATAREGBEGIN};
 	i2c_start_write(self->i2c, self->addr, buff, 1);
+	i2c_stop(self->i2c); // sensor needs a stop
+	memset(buff, 0, sizeof(buff)); 
 	i2c_start_read(self->i2c, self->addr, buff, 6);
 	i2c_stop(self->i2c);
 	
@@ -151,9 +174,40 @@ void hmc5883l_read_raw(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, in
 	*myraw = (int16_t)((buff[4] << 8) | buff[5]);
 }
 
+uint32_t hmc5883l_read_id(struct hmc5883l *self){
+	uint8_t reg = HMC5883L_REG_IDA; 
+	uint8_t buf[3] = {0}; /* = {
+		hmc5883l_read_reg(self, HMC5883L_REG_IDA), 
+		hmc5883l_read_reg(self, HMC5883L_REG_IDB), 
+		hmc5883l_read_reg(self, HMC5883L_REG_IDC) 
+	}; */
+	i2c_start_write(self->i2c, self->addr, &reg, 1);
+	if(i2c_stop(self->i2c) != 1) return -1; // sensor needs a stop
+	i2c_start_read(self->i2c, self->addr, buf, 3);
+	i2c_stop(self->i2c);
+	return ((uint32_t)buf[0] << 16) | ((uint32_t)buf[1] << 8) | buf[2]; 
+}
+
+void hmc5883l_convertData(struct hmc5883l *self, 
+	int16_t mxraw, int16_t myraw, int16_t mzraw, 
+	float *mx, float *my, float *mz){
+	*mx = mxraw * self->scale; 
+	*my = myraw * self->scale; 
+	*mz = mzraw * self->scale; 
+	/*
+	float mxt = mxraw - HMC5883L_OFFSETX;
+	float myt = myraw - HMC5883L_OFFSETY;
+	float mzt = mzraw - HMC5883L_OFFSETZ;
+	*mx = HMC5883L_GAINX1 * mxt + HMC5883L_GAINX2 * myt + HMC5883L_GAINX3 * mzt;
+	*my = HMC5883L_GAINY1 * mxt + HMC5883L_GAINY2 * myt + HMC5883L_GAINY3 * mzt;
+	*mz = HMC5883L_GAINZ1 * mxt + HMC5883L_GAINZ2 * myt + HMC5883L_GAINZ3 * mzt;
+	*/
+}
+
 /*
  * get scaled data
  */
+/*
 void hmc5883l_read_adjusted(struct hmc5883l *self, float *mx, float *my, float *mz) {
 	int16_t mxraw = 0;
 	int16_t myraw = 0;
@@ -168,12 +222,13 @@ void hmc5883l_read_adjusted(struct hmc5883l *self, float *mx, float *my, float *
 	*my = HMC5883L_GAINY1 * mxt + HMC5883L_GAINY2 * myt + HMC5883L_GAINY3 * mzt;
 	*mz = HMC5883L_GAINZ1 * mxt + HMC5883L_GAINZ2 * myt + HMC5883L_GAINZ3 * mzt;
 	#else
-	/*
-	*mx = mxraw * self->scale;
-	*my = myraw * self->scale;
-	*mz = mzraw * self->scale;*/
+	
+	// *mx = mxraw * self->scale;
+	// *my = myraw * self->scale;
+	// *mz = mzraw * self->scale;
 	*mx = mxraw;
 	*my = myraw;
 	*mz = mzraw; 
 	#endif
 }
+*/

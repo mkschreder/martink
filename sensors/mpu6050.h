@@ -35,12 +35,19 @@ struct mpu6050{
 void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr);
 uint8_t mpu6050_probe(struct mpu6050 *self);
 
-#if MPU6050_GETATTITUDE == 0
+//#if MPU6050_GETATTITUDE == 0
 void mpu6050_getRawData(struct mpu6050 *self, int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz);
+void mpu6050_convertData(struct mpu6050 *self, 
+	int16_t ax, int16_t ay, int16_t az, 
+	int16_t gx, int16_t gy, int16_t gz, 
+	float *axg, float *ayg, float *azg, 
+	float *gxd, float *gyd, float *gyz
+); 
 void mpu6050_getConvAcc(struct mpu6050 *self, double* axg, double* ayg, double* azg);
 void mpu6050_getConvGyr(struct mpu6050 *self, double* gxds, double* gyds, double* gzds);
-#endif
+//#endif
 
+/*
 void mpu6050_setSleepDisabled(struct mpu6050 *self);
 void mpu6050_setSleepEnabled(struct mpu6050 *self);
 
@@ -70,12 +77,6 @@ uint16_t mpu6050_getFIFOCount(struct mpu6050 *self);
 void mpu6050_getFIFOBytes(struct mpu6050 *self, uint8_t *data, uint8_t length);
 uint8_t mpu6050_getIntStatus(struct mpu6050 *self);
 void mpu6050_resetFIFO(struct mpu6050 *self);
-int8_t mpu6050_getXGyroOffset(struct mpu6050 *self);
-void mpu6050_setXGyroOffset(struct mpu6050 *self, int8_t offset);
-int8_t mpu6050_getYGyroOffset(struct mpu6050 *self);
-void mpu6050_setYGyroOffset(struct mpu6050 *self, int8_t offset);
-int8_t mpu6050_getZGyroOffset(struct mpu6050 *self);
-void mpu6050_setZGyroOffset(struct mpu6050 *self, int8_t offset);
 //base dmp
 uint8_t mpu6050_dmpInitialize(struct mpu6050 *self);
 void mpu6050_dmpEnable(struct mpu6050 *self);
@@ -84,6 +85,22 @@ void mpu6050_getQuaternion(struct mpu6050 *self, const uint8_t* packet, double *
 void mpu6050_getRollPitchYaw(struct mpu6050 *self, double qw, double qx, double qy, double qz, double *roll, double *pitch, double *yaw);
 uint8_t mpu6050_getQuaternionWait(struct mpu6050 *self, double *qw, double *qx, double *qy, double *qz);
 #endif
+*/
+/// temperature compensation offsets
+int8_t mpu6050_getTCXGyroOffset(struct mpu6050 *self);
+void mpu6050_setTCXGyroOffset(struct mpu6050 *self, int8_t offset);
+int8_t mpu6050_getTCYGyroOffset(struct mpu6050 *self);
+void mpu6050_setTCYGyroOffset(struct mpu6050 *self, int8_t offset);
+int8_t mpu6050_getTCZGyroOffset(struct mpu6050 *self);
+void mpu6050_setTCZGyroOffset(struct mpu6050 *self, int8_t offset);
+
+/// gyro offsets
+void 		mpu6050_setXGyroOffset(struct mpu6050 *self, int16_t offset);
+int16_t mpu6050_getXGyroOffset(struct mpu6050 *self); 
+void 		mpu6050_setYGyroOffset(struct mpu6050 *self, int16_t offset);
+int16_t mpu6050_getYGyroOffset(struct mpu6050 *self); 
+void 		mpu6050_setZGyroOffset(struct mpu6050 *self, int16_t offset);
+int16_t mpu6050_getZGyroOffset(struct mpu6050 *self); 
 
 #ifdef __cplusplus
 }

@@ -141,12 +141,13 @@ void mwii_process_events(void){
 	}
 	
 }
-
+/*
 
 static void _mwii_read_accelerometer(fc_board_t self, float *x, float *y, float *z){
 	double ax, ay, az; 
-	//CALL(foo, 10); 
 	mpu6050_getConvAcc(&brd->mpu, &ax, &ay, &az); 
+	///int16_t ax, ay, az, gx, gy, gz; 
+	///mpu6050_getRawData(&brd->mpu, &ax, &ay, &az, &gx, &gy, &gz); 
 	*x = ax; 
 	*y = ay; 
 	*z = az; 
@@ -155,6 +156,9 @@ static void _mwii_read_accelerometer(fc_board_t self, float *x, float *y, float 
 static void _mwii_read_gyroscope(fc_board_t self, float *x, float *y, float *z){
 	double gx, gy, gz; 
 	mpu6050_getConvGyr(&brd->mpu, &gx, &gy, &gz);   
+	//int16_t ax, ay, az, gx, gy, gz; 
+	//mpu6050_getRawData(&brd->mpu, &ax, &ay, &az, &gx, &gy, &gz); 
+	
 	*x = gx; 
 	*y = gy; 
 	*z = gz; 
@@ -181,6 +185,50 @@ static float _mwii_read_temperature(fc_board_t self){
 
 static float _mwii_read_battery_monitor(fc_board_t self){
 	return (adc0_read_immediate(2) / 65535.0); 
+}
+*/
+static uint8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
+	data->flags = 0xffff; // all
+	mpu6050_getRawData(&_brd.mpu, 
+		&data->raw_acc.x, 
+		&data->raw_acc.y, 
+		&data->raw_acc.z,
+		&data->raw_gyr.x, 
+		&data->raw_gyr.y, 
+		&data->raw_gyr.z
+	); 
+	mpu6050_convertData(&_brd.mpu, 
+		data->raw_acc.x, 
+		data->raw_acc.y, 
+		data->raw_acc.z, 
+		data->raw_gyr.x, 
+		data->raw_gyr.y, 
+		data->raw_gyr.z, 
+		&data->acc_g.x, 
+		&data->acc_g.y, 
+		&data->acc_g.z,
+		&data->gyr_deg.x,
+		&data->gyr_deg.y,
+		&data->gyr_deg.z
+	); 
+	hmc5883l_read_raw(&_brd.hmc, 
+		&data->raw_mag.x, 
+		&data->raw_mag.y, 
+		&data->raw_mag.z
+	); 
+	hmc5883l_convertData(&_brd.hmc, 
+		data->raw_mag.x, 
+		data->raw_mag.y, 
+		data->raw_mag.z, 
+		&data->mag.x, 
+		&data->mag.y, 
+		&data->mag.z
+	); 
+	data->altitude = bmp085_read_altitude(&brd->bmp); 
+	data->temperature = bmp085_read_temperature(&brd->bmp); 
+	data->pressure = bmp085_read_pressure(&brd->bmp); 
+	data->vbat = (adc0_read_immediate(2) / 65535.0);
+	return 1; 
 }
 
 static void _mwii_write_motors(fc_board_t self,
@@ -227,14 +275,17 @@ fc_board_t mwii_get_fc_quad_interface(void){
 	static struct fc_quad_interface *ptr = 0; 
 	if(!ptr){
 		hw = (struct fc_quad_interface){
+			.read_sensors = _mwii_read_sensors, 
+			/*
 			.read_accelerometer = _mwii_read_accelerometer,
 			.read_gyroscope = _mwii_read_gyroscope,
 			.read_magnetometer = _mwii_read_magnetometer,
 			.read_pressure = _mwii_read_pressure,
 			.read_altitude = _mwii_read_altitude,
 			.read_temperature = _mwii_read_temperature, 
+			*/
 			.read_receiver = _mwii_read_receiver, 
-			.read_battery_monitor = _mwii_read_battery_monitor, 
+			//.read_battery_monitor = _mwii_read_battery_monitor, 
 			.write_motors = _mwii_write_motors,
 			
 			.write_config = _mwii_write_config, 
@@ -250,7 +301,7 @@ fc_board_t mwii_get_fc_quad_interface(void){
 
 void soc_init(void); 
 
-static void mwii_calibrate(void){
+static void mwii_calibrate_escs(void){
 	// set all outputs to maximum
 	mwii_write_motors(2000, 2000, 2000, 2000); 
 	// wait for the escs to initialize
@@ -266,6 +317,25 @@ static void mwii_calibrate(void){
 	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 
 }
 
+static void mwii_calibrate_mpu6050(void){
+	// calibrate gyro offset
+	int16_t ax, ay, az, gx, gy, gz; 
+	
+	mpu6050_setTCXGyroOffset(&_brd.mpu, 0); //14
+	mpu6050_setTCYGyroOffset(&_brd.mpu, 0); //20
+	mpu6050_setTCZGyroOffset(&_brd.mpu, 0); //-49
+	
+	mpu6050_setXGyroOffset(&_brd.mpu, -14 * 2); //14
+	mpu6050_setYGyroOffset(&_brd.mpu, -20 * 2); //20
+	mpu6050_setZGyroOffset(&_brd.mpu, 49 * 2); //-49
+	/*
+	mpu6050_getRawData(&_brd.mpu, &ax, &ay, &az, &gx, &gy, &gz); 
+	
+	mpu6050_setXGyroOffset(&_brd.mpu, gx); 
+	mpu6050_setYGyroOffset(&_brd.mpu, gy); 
+	mpu6050_setZGyroOffset(&_brd.mpu, gz); */
+}
+
 void board_init(void){
 	//soc_init(); 
 	time_init(); 
@@ -278,7 +348,7 @@ void board_init(void){
 	sei(); 
 	
 	// first thing must enable interrupts
-	kdebug("Booting MultiWii Board\n");
+	kprintf("BOOT\n");
 	
 	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
 	//gpio_set(GPIO_MWII_LED); 
@@ -297,24 +367,39 @@ void board_init(void){
 	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 
 	
 	// calibrate escs
-	//mwii_calibrate(); 
+	mwii_calibrate_escs(); 
 	
 	brd->gpio0 = gpio_get_parallel_interface();
 	
 	brd->twi0 = twi_get_interface(0);
 	
-	//hmc5883l_init(); 
+	/* 
+	// I2C scanner 
+	for(int c = 0; c < 255; c++){
+		uint8_t buf[2]; 
+		i2c_start_read(brd->twi0, c, buf, 1); 
+		if(i2c_stop(brd->twi0) == 1 && c & 1){
+			kprintf("Device %x@i2c\n", c >> 1); 
+		}
+		delay_us(10000); 
+	}
+	*/
 	mpu6050_init(&brd->mpu, brd->twi0, MPU6050_ADDR); 
-	kdebug("MPU6050 .. %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
+	kprintf("MPU6050: %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
+	delay_us(10000); 
 	
 	bmp085_init(&brd->bmp, brd->twi0, BMP085_ADDR); 
-	kdebug("BMP085: reading pressure: %lu, reading temp: %d\n",
-		bmp085_read_pressure(&brd->bmp), bmp085_read_temperature(&brd->bmp));
-		
+	kprintf("BMP085: found\n");
+	delay_us(10000); 
+	
+	hmc5883l_init(&brd->hmc, brd->twi0, HMC5883L_ADDR);
+	uint32_t hmcid = hmc5883l_read_id(&brd->hmc);  
+	kprintf("HMC5883: %c%c%c\n", (uint8_t)(hmcid >> 16), (uint8_t)(hmcid >> 8), (uint8_t)hmcid); 
+	delay_us(10000); 
+	
 	reset_rc();
 	
-	kdebug("MultiWii initialized!\n");
-	
+	mwii_calibrate_mpu6050(); 
 	// let the escs init as well
 	delay_us(500000L); 
 }

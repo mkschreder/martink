@@ -21,7 +21,7 @@ Please refer to LICENSE file for licensing information.
 #include <math.h>  //include libm
 #endif
 
-volatile uint8_t buffer[14];
+static volatile uint8_t buffer[14];
 
 //enable the getattitude functions
 //because we do not have a magnetometer, we have to start the chip always in the same position
@@ -64,7 +64,7 @@ volatile uint8_t buffer[14];
 #define MPU6050_AGAIN MPU6050_ACCEL_LSB_16
 #endif
 
-#define MPU6050_CALIBRATEDACCGYRO 1 //set to 1 if is calibrated
+#define MPU6050_CALIBRATEDACCGYRO 1//set to 1 if is calibrated
 #if MPU6050_CALIBRATEDACCGYRO == 1
 #define MPU6050_AXOFFSET 0
 #define MPU6050_AYOFFSET 0
@@ -72,16 +72,17 @@ volatile uint8_t buffer[14];
 #define MPU6050_AXGAIN 16384.0
 #define MPU6050_AYGAIN 16384.0
 #define MPU6050_AZGAIN 16384.0
-#define MPU6050_GXOFFSET -42
-#define MPU6050_GYOFFSET 9
-#define MPU6050_GZOFFSET -29
+#define MPU6050_GXOFFSET 0
+#define MPU6050_GYOFFSET 0
+#define MPU6050_GZOFFSET 0
+// gain is maxint16 (32768) /range - range degrees of precision
 #define MPU6050_GXGAIN 16.4
 #define MPU6050_GYGAIN 16.4
 #define MPU6050_GZGAIN 16.4
 #endif
 
 //definitions for attitude 1 function estimation
-#if MPU6050_GETATTITUDE == 1
+/*#if MPU6050_GETATTITUDE == 1
 #error "GETATTITUDE == 1 is not supported!"
 //setup timer0 overflow event and define madgwickAHRSsampleFreq equal to timer0 frequency
 //timerfreq = (FCPU / prescaler) / timerscale
@@ -105,7 +106,7 @@ volatile uint8_t buffer[14];
 //#define MPU6050_DMP_INT0ENABLE EIMSK |= (1<<INT0)
 extern volatile uint8_t mpu6050_mpuInterrupt;
 #endif
-
+*/
 /*
  * read bytes from chip register
  */
@@ -416,35 +417,74 @@ uint8_t mpu6050_getIntStatus(void) {
 void mpu6050_resetFIFO(void) {
 	mpu6050_writeBit(MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_FIFO_RESET_BIT, 1);
 }
-
-int8_t mpu6050_getXGyroOffset(void) {
-	mpu6050_readBits(MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, (uint8_t *)buffer);
-    return buffer[0];
-}
-
-void mpu6050_setXGyroOffset(int8_t offset) {
-	mpu6050_writeBits(MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, offset);
-}
-
-int8_t mpu6050_getYGyroOffset(void) {
-	mpu6050_readBits(MPU6050_RA_YG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, (uint8_t *)buffer);
-    return buffer[0];
-}
-
-void mpu6050_setYGyroOffset(int8_t offset) {
-	mpu6050_writeBits(MPU6050_RA_YG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, offset);
-}
-
-int8_t mpu6050_getZGyroOffset(void) {
-	mpu6050_readBits(MPU6050_RA_ZG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, (uint8_t *)buffer);
-    return buffer[0];
-}
-
-void mpu6050_setZGyroOffset(int8_t offset) {
-	mpu6050_writeBits(MPU6050_RA_ZG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, offset);
-}
 */
-#endif
+#endif 
+
+int8_t mpu6050_getTCXGyroOffset(struct mpu6050 *self) {
+	mpu6050_readBits(self, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, (uint8_t *)buffer);
+    return buffer[0];
+}
+
+void mpu6050_setTCXGyroOffset(struct mpu6050 *self, int8_t offset) {
+	mpu6050_writeBits(self, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, offset);
+}
+
+int8_t mpu6050_getTCYGyroOffset(struct mpu6050 *self) {
+	mpu6050_readBits(self, MPU6050_RA_YG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, (uint8_t *)buffer);
+    return buffer[0];
+}
+
+void mpu6050_setTCYGyroOffset(struct mpu6050 *self, int8_t offset) {
+	mpu6050_writeBits(self, MPU6050_RA_YG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, offset);
+}
+
+int8_t mpu6050_getTCZGyroOffset(struct mpu6050 *self) {
+	mpu6050_readBits(self, MPU6050_RA_ZG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, (uint8_t *)buffer);
+    return buffer[0];
+}
+
+void mpu6050_setTCZGyroOffset(struct mpu6050 *self, int8_t offset) {
+	mpu6050_writeBits(self, MPU6050_RA_ZG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, offset);
+}
+
+int16_t mpu6050_getXGyroOffset(struct mpu6050 *self) {
+	uint8_t buffer[2]; 
+	mpu6050_readByte(self, MPU6050_RA_XG_OFFS_USRH, &buffer[0]);
+	mpu6050_readByte(self, MPU6050_RA_XG_OFFS_USRL, &buffer[1]);
+  return (((int16_t)buffer[0]) << 8) | buffer[1]; 
+}
+
+void mpu6050_setXGyroOffset(struct mpu6050 *self, int16_t offset) {
+	uint8_t buffer[2] = {offset >> 8, offset}; 
+	mpu6050_writeByte(self, MPU6050_RA_XG_OFFS_USRH, buffer[0]);
+	mpu6050_writeByte(self, MPU6050_RA_XG_OFFS_USRL, buffer[1]);
+}
+
+int16_t mpu6050_getYGyroOffset(struct mpu6050 *self) {
+	uint8_t buffer[2]; 
+	mpu6050_readByte(self, MPU6050_RA_YG_OFFS_USRH, &buffer[0]);
+	mpu6050_readByte(self, MPU6050_RA_YG_OFFS_USRL, &buffer[1]);
+  return (((int16_t)buffer[0]) << 8) | buffer[1]; 
+}
+
+void mpu6050_setYGyroOffset(struct mpu6050 *self, int16_t offset) {
+	uint8_t buffer[2] = {offset >> 8, offset}; 
+	mpu6050_writeByte(self, MPU6050_RA_YG_OFFS_USRH, buffer[0]);
+	mpu6050_writeByte(self, MPU6050_RA_YG_OFFS_USRL, buffer[1]);
+}
+
+int16_t mpu6050_getZGyroOffset(struct mpu6050 *self) {
+	uint8_t buffer[2]; 
+	mpu6050_readByte(self, MPU6050_RA_ZG_OFFS_USRH, &buffer[0]);
+	mpu6050_readByte(self, MPU6050_RA_ZG_OFFS_USRL, &buffer[1]);
+  return (((int16_t)buffer[0]) << 8) | buffer[1]; 
+}
+
+void mpu6050_setZGyroOffset(struct mpu6050 *self, int16_t offset) {
+	uint8_t buffer[2] = {offset >> 8, offset}; 
+	mpu6050_writeByte(self, MPU6050_RA_ZG_OFFS_USRH, buffer[0]);
+	mpu6050_writeByte(self, MPU6050_RA_ZG_OFFS_USRL, buffer[1]);
+}
 
 void mpu6050_setSleepDisabled(struct mpu6050 *self) {
 	mpu6050_writeBit(self, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_SLEEP_BIT, 0);
@@ -497,7 +537,12 @@ void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr) {
 	mpu6050_writeBits(self, MPU6050_RA_GYRO_CONFIG, MPU6050_GCONFIG_FS_SEL_BIT, MPU6050_GCONFIG_FS_SEL_LENGTH, MPU6050_GYRO_FS);
 	//set accel range
 	mpu6050_writeBits(self, MPU6050_RA_ACCEL_CONFIG, MPU6050_ACONFIG_AFS_SEL_BIT, MPU6050_ACONFIG_AFS_SEL_LENGTH, MPU6050_ACCEL_FS);
-
+	
+	//enable i2c bypass by default for sensors connected to aux i2c bus
+	mpu6050_writeBit(self, MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_I2C_BYPASS_EN_BIT, (1 << MPU6050_INTCFG_I2C_BYPASS_EN_BIT)); 
+	// disable master mode on the i2c aux bus
+	mpu6050_writeBit(self, MPU6050_RA_USER_CTRL, 5, 0); 
+	
 	#if MPU6050_GETATTITUDE == 1
 	#error "Do not enable timer 0 it is in use elsewhere!"
 	//MPU6050_TIMER0INIT
@@ -562,13 +607,25 @@ void mpu6050_getConvGyr(struct mpu6050 *self, double* gxds, double* gyds, double
 	#endif  
 }
 
+void mpu6050_convertData(struct mpu6050 *self, 
+	int16_t ax, int16_t ay, int16_t az, 
+	int16_t gx, int16_t gy, int16_t gz, 
+	float *axg, float *ayg, float *azg, 
+	float *gxd, float *gyd, float *gzd
+){
+	*axg = (float)(ax-MPU6050_AXOFFSET)/MPU6050_AXGAIN;
+	*ayg = (float)(ay-MPU6050_AYOFFSET)/MPU6050_AYGAIN;
+	*azg = (float)(az-MPU6050_AZOFFSET)/MPU6050_AZGAIN;
+	*gxd = (float)(gx-MPU6050_GXOFFSET)/MPU6050_GXGAIN;
+	*gyd = (float)(gy-MPU6050_GYOFFSET)/MPU6050_GYGAIN;
+	*gzd = (float)(gz-MPU6050_GZOFFSET)/MPU6050_GZGAIN;
+}
+/*
 #if MPU6050_GETATTITUDE == 1
 
 volatile float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
 volatile float integralFBx = 0.0f,  integralFBy = 0.0f, integralFBz = 0.0f;
-/*
- * Mahony update function (for 6DOF)
- */
+
 void mpu6050_mahonyUpdate(struct mpu6050 *self, float gx, float gy, float gz, float ax, float ay, float az) {
 	float norm;
 	float halfvx, halfvy, halfvz;
@@ -634,9 +691,6 @@ void mpu6050_mahonyUpdate(struct mpu6050 *self, float gx, float gy, float gz, fl
 	q3 /= norm;
 }
 
-/*
- * update quaternion
- */
 void mpu6050_updateQuaternion(struct mpu6050 *self) {
 	int16_t ax = 0;
 	int16_t ay = 0;
@@ -687,16 +741,10 @@ void mpu6050_updateQuaternion(struct mpu6050 *self) {
     mpu6050_mahonyUpdate(self, gxrs, gyrs, gzrs, axg, ayg, azg);
 }
 
-/*
- * update timer for attitude
- */
 ISR(TIMER0_OVF_vect) {
 	mpu6050_updateQuaternion(self);
 }
 
-/*
- * get quaternion
- */
 void mpu6050_getQuaternion(struct mpu6050 *self, double *qw, double *qx, double *qy, double *qz) {
 	*qw = q0;
 	*qx = q1;
@@ -704,18 +752,11 @@ void mpu6050_getQuaternion(struct mpu6050 *self, double *qw, double *qx, double 
 	*qz = q3;
 }
 
-/*
- * get euler angles
- * aerospace sequence, to obtain sensor attitude:
- * 1. rotate around sensor Z plane by yaw
- * 2. rotate around sensor Y plane by pitch
- * 3. rotate around sensor X plane by roll
- */
 void mpu6050_getRollPitchYaw(struct mpu6050 *self, double *roll, double *pitch, double *yaw) {
 	*yaw = atan2(2*q1*q2 - 2*q0*q3, 2*q0*q0 + 2*q1*q1 - 1);
 	*pitch = -asin(2*q1*q3 + 2*q0*q2);
 	*roll = atan2(2*q2*q3 - 2*q0*q1, 2*q0*q0 + 2*q3*q3 - 1);
 }
 
-#endif
+*/
 

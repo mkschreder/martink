@@ -32,11 +32,12 @@ static struct twi_device _twi[4] = {
 	{.id = 3, .interface = 0}
 }; 
 
-void 			_twi_stop(i2c_dev_t self){
+int16_t 			_twi_stop(i2c_dev_t self){
 	DEVICE_CAST(self, dev);
 	switch(dev->id){
-		case 0: twi0_stop(); break;
+		case 0: return twi0_stop(); break;
 	}
+	return -1; 
 }
 
 uint32_t	_twi_write(i2c_dev_t self, uint8_t adr, uint8_t *data, uint16_t max_sz){

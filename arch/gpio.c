@@ -49,7 +49,7 @@ uint8_t _gpio_read_word(pio_dev_t self, uint16_t addr, uint32_t *output){
 pio_dev_t gpio_get_parallel_interface(void){
 	static struct pio_if pio;
 	static struct pio_if *_pio = 0; 
-	if(_pio){
+	if(!_pio){
 		pio = (struct pio_if){
 			.configure_pin = _gpio_configure_pin, 
 			.write_pin = 		_gpio_write_pin,

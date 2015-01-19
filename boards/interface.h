@@ -59,7 +59,11 @@ struct fc_data {
 	struct {
 		int16_t x, y, z; 
 	} raw_mag; 
-	float altitude, pressure, temperature; 
+	// altitude above sealevel based on pressure data 
+	float atmospheric_altitude; 
+	// altitude in meters based on echo from sonar (-1 if sonar not available)
+	float sonar_altitude; 
+	float pressure, temperature; 
 	float vbat; 
 }; 
 

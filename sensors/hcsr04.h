@@ -7,6 +7,7 @@ struct hcsr04 {
 	pio_dev_t gpio;
 	gpio_pin_t trigger_pin, echo_pin;
 	uint8_t state;
+	timestamp_t pulse_timeout; 
 	int16_t distance; 
 };
 

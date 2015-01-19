@@ -31,6 +31,13 @@ extern "C" {
 
 #define BOARD
 
+/** IMPORTANT: 
+ Note that on Multiwii, the magnetometer is connected to aux port 
+ of the mpu6050 device so in order to access it over i2c, one has 
+ to enable pass through on the mpu6050 first. In libk mpu6050 driver
+ this is done automatically. 
+*/
+
 #include <inttypes.h>
 #include "../interface.h"
 

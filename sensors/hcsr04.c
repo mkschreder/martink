@@ -31,18 +31,17 @@
 //values for state
 #define ST_IDLE 0
 #define ST_PULSE_SENT 1
+#define HCSR04_PULSE_TIMEOUT 100000000UL
 
 static uint8_t hcsr04_send_pulse(struct hcsr04 *self)
 {
-	if (self->state != ST_IDLE)
-		return 0;
-
 	pio_write_pin(self->gpio, self->trigger_pin, 1);
 	delay_us(10);
 	pio_write_pin(self->gpio, self->trigger_pin, 0);
 	
 	self->state = ST_PULSE_SENT;
-
+	self->pulse_timeout = timestamp_from_now_us(HCSR04_PULSE_TIMEOUT); 
+	
 	return 1;
 }
 
@@ -52,8 +51,8 @@ void hcsr04_init(struct hcsr04 *self, pio_dev_t gpio,
 	self->trigger_pin = trigger_pin;
 	self->echo_pin = echo_pin;
 
-	pio_configure_pin(self->gpio, self->trigger_pin, GP_OUTPUT);
-	pio_configure_pin(self->gpio, self->trigger_pin,
+	pio_configure_pin(self->gpio, self->trigger_pin, GP_OUTPUT | GP_PULLUP);
+	pio_configure_pin(self->gpio, self->echo_pin,
 		GP_INPUT | GP_PCINT); 
 
 	self->state = ST_IDLE;
@@ -77,14 +76,8 @@ uint8_t hcsr04_check_response(struct hcsr04 *self){
 
 int16_t hcsr04_read_distance_in_cm(struct hcsr04 *self)
 {
-	if(self->state == ST_IDLE){
-		hcsr04_send_pulse(self);
-	}
-	uint32_t timeout = 50000; 
-	while(!hcsr04_check_response(self)){
-		timeout--;
-		if(timeout == 0) return -1; 
-		delay_us(10);
+	if(hcsr04_check_response(self) || self->state == ST_IDLE || timestamp_expired(self->pulse_timeout)){
+		hcsr04_send_pulse(self); 
 	}
 	return self->distance;
 }

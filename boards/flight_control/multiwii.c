@@ -27,6 +27,7 @@
 #include <sensors/hmc5883l.h>
 #include <sensors/bmp085.h>
 #include <sensors/mpu6050.h>
+#include <sensors/hcsr04.h>
 #include <disp/ssd1306.h>
 #include <util/serial_debugger.h>
 
@@ -66,22 +67,27 @@ void pwm_init(void);
 
 #define GPIO_MWII_LED			GPIO_PB5
 
-#define GPIO_RC0 GPIO_PD2
-#define GPIO_RC1 GPIO_PD4
-#define GPIO_RC2 GPIO_PD7
-#define GPIO_RC3 GPIO_PB0
+#define GPIO_RC0 					GPIO_PD2
+#define GPIO_RC1 					GPIO_PD4
+#define GPIO_RC2 					GPIO_PD7
+#define GPIO_RC3 					GPIO_PB0
+
+#define GPIO_BATTERY_MON	GPIO_PC0 //A0
+#define GPIO_MWII_HCSR_TRIGGER GPIO_PB1
+#define GPIO_MWII_HCSR_ECHO 	GPIO_PB2
 
 const static uint16_t rc_defaults[6] = {1000, 1500, 1500, 1500, 1500, 1500}; 
 
 struct multiwii_board {
 	uint16_t 				rc_values[6]; 
 	timestamp_t 		rc_reset_timeout; 
-	pio_dev_t gpio0; 
-	i2c_dev_t twi0; 
-	struct bmp085 bmp;
-	struct mpu6050 mpu;
+	pio_dev_t 			gpio0; 
+	i2c_dev_t 			twi0; 
+	struct bmp085 	bmp;
+	struct mpu6050 	mpu;
 	struct hmc5883l hmc; 
-	struct ssd1306 ssd;
+	struct ssd1306 	ssd;
+	struct hcsr04 	hcsr; 
 	struct fc_quad_interface interface; 
 }; 
 
@@ -224,7 +230,9 @@ static uint8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 		&data->mag.y, 
 		&data->mag.z
 	); 
-	data->altitude = bmp085_read_altitude(&brd->bmp); 
+	int16_t sonar = hcsr04_read_distance_in_cm(&brd->hcsr); 
+	data->atmospheric_altitude = bmp085_read_altitude(&brd->bmp); 
+	data->sonar_altitude = (sonar > 0)?((float)sonar / 100.0):-1; 
 	data->temperature = bmp085_read_temperature(&brd->bmp); 
 	data->pressure = bmp085_read_pressure(&brd->bmp); 
 	data->vbat = (adc0_read_immediate(2) / 65535.0);
@@ -276,16 +284,8 @@ fc_board_t mwii_get_fc_quad_interface(void){
 	if(!ptr){
 		hw = (struct fc_quad_interface){
 			.read_sensors = _mwii_read_sensors, 
-			/*
-			.read_accelerometer = _mwii_read_accelerometer,
-			.read_gyroscope = _mwii_read_gyroscope,
-			.read_magnetometer = _mwii_read_magnetometer,
-			.read_pressure = _mwii_read_pressure,
-			.read_altitude = _mwii_read_altitude,
-			.read_temperature = _mwii_read_temperature, 
-			*/
 			.read_receiver = _mwii_read_receiver, 
-			//.read_battery_monitor = _mwii_read_battery_monitor, 
+			
 			.write_motors = _mwii_write_motors,
 			
 			.write_config = _mwii_write_config, 
@@ -348,7 +348,7 @@ void board_init(void){
 	sei(); 
 	
 	// first thing must enable interrupts
-	kprintf("BOOT\n");
+	kdebug("BOOT\n");
 	
 	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
 	//gpio_set(GPIO_MWII_LED); 
@@ -384,18 +384,24 @@ void board_init(void){
 		delay_us(10000); 
 	}
 	*/
+	gpio_set(GPIO_MWII_LED);
+	 
 	mpu6050_init(&brd->mpu, brd->twi0, MPU6050_ADDR); 
-	kprintf("MPU6050: %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
+	kdebug("MPU6050: %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
 	delay_us(10000); 
 	
 	bmp085_init(&brd->bmp, brd->twi0, BMP085_ADDR); 
-	kprintf("BMP085: found\n");
+	kdebug("BMP085: found\n");
 	delay_us(10000); 
 	
 	hmc5883l_init(&brd->hmc, brd->twi0, HMC5883L_ADDR);
 	uint32_t hmcid = hmc5883l_read_id(&brd->hmc);  
-	kprintf("HMC5883: %c%c%c\n", (uint8_t)(hmcid >> 16), (uint8_t)(hmcid >> 8), (uint8_t)hmcid); 
+	kdebug("HMC5883: %c%c%c\n", (uint8_t)(hmcid >> 16), (uint8_t)(hmcid >> 8), (uint8_t)hmcid); 
 	delay_us(10000); 
+	
+	gpio_clear(GPIO_MWII_LED); 
+	
+	hcsr04_init(&brd->hcsr, brd->gpio0, GPIO_MWII_HCSR_TRIGGER, GPIO_MWII_HCSR_ECHO); 
 	
 	reset_rc();
 	

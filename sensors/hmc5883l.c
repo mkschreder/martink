@@ -95,7 +95,6 @@ void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr) {
 	//set scale
 	//self->scale = 0;
 	// todo: move out
-	uint8_t regValue; 
 	uint8_t scale = HMC5883L_SCALE13; 
 	switch(scale) {
 		case HMC5883L_SCALE088: 

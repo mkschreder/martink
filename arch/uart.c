@@ -230,5 +230,5 @@ void initproc uart_init(void){
 }
 
 size_t uart0_putn(const char *buf, size_t size){
-	serial_putn(uart_get_serial_interface(0), buf, size); 
+	return serial_putn(uart_get_serial_interface(0), (uint8_t*)buf, size); 
 }

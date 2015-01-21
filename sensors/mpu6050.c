@@ -486,6 +486,47 @@ void mpu6050_setZGyroOffset(struct mpu6050 *self, int16_t offset) {
 	mpu6050_writeByte(self, MPU6050_RA_ZG_OFFS_USRL, buffer[1]);
 }
 
+/*** ACCELEROMETER OFFSETS ***/
+
+int16_t mpu6050_getXAccOffset(struct mpu6050 *self) {
+	uint8_t buffer[2]; 
+	mpu6050_readByte(self, MPU6050_RA_XA_OFFS_H, &buffer[0]);
+	mpu6050_readByte(self, MPU6050_RA_XA_OFFS_L_TC, &buffer[1]);
+  return (((int16_t)buffer[0]) << 8) | buffer[1]; 
+}
+
+void mpu6050_setXAccOffset(struct mpu6050 *self, int16_t offset) {
+	uint8_t buffer[2] = {offset >> 8, offset}; 
+	mpu6050_writeByte(self, MPU6050_RA_XA_OFFS_H, buffer[0]);
+	mpu6050_writeByte(self, MPU6050_RA_XA_OFFS_L_TC, buffer[1]);
+}
+
+int16_t mpu6050_getYAccOffset(struct mpu6050 *self) {
+	uint8_t buffer[2]; 
+	mpu6050_readByte(self, MPU6050_RA_YA_OFFS_H, &buffer[0]);
+	mpu6050_readByte(self, MPU6050_RA_YA_OFFS_L_TC, &buffer[1]);
+  return (((int16_t)buffer[0]) << 8) | buffer[1]; 
+}
+
+void mpu6050_setYAccOffset(struct mpu6050 *self, int16_t offset) {
+	uint8_t buffer[2] = {offset >> 8, offset}; 
+	mpu6050_writeByte(self, MPU6050_RA_YA_OFFS_H, buffer[0]);
+	mpu6050_writeByte(self, MPU6050_RA_YA_OFFS_L_TC, buffer[1]);
+}
+
+int16_t mpu6050_getZAccOffset(struct mpu6050 *self) {
+	uint8_t buffer[2]; 
+	mpu6050_readByte(self, MPU6050_RA_ZA_OFFS_H, &buffer[0]);
+	mpu6050_readByte(self, MPU6050_RA_ZA_OFFS_L_TC, &buffer[1]);
+  return (((int16_t)buffer[0]) << 8) | buffer[1]; 
+}
+
+void mpu6050_setZAccOffset(struct mpu6050 *self, int16_t offset) {
+	uint8_t buffer[2] = {offset >> 8, offset}; 
+	mpu6050_writeByte(self, MPU6050_RA_ZA_OFFS_H, buffer[0]);
+	mpu6050_writeByte(self, MPU6050_RA_ZA_OFFS_L_TC, buffer[1]);
+}
+
 void mpu6050_setSleepDisabled(struct mpu6050 *self) {
 	mpu6050_writeBit(self, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_SLEEP_BIT, 0);
 }

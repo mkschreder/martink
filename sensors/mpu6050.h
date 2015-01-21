@@ -102,6 +102,13 @@ int16_t mpu6050_getYGyroOffset(struct mpu6050 *self);
 void 		mpu6050_setZGyroOffset(struct mpu6050 *self, int16_t offset);
 int16_t mpu6050_getZGyroOffset(struct mpu6050 *self); 
 
+void 		mpu6050_setXAccOffset(struct mpu6050 *self, int16_t offset);
+int16_t mpu6050_getXAccOffset(struct mpu6050 *self); 
+void 		mpu6050_setYAccOffset(struct mpu6050 *self, int16_t offset);
+int16_t mpu6050_getYAccOffset(struct mpu6050 *self); 
+void 		mpu6050_setZAccOffset(struct mpu6050 *self, int16_t offset);
+int16_t mpu6050_getZAccOffset(struct mpu6050 *self); 
+
 #ifdef __cplusplus
 }
 #endif

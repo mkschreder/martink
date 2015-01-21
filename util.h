@@ -35,12 +35,19 @@ inline float fmap(float x, float in_min, float in_max, float out_min, float out_
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-
-inline long constrain(long x, long a, long b){
+#define constrain(x, a, b) (((x) < (a))?(a):(((x) > (b))?(b):(x)))
+/*
+static inline long constrain(long x, long a, long b){
 	if(x < a) return a; 
 	if(x > b) return b; 
 	return x; 
-}
+}*/
+/*
+static inline float constrain_f(float x, float a, float b){
+	if(x < a) return a; 
+	if(x > b) return b; 
+	return x; 
+}*/
 
 /*
 #define assert(condition) ({\
@@ -53,6 +60,9 @@ inline long constrain(long x, long a, long b){
         (type *)( (char *)__mptr - offsetof(type,member) );})
 
 //#define __init //__attribute__((constructor))
+
+// wraps degrees around a circle
+#define wrap_180(x) (x < -180 ? x+360 : (x > 180 ? x - 360: x))
 
 #ifdef CONFIG_HAVE_UART
 	#define kprintf(a, ...) uart0_printf(a, ##__VA_ARGS__) 

@@ -261,7 +261,7 @@ int16_t twi0_stop(void)
 	// Make sure transaction was succesful
 	if(twi_status != TWI_STATUS_DONE)
 	{
-		return;
+		return 0;
 	}
 
 	// Initiate a STOP condition

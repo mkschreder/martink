@@ -88,6 +88,7 @@ struct multiwii_board {
 	struct hmc5883l hmc; 
 	struct ssd1306 	ssd;
 	struct hcsr04 	hcsr; 
+	int16_t acc_bias_x, acc_bias_y, acc_bias_z; 
 	struct fc_quad_interface interface; 
 }; 
 
@@ -147,52 +148,7 @@ void mwii_process_events(void){
 	}
 	
 }
-/*
 
-static void _mwii_read_accelerometer(fc_board_t self, float *x, float *y, float *z){
-	double ax, ay, az; 
-	mpu6050_getConvAcc(&brd->mpu, &ax, &ay, &az); 
-	///int16_t ax, ay, az, gx, gy, gz; 
-	///mpu6050_getRawData(&brd->mpu, &ax, &ay, &az, &gx, &gy, &gz); 
-	*x = ax; 
-	*y = ay; 
-	*z = az; 
-}
-
-static void _mwii_read_gyroscope(fc_board_t self, float *x, float *y, float *z){
-	double gx, gy, gz; 
-	mpu6050_getConvGyr(&brd->mpu, &gx, &gy, &gz);   
-	//int16_t ax, ay, az, gx, gy, gz; 
-	//mpu6050_getRawData(&brd->mpu, &ax, &ay, &az, &gx, &gy, &gz); 
-	
-	*x = gx; 
-	*y = gy; 
-	*z = gz; 
-	//mpu6050_getRawData(&ax, &ay, &az, x, y, z); 
-}
-
-static void _mwii_read_magnetometer(fc_board_t self, float *x, float *y, float *z){
-	float mx, my, mz; 
-	hmc5883l_read_adjusted(&brd->hmc, &mx, &my, &mz); 
-	*x = mx; *y = my; *z = mz; 
-}
-
-static float _mwii_read_altitude(fc_board_t self){
-	return bmp085_read_altitude(&brd->bmp); 
-}
-
-static long _mwii_read_pressure(fc_board_t self){
-	return bmp085_read_pressure(&brd->bmp); 
-}
-
-static float _mwii_read_temperature(fc_board_t self){
-	return bmp085_read_temperature(&brd->bmp); 
-}
-
-static float _mwii_read_battery_monitor(fc_board_t self){
-	return (adc0_read_immediate(2) / 65535.0); 
-}
-*/
 static uint8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 	data->flags = 0xffff; // all
 	mpu6050_getRawData(&_brd.mpu, 
@@ -203,6 +159,10 @@ static uint8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 		&data->raw_gyr.y, 
 		&data->raw_gyr.z
 	); 
+	/*data->raw_acc.x -= brd->acc_bias_x; 
+	data->raw_acc.y -= brd->acc_bias_y; 
+	data->raw_acc.z -= brd->acc_bias_z; 
+	*/
 	mpu6050_convertData(&_brd.mpu, 
 		data->raw_acc.x, 
 		data->raw_acc.y, 
@@ -230,6 +190,7 @@ static uint8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 		&data->mag.y, 
 		&data->mag.z
 	); 
+	
 	int16_t sonar = hcsr04_read_distance_in_cm(&brd->hcsr); 
 	data->atmospheric_altitude = bmp085_read_altitude(&brd->bmp); 
 	data->sonar_altitude = (sonar > 0)?((float)sonar / 100.0):-1; 
@@ -312,7 +273,7 @@ static void mwii_calibrate_escs(void){
 		mwii_write_motors(c, c, c, c); 
 		_delay_ms(20); 
 	}
-	_delay_ms(1000); 
+	_delay_ms(500); 
 	// reset the motors
 	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 
 }
@@ -324,10 +285,59 @@ static void mwii_calibrate_mpu6050(void){
 	mpu6050_setTCXGyroOffset(&_brd.mpu, 0); //14
 	mpu6050_setTCYGyroOffset(&_brd.mpu, 0); //20
 	mpu6050_setTCZGyroOffset(&_brd.mpu, 0); //-49
+	mpu6050_setXGyroOffset(&_brd.mpu, 0); //14
+	mpu6050_setYGyroOffset(&_brd.mpu, 0); //20
+	mpu6050_setZGyroOffset(&_brd.mpu, 0); //-49
 	
-	mpu6050_setXGyroOffset(&_brd.mpu, -14 * 2); //14
-	mpu6050_setYGyroOffset(&_brd.mpu, -20 * 2); //20
-	mpu6050_setZGyroOffset(&_brd.mpu, 49 * 2); //-49
+	/*
+	int16_t bias_x = mpu6050_getXAccOffset(&_brd.mpu); 
+	int16_t bias_y = mpu6050_getYAccOffset(&_brd.mpu); 
+	int16_t bias_z = mpu6050_getZAccOffset(&_brd.mpu); 
+	*/
+	/*mpu6050_setXAccOffset(&_brd.mpu, 0); 
+	mpu6050_setYAccOffset(&_brd.mpu, 0); 
+	mpu6050_setZAccOffset(&_brd.mpu, 0); 
+	*/
+	int32_t aax = 0, aay= 0, aaz = 0, ggx = 0, ggy = 0, ggz = 0; 
+	static const int iterations = 100; 
+	for(int c = 0; c < iterations; c++){
+		mpu6050_getRawData(&_brd.mpu, &ax, &ay, &az, &gx, &gy, &gz); 
+		aax += ax; aay += ay; aaz += az; 
+		ggx += gx; ggy += gy; ggz += gz; 
+		delay_us(10); 
+	}
+	brd->acc_bias_x = aax / iterations; 
+	brd->acc_bias_y = aay / iterations; 
+	brd->acc_bias_z = (aaz / iterations) + 16384; 
+	
+	mpu6050_setXGyroOffset(&_brd.mpu, -(int16_t)(ggx / iterations * 2) | 1); //14
+	mpu6050_setYGyroOffset(&_brd.mpu, -(int16_t)(ggy / iterations * 2) | 1); //20
+	mpu6050_setZGyroOffset(&_brd.mpu, -(int16_t)(ggz / iterations * 2) | 1); //-49
+	
+	// Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
+	// factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
+	// non-zero values. In addition, bit 0 of the lower byte must be preserved since it is used for temperature
+	// compensation calculations. Accelerometer bias registers expect bias input as 2048 LSB per g, so that
+	// the accelerometer biases calculated above must be divided by 8.
+	
+	// Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
+	// preserve temperature compensation bit when writing back to accelerometer bias registers
+	//bias_x = (int16_t)(bias_x - (aax / iterations / 16384.0 * 2048)) | 1; 
+	//bias_y = (int16_t)(bias_y - (aay / iterations / 16384.0 * 2048)) | 1; 
+	//bias_z = (int16_t)(bias_z - (aaz / iterations / 16384.0 * 2048)) | 1; 
+	
+	//mpu6050_setXAccOffset(&_brd.mpu, -(int16_t)(bias_x)); 
+	//mpu6050_setYAccOffset(&_brd.mpu, -(int16_t)(bias_y)); 
+	//mpu6050_setZAccOffset(&_brd.mpu, -(int16_t)(aaz)); 
+	
+	/*mpu6050_setXAccOffset(&_brd.mpu, 0x0100); 
+	mpu6050_setYAccOffset(&_brd.mpu, 0x0100); 
+	mpu6050_setZAccOffset(&_brd.mpu, 0x0100); */
+	
+	//mpu6050_setXGyroOffset(&_brd.mpu, -15 * 2); //14
+	//mpu6050_setYGyroOffset(&_brd.mpu, -20 * 2); //20
+	//mpu6050_setZGyroOffset(&_brd.mpu, 54 * 2); //-49
+	//mpu6050_setZAccOffset(&_brd.mpu, -20); // 15818
 	/*
 	mpu6050_getRawData(&_brd.mpu, &ax, &ay, &az, &gx, &gy, &gz); 
 	
@@ -367,7 +377,7 @@ void board_init(void){
 	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 
 	
 	// calibrate escs
-	mwii_calibrate_escs(); 
+	//mwii_calibrate_escs(); 
 	
 	brd->gpio0 = gpio_get_parallel_interface();
 	
@@ -388,16 +398,13 @@ void board_init(void){
 	 
 	mpu6050_init(&brd->mpu, brd->twi0, MPU6050_ADDR); 
 	kdebug("MPU6050: %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
-	delay_us(10000); 
 	
 	bmp085_init(&brd->bmp, brd->twi0, BMP085_ADDR); 
 	kdebug("BMP085: found\n");
-	delay_us(10000); 
 	
 	hmc5883l_init(&brd->hmc, brd->twi0, HMC5883L_ADDR);
 	uint32_t hmcid = hmc5883l_read_id(&brd->hmc);  
 	kdebug("HMC5883: %c%c%c\n", (uint8_t)(hmcid >> 16), (uint8_t)(hmcid >> 8), (uint8_t)hmcid); 
-	delay_us(10000); 
 	
 	gpio_clear(GPIO_MWII_LED); 
 	

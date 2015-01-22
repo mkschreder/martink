@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "autoconf.h"
+#include "include/autoconf.h"
 
 #include "../util.h"
 

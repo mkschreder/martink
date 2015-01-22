@@ -21,7 +21,7 @@
 
 #pragma once 
 
-#include "autoconf.h"
+#include "include/autoconf.h"
 
 #define wrap_pi(x) (x < -M_PI ? x+M_PI*2 : (x > M_PI ? x - M_PI*2: x))
 

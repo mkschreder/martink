@@ -26,7 +26,7 @@
 
 #include "gpio.h"
 
-#include "autoconf.h"
+#include "include/autoconf.h"
 
 #define SPI_CLOCK_DIV2 	(SPSR |= _BV(SPI2X))
 #define SPI_CLOCK_DIV4	(0)

@@ -1,5 +1,5 @@
 /*
-Example for basic setup and printing to the uart console on an AVR controller. 
+Example of using aes crypto functions in libk. 
 
 Notice that you can just as well use LibK from C++ as from C. Therefore, 
 this example is in C++. 
@@ -36,6 +36,9 @@ Application::Application():mConsole(0), mNextPrintTime(0), mCounter(0){
 	uart0_set_baudrate(38400); 
 	
 	// we can no get the interface for the uart0 on the chip. 
+	// a serial interface can be any serial stream in libk though
+	// it could have been an spi device for example but then we would have
+	// used spi specific spi_get_serial_interface(); 
 	mConsole = uart_get_serial_interface(0); 
 	
 	// we use the timestamp system to set next print time to expire right away. 

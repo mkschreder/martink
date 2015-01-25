@@ -41,10 +41,13 @@ extern "C" {
 #include <inttypes.h>
 #include "../interface.h"
 
-#define MINCOMMAND 800
+#define MINCOMMAND 1000
+#define MAXCOMMAND 1480
 
+/*
 #define PWM_MIN MINCOMMAND
-#define PWM_MAX 2000
+#define PWM_MAX MAXCOMMAND
+*/
 
 void mwii_init(void); 
 void mwii_process_events(void);

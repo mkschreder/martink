@@ -90,6 +90,8 @@ extern "C" {
 #define pgm_snprintf(str, size, fmt, ...) snprintf_P(str, size, fmt, ##__VA_ARGS__)
 #endif
 
+void soc_init(void); 
+
 #ifdef __cplusplus
 }
 #endif

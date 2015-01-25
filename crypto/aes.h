@@ -1,7 +1,5 @@
 /*
 	This file is part of martink project.
-	
-	Implementation by Daniel Otte (daniel.otte@rub.de) Copyright (C) 2008  
 
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,23 +14,20 @@
 	You should have received a copy of the GNU General Public License
 	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
-	LibK project on github: https://github.com/mkschreder
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
 */
-/**
- * \file     aes_enc.h
- * \email    daniel.otte@rub.de
- * \author   Daniel Otte
- * \date     2008-12-30
- * \license  GPLv3 or later
- *
- */
-#ifndef AES_ENC_H_
-#define AES_ENC_H_
-#include "aes_types.h"
-#include <stdint.h>
 
+#pragma once
 
-void aes_encrypt_core(aes_cipher_state_t* state, const aes_genctx_t* ks, uint8_t rounds);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-
+#include "sha256.h"
+#include "aes/aes.h"
+ 
+#ifdef __cplusplus
+}
 #endif

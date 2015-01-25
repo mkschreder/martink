@@ -1,1 +1,1 @@
-obj-$(CONFIG_BOARD_MULTIWII) += boards/flight_control/multiwii.o
+obj-$(CONFIG_ATMEGA328P) += boards/flight_control/multiwii.o

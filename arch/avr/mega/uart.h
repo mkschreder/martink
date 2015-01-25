@@ -49,7 +49,11 @@ extern "C" {
 
 // Load value for UBRR into registers
 // eg. `uart0_baud(BAUD_PRESCALE_SYNC(57600));`
-#define uart0_set_baudrate(ubrr) (UBRR0H = (unsigned char)(ubrr << 8), UBRR0L = (unsigned char)ubrr)
+#define uart0_set_brr(ubrr) (UBRR0H = (unsigned char)(ubrr << 8), UBRR0L = (unsigned char)ubrr)
+
+#define uart0_set_baudrate_async(rate) uart0_set_brr(BAUD_PRESCALE_ASYNC(rate))
+// default uart baudrate function
+#define uart0_set_baudrate(rate) uart0_set_baudrate_async(rate)
 
 #define uart0_normal_transmission_speed() (uart0_clear_errors(), CLRBIT(UCSR0A, U2X0))
 #define uart0_double_transmission_speed() (uart0_clear_errors(), SETBIT(UCSR0A, U2X0))
@@ -122,7 +126,7 @@ extern "C" {
 #define uart0_parity_error() (UCSR0A |= _BV(UPE0))
 
 #define uart0_init_default(baudrate) ({ \
-  uart0_set_baudrate(BAUD_PRESCALE_ASYNC(baudrate)); \
+  uart0_set_brr(BAUD_PRESCALE_ASYNC(baudrate)); \
   uart0_mode_async(); \
   uart0_character_size8(); \
   uart0_parity_off(); \

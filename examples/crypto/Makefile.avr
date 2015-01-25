@@ -1,0 +1,14 @@
+KERNEL_PATH=../..
+F_CPU=16000000
+APPNAME=crypto
+
+all: build
+	avr-g++ -O1 -mmcu=atmega328p -DF_CPU=$(F_CPU) -I$(KERNEL_PATH) -I$(KERNEL_PATH)/include/ -L$(KERNEL_PATH) -o $(APPNAME) main.cpp -lk-avr-atmega328p
+	
+build: 
+	make -C ../../ build
+
+install: 
+	avr-objcopy -j .text -j .data -O ihex $(APPNAME) $(APPNAME).hex 
+	avr-size $(APPNAME) 
+	sudo avrdude -p m328p -c usbasp -e -U flash:w:$(APPNAME).hex

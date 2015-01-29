@@ -13,11 +13,17 @@ BUILD_DIR := build
 ktree := martink
 #$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-include .config 
+ifdef BUILD
+	include configs/$(BUILD).config
+else
+	include .config
+endif
+
 include Makefile.build 
 
 # append flags defined in arch/
-COMMON_FLAGS +=  $(CPU_FLAGS)
+BUILD_DEFINE := $(subst -,_,$(BUILD))
+COMMON_FLAGS += -DBUILD_$(subst -,_,$(BUILD)) -DBUILD=$(BUILD) $(CPU_FLAGS)
 
 # add includes to the make
 CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
@@ -74,11 +80,20 @@ app: build
 
 fixdep: 
 	find build -type f -iname '*.d' -exec sh -c 'scripts/basic/fixdep "$${1%.*}.d" "$${1%.*}.o" "" > $${1%.*}.cmd' convert {} \;
-
+	#echo "#include \"include/configs/$(BUILD).h\"">config.h
+	
 fixdirs: 
 	mkdir -p build
+
+saveconfig: 
+ifdef BUILD
+		cp include/autoconf.h include/configs/$(BUILD).h
+		cp .config configs/$(BUILD).config
+else
+		echo "Please specify BUILD you want to save to!"
+endif
 	
-build: fixdirs fixdep check $(obj-y)
+build: fixdirs fixdep check $(obj-y) 
 	rm -f $(APPNAME)
 	ar rs $(APPNAME) $(obj-y)
 

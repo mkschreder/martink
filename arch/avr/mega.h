@@ -31,7 +31,7 @@
 
 typedef char PROGMEM prog_char; 
 
-#include "include/autoconf.h"
+#include "config.h"
 
 #ifdef CONFIG_HAVE_ADC
 #include "mega/adc.h"

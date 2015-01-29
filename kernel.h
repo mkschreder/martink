@@ -25,11 +25,10 @@
 extern "C" {
 #endif 
 
-#include "include/autoconf.h"
+#include "config.h"
 #include <inttypes.h>
 
 #include <arch/soc.h>
-#include <boards/board.h>
 #include "util.h"
 
 #ifdef __cplusplus

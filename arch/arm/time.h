@@ -9,7 +9,9 @@
 )
 
 static inline timestamp_t tsc_read(void){
-	return GetTickCount();
+	#warning "returning zero tick count every time!"
+	return 0; 
+	//return GetTickCount();
 }
 
 static inline timestamp_t tsc_us_to_ticks(timestamp_t us) {

@@ -21,16 +21,17 @@
 
 #pragma once
 
+/*
+void uart0_init_default(uint16_t baudrate);
 
-extern void 		twi0_init_default(void);
+#define uart0_waiting() (USART_IsDataAvailable(USART0))
+#define uart0_flush() do {} while(0)
+#define uart0_getc() ((uart0_waiting())?USART_GetChar(USART0):UART_NO_DATA)
+#define uart0_putc(data) (USART_PutChar(USART0, data), 0)
 
-/// address is the first byte of data
-void 		twi0_start_write(uint8_t addr, uint8_t *data, uint8_t data_sz);
-/// address is the first byte of data
-void 		twi0_start_read(uint8_t addr, uint8_t *data, uint8_t data_sz);
-
-/// sends stop signal on the bus
-void twi0_stop(void);
-
-/// returns 1 if twi bus is processing another transaction
-uint8_t twi0_busy(void);
+void uart1_init_default(uint16_t baud); 
+#define uart1_waiting() (USART_IsDataAvailable(USART1))
+#define uart1_flush() do {} while(0)
+#define uart1_getc() ((uart0_waiting())?USART_GetChar(USART1):UART_NO_DATA)
+#define uart1_putc(data) (USART_PutChar(USART1, data), 0)
+*/

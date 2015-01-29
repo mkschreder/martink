@@ -35,10 +35,11 @@ Application::Application():mConsole(0), mNextPrintTime(0), mCounter(0){
 	// we will be using uart device with this baud rate
 	uart0_set_baudrate(38400); 
 	
-	// we can no get the interface for the uart0 on the chip. 
+	// we can noW get the interface for the uart0 on the chip. 
 	// a serial interface can be any serial stream in libk though
 	// it could have been an spi device for example but then we would have
 	// used spi specific spi_get_serial_interface(); 
+	// Any device can export a generic serial interface. 
 	mConsole = uart_get_serial_interface(0); 
 	
 	// we use the timestamp system to set next print time to expire right away. 
@@ -54,7 +55,6 @@ Application::Application():mConsole(0), mNextPrintTime(0), mCounter(0){
 	sha256(&hash, pw, strlen(pw)); 
 	
 	// has is same size as key so can use directly (256 bits)
-	
 	aes256_init(hash, &mAES); 
 }
 

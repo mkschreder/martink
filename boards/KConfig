@@ -16,7 +16,8 @@ choice
 	config BOARD_STM32F103
 		depends on STM32F10X
 		bool "STM32F103C6 dev board"
-		
+	
+	
 	config BOARD_ARDUINO_DUE
 		depends on AT91SAM3
 		bool "Arduino Due SAM3"

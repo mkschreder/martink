@@ -90,10 +90,10 @@
 	SPDR \
 )
 
-#define hwspi0_transfer(ch) (({\
-	SPDR = ch;\
-	hwspi0_wait_for_transmit_complete(); \
-}), SPDR )
+#define hwspi0_transfer(ch) (\
+	SPDR = ch,\
+	hwspi0_wait_for_transmit_complete(),\
+	SPDR )
 
 
 #endif

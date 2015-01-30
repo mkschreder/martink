@@ -181,5 +181,6 @@ extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0];
 		timestamp_t *ch_up, timestamp_t *ch_down);
 #endif
 
+void gpio_init(void); 
 // attempt to gather entropy from floating gpio pin
 extern uint32_t gpio_read_prng(gpio_pin_t pin);

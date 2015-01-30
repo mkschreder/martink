@@ -45,6 +45,8 @@ void timestamp_delay_us(timestamp_t usec);
 
 #define timestamp_ticks_since(timestamp) (tsc_read() - (timestamp_t)(timestamp))
 
+void time_init(void); 
+
 #ifdef __cplusplus
 }
 #endif

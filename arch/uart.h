@@ -32,6 +32,8 @@ extern "C" {
 
 extern FILE *uart0_fd;
 
+void uart_init(void); 
+
 void uart0_init(uint32_t baudrate);
 
 size_t uart0_puts(const char *s );

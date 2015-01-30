@@ -48,6 +48,7 @@ uint16_t _spi_putc(serial_dev_t self, uint8_t ch){
 		case 0: {
 			uint8_t data = hwspi0_transfer(ch); 
 			cbuf_put(&spi0_rx_buf, data);
+			return data; 
 			break;
 		}
 	}

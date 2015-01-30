@@ -38,7 +38,7 @@
 #undef spi_init
 #define spi_init() {}
 #undef spi_writereadbyte
-#define spi_writereadbyte(ch) (serial_putc(nrf->spi, ch), serial_getc(nrf->spi))
+#define spi_writereadbyte(ch) (serial_putc(nrf->spi, ch))
 
 /*
  * read one register
@@ -417,7 +417,7 @@ void nrf24l01_init(struct nrf24l01 *nrf, serial_dev_t spi, gpio_pin_t cs, gpio_p
 	gpio_configure(nrf->cs_pin, GP_OUTPUT); 
 	gpio_configure(nrf->ce_pin, GP_OUTPUT); 
 	
-	spi_init(); //init spi
+	//spi_init(); //init spi
 
 	nrf24l01_CElo; //low CE
 	nrf24l01_CSNhi; //high CSN
@@ -498,12 +498,13 @@ void nrf24l01_init(struct nrf24l01 *nrf, serial_dev_t spi, gpio_pin_t cs, gpio_p
 void nrf24l01_scan(struct nrf24l01 *nrf, uint8_t iterations, uint8_t result[NRF24L01_MAX_CHANNEL]){
 	//disable();
 	uint8_t channel[NRF24L01_MAX_CHANNEL];
-	static const char grey[] PROGMEM = "0123456789"; 
+	static const char grey[] PROGMEM = " 123456789"; 
+	//static const char grey[] PROGMEM = " .:-=+*aRW"; 
 	//char grey[] = " .:-=+*aRW";
 
 	//nrf24l01_powerdown();
-
-	//memset(result, ' ', NRF24L01_MAX_CHANNEL);
+	memset(channel, 0, sizeof(channel)); 
+	memset(result, ' ', NRF24L01_MAX_CHANNEL);
 	
   for( int j=0 ; j < iterations  ; j++)
   {

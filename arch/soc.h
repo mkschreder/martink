@@ -56,14 +56,12 @@ extern "C" {
 
 #ifdef CONFIG_AVR
 #include "avr/mega.h"
-#endif
-
-#ifdef CONFIG_ARM
+#elif CONFIG_ARM
 #include "arm/arm.h"
-#endif
-
-#ifdef CONFIG_NATIVE
+#elif CONFIG_NATIVE
 #include "native/native.h"
+#else 
+#error "You have not chosen an architecture!"
 #endif
 
 #include "interface.h"
@@ -89,6 +87,8 @@ extern "C" {
 #define pgm_streq(str, pstr) (strcmp_P(str, pstr) == 0)
 #define pgm_snprintf(str, size, fmt, ...) snprintf_P(str, size, fmt, ##__VA_ARGS__)
 #endif
+
+void soc_init(void); 
 
 #ifdef __cplusplus
 }

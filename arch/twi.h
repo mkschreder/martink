@@ -30,6 +30,7 @@ struct twi_device {
 #define I2C_READ    1
 #define I2C_WRITE   0
 
+void twi_init(void); 
 i2c_dev_t twi_get_interface(uint8_t id);
 
 //void twi_init(uint8_t dev);

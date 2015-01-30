@@ -10,6 +10,9 @@ CXXFLAGS :=
 LDFLAGS := 
 EXTRALIBS := 
 BUILD_DIR := build
+CONFIG := configs/$(BUILD).config
+CONFIG_H := include/configs/$(BUILD).h
+
 ktree := martink
 #$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
@@ -67,26 +70,30 @@ scripts/basic/%: scripts_basic ;
 
 # needed for menuconfig
 %config: scripts_basic FORCE 	
+	if [ ! -e .config ]; then cp $(CONFIG) .config; fi
 	make $(build)=scripts/kconfig $@
+	if [ $(SAVECONFIG) ]; then cp .config $(CONFIG); fi
 
-app: build
-	make -C $(APP) build
-
+config: 
+	if [ ! -f $(CONFIG) ]; then echo "Unknown config $(CONFIG)!"; exit 1; fi
+	if [ ! -e .config ]; then cp $(CONFIG) .config; fi
+	echo "CC: $(CC)"
+	
 fixdep: 
 	find build -type f -iname '*.d' -exec sh -c 'scripts/basic/fixdep "$${1%.*}.d" "$${1%.*}.o" "" > $${1%.*}.cmd' convert {} \;
 
 fixdirs: 
 	mkdir -p build
 	
-build: fixdirs fixdep check $(obj-y)
+build: config fixdirs fixdep check $(obj-y)
 	rm -f $(APPNAME)
 	ar rs $(APPNAME) $(obj-y)
 
-$(BUILD_DIR)/%.o: %.cpp .config
+$(BUILD_DIR)/%.o: %.cpp .config 
 	mkdir -p `dirname $@`
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.o: %.c .config
+$(BUILD_DIR)/%.o: %.c .config 
 	mkdir -p `dirname $@`
 	$(CC) -c $(CFLAGS) $< -o $@
 

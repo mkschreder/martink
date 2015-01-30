@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include "flight_control/interface.h"
 #include "../arch/interface.h"
 
 struct fc_quad_rx_input {
@@ -69,22 +70,6 @@ struct fc_data {
 
 struct fc_quad_interface {
 	uint8_t 		(*read_sensors)(fc_board_t self, struct fc_data *data); 
-	/*
-	void 				(*read_accelerometer)(fc_board_t self,
-		float *ax, float *ay, float *az); 
-	void 				(*read_gyroscope)(fc_board_t self,
-		float *gx, float *gy, float *gz);
-	void 				(*read_magnetometer)(fc_board_t self,
-		float *mx, float *my, float *mz);
-	/// returns altitude in meters
-	float				(*read_altitude)(fc_board_t self);
-	/// returns pressure in Pa 
-	long				(*read_pressure)(fc_board_t self);
-	/// returns temperature in degrees C
-	float 			(*read_temperature)(fc_board_t self);
-	/// returns voltage sensor reading
-	float 			(*read_battery_monitor)(fc_board_t self); 
-	*/
 	uint8_t 		(*read_receiver)(fc_board_t self,
 		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1); 

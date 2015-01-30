@@ -5,14 +5,16 @@ CXX := avr-g++
 LD := avr-gcc
 LDXX := avr-g++
 
-cpuflags-$(CONFIG_ATMEGA103) := -mmcu=atmega103
-cpuflags-$(CONFIG_ATMEGA88) := -mmcu=atmega88
-cpuflags-$(CONFIG_ATMEGA128) := -mmcu=atmega128
-cpuflags-$(CONFIG_ATMEGA168) := -mmcu=atmega168
-cpuflags-$(CONFIG_ATMEGA2560) := -mmcu=atmega2560
-cpuflags-$(CONFIG_ATMEGA328P) := -mmcu=atmega328p
-cpuflags-$(CONFIG_ATMEGA48) := -mmcu=atmega48
-cpuflags-$(CONFIG_ATMEGA644) := -mmcu=atmega644
+mcu-$(CONFIG_ATMEGA103) := atmega103
+mcu-$(CONFIG_ATMEGA88) := atmega88
+mcu-$(CONFIG_ATMEGA128) := atmega128
+mcu-$(CONFIG_ATMEGA168) := atmega168
+mcu-$(CONFIG_ATMEGA2560) := atmega2560
+mcu-$(CONFIG_ATMEGA328P) := atmega328p
+mcu-$(CONFIG_ATMEGA48) := atmega48
+mcu-$(CONFIG_ATMEGA644) := atmega644
+
+cpuflags-y := -mmcu=$(mcu-y)
 
 #ifndef CPU_FREQ
 #$(error CPU_FREQ must be set for avr arch!)

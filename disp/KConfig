@@ -3,7 +3,7 @@ menu "Display support"
 		bool "ILI9340 serial display driver"
 	
 	config LCDPAR
-		bool "Generic LCD driver"
+		bool "Generic parallel LCD driver"
 		
 	config LEDMATRIX88
 		bool "Led matrix driver"

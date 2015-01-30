@@ -1,4 +1,4 @@
-obj-y += main.o 
+obj-y += main.o
 
 include arch/Makefile
 include boards/Makefile

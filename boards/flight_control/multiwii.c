@@ -346,7 +346,7 @@ static void mwii_calibrate_mpu6050(void){
 	mpu6050_setZGyroOffset(&_brd.mpu, gz); */
 }
 
-void board_init(void){
+void mwii_init(void){
 	//soc_init(); 
 	time_init(); 
 	uart_init(); 

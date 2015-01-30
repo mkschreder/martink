@@ -1,4 +1,4 @@
-/**
+/*
 	This file is part of martink project.
 
 	martink firmware project is free software: you can redistribute it and/or modify
@@ -21,14 +21,13 @@
 
 #pragma once
 
-#include "interface.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#if defined(CONFIG_BOARD_MULTIWII)
-#include "flight_control/multiwii.h"
-#elif defined(CONFIG_BOARD_PROMINI_RXTX)
-#include "promini_rftrx.h"
-#elif defined(CONFIG_BOARD_ARDUINO_DUE)
-#include "arduino_due.h"
-#elif defined(CONFIG_BOARD_STM32F103)
-#include "stm32f103.h"
+#include "sha256.h"
+#include "aes/aes.h"
+ 
+#ifdef __cplusplus
+}
 #endif

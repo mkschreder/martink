@@ -10,21 +10,32 @@ CXXFLAGS :=
 LDFLAGS := 
 EXTRALIBS := 
 BUILD_DIR := build
+CONFIG := configs/$(BUILD).config
+CONFIG_H := include/configs/$(BUILD).h
+ARCH := $(firstword $(subst -, ,$(BUILD)))
+CPU = $(word 2,$(subst -, ,$(BUILD)))
+
 ktree := martink
 #$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-include .config 
+ifdef BUILD
+	include configs/$(BUILD).config
+else
+	include .config
+endif
+
 include Makefile.build 
 
 # append flags defined in arch/
-COMMON_FLAGS +=  $(CPU_FLAGS)
+BUILD_DEFINE := $(subst -,_,$(BUILD))
+COMMON_FLAGS += -DBUILD_$(subst -,_,$(BUILD)) -DBUILD=$(BUILD) $(CPU_FLAGS)
 
 # add includes to the make
 CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
 LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS)
 OUTDIRS := build build/crypto/aes
-APPNAME := libk.a
+APPNAME := libk-$(ARCH)-$(CPU).a
 
 # SHELL used by kbuild
 CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
@@ -67,28 +78,45 @@ scripts/basic/%: scripts_basic ;
 
 # needed for menuconfig
 %config: scripts_basic FORCE 	
+	if [ ! -e .config ]; then cp $(CONFIG) .config; fi
 	make $(build)=scripts/kconfig $@
+	if [ $(SAVECONFIG) ]; then cp .config $(CONFIG); fi
 
-app: build
-	make -C $(APP) build
-
+config: 
+	if [ ! -f $(CONFIG) ]; then echo "Unknown config $(CONFIG)!"; exit 1; fi
+	if [ ! -e .config ]; then cp $(CONFIG) .config; fi
+	echo "CC: $(CC)"
+	
 fixdep: 
 	find build -type f -iname '*.d' -exec sh -c 'scripts/basic/fixdep "$${1%.*}.d" "$${1%.*}.o" "" > $${1%.*}.cmd' convert {} \;
-
+	#echo "#include \"include/configs/$(BUILD).h\"">config.h
+	
 fixdirs: 
 	mkdir -p build
+
+saveconfig: 
+ifdef BUILD
+		cp include/autoconf.h include/configs/$(BUILD).h
+		cp .config configs/$(BUILD).config
+else
+		echo "Please specify BUILD you want to save to!"
+endif
 	
-build: fixdirs fixdep check $(obj-y)
+build: config fixdirs fixdep check $(obj-y)
 	rm -f $(APPNAME)
 	ar rs $(APPNAME) $(obj-y)
 
-$(BUILD_DIR)/%.o: %.cpp .config
+$(BUILD_DIR)/%.o: %.cpp .config 
 	mkdir -p `dirname $@`
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.o: %.c .config
+$(BUILD_DIR)/%.o: %.c .config 
 	mkdir -p `dirname $@`
 	$(CC) -c $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: %.S .config 
+	mkdir -p `dirname $@`
+	$(AS) -c  $< -o $@
 
 check: GCC-exists
 	

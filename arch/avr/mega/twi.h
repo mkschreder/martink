@@ -20,7 +20,7 @@ extern "C" {
 
 #include <avr/io.h>
 
-#include "include/autoconf.h"
+#include "config.h"
 
 
 struct _avr_twi_op {

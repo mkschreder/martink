@@ -101,6 +101,11 @@ inline size_t  serial_waiting(serial_dev_t dev){
 	return (*dev)->waiting(dev);
 }
 
+/// architecture specific implementation of serial_printf
+/// the implementation needs to be implemented separately because of 
+/// differences in libc. Look in arch/<arch>/serial.c
+uint16_t serial_printf(serial_dev_t port, const char *fmt, ...);
+
 /// status codes returned by methods of the interface
 #define SERIAL_PARITY_ERROR			0x1000
 #define SERIAL_FRAME_ERROR      0x0800      

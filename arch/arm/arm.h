@@ -21,7 +21,9 @@
 
 #pragma once
 
-#ifdef CONFIG_STM32
+#define sei() {}
+
+#ifdef CONFIG_STM32F103
 #include "stm32/stm32.h"
 #endif
 
@@ -29,10 +31,19 @@
 #include "sam3/sam.h"
 #include "at91sam3xe.h"
 #endif
-
+/*
 #include "uart.h"
 #include "twi.h"
 #include "spi.h"
 #include "gpio.h"
 #include "time.h"
 #include "adc.h"
+*/
+#include "memory.h"
+
+typedef char * uint_farptr_t; 
+#define strcpy_PF(a, b) strcpy(a, b)
+#define strcmp_PF(a, b) strcmp(a, b)
+#define memcpy_PF(a, b, s) memcpy(a, b, s)
+#define PSTR(a) (a)
+//#define pgm_read_word(a) (*(uint16_t*)a)

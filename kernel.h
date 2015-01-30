@@ -21,12 +21,19 @@
 
 #pragma once 
 
-#include "include/autoconf.h"
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
+#include "config.h"
 #include <inttypes.h>
 
 #include <arch/soc.h>
-#include <boards/board.h>
 #include "util.h"
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef __cplusplus
 __extension__ typedef int __guard __attribute__((mode (__DI__)));

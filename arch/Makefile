@@ -8,7 +8,7 @@ obj-y += arch/pwm.o
 obj-y += arch/eeprom.o
 
 ifeq ($(CONFIG_AVR), y)
-	include $(srctree)/arch/avr/mega/Makefile
+	include $(srctree)/arch/avr/Makefile
 endif
 
 ifeq ($(CONFIG_NATIVE), y)

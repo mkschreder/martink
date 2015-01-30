@@ -17,6 +17,6 @@ void ConstructorsInit(void)
 	e = &__init_array_end;
 	while (s != e)
 	{
-		(*((void (**)()) s++))();
+		(*((void (**)(void)) s++))();
 	}
 }

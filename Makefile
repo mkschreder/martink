@@ -28,7 +28,7 @@ include Makefile.build
 
 # append flags defined in arch/
 BUILD_DEFINE := $(subst -,_,$(BUILD))
-COMMON_FLAGS += -DBUILD_$(subst -,_,$(BUILD)) -DBUILD=$(BUILD) $(CPU_FLAGS)
+COMMON_FLAGS += -I$(srctree) -I$(srctree)/include -DBUILD_$(BUILD_DEFINE) $(CPU_FLAGS)
 
 # add includes to the make
 CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
@@ -136,6 +136,9 @@ clean:
 
 PHONY += FORCE
 FORCE:
+
+
+include examples/hello_world/Makefile
 
 
 # Declare the contents of the .PHONY variable as phony.  We keep that

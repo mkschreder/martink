@@ -29,6 +29,18 @@
 
 #define UART_DEFAULT_BAUDRATE 38400
 
+#ifdef CONFIG_HAVE_UART3
+#define UART_COUNT 4
+#elif CONFIG_HAVE_UART2
+#define UART_COUNT 3
+#elif CONFIG_HAVE_UART1
+#define UART_COUNT 2
+#elif CONFIG_HAVE_UART0
+#define UART_COUNT 1
+#else 
+#define UART_COUNT 0
+#endif
+
 #ifdef CONFIG_AVR
 static FILE _fd; 
 FILE *uart0_fd = &_fd;
@@ -83,14 +95,22 @@ uint16_t uart0_printf(const char *fmt, ...){
 	struct uart_device *dev = container_of((s), struct uart_device, serial)
 	
 uint16_t _uart_putc(serial_dev_t self, uint8_t ch){
-	struct uart_device *dev; 
-	//GET_DEV(self, dev);
+	GET_DEV(self, dev);
 	switch(dev->id){
-		case 0: {
-			uart0_putc(ch); 
-			return 1; 
-			break;
-		}
+		#define LABEL(id) case id: return uart##id##_putc(ch); break; 
+		#ifdef CONFIG_HAVE_UART0
+		LABEL(0)
+		#endif
+		#ifdef CONFIG_HAVE_UART1
+		LABEL(1)
+		#endif
+		#ifdef CONFIG_HAVE_UART2
+		LABEL(2)
+		#endif
+		#ifdef CONFIG_HAVE_UART3
+		LABEL(3)
+		#endif
+		#undef LABEL
 	}
 	return 0; 
 }
@@ -98,44 +118,44 @@ uint16_t _uart_putc(serial_dev_t self, uint8_t ch){
 uint16_t _uart_getc(serial_dev_t self) {
 	GET_DEV(self, dev);
 	switch(dev->id){
-		case 0: {
-			int c = uart0_getc(); 
-			if(c == UART_NO_DATA) return SERIAL_NO_DATA; 
-			return c; 
-			break;
-		}
+		#define LABEL(id) case id: {int c = uart##id##_getc(); \
+			if(c == UART_NO_DATA) return SERIAL_NO_DATA; \
+			return c; break; }
+		#ifdef CONFIG_HAVE_UART0
+		LABEL(0)
+		#endif
+		#ifdef CONFIG_HAVE_UART1
+		LABEL(1)
+		#endif
+		#ifdef CONFIG_HAVE_UART2
+		LABEL(2)
+		#endif
+		#ifdef CONFIG_HAVE_UART3
+		LABEL(3)
+		#endif
+		#undef LABEL
 	}
 	return -1; 
 }
 
 size_t _uart_putn(serial_dev_t self, const uint8_t *data, size_t sz){
 	size_t size = sz;
-	GET_DEV(self, dev);
-	switch(dev->id){
-		case 0: 
-			while(sz--){
-				uart0_putc(*data++); 
-			}
-			break;
+	while(sz--){
+		_uart_putc(self, *data++); 
 	}
 	return size; 
 }
 
 size_t _uart_getn(serial_dev_t self, uint8_t *data, size_t sz){
 	size_t count = 0;
-	GET_DEV(self, dev);
-	switch(dev->id){
-		case 0: 
-			while(sz--){
-				int c = uart0_getc(); 
-				if(c == UART_NO_DATA){
-					return count; 
-				}
-				*data = c; 
-				data++; 
-				count++; 
-			}
-			break;
+	while(sz--){
+		int c = _uart_getc(self); 
+		if(c == SERIAL_NO_DATA){
+			return count; 
+		}
+		*data = c; 
+		data++; 
+		count++; 
 	}
 	return count; 
 }
@@ -143,9 +163,20 @@ size_t _uart_getn(serial_dev_t self, uint8_t *data, size_t sz){
 size_t _uart_waiting(serial_dev_t self){
 	GET_DEV(self, dev);
 	switch(dev->id){
-		case 0: 
-			return uart0_waiting(); 
-			break;
+		#define LABEL(id) case id: return uart##id##_waiting(); break; 
+		#ifdef CONFIG_HAVE_UART0
+		LABEL(0)
+		#endif
+		#ifdef CONFIG_HAVE_UART1
+		LABEL(1)
+		#endif
+		#ifdef CONFIG_HAVE_UART2
+		LABEL(2)
+		#endif
+		#ifdef CONFIG_HAVE_UART3
+		LABEL(3)
+		#endif
+		#undef LABEL
 	}
 	return 0; 
 }
@@ -155,17 +186,22 @@ void _uart_flush(serial_dev_t self){
 }
 
 serial_dev_t uart_get_serial_interface(uint8_t dev){
-	if(dev != 0) return 0;  // currently only one device TODO
+	if(dev >= UART_COUNT) return 0;  // currently only one device TODO
 	static struct serial_if _if;
-	_if = (struct serial_if) {
-		.put = _uart_putc,
-		.get = _uart_getc,
-		.putn = _uart_putn,
-		.getn = _uart_getn,
-		.flush = _uart_flush,
-		.waiting = _uart_waiting
-	}; 
-	_uart[dev].serial = &_if;
+	static struct serial_if *i = 0; 
+	if(!i){
+		_if = (struct serial_if) {
+			.put = _uart_putc,
+			.get = _uart_getc,
+			.putn = _uart_putn,
+			.getn = _uart_getn,
+			.flush = _uart_flush,
+			.waiting = _uart_waiting
+		}; 
+		i = &_if; 
+	}
+	_uart[dev].serial = i;
+	_uart[dev].id = dev; 
 	return &_uart[dev].serial; 
 }
 

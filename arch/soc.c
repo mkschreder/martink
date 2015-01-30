@@ -29,6 +29,7 @@ void twi_init(void);
 void pwm_init(void); 
 
 void soc_init(void){
+	clock_init(); 
 	timestamp_init(); 
 	time_init(); 
 	uart_init(); 

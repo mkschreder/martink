@@ -1,5 +1,10 @@
 #pragma once
 
+enum {
+	GPIO_DUMMY,
+	GPIO_COUNT
+}; 
+
 #define gpio_init_default() {}
 
 #define gpio_clear(pin) {}

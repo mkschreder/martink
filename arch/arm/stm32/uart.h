@@ -21,26 +21,18 @@
 
 #pragma once
 
-static inline uint16_t uart0_getc(void){
-	uint16_t ch = USART_ReceiveData(USART1); 
-	if(IS_USART_DATA(ch)) return ch; 
-	return -1; 
-}
-
-static inline void uart0_putc(uint8_t ch){
-	USART_SendData(USART1, ch); 
-}
-
-static inline void uart0_init_default(uint32_t baud){
-	
-}
-
+void uart0_init_default(uint32_t baud);
+uint16_t uart0_getc(void); 
+uint16_t uart0_putc(uint8_t ch);
 static inline int8_t uart0_waiting(void){
 	return 0; 
 }
 
-static inline void uart1_init_default(uint32_t baud){
-	
+void uart1_init_default(uint32_t baud); 
+uint16_t uart1_getc(void); 
+uint16_t uart1_putc(uint8_t ch);
+static inline int8_t uart1_waiting(void){
+	return 0; 
 }
 
 /*

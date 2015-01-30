@@ -15,13 +15,11 @@ public:
 private: 
 	// serial device handle for the console. 
 	serial_dev_t 	mConsole; 
-	// timeout value for the delay
-	timestamp_t 	mNextPrintTime; 
 	// counter 
 	int 	mCounter; 
 }; 
 
-Application::Application():mConsole(0), mNextPrintTime(0), mCounter(0){
+Application::Application():mConsole(0), mCounter(0){
 	/*
 	do initialization of on chip devices. These depend on the chip being 
 	compiled for. All these devices are implemented in arch/ folder. 
@@ -33,26 +31,18 @@ Application::Application():mConsole(0), mNextPrintTime(0), mCounter(0){
 	This method is not called automatically for the sake of being more 
 	explicit about how libk is initialized. 
 	*/
-	soc_init(); 
+	//soc_init(); 
 	
+	uart0_init(38400); 
 	// we can no get the interface for the uart0 on the chip. 
 	mConsole = uart_get_serial_interface(0); 
-	
-	// we use the timestamp system to set next print time to expire right away. 
-	// timestamps use hardware timer for keeping track of "ticks". Usually 
-	// one or few ticks per microsecond. Therefore all timeouts have 
-	// precision of up to 1 microsecond. 
-	mNextPrintTime = timestamp_now(); 
 }
 
 int Application::loop(){
-	// we have here an async loop that prints a message every second
-	if(timestamp_expired(mNextPrintTime)){
-		// it would probably be better to 
-		serial_printf(mConsole, "Hello World! %d seconds elapsed\n", mCounter++); 
-		// set one second timeout until next time
-		mNextPrintTime = timestamp_from_now_us(1000000UL); 
-	}
+	//serial_printf(mConsole, "Hello World! %d seconds elapsed\n", mCounter++); 
+	serial_putn(mConsole, "Hello World!\n", 13); 
+	for(int c = 0; c < 10000; c++) mCounter++; 
+	return 0; 
 }
 
 int main(void){

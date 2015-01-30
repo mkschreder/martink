@@ -76,7 +76,7 @@ SECTIONS
 
   /* Remove debug information from the standard libraries */
   /DISCARD/ : {
-    *(.note.GNU-stack)
+      *(.note.GNU-stack)
     libc.a ( * )
     libgcc.a ( * )
     libm.a ( * )

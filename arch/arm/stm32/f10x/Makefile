@@ -1,8 +1,8 @@
 VPATH += arch/stm32/f10x
 
-COMMON_FLAGS += -DSTM32F10X_MD -DminiSTM32F103C8 -nostartfiles -Wl,--gc-sections,-T$(srctree)/arch/arm/stm32/f10x/stm32flash.ld -nostdlib -mcpu=cortex-m3 -mthumb
+COMMON_FLAGS += -DF_CPU=72000000 -DHSE_VALUE=8000000 -DSTM32F10X_MD -DminiSTM32F103C8 -nostartfiles -Wl,--gc-sections,-T$(srctree)/arch/arm/stm32/f10x/stm32flash.ld -nostdlib -mcpu=cortex-m3 -mthumb
 
-LDFLAGS += -lgcc
+#LDFLAGS += -lgcc
 CPU_FLAGS := 
 
 #-DF_CPU=$(CPU_FREQ) -mmcu=$(ARCH_CPU)

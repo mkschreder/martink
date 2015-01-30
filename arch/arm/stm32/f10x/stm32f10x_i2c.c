@@ -1316,9 +1316,16 @@ void I2C_ClearITPendingBit(I2C_TypeDef* I2Cx, uint32_t I2C_IT)
   I2Cx->SR1 = (uint16_t)~flagpos;
 }
 
+/**
+  * @}
+  */ 
+
+/**
+  * @}
+  */ 
+
+/**
+  * @}
+  */ 
+
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
-/*
-void i2c_init(){
-	I2C_InitTypeDef init; 
-	I2C_Init(I2C1, &init); 
-}*/

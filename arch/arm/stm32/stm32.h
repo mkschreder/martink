@@ -12,6 +12,7 @@
 #include "twi.h"
 #include "pwm.h"
 #include "adc.h"
+#include "clock.h"
 
 #define eeprom_update_block(a, b, c) {}
 #define eeprom_read_block(a, b, c) {}

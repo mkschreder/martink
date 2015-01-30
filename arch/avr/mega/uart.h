@@ -131,11 +131,7 @@ extern "C" {
 #define uart0_parity_error() (UCSR0A |= _BV(UPE0))
 
 #define uart0_init_default(baudrate) ({ \
-<<<<<<< HEAD
   uart0_set_baudrate_raw(BAUD_PRESCALE_ASYNC(baudrate)); \
-=======
-  uart0_set_brr(BAUD_PRESCALE_ASYNC(baudrate)); \
->>>>>>> 8c77070911cdfe42babd9b56e1d39892e745425b
   uart0_mode_async(); \
   uart0_character_size8(); \
   uart0_parity_off(); \

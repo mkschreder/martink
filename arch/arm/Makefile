@@ -13,4 +13,4 @@ ifeq ($(CONFIG_AT91SAM3), y)
 	include $(srctree)/arch/arm/sam3/Makefile
 endif
 
-obj-y += arch/arm/arm.o
+obj-y += arch/arm/arm.o arch/arm/memory.o

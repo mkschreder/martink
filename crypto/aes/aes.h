@@ -29,13 +29,6 @@
 #ifndef AES_H_
 #define AES_H_
 
-/*
-#ifndef AVR
-#define PROGMEM
-#define pgm_read_byte(a) (*(a))
-#endif
-*/
-
 #include <stdint.h>
 
 #include <arch/soc.h>

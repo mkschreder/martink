@@ -19,20 +19,19 @@
 	Github: https://github.com/mkschreder
 */
 
-#include "stm32f103.h"
+#pragma once
 
-void brd_init(void){
-	
-}
+/*
+void uart0_init_default(uint16_t baudrate);
 
-void brd_process_events(void){
-	
-}
+#define uart0_waiting() (USART_IsDataAvailable(USART0))
+#define uart0_flush() do {} while(0)
+#define uart0_getc() ((uart0_waiting())?USART_GetChar(USART0):UART_NO_DATA)
+#define uart0_putc(data) (USART_PutChar(USART0, data), 0)
 
-void set_pin(uint8_t pin, uint16_t value){
-	
-}
-
-uint16_t get_pin(uint8_t pin){
-	
-}
+void uart1_init_default(uint16_t baud); 
+#define uart1_waiting() (USART_IsDataAvailable(USART1))
+#define uart1_flush() do {} while(0)
+#define uart1_getc() ((uart0_waiting())?USART_GetChar(USART1):UART_NO_DATA)
+#define uart1_putc(data) (USART_PutChar(USART1, data), 0)
+*/

@@ -10,7 +10,6 @@ choice
 		bool
 		
 	config STM32F103
-		depends on ARM
 		select STM32
 		select HAVE_UART
 		select HAVE_UART0
@@ -22,7 +21,6 @@ choice
 		bool "STM32F103"
 		
 	config AT91SAM3
-		depends on ARM
 		select SAM3
 		select HAVE_UART
 		select HAVE_UART0

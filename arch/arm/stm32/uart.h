@@ -21,6 +21,29 @@
 
 #pragma once
 
+static inline uint16_t uart0_getc(void){
+	uint16_t ch = USART_ReceiveData(USART1); 
+	if(IS_USART_DATA(ch)) return ch; 
+	return -1; 
+}
+
+static inline void uart0_putc(uint8_t ch){
+	USART_SendData(USART1, ch); 
+}
+
+static inline void uart0_init_default(uint32_t baud){
+	
+}
+
+static inline int8_t uart0_waiting(void){
+	return 0; 
+}
+
+static inline void uart1_init_default(uint32_t baud){
+	
+}
+
+/*
 void uart0_init_default(uint16_t baudrate);
 
 #define uart0_waiting() (USART_IsDataAvailable(USART0))
@@ -33,4 +56,4 @@ void uart1_init_default(uint16_t baud);
 #define uart1_flush() do {} while(0)
 #define uart1_getc() ((uart0_waiting())?USART_GetChar(USART1):UART_NO_DATA)
 #define uart1_putc(data) (USART_PutChar(USART1, data), 0)
-
+*/

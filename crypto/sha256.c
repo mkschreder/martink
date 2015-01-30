@@ -33,9 +33,10 @@
 
 #include <stdint.h>
 #include <string.h> /* for memcpy, memmove, memset */
-#include "sha256.h"
 
-#include <arch/soc.h>
+#include "../arch/soc.h"
+
+#include "sha256.h"
 
 #define LITTLE_ENDIAN
 

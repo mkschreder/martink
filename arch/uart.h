@@ -21,7 +21,7 @@
 
 #pragma once 
 
-#include "autoconf.h"
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

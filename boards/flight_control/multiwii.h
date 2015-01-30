@@ -41,9 +41,6 @@ extern "C" {
 #include <inttypes.h>
 #include "../interface.h"
 
-#define MINCOMMAND 1000
-#define MAXCOMMAND 1480
-
 /*
 #define PWM_MIN MINCOMMAND
 #define PWM_MAX MAXCOMMAND
@@ -65,13 +62,12 @@ enum {
 	RC_MODE2		= 5
 };
 
-// flight controller interface
-/*
 #define fc_init() mwii_init()
 #define fc_process_events() mwii_process_events()
-#define fc_get_interface() mwii_get_fc_quad_interface()
-#define FC_LED_PIN MWII_LED_PIN
-*/
+#define fc_interface() mwii_get_fc_quad_interface()
+#define fc_led_on() gpio_set(MWII_LED_PIN); 
+#define fc_led_off() gpio_clear(MWII_LED_PIN); 
+
 #ifdef __cplusplus
 }
 #endif

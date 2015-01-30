@@ -1,112 +1,36 @@
-/* ----------------------------------------------------------------------------
- *         SAM Software Package License
- * ----------------------------------------------------------------------------
- * Copyright (c) 2011-2012, Atmel Corporation
- *
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following condition is met:
- *
- * - Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the disclaimer below.
- *
- * Atmel's name may not be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * DISCLAIMER: THIS SOFTWARE IS PROVIDED BY ATMEL "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT ARE
- * DISCLAIMED. IN NO EVENT SHALL ATMEL BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
- * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * ----------------------------------------------------------------------------
- */
-
 /**
- * \file
- *
- * Interface for configuration the Two Wire Interface (TWI) peripheral.
- *
- */
+	This file is part of martink project.
 
-#ifndef _TWI_
-#define _TWI_
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-/*------------------------------------------------------------------------------
- *         Headers
- *------------------------------------------------------------------------------*/
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Author: Martin K. Schröder
+	Email: info@fortmax.se
+	Github: https://github.com/mkschreder
+*/
+
+#pragma once
 
 
-#include <stdint.h>
+extern void 		twi0_init_default(void);
 
-/*----------------------------------------------------------------------------
- *        Macros
- *----------------------------------------------------------------------------*/
-/* Returns 1 if the TXRDY bit (ready to transmit data) is set in the given status register value.*/
-#define TWI_STATUS_TXRDY(status) (((status) & TWI_SR_TXRDY) == TWI_SR_TXRDY)
+/// address is the first byte of data
+void 		twi0_start_write(uint8_t addr, uint8_t *data, uint8_t data_sz);
+/// address is the first byte of data
+void 		twi0_start_read(uint8_t addr, uint8_t *data, uint8_t data_sz);
 
-/* Returns 1 if the RXRDY bit (ready to receive data) is set in the given status register value.*/
-#define TWI_STATUS_RXRDY(status) (((status) & TWI_SR_RXRDY) == TWI_SR_RXRDY)
+/// sends stop signal on the bus
+void twi0_stop(void);
 
-/* Returns 1 if the TXCOMP bit (transfer complete) is set in the given status register value.*/
-#define TWI_STATUS_TXCOMP(status) (((status) & TWI_SR_TXCOMP) == TWI_SR_TXCOMP)
-
-#ifdef __cplusplus
- extern "C" {
-#endif
-
-/*----------------------------------------------------------------------------
- *        External function
- *----------------------------------------------------------------------------*/
-
-extern void TWI_ConfigureMaster(Twi *pTwi, uint32_t twck, uint32_t mck);
-
-extern void TWI_SetClock( Twi *pTwi, uint32_t dwTwCk, uint32_t dwMCk );
-
-extern void TWI_ConfigureSlave(Twi *pTwi, uint8_t slaveAddress);
-
-extern void TWI_Stop(Twi *pTwi);
-
-extern void TWI_StartRead(
-    Twi *pTwi,
-    uint8_t address,
-    uint32_t iaddress,
-    uint8_t isize);
-
-extern uint8_t TWI_ReadByte(Twi *pTwi);
-
-extern void TWI_WriteByte(Twi *pTwi, uint8_t byte);
-
-extern void TWI_StartWrite(
-    Twi *pTwi,
-    uint8_t address,
-    uint32_t iaddress,
-    uint8_t isize,
-    uint8_t byte);
-
-extern uint8_t TWI_ByteReceived(Twi *pTwi);
-
-extern uint8_t TWI_ByteSent(Twi *pTwi);
-
-extern uint8_t TWI_TransferComplete(Twi *pTwi);
-
-extern void TWI_EnableIt(Twi *pTwi, uint32_t sources);
-
-extern void TWI_DisableIt(Twi *pTwi, uint32_t sources);
-
-extern uint32_t TWI_GetStatus(Twi *pTwi);
-
-extern uint32_t TWI_GetMaskedStatus(Twi *pTwi);
-
-extern void TWI_SendSTOPCondition(Twi *pTwi);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* #ifndef _TWI_ */
+/// returns 1 if twi bus is processing another transaction
+uint8_t twi0_busy(void);

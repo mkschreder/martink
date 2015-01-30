@@ -20,7 +20,7 @@
 */
 #pragma once
 
-#include "autoconf.h"
+#include "config.h"
 
 struct twi_device {
 	uint8_t id;

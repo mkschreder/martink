@@ -33,13 +33,6 @@
 static FILE _fd; 
 FILE *uart0_fd = &_fd;
 
-struct uart_device {
-	uint8_t id; 
-	struct serial_if *serial; 
-}; 
-
-struct uart_device _uart[1]; 
-
 int _uart0_fd_get(FILE *fd){
 	return uart0_getc();
 }
@@ -49,52 +42,20 @@ int _uart0_fd_put(char data, FILE *fd){
 }
 #endif
 
+
+struct uart_device {
+	uint8_t id; 
+	struct serial_if *serial; 
+}; 
+
+struct uart_device _uart[1]; 
+
 void uart0_init(uint32_t baudrate) {
 	uart0_init_default(baudrate);
 	//uart0_fd->get = _uart0_fd_get;
 	//uart0_fd->put = _uart0_fd_put; 
 }
 
-/// *************************
-/// UART0 interface functions
-/// *************************
-
-/*
-size_t _uart0_waiting(serial_dev_t self){
-	return uart0_waiting(); 
-}
-
-void _uart0_flush(serial_dev_t self){
-	uart0_flush(); 
-}
-
-uint16_t _uart0_getc(serial_dev_t self){
-	return uart0_getc(); 
-}
-
-uint16_t _uart0_putc(serial_dev_t self, unsigned char data){
-	return uart0_putc(data);
-}
-
-size_t _uart0_putn(serial_dev_t self, const uint8_t *s, size_t c)
-{
-	size_t t = c; 
-	while (c--) 
-		uart0_putc(*s++);
-	return t; 
-}
-
-size_t _uart0_getn(serial_dev_t self, uint8_t *s, size_t c)
-{
-	size_t t = 0; 
-	while (t < c) {
-		uint16_t d = uart0_getc();
-		if(d == UART_NO_DATA) return t; 
-		t++; 
-	}
-	return t; 
-}
-*/
 size_t uart0_puts(const char *s )
 {
 	size_t count = 0; 
@@ -122,7 +83,8 @@ uint16_t uart0_printf(const char *fmt, ...){
 	struct uart_device *dev = container_of((s), struct uart_device, serial)
 	
 uint16_t _uart_putc(serial_dev_t self, uint8_t ch){
-	GET_DEV(self, dev);
+	struct uart_device *dev; 
+	//GET_DEV(self, dev);
 	switch(dev->id){
 		case 0: {
 			uart0_putc(ch); 

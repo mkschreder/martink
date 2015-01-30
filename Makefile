@@ -12,6 +12,8 @@ EXTRALIBS :=
 BUILD_DIR := build
 CONFIG := configs/$(BUILD).config
 CONFIG_H := include/configs/$(BUILD).h
+ARCH := $(firstword $(subst -, ,$(BUILD)))
+CPU = $(word 2,$(subst -, ,$(BUILD)))
 
 ktree := martink
 #$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -33,7 +35,7 @@ CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
 LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS)
 OUTDIRS := build build/crypto/aes
-APPNAME := libk-$(ARCH).a
+APPNAME := libk-$(ARCH)-$(CPU).a
 
 # SHELL used by kbuild
 CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
@@ -111,6 +113,10 @@ $(BUILD_DIR)/%.o: %.cpp .config
 $(BUILD_DIR)/%.o: %.c .config 
 	mkdir -p `dirname $@`
 	$(CC) -c $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: %.S .config 
+	mkdir -p `dirname $@`
+	$(AS) -c  $< -o $@
 
 check: GCC-exists
 	

@@ -21,5 +21,5 @@ fc_board_t cc3d_get_fc_quad_interface(void);
 #define fc_init() cc3d_init()
 #define fc_process_events() cc3d_process_events()
 #define fc_interface() cc3d_get_fc_quad_interface()
-#define fc_led_on() gpio_set(MWII_LED_PIN); 
-#define fc_led_off() gpio_clear(MWII_LED_PIN); 
+#define fc_led_on() gpio_set(0); 
+#define fc_led_off() gpio_clear(0); 

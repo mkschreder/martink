@@ -2,6 +2,7 @@ VPATH += arch/arm
 
 CC := arm-none-eabi-gcc
 CXX := arm-none-eabi-g++
+AS := arm-none-eabi-as
 LD := arm-none-eabi-gcc
 LDXX := arm-none-eabi-g++
 

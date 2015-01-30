@@ -16,8 +16,6 @@ mcu-$(CONFIG_ATMEGA644) := atmega644
 
 cpuflags-y := -mmcu=$(mcu-y)
 
-ARCH := avr-$(mcu-y)
-
 #ifndef CPU_FREQ
 #$(error CPU_FREQ must be set for avr arch!)
 #endif

@@ -29,7 +29,7 @@
 #include <util/delay.h>
 #include <util/atomic.h>
 
-typedef char PROGMEM prog_char; 
+//typedef char PROGMEM prog_char; 
 
 #include "config.h"
 

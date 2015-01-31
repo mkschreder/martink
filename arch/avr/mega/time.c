@@ -34,6 +34,14 @@
 	{
 		_tsc_ovf++;
 	}
+	
+	timestamp_t tsc_read(void){
+		timestamp_t time; 
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+			time = TCNT1 + _tsc_ovf * 65535L;
+		}
+		return time;
+	}
 #endif
 
 

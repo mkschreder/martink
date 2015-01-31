@@ -4,10 +4,10 @@ VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty
 
 # define defaults that can be added to in submakefiles
 INCLUDES := -I. -Iinclude -Iinclude/c++ -Ikernel
-COMMON_FLAGS := -MD -ffunction-sections -Wall -Wuninitialized -Werror=implicit-function-declaration -Werror=strict-prototypes -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -fdata-sections -Os -Wl,--relax,--gc-sections
+COMMON_FLAGS := -MD -ffunction-sections -fdata-sections -Wall -Wuninitialized -Werror=implicit-function-declaration -Werror=strict-prototypes -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -Os
 CFLAGS := 
 CXXFLAGS := 
-LDFLAGS := 
+LDFLAGS := --relax --gc-sections
 EXTRALIBS := 
 BUILD_DIR := build
 CONFIG := configs/$(BUILD).config

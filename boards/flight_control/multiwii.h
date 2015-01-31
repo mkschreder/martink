@@ -51,6 +51,8 @@ void mwii_process_events(void);
 
 fc_board_t mwii_get_fc_quad_interface(void);
 
+void mwii_calibrate_escs(void); 
+
 #define MWII_LED_PIN GPIO_PB5
 
 enum {
@@ -65,8 +67,9 @@ enum {
 #define fc_init() mwii_init()
 #define fc_process_events() mwii_process_events()
 #define fc_interface() mwii_get_fc_quad_interface()
-#define fc_led_on() gpio_set(MWII_LED_PIN); 
-#define fc_led_off() gpio_clear(MWII_LED_PIN); 
+#define fc_led_on() gpio_set(MWII_LED_PIN)
+#define fc_led_off() gpio_clear(MWII_LED_PIN)
+#define fc_calibrate_escs() mwii_calibrate_escs()
 
 #ifdef __cplusplus
 }

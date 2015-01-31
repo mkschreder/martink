@@ -262,7 +262,7 @@ fc_board_t mwii_get_fc_quad_interface(void){
 
 void soc_init(void); 
 
-static void mwii_calibrate_escs(void){
+void mwii_calibrate_escs(void){
 	// set all outputs to maximum
 	mwii_write_motors(2000, 2000, 2000, 2000); 
 	// wait for the escs to initialize
@@ -373,11 +373,11 @@ void mwii_init(void){
 	gpio_configure(GPIO_MWII_RX2, GP_INPUT | GP_PULLUP | GP_PCINT);
 	gpio_configure(GPIO_MWII_RX3, GP_INPUT | GP_PULLUP | GP_PCINT);
 	
-	// set initial motor speeds
-	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 
-	
 	// calibrate escs
 	//mwii_calibrate_escs(); 
+	
+	// set initial motor speeds
+	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 
 	
 	brd->gpio0 = gpio_get_parallel_interface();
 	

@@ -266,13 +266,7 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 		timer1_interrupt_overflow_on()\
 	)
 
-	static inline timestamp_t tsc_read(void){
-		timestamp_t time; 
-		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-			time = TCNT1 + _tsc_ovf * 65535L;
-		}
-		return time;
-	}
+	timestamp_t tsc_read(void);
 
 	static inline timestamp_t tsc_us_to_ticks(timestamp_t us) {
 		return ((timestamp_t)(TSC_TICKS_PER_US * ((timestamp_t)us)));

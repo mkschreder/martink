@@ -1,1 +1,1 @@
-obj-y += mfrc522.o
+obj-y += rfid/mfrc522.o

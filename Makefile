@@ -28,7 +28,7 @@ include Makefile.build
 
 # append flags defined in arch/
 BUILD_DEFINE := $(subst -,_,$(BUILD))
-COMMON_FLAGS += -I$(srctree) -I$(srctree)/include -DBUILD_$(BUILD_DEFINE) $(CPU_FLAGS)
+COMMON_FLAGS += -I$(srctree) -I$(srctree)/include -DBUILD_$(BUILD_DEFINE) $(CPU_FLAGS) 
 
 # add includes to the make
 CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
@@ -104,7 +104,8 @@ endif
 	
 build: config fixdirs fixdep check $(obj-y)
 	rm -f $(APPNAME)
-	ar rs $(APPNAME) $(obj-y)
+	ar rs $(APPNAME) $(obj-y) 
+	#$(patsubst %, $(BUILD_DIR)/%, $(obj-y))
 
 $(BUILD_DIR)/%.o: %.cpp .config 
 	mkdir -p `dirname $@`
@@ -132,7 +133,7 @@ clean:
 		-o -name 'mconf' -o -name 'conf' -o -name 'lxdialog' \) \
 		-type f -print | xargs rm -f	
 
--include $(obj-y:%.o=%.cmd)
+-include $(obj-y:%.o=$(BUILD_DIR)/%.cmd)
 
 PHONY += FORCE
 FORCE:

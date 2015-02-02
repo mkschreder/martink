@@ -57,20 +57,6 @@ extern void app_process_events(void);
 
 void board_init(void); 
 
-/*
-int main(void){
-	
-	//brd_init(); 
-	
-	board_init(); 
-	app_init(); 
-	
-	while(1){
-		//brd_process_events(); 
-		app_process_events(); 
-	}
-}
-*/
 int __cxa_guard_acquire(__guard *g) {return !*(char *)(g);}
 void __cxa_guard_release (__guard *g) {*(char *)g = 1;}
 void __cxa_guard_abort (__guard *g) {}

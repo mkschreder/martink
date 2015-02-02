@@ -32,14 +32,14 @@ SECTIONS
     . = ALIGN(4);
   } >rom
 
-   /* .ARM.exidx is sorted, so has to go in its own output section.*/
-   .ARM.exidx : {
-        __exidx_start = .;
-        *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-        __exidx_end = .;
-    } >rom
+	/* .ARM.exidx is sorted, so has to go in its own output section.*/
+	.ARM.exidx : {
+			__exidx_start = .;
+			*(.ARM.exidx* .gnu.linkonce.armexidx.*)
+			__exidx_end = .;
+	} >rom
 
-    _sidata = .;         /* global needed for startup_stm3210x_md_vl.S */  
+	_sidata = .;         /* global needed for startup_stm3210x_md_vl.S */  
 
   /*now start ram area with initialized data section */
   .data :
@@ -58,7 +58,6 @@ SECTIONS
     _sbss = .;         /* global needed for startup_stm3210x_md_vl.S */
     *(.bss)
     *(.bss*)
-    *(COMMON)
     . = ALIGN(4);
     _ebss = .;        /* global needed for startup_stm3210x_md_vl.S */
   } >ram
@@ -73,12 +72,4 @@ SECTIONS
   } >ram
 
   .ARM.attributes 0 : { KEEP (*(.ARM.attributes)) }
-
-  /* Remove debug information from the standard libraries */
-  /DISCARD/ : {
-      *(.note.GNU-stack)
-    libc.a ( * )
-    libgcc.a ( * )
-    libm.a ( * )
-  }
 }

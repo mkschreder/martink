@@ -1,1 +1,1 @@
-obj-$(CONFIG_WIINUNCHUK) += wiinunchuck.o
+obj-$(CONFIG_WIINUNCHUK) += hid/wiinunchuck.o

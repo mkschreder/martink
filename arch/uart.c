@@ -77,7 +77,7 @@ size_t uart0_puts(const char *s )
 	}
 	return count; 
 }
-
+/*
 uint16_t uart0_printf(const char *fmt, ...){
 	char buf[64]; 
 	
@@ -90,7 +90,7 @@ uint16_t uart0_printf(const char *fmt, ...){
 	return n; 
 }
 
-
+*/
 #define GET_DEV(s, dev) \
 	struct uart_device *dev = container_of((s), struct uart_device, serial)
 	

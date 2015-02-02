@@ -1,1 +1,1 @@
-obj-$(CONFIG_VT100) += vt100.o
+obj-$(CONFIG_VT100) += tty/vt100.o

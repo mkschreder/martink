@@ -260,7 +260,6 @@ fc_board_t mwii_get_fc_quad_interface(void){
 	return &ptr; 
 }
 
-void soc_init(void); 
 
 void mwii_calibrate_escs(void){
 	// set all outputs to maximum
@@ -374,7 +373,7 @@ void mwii_init(void){
 	gpio_configure(GPIO_MWII_RX3, GP_INPUT | GP_PULLUP | GP_PCINT);
 	
 	// calibrate escs
-	//mwii_calibrate_escs(); 
+	mwii_calibrate_escs(); 
 	
 	// set initial motor speeds
 	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 

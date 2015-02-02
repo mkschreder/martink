@@ -68,9 +68,9 @@ static inline float constrain_f(float x, float a, float b){
 	#define kprintf(a, ...) uart0_printf(a, ##__VA_ARGS__) 
 	
 	#ifdef CONFIG_DEBUG
-		#define kdebug(a, ...) uart0_printf(a, ##__VA_ARGS__) 
+		#define kdebug(a, ...) {} //uart0_printf(a, ##__VA_ARGS__) 
 	#else
-		#define kdebug(a, ...) uart0_printf(a, ##__VA_ARGS__) 
+		#define kdebug(a, ...) {} //uart0_printf(a, ##__VA_ARGS__) 
 	#endif
 #else 
 	#define kprintf(a, ...) {}

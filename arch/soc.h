@@ -23,6 +23,8 @@
 
 #include "config.h"
 
+#include "types.h"
+
 #include "../util.h"
 
 #include <inttypes.h>

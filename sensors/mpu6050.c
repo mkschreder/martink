@@ -577,8 +577,8 @@ void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr) {
 	delay_us(10000L);
 	
 	//set clock source
-	//  it is highly recommended that the device be configured to use one of the gyroscopes (or an external clock source)
-	//  as the clock reference for improved stability
+	//  it is highly recommended that the device be configured to use one of the gyroscopes 
+	// (or an external clock source) as the clock reference for improved stability
 	mpu6050_writeBits(self, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_CLKSEL_BIT, MPU6050_PWR1_CLKSEL_LENGTH, MPU6050_CLOCK_PLL_XGYRO);
 	//set DLPF bandwidth to 42Hz
 	mpu6050_writeBits(self, MPU6050_RA_CONFIG, MPU6050_CFG_DLPF_CFG_BIT, MPU6050_CFG_DLPF_CFG_LENGTH, MPU6050_DLPF_BW_42);

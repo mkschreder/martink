@@ -42,6 +42,7 @@ extern "C" {
 void timestamp_delay_us(timestamp_t usec);
 
 #define delay_us(usec) timestamp_delay_us(usec)
+#define delay_ms(msec) delay_us((msec) * 1000UL)
 
 #define timestamp_ticks_since(timestamp) (tsc_read() - (timestamp_t)(timestamp))
 

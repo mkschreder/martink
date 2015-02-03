@@ -25,9 +25,11 @@
 
 struct mpu6000{
 	serial_dev_t port;
+	pio_dev_t 	gpio; 
+	gpio_pin_t 	cs_pin; 
 }; 
 
-void mpu6000_init(struct mpu6000 *self, serial_dev_t port);
+void mpu6000_init(struct mpu6000 *self, serial_dev_t port, pio_dev_t gpio, gpio_pin_t cs_pin);
 uint8_t mpu6000_probe(struct mpu6000 *self);
 
 void mpu6000_getRawData(struct mpu6000 *self, int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz);

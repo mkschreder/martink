@@ -38,7 +38,6 @@ static struct spi_dev _spi[4] = {
 };
 
 DECLARE_STATIC_CBUF(spi0_rx_buf, uint8_t, 4); 
-DECLARE_STATIC_CBUF(_sp, uint8_t, 4); 
 
 #define GET_SPI_DEV(s, dev) \
 	struct spi_dev *dev = container_of(s, struct spi_dev, serial)
@@ -48,12 +47,12 @@ uint16_t _spi_putc(serial_dev_t self, uint8_t ch){
 	switch(dev->id){
 		case 0: {
 			uint8_t data = spi0_transfer(ch); 
-			//cbuf_put(&spi0_rx_buf, data);
+			cbuf_put(&spi0_rx_buf, data);
 			return data; 
 			break;
 		}
 	}
-	return 0; 
+	return SERIAL_NO_DATA; 
 }
 
 uint16_t _spi_getc(serial_dev_t self) {

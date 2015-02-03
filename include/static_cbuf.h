@@ -61,8 +61,6 @@ static struct {\
 
 /// put a character into the buffer
 /// evaluates to 0 if success, -1 if buffer full
-#define cbuf_put(name, data) ((cbuf_is_full(name))\
-	?(-1):((\
-	(name)->head = ((name)->head + 1) & (name)->size_mask,\
-	(name)->buffer[(name)->head] = (data) & 0xff, \
-), 0))
+#define cbuf_put(name, data) ((!cbuf_is_full(name))\
+	?((name)->head = ((name)->head + 1) & (name)->size_mask, (name)->buffer[(name)->head] = (data) & 0xff, 0)\
+	:(-1))

@@ -32,11 +32,18 @@
 /// enables pull(up/down) on gpio pin
 #define GP_PULL 		(1 << 1)
 /// no pullup on gpio pin
-#define GP_HIZ			(0 << 1)
+#define GP_HIZ			(0)
 /// enable pullup
 #define GP_PULLUP 	(GP_PULL | (1 << 2))
 /// enable pulldown (if arch supports it)
 #define GP_PULLDOWN (GP_PULL | (0 << 2))
+/// alternative function on the pin
+#define GP_AF 	(1 << 3)
+/// output open drain mode
+#define GP_OPEN_DRAIN		(1 << 4)
+/// analog input
+#define GP_ANALOG (1 << 5)
+
 /// pin change interrupt will run when pin gets toggled
 /// make sure that pin change handler is defined
 #define GP_PCINT		(1 << 3)
@@ -48,6 +55,11 @@
 #define GP_WENT_HIGH 	(GP_CHANGED | (1 << 1))
 /// gpio status: pin went low
 #define GP_WENT_LOW 	(GP_CHANGED | (1 << 2))
+
+#define gpio_init() gpio_init_default()
+
+#define gpio_set(pin) gpio_write_pin(pin, 1)
+#define gpio_clear(pin) gpio_write_pin(pin, 0)
 
 /// returns a standard parallel interface for the hardware gpio pins
 /// as a \ref struct parallel_interface

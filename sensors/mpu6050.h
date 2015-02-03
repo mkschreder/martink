@@ -1,16 +1,30 @@
 /*
-MPU6050 lib 0x02
+	This file is part of martink project. 
 
-copyright (c) Davide Gironi, 2012
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-Released under GPLv3.
-Please refer to LICENSE file for licensing information.
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-References:
-  - most of the code is a port of the arduino mpu6050 library by Jeff Rowberg
-    https://github.com/jrowberg/i2cdevlib
-  - Mahony complementary filter for attitude estimation
-    http://www.x-io.co.uk
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Github: https://github.com/mkschreder
+
+	Contributors:
+	* Davide Gironi - developing original driver
+	* Martin K. Schröder - maintenance since Oct 2014
+
+	References:
+		- most of the code is a port of the arduino mpu6050 library by Jeff Rowberg
+			https://github.com/jrowberg/i2cdevlib
+		- Mahony complementary filter for attitude estimation
+			http://www.x-io.co.uk
 */
 
 

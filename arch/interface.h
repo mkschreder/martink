@@ -70,34 +70,34 @@ struct serial_if {
 }; 
 
 /// writes one character to a generic serial interface
-inline uint16_t serial_putc(serial_dev_t dev, uint8_t ch){
+static inline uint16_t serial_putc(serial_dev_t dev, uint8_t ch){
 	return (*dev)->put(dev, ch); 
 }
 
 /// reads one character form a generic serial interface
-inline uint16_t serial_getc(serial_dev_t dev){
+static inline uint16_t serial_getc(serial_dev_t dev){
 	return (*dev)->get(dev);
 }
 
 /// writes a string of characters to a generic serial interface
-inline size_t	  serial_putn(serial_dev_t dev,
+static inline size_t	  serial_putn(serial_dev_t dev,
 	const uint8_t *data, size_t max_sz){
 	return (*dev)->putn(dev, data, max_sz);
 }
 
 /// reads a string of characters from a generic serial interface
-inline size_t serial_getn(serial_dev_t dev,
+static inline size_t serial_getn(serial_dev_t dev,
 	uint8_t *data, size_t max_sz){
 	return (*dev)->getn(dev, data, max_sz); 
 }
 
 /// flushes the pipe
-inline void	 serial_flush(serial_dev_t dev){
+static inline void	 serial_flush(serial_dev_t dev){
 	(*dev)->flush(dev);
 }
 
 /// gets number of bytes waiting in rx buffer
-inline size_t  serial_waiting(serial_dev_t dev){
+static inline size_t  serial_waiting(serial_dev_t dev){
 	return (*dev)->waiting(dev);
 }
 

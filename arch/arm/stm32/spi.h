@@ -1,4 +1,7 @@
 #pragma once
 
-#define hwspi0_init_default() {}
-#define hwspi0_transfer(a) (0)
+void spi0_init_default(void); 
+uint8_t spi0_transfer(uint8_t byte); 
+
+#define hwspi0_init_default() spi0_init_default()
+#define hwspi0_transfer(a) spi0_transfer(a)

@@ -6,6 +6,7 @@
 void cc3d_init(void){
 	uart_init(); 
 	twi_init(); 
+	spi_init(); 
 	
 	struct mpu6050 mpu; 
 	
@@ -14,10 +15,21 @@ void cc3d_init(void){
 	
 	serial_printf(con, "Initializing sensor..\n"); 
 	
+	serial_dev_t spi = spi_get_serial_interface(0); 
+
 	//mpu6050_init(&mpu, i2c, MPU6050_ADDR); 
 	
+	static int foo = 123; 
+	
 	while(1){
-		serial_printf(con, "Loop\n"); 
+		if(!spi){
+			serial_printf(con, "No SPI! \n"); 
+			continue; 
+		}
+		
+		serial_printf(con, "Loop %d\n", foo); 
+		serial_printf(spi, "Foobar!\n"); 
+		serial_putc(spi, 0x51); 
 		//mpu6050_probe(&mpu); 
 	}
 }

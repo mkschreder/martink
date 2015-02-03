@@ -1,4 +1,4 @@
-/**
+/*
 	SPI 2.4Ghz radio driver
 
 	martink firmware project is free software: you can redistribute it and/or modify

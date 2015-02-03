@@ -6,3 +6,4 @@ endif
 
 obj-y += arch/arm/stm32/uart.o
 obj-y += arch/arm/stm32/twi.o
+obj-y += arch/arm/stm32/spi.o

@@ -28,11 +28,17 @@
 #define DECLARE_STATIC_CBUF(name, elem_type, size) \
 static struct {\
 	elem_type buffer[NEXT_POW2(size)];\
-	size_t head;\
-	size_t tail;\
-	const size_t total_size;\
-	const size_t size_mask; \
-} name = {{0}, 0, 0, NEXT_POW2(size), (NEXT_POW2(size) - (1))};\
+	uint32_t head;\
+	uint32_t tail;\
+	const uint32_t total_size;\
+	const uint32_t size_mask; \
+} name = { \
+	.buffer = {0}, \
+	.head = 0, \
+	.tail = 0, \
+	.total_size = NEXT_POW2(size), \
+	.size_mask = (NEXT_POW2(size) - (1))\
+};\
 
 /// helper to get difference between head and tail counter
 #define _cbuf_hmt(name) ((name)->head - (name)->tail)
@@ -48,15 +54,15 @@ static struct {\
 /// tests if the buffer is full
 #define cbuf_is_full(name) ((name)->head == (((name)->tail - 1) & (name)->size_mask))
 
-/// reads next element from the buffer and updates pointers
-#define cbuf_get(name) (({\
-	(name)->tail = ((name)->tail + 1) & (name)->size_mask; \
-}), (name)->buffer[(name)->tail])
+/// reads next element from the buffer and updates pointers or -1 if no data
+#define cbuf_get(name) ((!cbuf_is_empty(name))?((\
+	(name)->tail = ((name)->tail + 1) & (name)->size_mask \
+), (name)->buffer[(name)->tail]):(-1))
 
 /// put a character into the buffer
 /// evaluates to 0 if success, -1 if buffer full
 #define cbuf_put(name, data) ((cbuf_is_full(name))\
-	?(-1):(({\
-	(name)->head = ((name)->head + 1) & (name)->size_mask;\
-	(name)->buffer[(name)->head] = data; \
-}), 0))
+	?(-1):((\
+	(name)->head = ((name)->head + 1) & (name)->size_mask,\
+	(name)->buffer[(name)->head] = (data) & 0xff, \
+), 0))

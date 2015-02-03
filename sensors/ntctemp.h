@@ -1,16 +1,25 @@
 /*
-ntctemp 0x02
+	This file is part of martink project. 
 
-copyright (c) Davide Gironi, 2011
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-Released under GPLv3.
-Please refer to LICENSE file for licensing information.
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-References:
-  + Guillem Planissi NTC tutorial on avrfreaks.net
-    http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=61128
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Github: https://github.com/mkschreder
+
+	Contributors:
+	* Davide Gironi - developing original driver
+	* Martin K. Schröder - maintenance since Oct 2014
 */
-
 
 #ifndef NTCTEMP_H
 #define NTCTEMP_H

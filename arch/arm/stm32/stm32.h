@@ -5,6 +5,8 @@
 #include "f10x/stm32f10x_usart.h"
 #include "f10x/stm32f10x_i2c.h"
 #include "f10x/stm32f10x_gpio.h"
+#include "f10x/stm32f10x_spi.h"
+#include "f10x/stm32f10x_rcc.h"
 #endif
 
 #include "uart.h"

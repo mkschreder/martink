@@ -38,6 +38,7 @@ static struct spi_dev _spi[4] = {
 };
 
 DECLARE_STATIC_CBUF(spi0_rx_buf, uint8_t, 4); 
+DECLARE_STATIC_CBUF(_sp, uint8_t, 4); 
 
 #define GET_SPI_DEV(s, dev) \
 	struct spi_dev *dev = container_of(s, struct spi_dev, serial)
@@ -46,8 +47,8 @@ uint16_t _spi_putc(serial_dev_t self, uint8_t ch){
 	GET_SPI_DEV(self, dev);
 	switch(dev->id){
 		case 0: {
-			uint8_t data = hwspi0_transfer(ch); 
-			cbuf_put(&spi0_rx_buf, data);
+			uint8_t data = spi0_transfer(ch); 
+			//cbuf_put(&spi0_rx_buf, data);
 			return data; 
 			break;
 		}
@@ -58,23 +59,20 @@ uint16_t _spi_putc(serial_dev_t self, uint8_t ch){
 uint16_t _spi_getc(serial_dev_t self) {
 	GET_SPI_DEV(self, dev);
 	switch(dev->id){
-		case 0: 
+		case 0: {
 			if(!cbuf_get_data_count(&spi0_rx_buf)) return SERIAL_NO_DATA; 
-			return cbuf_get(&spi0_rx_buf);
+			int ret = cbuf_get(&spi0_rx_buf); 
+			return (ret == -1)?SERIAL_NO_DATA:((uint16_t)ret & 0xff);
 			break;
+		}
 	}
-	return -1; 
+	return SERIAL_NO_DATA; 
 }
 
 size_t _spi_putn(serial_dev_t self, const uint8_t *data, size_t sz){
 	size_t size = sz;
-	GET_SPI_DEV(self, dev);
-	switch(dev->id){
-		case 0: 
-			while(sz--){
-				hwspi0_transfer(*data++); 
-			}
-			break;
+	while(sz--){
+		_spi_putc(self, *data++); 
 	}
 	return size; 
 }
@@ -111,28 +109,37 @@ void _spi_flush(serial_dev_t self){
 serial_dev_t spi_get_serial_interface(uint8_t dev){
 	dev &= 0x03;
 	static struct serial_if _if;
-	_if = (struct serial_if) {
-		.put = _spi_putc,
-		.get = _spi_getc,
-		.putn = _spi_putn,
-		.getn = _spi_getn,
-		.flush = _spi_flush,
-		.waiting = _spi_waiting
-	}; 
-	_spi[dev].serial = &_if;
+	static struct serial_if *i = 0; 
+	if(!i){
+		_if = (struct serial_if) {
+			.put = _spi_putc,
+			.get = _spi_getc,
+			.putn = _spi_putn,
+			.getn = _spi_getn,
+			.flush = _spi_flush,
+			.waiting = _spi_waiting
+		}; 
+		i = &_if; 
+	}
+	_spi[dev].id = dev; 
+	_spi[dev].serial = i;
 	return &_spi[dev].serial; 
 }
 
 void initproc spi_init(void){
 	kdebug("SPI: starting interface: ");
+	for(int c = 0; c < 4; c++){
+		_spi[c].id = c; 
+		_spi[c].serial = 0; 
+	}
 #ifdef CONFIG_HAVE_SPI0
-	hwspi0_init_default(); kdebug("spi0 "); 
+	spi0_init_default(); kdebug("spi0 "); 
 #endif
 #ifdef CONFIG_HAVE_SPI1
-	hwspi1_init_default(); kdebug("spi1 "); 
+	spi1_init_default(); kdebug("spi1 "); 
 #endif
 #ifdef CONFIG_HAVE_SPI2
-	hwspi2_init_default(); kdebug("spi2 "); 
+	spi2_init_default(); kdebug("spi2 "); 
 #endif
 	kdebug("\n");
 }

@@ -7,6 +7,7 @@ _minimum_stack_size = 0x100; /* 256 bytes miniumum stack size */
 
 ENTRY(Reset_Handler)
 
+
 MEMORY
 {
   rom (rx)      : ORIGIN = 0x08000000, LENGTH = 128K
@@ -18,6 +19,7 @@ SECTIONS
   .text :
   {
     KEEP(*(.isr_vector))
+    _stext = .; 
     *(.text)           /* .text sections (code) */
     *(.text*)          /* .text* sections (code) */
     *(.rodata)         /* .rodata sections (constants, strings, etc.) */
@@ -27,32 +29,25 @@ SECTIONS
     KEEP(*(.init_array));
     __init_array_end = .;
     . = ALIGN(4);
+    . = ALIGN(4);
     KEEP (*(.init))
     KEEP (*(.fini))
     . = ALIGN(4);
+    _etext = .; 
   } >rom
-
-	/* .ARM.exidx is sorted, so has to go in its own output section.*/
-	.ARM.exidx : {
-			__exidx_start = .;
-			*(.ARM.exidx* .gnu.linkonce.armexidx.*)
-			__exidx_end = .;
-	} >rom
-
-	_sidata = .;         /* global needed for startup_stm3210x_md_vl.S */  
-
+  
   /*now start ram area with initialized data section */
-  .data :
+  .data : 
   {   
     _sdata = .;        /* global needed for startup_stm3210x_md_vl.S */
     *(.data)          
-    *(.data*)         
+    *(.data.*)         
     . = ALIGN(4);
     _edata = .;        /* global needed for startup_stm3210x_md_vl.S */
   } >ram AT>rom
-
+	
   /* uninitialized data section bss*/
-  .bss :
+  .bss : AT(_edata)
   {
       . = ALIGN(4);
     _sbss = .;         /* global needed for startup_stm3210x_md_vl.S */
@@ -73,3 +68,4 @@ SECTIONS
 
   .ARM.attributes 0 : { KEEP (*(.ARM.attributes)) }
 }
+

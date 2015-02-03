@@ -1,21 +1,24 @@
-/* -*- mode: c; c-file-style: "linux" -*-
- *  vi: set shiftwidth=8 tabstop=8 noexpandtab:
- *
- *  Copyright 2012 Elovalo project group 
- *  
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *  
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+/*
+	This file is part of martink project. 
+
+	martink firmware project is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	martink firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
+
+	Github: https://github.com/mkschreder
+
+	Contributors:
+	* Martin K. Schröder - original driver
+*/
 
 /**
  * Device driver for HC-SR04 ultrasound module
@@ -31,7 +34,7 @@
 //values for state
 #define ST_IDLE 0
 #define ST_PULSE_SENT 1
-#define HCSR04_PULSE_TIMEOUT 100000000UL
+#define HCSR04_PULSE_TIMEOUT 1000000UL
 
 static uint8_t hcsr04_send_pulse(struct hcsr04 *self)
 {

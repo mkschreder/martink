@@ -38,6 +38,7 @@ static struct spi_dev _spi[4] = {
 };
 
 DECLARE_STATIC_CBUF(spi0_rx_buf, uint8_t, 4); 
+DECLARE_STATIC_CBUF(spi1_rx_buf, uint8_t, 4); 
 
 #define GET_SPI_DEV(s, dev) \
 	struct spi_dev *dev = container_of(s, struct spi_dev, serial)
@@ -51,6 +52,12 @@ uint16_t _spi_putc(serial_dev_t self, uint8_t ch){
 			return data; 
 			break;
 		}
+		case 1: {
+			uint8_t data = spi1_transfer(ch); 
+			cbuf_put(&spi1_rx_buf, data);
+			return data; 
+			break;
+		}
 	}
 	return SERIAL_NO_DATA; 
 }
@@ -61,6 +68,12 @@ uint16_t _spi_getc(serial_dev_t self) {
 		case 0: {
 			if(!cbuf_get_data_count(&spi0_rx_buf)) return SERIAL_NO_DATA; 
 			int ret = cbuf_get(&spi0_rx_buf); 
+			return (ret == -1)?SERIAL_NO_DATA:((uint16_t)ret & 0xff);
+			break;
+		}
+		case 1: {
+			if(!cbuf_get_data_count(&spi1_rx_buf)) return SERIAL_NO_DATA; 
+			int ret = cbuf_get(&spi1_rx_buf); 
 			return (ret == -1)?SERIAL_NO_DATA:((uint16_t)ret & 0xff);
 			break;
 		}
@@ -78,15 +91,10 @@ size_t _spi_putn(serial_dev_t self, const uint8_t *data, size_t sz){
 
 size_t _spi_getn(serial_dev_t self, uint8_t *data, size_t sz){
 	size_t count = 0;
-	GET_SPI_DEV(self, dev);
-	switch(dev->id){
-		case 0: 
-			while(sz--){
-				*data = hwspi0_transfer(0); 
-				data++; 
-				count++; 
-			}
-			break;
+	while(sz--){
+		*data = _spi_putc(self, 0); 
+		data++; 
+		count++; 
 	}
 	return count; 
 }
@@ -96,6 +104,9 @@ size_t _spi_waiting(serial_dev_t self){
 	switch(dev->id){
 		case 0: 
 			return cbuf_get_data_count(&spi0_rx_buf); 
+			break;
+		case 1: 
+			return cbuf_get_data_count(&spi1_rx_buf); 
 			break;
 	}
 	return 0; 

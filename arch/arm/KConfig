@@ -18,6 +18,7 @@ choice
 		select HAVE_TWI0
 		select HAVE_SPI
 		select HAVE_SPI0
+		select HAVE_SPI1
 		bool "STM32F103"
 		
 	config AT91SAM3

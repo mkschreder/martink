@@ -9,3 +9,4 @@ obj-y += arch/arm/stm32/twi.o
 obj-y += arch/arm/stm32/spi.o
 obj-y += arch/arm/stm32/time.o
 obj-y += arch/arm/stm32/gpio.o
+obj-y += arch/arm/stm32/pwm.o

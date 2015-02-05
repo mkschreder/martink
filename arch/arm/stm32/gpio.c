@@ -21,6 +21,23 @@ void gpio_init_default(void){
 	RCC_APB2PeriphClockCmd ( 
 		RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | 
 		RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD, ENABLE); 
+	
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+ 
+	/* Disable the Serial Wire Jtag Debug Port SWJ-DP */
+	GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE);
+	
+	GPIO_InitTypeDef GPIO_InitStructure;
+	/* Configure PA.13 (JTMS/SWDAT), PA.14 (JTCK/SWCLK) and PA.15 (JTDI) as
+		 output push-pull */
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+		
+	/* Configure PB.03 (JTDO) and PB.04 (JTRST) as output push-pull */
+	//GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3 | GPIO_Pin_4;
+	//GPIO_Init(GPIOB, &GPIO_InitStructure);
 }
 
 void gpio_configure(gpio_pin_t p, uint16_t flags){

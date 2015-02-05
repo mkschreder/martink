@@ -2,7 +2,7 @@
  * Automatically generated C config: don't edit
  * version: 
  */
-#define AUTOCONF_TIMESTAMP "2015-01-29 23:23:08 CET"
+#define AUTOCONF_TIMESTAMP "2015-02-05 01:14:32 CET"
 
 
 /*
@@ -13,6 +13,7 @@
 #define CONFIG_HAVE_UART1 1
 #define CONFIG_HAVE_SPI 1
 #define CONFIG_HAVE_SPI0 1
+#define CONFIG_HAVE_SPI1 1
 #define CONFIG_HAVE_TWI 1
 #define CONFIG_HAVE_TWI0 1
 #define CONFIG_ARM 1

@@ -56,7 +56,7 @@
 /// gpio status: pin went low
 #define GP_WENT_LOW 	(GP_CHANGED | (1 << 2))
 
-#define gpio_init() gpio_init_default()
+void gpio_init(void);
 
 #define gpio_set(pin) gpio_write_pin(pin, 1)
 #define gpio_clear(pin) gpio_write_pin(pin, 0)

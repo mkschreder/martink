@@ -19,7 +19,7 @@
 	Github: https://github.com/mkschreder
 */
 
-/* 
+/*
 === Current status === 
 	Uart1:			yes
 	Uart3: 			no

@@ -86,6 +86,7 @@
 #define HMC5883L_GAINZ3 0.995365
 #endif
 
+/*
 static uint8_t hmc5883l_read_reg(struct hmc5883l *self, uint8_t reg){
 	uint8_t res = 0; 
 	i2c_start_write(self->i2c, self->addr, &reg, 1);
@@ -95,7 +96,7 @@ static uint8_t hmc5883l_read_reg(struct hmc5883l *self, uint8_t reg){
 	//delay_us(5000); 
 	i2c_stop(self->i2c); 
 	return res; 
-}
+}*/
 /*
  * init the hmc5883l
  */

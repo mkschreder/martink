@@ -66,6 +66,8 @@ defined in linker script */
 	.weak	Reset_Handler
 	.type	Reset_Handler, %function
 Reset_Handler:	
+	LDR r0, =_estack
+	MSR msp, r0
 	bl c_startup
 	bx lr
 .size	Reset_Handler, .-Reset_Handler

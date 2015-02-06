@@ -181,8 +181,14 @@ size_t _uart_waiting(serial_dev_t self){
 	return 0; 
 }
 
-void _uart_flush(serial_dev_t self){
+int16_t _uart_begin(serial_dev_t self){
 	// do nothing (but may be useful for interrupt driven version) 
+	return 0; 
+}
+
+int16_t _uart_end(serial_dev_t self){
+	// do nothing (but may be useful for interrupt driven version) 
+	return 0; 
 }
 
 serial_dev_t uart_get_serial_interface(uint8_t dev){
@@ -195,7 +201,8 @@ serial_dev_t uart_get_serial_interface(uint8_t dev){
 			.get = _uart_getc,
 			.putn = _uart_putn,
 			.getn = _uart_getn,
-			.flush = _uart_flush,
+			.begin = _uart_begin,
+			.end = _uart_end,
 			.waiting = _uart_waiting
 		}; 
 		i = &_if; 
@@ -227,6 +234,7 @@ void initproc uart_init(void){
 	kdebug("UART: started %d uarts\n", c); 
 }
 
+/*
 size_t uart0_putn(const char *buf, size_t size){
 	return serial_putn(uart_get_serial_interface(0), (uint8_t*)buf, size); 
-}
+}*/

@@ -1,9 +1,7 @@
-/*
- * init.c
- *
- *  Created on: 27.06.2012
- *      Author: ryabinin
- */
+
+#include "stm32f10x_gpio.h"
+#include "stm32f10x_rcc.h"
+#include "stm32f10x_usart.h"
 
 extern int __init_array_start;
 extern int __init_array_end;
@@ -27,8 +25,12 @@ extern void SystemInit(void);
 void c_startup(void)
 {
 	char *src, *dst;
-	extern char _etext, _sdata, _sbss, _ebss, _edata; 
+	extern char _ramstart, _estack, _etext, _sdata, _sbss, _ebss, _edata; 
 	
+	dst = &_ramstart; 
+	while(dst < &_estack)
+		*(dst++) = 0; 
+		
 	src = &_etext;
 	dst = &_sdata;
 	while(dst < &_edata) 
@@ -44,3 +46,5 @@ void c_startup(void)
 	
 	main();
 }
+
+

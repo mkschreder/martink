@@ -62,12 +62,26 @@ struct serial_if {
 	/// returns always without waiting for more data to arrive
 	/// always works with internal rx buffer of the interface
 	size_t				(*getn)(serial_dev_t self, uint8_t *data, size_t max_sz);
-	/// flushes the output buffer and returns only when completed
-	/// must ensure that all data has been sent on wire
-	void					(*flush)(serial_dev_t self);
+	/// begins a new transaction
+	int16_t				(*begin)(serial_dev_t self); 
+	/// ends current transaction
+	int16_t				(*end)(serial_dev_t self);
 	/// returns current number of bytes available for reading
 	size_t 				(*waiting)(serial_dev_t self);
 }; 
+
+/// begins a serial transactions. A device driver can for example clear 
+/// any cache buffers when begin is called. This call may block until device is ready. 
+static inline int16_t serial_begin(serial_dev_t dev){
+	return (*dev)->begin(dev); 
+}
+
+/// finishes a transaction. This call may block until all data has been
+/// transfered by the device. It serves as a way to sync transaction with
+/// other actions necessary to control a device. 
+static inline int16_t serial_end(serial_dev_t dev){
+	return (*dev)->end(dev); 
+}
 
 /// writes one character to a generic serial interface
 static inline uint16_t serial_putc(serial_dev_t dev, uint8_t ch){
@@ -91,20 +105,10 @@ static inline size_t serial_getn(serial_dev_t dev,
 	return (*dev)->getn(dev, data, max_sz); 
 }
 
-/// flushes the pipe
-static inline void	 serial_flush(serial_dev_t dev){
-	(*dev)->flush(dev);
-}
-
 /// gets number of bytes waiting in rx buffer
 static inline size_t  serial_waiting(serial_dev_t dev){
 	return (*dev)->waiting(dev);
 }
-
-/// architecture specific implementation of serial_printf
-/// the implementation needs to be implemented separately because of 
-/// differences in libc. Look in arch/<arch>/serial.c
-uint16_t serial_printf(serial_dev_t port, const char *fmt, ...);
 
 /// status codes returned by methods of the interface
 #define SERIAL_PARITY_ERROR			0x1000

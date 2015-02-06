@@ -32,7 +32,8 @@ uint16_t 	serial_debugger_getc(serial_dev_t self);
 uint16_t 	serial_debugger_putc(serial_dev_t self, uint8_t ch);
 size_t 		serial_debugger_putn(serial_dev_t self, const uint8_t *data, size_t max_sz); 
 size_t 		serial_debugger_getn(serial_dev_t self, uint8_t *data, size_t max_sz);
-void 			serial_debugger_flush(serial_dev_t self);
+int16_t 			serial_debugger_begin(serial_dev_t self);
+int16_t 			serial_debugger_end(serial_dev_t self);
 size_t 		serial_debugger_waiting(serial_dev_t self);
 
 void serial_debugger_init(
@@ -53,7 +54,8 @@ serial_dev_t serial_debugger_get_serial_interface(struct serial_debugger *self){
 		.getn = serial_debugger_getn, 
 		.putn = serial_debugger_putn, 
 		.waiting = serial_debugger_waiting, 
-		.flush = serial_debugger_flush
+		.begin = serial_debugger_begin,
+		.end = serial_debugger_end
 	};
 	self->_ex_serial = &sdbg;
 	return &self->_ex_serial; 	
@@ -61,19 +63,19 @@ serial_dev_t serial_debugger_get_serial_interface(struct serial_debugger *self){
 
 static void _do_flush(struct serial_debugger *dbg){
 	if(dbg->last_is_read == 1){
-		uart0_puts("sent: "); 
+		printf("sent: "); 
 	} else {
-		uart0_puts("got : "); 
+		printf("got : "); 
 	}
 	
 	for(int c = 0; c < dbg->buf_ptr; c++){
-		uart0_printf("%02x ", dbg->buffer[c]); 
+		printf("%02x ", dbg->buffer[c]); 
 	}
 	for(int c = 0; c < dbg->buf_ptr; c++){
 		uint8_t i = dbg->buffer[c]; 
-		uart0_printf("%c ", (i > 0x20 && i < 0x70)?i:'.'); 
+		printf("%c ", (i > 0x20 && i < 0x70)?i:'.'); 
 	}
-	uart0_puts("\n"); 
+	printf("\n"); 
 	dbg->buf_ptr = 0; 
 }
 
@@ -127,11 +129,20 @@ size_t serial_debugger_getn(serial_dev_t self, uint8_t *data, size_t max_sz){
 	return ret; 
 }
 
-void serial_debugger_flush(serial_dev_t self){
+int16_t serial_debugger_end(serial_dev_t self){
 	DEVICE_CAST(self, dbg); 
 	//assert(dbg->device);
-	serial_flush(dbg->device); 
+	serial_end(dbg->device); 
 	_do_flush(dbg); 
+	return 0; 
+}
+
+
+int16_t serial_debugger_begin(serial_dev_t self){
+	DEVICE_CAST(self, dbg); 
+	//assert(dbg->device);
+	serial_begin(dbg->device); 
+	return 0; 
 }
 
 size_t serial_debugger_waiting(serial_dev_t self){

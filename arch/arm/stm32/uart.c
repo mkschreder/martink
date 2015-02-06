@@ -48,8 +48,6 @@ static void _uart_init(USART_TypeDef *uart, uint32_t baud){
 }
 
 void uart0_init_default(uint32_t baud){
-	_uart_init(USART1, baud); 
-	
 	RCC->APB2ENR |= 0
 		// Turn on USART1
 		| RCC_APB2ENR_USART1EN
@@ -57,7 +55,9 @@ void uart0_init_default(uint32_t baud){
 		| RCC_APB2ENR_IOPAEN
 		// Turn on the alternate function block
 		| RCC_APB2ENR_AFIOEN;
-		
+	
+	_uart_init(USART1, baud); 
+	
 	GPIO_InitTypeDef gpioConfig;
 
 	//PA9 = USART1.TX => Alternative Function Output

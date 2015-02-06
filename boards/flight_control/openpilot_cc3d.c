@@ -1,6 +1,8 @@
 #include "openpilot_cc3d.h"
+#include <stdio.h>
 #include <sensors/mpu6000.h>
 #include <block/serial_flash.h>
+#include <fs/cfs/cfs.h>
 
 #include <kernel.h>
 
@@ -10,36 +12,116 @@
 #define FC_PWM_CH4 PWM_CH11
 #define FC_PWM_CH5 PWM_CH31
 #define FC_PWM_CH6 PWM_CH23
+/*
+static void test(void){
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
+
+	GPIO_InitStructure.GPIO_Pin =
+					GPIO_Pin_6 | GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9;
+
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+	USART_InitTypeDef usartConfig;
+
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 |
+												 RCC_APB2Periph_GPIOA |
+												 RCC_APB2Periph_GPIOB |
+												 RCC_APB2Periph_AFIO, ENABLE);
+
+	usartConfig.USART_BaudRate = 38400;
+	usartConfig.USART_WordLength = USART_WordLength_8b;
+	usartConfig.USART_StopBits = USART_StopBits_1;
+	usartConfig.USART_Parity = USART_Parity_No;
+	usartConfig.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+	usartConfig.USART_HardwareFlowControl =
+			 USART_HardwareFlowControl_None;
+	USART_Init(USART1, &usartConfig);
+	USART_Cmd(USART1, ENABLE);
+
+	GPIO_InitTypeDef gpioConfig;
+
+	//PA9 = USART1.TX => Alternative Function Output
+	gpioConfig.GPIO_Mode = GPIO_Mode_AF_PP;
+	gpioConfig.GPIO_Pin = GPIO_Pin_9;
+	gpioConfig.GPIO_Speed = GPIO_Speed_10MHz;
+	GPIO_Init(GPIOA, &gpioConfig);
+
+	//PA10 = USART1.RX => Input
+	gpioConfig.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	gpioConfig.GPIO_Pin = GPIO_Pin_10;
+	GPIO_Init(GPIOA, &gpioConfig);
+	
+	for (;;)
+	{
+			USART_SendData(USART1, 0x55);
+			while(USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET);  // Wait for Empty
+	}
+}
+
+void _sbrk(void){
+	while(1); 
+}
+*/
+#define led_on() gpio_clear(GPIO_PB3)
+#define led_off() gpio_set(GPIO_PB3)
+
+struct serial_flash flash; 
+	
+void stm32w_flash_read(uint32_t address, void *data, uint32_t length){
+	//serial_dev_t con = uart_get_serial_interface(0); 
+	//printf("READ: @%x -> @%p\n", address, data); 
+	serial_flash_read(&flash, address, (uint8_t*)data, length); 
+}
+
+void stm32w_flash_write(uint32_t address, const void *data, uint32_t length){
+	//serial_dev_t con = uart_get_serial_interface(0); 
+	printf("WRITE: @%x -> @%p %d\n", (int)address, data, (int)length); 
+	serial_flash_write(&flash, (int)address, (uint8_t*)data, (int)length); 
+}
+
+void stm32w_flash_erase(uint8_t sector){
+	//serial_dev_t con = uart_get_serial_interface(0); 
+	printf("ERASE: @%x\n", (int)sector); 
+	serial_flash_sector_erase(&flash, sector);
+}
 
 void cc3d_init(void){
 	time_init(); 
 	timestamp_init(); 
 	gpio_init(); 
+	
+	led_off(); 
+	gpio_configure(GPIO_PB3, GP_OUTPUT); 
+	  
 	uart_init(); 
 	//twi_init(); 
 	spi_init(); 
 	
-	gpio_configure(GPIO_PB3, GP_OUTPUT); 
-	
-	gpio_set(GPIO_PB3); 
-	delay_ms(1000); 
-	gpio_clear(GPIO_PB3); 
-	delay_ms(1000); 
+	led_on(); 
+	delay_ms(500); 
+	led_off(); 
+	delay_ms(500); 
+	led_on(); 
+	delay_ms(500); 
+	led_off(); 
 	
 	struct mpu6000 mpu; 
-	struct serial_flash flash; 
 	
 	//i2c_dev_t i2c = twi_get_interface(0); 
-	serial_dev_t con = uart_get_serial_interface(0); 
+	//serial_dev_t con = uart_get_serial_interface(0); 
 	pio_dev_t gpio = gpio_get_parallel_interface(); 
 	
-	serial_printf(con, "Initializing sensor..\n"); 
+	printf("Initializing sensor..\n"); 
 	
 	serial_dev_t spi = spi_get_serial_interface(0); 
 	serial_dev_t spi2 = spi_get_serial_interface(1); 
 	
 	if(!spi || !spi2) {
-		serial_printf(con, "SPI init failed!\n"); 
+		printf("SPI init failed!\n"); 
 		while(1); 
 	}
 	
@@ -47,7 +129,7 @@ void cc3d_init(void){
 	
 	serial_flash_init(&flash, spi2, GPIO_PB12); 
 	
-	serial_printf(con, "Flash. ID: %x, Type: %x, Size: %x\n", flash.props.id, flash.props.type, flash.props.size); 
+	printf("Flash. ID: %x, Type: %x, Size: %x\n", flash.props.id, flash.props.type, flash.props.size); 
 	
 	pwm_configure(FC_PWM_CH1, 1500, 4000); 
 	pwm_configure(FC_PWM_CH2, 1500, 4000); 
@@ -56,32 +138,84 @@ void cc3d_init(void){
 	pwm_configure(FC_PWM_CH5, 1500, 4000); 
 	pwm_configure(FC_PWM_CH6, 1500, 4000); 
 	
-	int data = 0xbadfeed; 
+	{
+		int fd = cfs_open("test", CFS_READ);
+		char message[5] = {0}; 
+		if(fd != -1) {
+			cfs_read(fd, message, sizeof(message));
+			cfs_close(fd);
+			printf("READ: %s\n", message); 
+		} else {
+			printf("ERROR: could not open file for reading!\n");
+		}
+	}
 	
-	serial_printf(con, "Erasing flash..\n"); 
-	serial_flash_sector_erase(&flash, 0); 
+	{
+		int fd_write = cfs_open("test", CFS_WRITE);
+		char message[5] = "alfa"; 
+		if(fd_write != -1) {
+			cfs_write(fd_write, message, sizeof(message));
+			cfs_close(fd_write);
+			printf("WRITE: %s\n", message); 
+		} else {
+			printf("ERROR: could not write to memory in step 2.\n");
+		}
+	}
 	
-	serial_printf(con, "Writing value to flash: %x\n", data); 
-	serial_flash_write(&flash, 0, (uint8_t*)&data, sizeof(data)); 
+	{
+		int fd = cfs_open("test", CFS_READ);
+		char message[5] = {0}; 
+		if(fd != -1) {
+			cfs_read(fd, message, sizeof(message));
+			cfs_close(fd);
+			printf("READ: %s\n", message); 
+		} else {
+			printf("ERROR: could not open file for reading.\n");
+		}
+	}
 	
+	cfs_remove("test");
+	
+	int fd_write = cfs_open("test", CFS_WRITE);
+	char message[5] = "foob"; 
+	if(fd_write != -1) {
+		cfs_write(fd_write, message, sizeof(message));
+		cfs_close(fd_write);
+		printf("WRITE: %s\n", message); 
+	} else {
+		printf("ERROR: could not write to memory in step 2.\n");
+	}
+
+	{
+		int fd = cfs_open("test", CFS_READ);
+		char message[5] = {0}; 
+		if(fd != -1) {
+			cfs_read(fd, message, sizeof(message));
+			cfs_close(fd);
+			printf("READ: %s\n", message); 
+		} else {
+			printf("ERROR: could not write to memory in step 2.\n");
+		}
+	}
+
 	while(1){
 		gpio_set(GPIO_PB3); 
 		
 		int16_t ax, ay, az, gx, gy, gz; 
 		mpu6000_getRawData(&mpu, &ax, &ay, &az, &gx, &gy, &gz); 
 		
-		int data = 0; 
-		serial_flash_read(&flash, 0, (uint8_t*)&data, sizeof(data)); 
+		//int data = 0; 
+		///serial_flash_read(&flash, 0, (uint8_t*)&data, sizeof(data)); 
 		
-		serial_printf(con, "DATA: %x\n", data); 
+		//printf("DATA: %x\n", data); 
 		
 		if(!spi){
-			serial_printf(con, "No SPI! \n"); 
+			printf("No SPI! \n"); 
 			continue; 
 		}
 		
-		serial_printf(con, "Time: %d\n", timestamp_now()); 
-		serial_printf(con, "Gyro: %d %d %d, Acc: %d %d %d\n", ax, ay, az, gx, gy, gz); 
+		printf("Time: %ld\n", (long int)timestamp_now()); 
+		printf("Gyro: %d %d %d, Acc: %d %d %d\n", ax, ay, az, gx, gy, gz); 
 		
 		delay_ms(1); 
 		gpio_clear(GPIO_PB3); 

@@ -351,9 +351,8 @@ static void _enc28j60_phy_write(struct enc28j60 *self, uint8_t address, uint16_t
 
 //**************************************************************************************
 // Flash the 2 RJ45 LEDs twice to show that the interface works
-static void _enc68j60_flash_leds (struct enc28j60 *self)
+/*static void _enc68j60_flash_leds (struct enc28j60 *self)
 {
-	/* Magjack leds configuration, see enc28j60 datasheet, page 11 */
 	// LEDA=green LEDB=yellow
 	//
 	// 0x880 is PHLCON LEDB=on, LEDA=on
@@ -381,7 +380,7 @@ static void _enc68j60_flash_leds (struct enc28j60 *self)
    _enc28j60_phy_write(self, PHLCON,0x476);
 	delay_us(100000L);
 }
-
+*/
 void enc28j60_set_mac_addr(struct enc28j60 *self, const eth_mac_t macaddr){
 	// write MAC address
 	// NOTE: MAC address in ENC28J60 is byte-backward

@@ -15,4 +15,3 @@ endif
 
 obj-y += arch/arm/arm.o 
 obj-y += arch/arm/memory.o
-obj-y += arch/arm/syscalls.o

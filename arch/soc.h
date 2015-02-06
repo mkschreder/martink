@@ -75,7 +75,6 @@ extern "C" {
 #include "spi.h"
 #include "gpio.h"
 #include "pwm.h"
-#include "eeprom.h"
 
 #ifndef PROGMEM
 #define PROGMEM
@@ -92,6 +91,11 @@ extern "C" {
 #endif
 
 void soc_init(void); 
+
+/// architecture specific implementation of serial_printf
+/// the implementation needs to be implemented separately because of 
+/// differences in libc. Look in arch/syscalls.c
+uint16_t serial_printf(serial_dev_t port, const char *fmt, ...);
 
 #ifdef __cplusplus
 }

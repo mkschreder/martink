@@ -12,6 +12,9 @@
 
 #include <arch/soc.h>
 
+#include <stdarg.h>
+#include <string.h>
+
 #ifndef STDOUT_USART
 #define STDOUT_USART 0
 #endif
@@ -38,22 +41,22 @@ char **environ = __env;
 int _write(int file, char *ptr, int len);
 
 void _exit(int status) {
-    _write(1, "exit", 4);
-    while (1) {
-        ;
-    }
+	_write(1, "exit", 4);
+	while (1) {
+			;
+	}
 }
 
 int _close(int file) {
-    return -1;
+	return -1;
 }
 /*
  execve
  Transfer control to a new process. Minimal implementation (for a system without processes):
  */
 int _execve(char *name, char **argv, char **env) {
-    errno = ENOMEM;
-    return -1;
+	errno = ENOMEM;
+	return -1;
 }
 /*
  fork
@@ -61,8 +64,8 @@ int _execve(char *name, char **argv, char **env) {
  */
 
 int _fork(void) {
-    errno = EAGAIN;
-    return -1;
+	errno = EAGAIN;
+	return -1;
 }
 /*
  fstat
@@ -71,8 +74,8 @@ int _fork(void) {
  The `sys/stat.h' header file required is distributed in the `include' subdirectory for this C library.
  */
 int _fstat(int file, struct stat *st) {
-    st->st_mode = S_IFCHR;
-    return 0;
+	st->st_mode = S_IFCHR;
+	return 0;
 }
 
 /*
@@ -81,7 +84,7 @@ int _fstat(int file, struct stat *st) {
  */
 
 int _getpid(void) {
-    return 1;
+	return 1;
 }
 
 /*
@@ -89,16 +92,16 @@ int _getpid(void) {
  Query whether output stream is a terminal. For consistency with the other minimal implementations,
  */
 int _isatty(int file) {
-    switch (file){
-    case STDOUT_FILENO:
-    case STDERR_FILENO:
-    case STDIN_FILENO:
-        return 1;
-    default:
-        //errno = ENOTTY;
-        errno = EBADF;
-        return 0;
-    }
+	switch (file){
+	case STDOUT_FILENO:
+	case STDERR_FILENO:
+	case STDIN_FILENO:
+			return 1;
+	default:
+			//errno = ENOTTY;
+			errno = EBADF;
+			return 0;
+	}
 }
 
 
@@ -135,28 +138,26 @@ int _lseek(int file, int ptr, int dir) {
  Malloc and related functions depend on this
  */
 caddr_t _sbrk(int incr) {
+	extern char _ebss; // Defined by the linker
+	static char *heap_end = 0;
+	char *prev_heap_end;
 
-    extern char _ebss; // Defined by the linker
-    static char *heap_end;
-    char *prev_heap_end;
+	if (heap_end == 0) {
+			heap_end = &_ebss;
+	}
+	prev_heap_end = heap_end;
 
-    if (heap_end == 0) {
-        heap_end = &_ebss;
-    }
-    prev_heap_end = heap_end;
+	char * stack = (char*) __get_MSP();
+	if (heap_end + incr >  stack)
+	{
+		 //_write (STDERR_FILENO, "Heap and stack collision\n", 25);
+		 errno = ENOMEM;
+		 return  (caddr_t) -1;
+		 //abort ();
+	}
 
-char * stack = (char*) __get_MSP();
-     if (heap_end + incr >  stack)
-     {
-         _write (STDERR_FILENO, "Heap and stack collision\n", 25);
-         errno = ENOMEM;
-         return  (caddr_t) -1;
-         //abort ();
-     }
-
-    heap_end += incr;
-    return (caddr_t) prev_heap_end;
-
+	heap_end += incr;
+	return (caddr_t) prev_heap_end;
 }
 
 /*
@@ -164,13 +165,11 @@ char * stack = (char*) __get_MSP();
  Read a character to a file. `libc' subroutines will use this system routine for input from all files, including stdin
  Returns -1 on error or blocks until the number of characters have been read.
  */
-
-
 int _read(int file, char *ptr, int len) {
 	int n;
 	int num = 0;
 	switch (file) {
-	case STDIN_FILENO:
+		case STDIN_FILENO:
 			for (n = 0; n < len; n++) {
 				uint16_t c = uart0_getc(); 
 				if(c == SERIAL_NO_DATA) return -1; 
@@ -178,7 +177,7 @@ int _read(int file, char *ptr, int len) {
 				num++;
 			}
 			break;
-	default:
+		default:
 			errno = EBADF;
 			return -1;
 	}
@@ -229,37 +228,37 @@ int _wait(int *status) {
  Returns -1 on error or number of bytes sent
  */
 int _write(int file, char *ptr, int len) {
-    int n;
-    switch (file) {
-    case STDOUT_FILENO: /*stdout*/
-        for (n = 0; n < len; n++) {
-					uart0_putc(*ptr++);
-        }
-        break;
-    case STDERR_FILENO: /* stderr */
-        for (n = 0; n < len; n++) {
-					uart0_putc(*ptr++); 
-        }
-        break;
-    default:
-        errno = EBADF;
-        return -1;
-    }
-    return len;
+	static serial_dev_t out = 0, err = 0; 
+	
+	if(!out)
+		out = uart_get_serial_interface(0); 
+	if(!err)
+		err = uart_get_serial_interface(0); 
+		
+	switch (file) {
+		case STDOUT_FILENO: 
+			if(out)
+				return serial_putn(out, (uint8_t*)ptr, len); 
+			break;
+		case STDERR_FILENO: /* stderr */
+			if(err)
+				return serial_putn(err, (uint8_t*)ptr, len); 
+			break;
+		default:
+			errno = EBADF;
+			return -1;
+	}
+	return len;
 }
 
-#include <stdarg.h>
-#include <arch/soc.h>
-#include <string.h>
-
 uint16_t serial_printf(serial_dev_t port, const char *fmt, ...){
-	uint8_t buffer[512]; 
+	char buffer[512]; 
 	uint16_t n; 
 	va_list vl; 
 	va_start(vl, fmt);
 	n = vsnprintf(buffer, sizeof(buffer), fmt, vl); 
 	va_end(vl);
-	serial_putn(port, buffer, n); 
+	serial_putn(port, (uint8_t*)buffer, n); 
 	return n; 
 }
 

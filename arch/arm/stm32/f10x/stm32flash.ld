@@ -2,7 +2,8 @@
 * STM32 Discovery Linker Script
 */
 
-_estack = 0x20005000;    /* global needed for startup_stm3210x_md_vl.S */
+_ramstart = 0x20000000; 
+_estack = 0x20004FF0;    /* global needed for startup_stm3210x_md_vl.S */
 _minimum_stack_size = 0x100; /* 256 bytes miniumum stack size */
 
 ENTRY(Reset_Handler)
@@ -16,19 +17,19 @@ MEMORY
 
 SECTIONS
 {
-  .text :
+  .text : 
   {
-    KEEP(*(.isr_vector))
-    _stext = .; 
+    KEEP(*(.isr_vector .isr_vector.*))
+    
     *(.text)           /* .text sections (code) */
     *(.text*)          /* .text* sections (code) */
     *(.rodata)         /* .rodata sections (constants, strings, etc.) */
     *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
+    
     . = ALIGN(4);
     __init_array_start = .;
     KEEP(*(.init_array));
     __init_array_end = .;
-    . = ALIGN(4);
     . = ALIGN(4);
     KEEP (*(.init))
     KEEP (*(.fini))
@@ -46,8 +47,20 @@ SECTIONS
     _edata = .;        /* global needed for startup_stm3210x_md_vl.S */
   } >ram AT>rom
 	
+	.device_list : 
+  {   
+    _sdevice_info = .;        
+    KEEP(*(.device_info*))
+    . = ALIGN(4);
+    _edevice_info = .;  
+    _sdevice_meta = .;        
+    KEEP(*(.device_meta*))      
+    . = ALIGN(4);
+    _edevice_meta = .;       
+  } >rom
+  
   /* uninitialized data section bss*/
-  .bss : AT(_edata)
+  .bss (NOLOAD): 
   {
       . = ALIGN(4);
     _sbss = .;         /* global needed for startup_stm3210x_md_vl.S */

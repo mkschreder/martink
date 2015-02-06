@@ -56,3 +56,6 @@
 #include "mega/gpio.h"
 #include "mega/pwm.h"
 #include "mega/eeprom.h"
+
+
+#include "eeprom.h"

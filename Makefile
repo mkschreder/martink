@@ -133,7 +133,7 @@ clean:
 		-o -name 'mconf' -o -name 'conf' -o -name 'lxdialog' \) \
 		-type f -print | xargs rm -f	
 
--include $(obj-y:%.o=$(BUILD_DIR)/%.cmd)
+-include $(obj-y:%.o=%.cmd)
 
 PHONY += FORCE
 FORCE:

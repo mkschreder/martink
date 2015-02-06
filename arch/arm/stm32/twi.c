@@ -52,7 +52,6 @@ void twi0_start_write(uint8_t adr, uint8_t *data, uint8_t bytes_to_send){
 		/* Test on EV8 and clear it */
 		while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 	}
-	return 0; 
 }
 
 void twi0_start_read(uint8_t adr, uint8_t *data, uint8_t bytes_to_read){

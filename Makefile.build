@@ -3,6 +3,7 @@ obj-y += main.o
 include arch/Makefile
 include boards/Makefile
 include block/Makefile
+include fs/Makefile
 include crypto/Makefile
 include disp/Makefile
 include hid/Makefile

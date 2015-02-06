@@ -58,9 +58,9 @@
 /* Byte page size, starting address on page boundary, and size of file system */
 #define FLASH_START               0
 /* Minimum erasable unit. */
-#define FLASH_PAGE_SIZE           256
+#define FLASH_PAGE_SIZE           256UL
 /* Last 3 pages reserved for NVM. */
-#define FLASH_PAGES               8192
+#define FLASH_PAGES               8192UL
 
 /* Minimum reservation unit for Coffee. It can be changed by the user.  */
 #define COFFEE_PAGE_SIZE          (FLASH_PAGE_SIZE/4)
@@ -95,17 +95,17 @@
  /* #define FLASH_COMPLEMENT_DATA     0 */
 
 /* These are used internally by the coffee file system */
-#define COFFEE_MAX_OPEN_FILES     4
-#define COFFEE_FD_SET_SIZE        8
+#define COFFEE_MAX_OPEN_FILES     4UL
+#define COFFEE_FD_SET_SIZE        8UL
 #define COFFEE_DYN_SIZE           (COFFEE_PAGE_SIZE*1)
 /* Micro logs are not needed for single page sectors */
 #define COFFEE_MICRO_LOGS         0
-#define COFFEE_LOG_TABLE_LIMIT    16    /* It doesnt' matter as */
-#define COFFEE_LOG_SIZE           128   /* COFFEE_MICRO_LOGS is 0. */
+#define COFFEE_LOG_TABLE_LIMIT    16UL   /* It doesnt' matter as */
+#define COFFEE_LOG_SIZE           128UL   /* COFFEE_MICRO_LOGS is 0. */
 
 #if COFFEE_PAGES <= 127
 #define coffee_page_t int8_t
-#elif COFFEE_PAGES <= 0x7FFF
+#elif COFFEE_PAGES <= 0x7FFFUL
 #define coffee_page_t int16_t
 #else 
 #define coffee_page_t int32_t

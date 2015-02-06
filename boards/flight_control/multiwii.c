@@ -267,7 +267,6 @@ void mwii_calibrate_escs(void){
 	// wait for the escs to initialize
 	_delay_ms(3000); 
 	// now step them down to mincommand within a second
-	uint8_t led = 0; 
 	for(int c = 2000; c > 1000; c-=10){
 		mwii_write_motors(c, c, c, c); 
 		_delay_ms(20); 
@@ -402,8 +401,8 @@ void mwii_init(void){
 	kdebug("BMP085: found\n");
 	
 	hmc5883l_init(&brd->hmc, brd->twi0, HMC5883L_ADDR);
-	uint32_t hmcid = hmc5883l_read_id(&brd->hmc);  
-	kdebug("HMC5883: %c%c%c\n", (uint8_t)(hmcid >> 16), (uint8_t)(hmcid >> 8), (uint8_t)hmcid); 
+	//uint32_t hmcid = hmc5883l_read_id(&brd->hmc);  
+	//kdebug("HMC5883: %c%c%c\n", (uint8_t)(hmcid >> 16), (uint8_t)(hmcid >> 8), (uint8_t)hmcid); 
 	
 	gpio_clear(GPIO_MWII_LED); 
 	

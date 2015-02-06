@@ -1,7 +1,7 @@
-#include "soc.h"
+#include <arch/soc.h>
 #include "eeprom.h"
 
-#ifdef CONFIG_HAVE_EEPROM
+//#ifdef CONFIG_HAVE_EEPROM
 static size_t	_ee_write(memory_dev_t self, size_t address, const uint8_t *data, size_t max_sz){
 	eeprom_update_block(data, (uint8_t*)address, max_sz); 
 	return max_sz; 
@@ -28,4 +28,4 @@ memory_dev_t eeprom_get_memory_interface(void){
 	}
 	return &i; 
 }
-#endif
+//#endif

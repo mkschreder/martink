@@ -29,4 +29,4 @@ obj-$(CONFIG_ATMEGA328P) += \
 arch/avr/mega/adc.o 				arch/avr/mega/twi.o 		  \
 arch/avr/mega/gpio.o \
 arch/avr/mega/stack.o 			arch/avr/mega/time.o  \
-arch/avr/mega/twi_slave.o  arch/avr/mega/uart.o
+arch/avr/mega/twi_slave.o  arch/avr/mega/uart.o arch/avr/mega/spi.o

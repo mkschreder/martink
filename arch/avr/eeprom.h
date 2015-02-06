@@ -24,6 +24,6 @@
 */
 #pragma once
 
-#include "interface.h"
+#include "../interface.h"
 
 memory_dev_t eeprom_get_memory_interface(void);

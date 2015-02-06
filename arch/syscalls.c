@@ -1,19 +1,13 @@
- 
-/*
- * newlib_stubs.c
- *
- *  Created on: 2 Nov 2010
- *      Author: nanoage.co.uk
- */
-#include <errno.h>
-#include <sys/stat.h>
-#include <sys/times.h>
-#include <sys/unistd.h>
 
 #include <arch/soc.h>
 
 #include <stdarg.h>
 #include <string.h>
+
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/times.h>
+#include <sys/unistd.h>
 
 #ifndef STDOUT_USART
 #define STDOUT_USART 0
@@ -262,4 +256,3 @@ uint16_t serial_printf(serial_dev_t port, const char *fmt, ...){
 	return n; 
 }
 
-//char _ebss; 

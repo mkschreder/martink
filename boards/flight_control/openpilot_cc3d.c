@@ -12,6 +12,14 @@
 #define FC_PWM_CH4 PWM_CH11
 #define FC_PWM_CH5 PWM_CH31
 #define FC_PWM_CH6 PWM_CH23
+
+#define FC_PWM_RC1 PWM_CH41
+#define FC_PWM_RC2 PWM_CH32
+#define FC_PWM_RC3 PWM_CH33
+#define FC_PWM_RC4 PWM_CH34
+#define FC_PWM_RC5 PWM_CH21
+#define FC_PWM_RC6 PWM_CH22
+
 /*
 static void test(void){
 	GPIO_InitTypeDef GPIO_InitStructure;
@@ -131,13 +139,21 @@ void cc3d_init(void){
 	
 	printf("Flash. ID: %x, Type: %x, Size: %x\n", flash.props.id, flash.props.type, flash.props.size); 
 	
-	pwm_configure(FC_PWM_CH1, 1500, 4000); 
-	pwm_configure(FC_PWM_CH2, 1500, 4000); 
-	pwm_configure(FC_PWM_CH3, 1500, 4000); 
-	pwm_configure(FC_PWM_CH4, 1500, 4000); 
-	pwm_configure(FC_PWM_CH5, 1500, 4000); 
-	pwm_configure(FC_PWM_CH6, 1500, 4000); 
+	pwm_configure(FC_PWM_CH1, 1250, 4000); 
+	pwm_configure(FC_PWM_CH2, 1250, 4000); 
+	pwm_configure(FC_PWM_CH3, 1250, 4000); 
+	pwm_configure(FC_PWM_CH4, 1250, 4000); 
+	pwm_configure(FC_PWM_CH5, 1250, 4000); 
+	pwm_configure(FC_PWM_CH6, 1250, 4000); 
 	
+	pwm_configure_capture(FC_PWM_RC1, 1000); 
+	pwm_configure_capture(FC_PWM_RC2, 1000); 
+	pwm_configure_capture(FC_PWM_RC3, 1000); 
+	pwm_configure_capture(FC_PWM_RC4, 1000); 
+	pwm_configure_capture(FC_PWM_RC5, 1000); 
+	pwm_configure_capture(FC_PWM_RC6, 1000); 
+	
+	/*
 	{
 		int fd = cfs_open("test", CFS_READ);
 		char message[5] = {0}; 
@@ -197,9 +213,16 @@ void cc3d_init(void){
 			printf("ERROR: could not write to memory in step 2.\n");
 		}
 	}
-
+*/
 	while(1){
 		gpio_set(GPIO_PB3); 
+		
+		printf("RC1: %d ", (int)pwm_read(FC_PWM_RC1)); 
+		printf("RC2: %d ", (int)pwm_read(FC_PWM_RC2)); 
+		printf("RC3: %d\n", (int)pwm_read(FC_PWM_RC3)); 
+		printf("RC4: %d ", (int)pwm_read(FC_PWM_RC4)); 
+		printf("RC5: %d ", (int)pwm_read(FC_PWM_RC5)); 
+		printf("RC6: %d\n", (int)pwm_read(FC_PWM_RC6)); 
 		
 		int16_t ax, ay, az, gx, gy, gz; 
 		mpu6000_getRawData(&mpu, &ax, &ay, &az, &gx, &gy, &gz); 

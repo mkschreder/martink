@@ -26,7 +26,7 @@
 	USB:				no
 	I2C:				no
 	Gyro: 			yes
-	RC Input: 	no
+	RC Input: 	yes, except chan 3 and 4 (tim3_3 and tim3_4, pb0, pb1) are not working. 
 	PWM Out: 		yes
 	Flash: 			yes
 */

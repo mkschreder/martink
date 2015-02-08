@@ -12,6 +12,7 @@
 
 #include "ssd1306.h"
 #include "ssd1306_priv.h"
+#include "lcd_font_5x7.h"
 
 #include <string.h>
 

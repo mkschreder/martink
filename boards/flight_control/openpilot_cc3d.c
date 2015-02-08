@@ -20,81 +20,33 @@
 #define FC_PWM_RC5 PWM_CH21
 #define FC_PWM_RC6 PWM_CH22
 
-/*
-static void test(void){
-	GPIO_InitTypeDef GPIO_InitStructure;
-
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
-
-	GPIO_InitStructure.GPIO_Pin =
-					GPIO_Pin_6 | GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9;
-
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOC, &GPIO_InitStructure);
-
-	USART_InitTypeDef usartConfig;
-
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 |
-												 RCC_APB2Periph_GPIOA |
-												 RCC_APB2Periph_GPIOB |
-												 RCC_APB2Periph_AFIO, ENABLE);
-
-	usartConfig.USART_BaudRate = 38400;
-	usartConfig.USART_WordLength = USART_WordLength_8b;
-	usartConfig.USART_StopBits = USART_StopBits_1;
-	usartConfig.USART_Parity = USART_Parity_No;
-	usartConfig.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-	usartConfig.USART_HardwareFlowControl =
-			 USART_HardwareFlowControl_None;
-	USART_Init(USART1, &usartConfig);
-	USART_Cmd(USART1, ENABLE);
-
-	GPIO_InitTypeDef gpioConfig;
-
-	//PA9 = USART1.TX => Alternative Function Output
-	gpioConfig.GPIO_Mode = GPIO_Mode_AF_PP;
-	gpioConfig.GPIO_Pin = GPIO_Pin_9;
-	gpioConfig.GPIO_Speed = GPIO_Speed_10MHz;
-	GPIO_Init(GPIOA, &gpioConfig);
-
-	//PA10 = USART1.RX => Input
-	gpioConfig.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	gpioConfig.GPIO_Pin = GPIO_Pin_10;
-	GPIO_Init(GPIOA, &gpioConfig);
-	
-	for (;;)
-	{
-			USART_SendData(USART1, 0x55);
-			while(USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET);  // Wait for Empty
-	}
-}
-
-void _sbrk(void){
-	while(1); 
-}
-*/
 #define led_on() gpio_clear(GPIO_PB3)
 #define led_off() gpio_set(GPIO_PB3)
+#define CONFIG_FILE "config"
 
-struct serial_flash flash; 
+static struct cc3d {
+	struct serial_flash flash; 
+	struct mpu6000 mpu; 
+	serial_dev_t spi0, spi1; 
+} cc3d; 
+
 	
 void stm32w_flash_read(uint32_t address, void *data, uint32_t length){
 	//serial_dev_t con = uart_get_serial_interface(0); 
 	//printf("READ: @%x -> @%p\n", address, data); 
-	serial_flash_read(&flash, address, (uint8_t*)data, length); 
+	serial_flash_read(&cc3d.flash, address, (uint8_t*)data, length); 
 }
 
 void stm32w_flash_write(uint32_t address, const void *data, uint32_t length){
 	//serial_dev_t con = uart_get_serial_interface(0); 
-	printf("WRITE: @%x -> @%p %d\n", (int)address, data, (int)length); 
-	serial_flash_write(&flash, (int)address, (uint8_t*)data, (int)length); 
+	//printf("WRITE: @%x -> @%p %d\n", (int)address, data, (int)length); 
+	serial_flash_write(&cc3d.flash, (int)address, (uint8_t*)data, (int)length); 
 }
 
 void stm32w_flash_erase(uint8_t sector){
 	//serial_dev_t con = uart_get_serial_interface(0); 
-	printf("ERASE: @%x\n", (int)sector); 
-	serial_flash_sector_erase(&flash, sector);
+	//printf("ERASE: @%x\n", (int)sector); 
+	serial_flash_sector_erase(&cc3d.flash, sector);
 }
 
 void cc3d_init(void){
@@ -117,8 +69,6 @@ void cc3d_init(void){
 	delay_ms(500); 
 	led_off(); 
 	
-	struct mpu6000 mpu; 
-	
 	//i2c_dev_t i2c = twi_get_interface(0); 
 	//serial_dev_t con = uart_get_serial_interface(0); 
 	pio_dev_t gpio = gpio_get_parallel_interface(); 
@@ -133,11 +83,11 @@ void cc3d_init(void){
 		while(1); 
 	}
 	
-	mpu6000_init(&mpu, spi, gpio, GPIO_PA4); 
+	mpu6000_init(&cc3d.mpu, spi, gpio, GPIO_PA4); 
 	
-	serial_flash_init(&flash, spi2, GPIO_PB12); 
+	serial_flash_init(&cc3d.flash, spi2, GPIO_PB12); 
 	
-	printf("Flash. ID: %x, Type: %x, Size: %x\n", flash.props.id, flash.props.type, flash.props.size); 
+	printf("Flash. ID: %x, Type: %x, Size: %x\n", cc3d.flash.props.id, cc3d.flash.props.type, cc3d.flash.props.size); 
 	
 	pwm_configure(FC_PWM_CH1, 1250, 4000); 
 	pwm_configure(FC_PWM_CH2, 1250, 4000); 
@@ -214,23 +164,10 @@ void cc3d_init(void){
 		}
 	}
 */
+/*
 	while(1){
 		gpio_set(GPIO_PB3); 
 		
-		printf("short: %d\n", (int)(sizeof(short)));
-		printf("int: %d\n", (int)(sizeof(int)));
-		printf("long: %d\n", (int)(sizeof(long)));
-		printf("long long: %d\n", (int)(sizeof(long long)));
-		printf("long double: %d\n", (int)(sizeof(long double)));
-		printf("int8_t: %d\n", (int)(sizeof(int8_t)));
-		printf("int16_t: %d\n", (int)(sizeof(int16_t)));
-		printf("int32_t: %d\n", (int)(sizeof(int32_t)));
-		printf("int64_t: %d\n", (int)(sizeof(int64_t)));
-		printf("int_fast8_t: %d\n", (int)sizeof(int_fast8_t));
-		printf("int_fast16_t: %d\n", (int)sizeof(int_fast16_t));
-		printf("int_fast32_t: %d\n", (int)sizeof(int_fast32_t));
-		printf("int_fast64_t: %d\n", (int)sizeof(int_fast64_t));
-
 		printf("RC1: %d ", (int)pwm_read(FC_PWM_RC1)); 
 		printf("RC2: %d ", (int)pwm_read(FC_PWM_RC2)); 
 		printf("RC3: %d\n", (int)pwm_read(FC_PWM_RC3)); 
@@ -258,11 +195,97 @@ void cc3d_init(void){
 		gpio_clear(GPIO_PB3); 
 		delay_ms(1); 
 		//mpu6050_probe(&mpu); 
-	}
+	}*/
+}
+
+static inline void cc3d_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right){
+	pwm_write(FC_PWM_CH1, front); 
+	pwm_write(FC_PWM_CH2, back); 
+	pwm_write(FC_PWM_CH3, left); 
+	pwm_write(FC_PWM_CH4, right); 
 }
 
 void cc3d_process_events(void){
 	
+}
+
+static int8_t _cc3d_read_sensors(fc_board_t self, struct fc_data *data){
+	data->flags = HAVE_ACC | HAVE_GYR; 
+	mpu6000_getRawData(&cc3d.mpu, 
+		&data->raw_acc.x, 
+		&data->raw_acc.y, 
+		&data->raw_acc.z,
+		&data->raw_gyr.x, 
+		&data->raw_gyr.y, 
+		&data->raw_gyr.z
+	); 
+	mpu6000_convertData(&cc3d.mpu, 
+		data->raw_acc.x, 
+		data->raw_acc.y, 
+		data->raw_acc.z, 
+		data->raw_gyr.x, 
+		data->raw_gyr.y, 
+		data->raw_gyr.z, 
+		&data->acc_g.x, 
+		&data->acc_g.y, 
+		&data->acc_g.z,
+		&data->gyr_deg.x,
+		&data->gyr_deg.y,
+		&data->gyr_deg.z
+	); 
+	
+	return 0; 
+}
+
+static int8_t _cc3d_write_motors(fc_board_t self,
+	uint16_t front, uint16_t back, uint16_t left, uint16_t right){
+	cc3d_write_motors(front, back, left, right); 
+	return 0; 
+}
+
+static int8_t _cc3d_read_receiver(fc_board_t self, 
+		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
+		uint16_t *rc_aux0, uint16_t *rc_aux1) {
+	
+	*rc_thr = 		pwm_read(FC_PWM_RC1); 
+	*rc_pitch = 	pwm_read(FC_PWM_RC2); 
+	*rc_yaw = 		pwm_read(FC_PWM_RC3); 
+	*rc_roll = 		pwm_read(FC_PWM_RC6); 
+	*rc_aux0 = 		pwm_read(FC_PWM_RC4); 
+	*rc_aux1 = 		pwm_read(FC_PWM_RC5);
+	
+	// prevent small changes when stick is not touched
+	if(abs(*rc_pitch - 1500) < 20) *rc_pitch = 1500; 
+	if(abs(*rc_roll - 1500) < 20) *rc_roll = 1500; 
+	if(abs(*rc_yaw - 1500) < 20) *rc_yaw = 1500;
+
+	return 0; 
+}
+
+static int8_t _cc3d_write_config(fc_board_t self, const uint8_t *data, uint16_t size){
+	int fd = cfs_open(CONFIG_FILE, CFS_WRITE);
+	if(fd != -1) {
+		cfs_write(fd, data, size);
+		cfs_close(fd);
+	} else {
+		return -1; 
+	}
+	return 0; 
+}
+
+static int8_t _cc3d_read_config(fc_board_t self, uint8_t *data, uint16_t size){
+	int fd = cfs_open(CONFIG_FILE, CFS_READ);
+	if(fd != -1) {
+		cfs_read(fd, data, size);
+		cfs_close(fd);
+	} else {
+		return -1; 
+	}
+	return 0; 
+}
+
+static serial_dev_t _cc3d_get_pc_link_interface(fc_board_t self){
+	return uart_get_serial_interface(0); 
 }
 
 fc_board_t cc3d_get_fc_quad_interface(void){

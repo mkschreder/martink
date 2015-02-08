@@ -69,15 +69,17 @@ struct fc_data {
 }; 
 
 struct fc_quad_interface {
-	uint8_t 		(*read_sensors)(fc_board_t self, struct fc_data *data); 
-	uint8_t 		(*read_receiver)(fc_board_t self,
+	int8_t 		(*read_sensors)(fc_board_t self, struct fc_data *data); 
+	int8_t 		(*read_receiver)(fc_board_t self,
 		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1); 
-	void				(*write_motors)(fc_board_t self,
+	int8_t				(*write_motors)(fc_board_t self,
 		uint16_t front, uint16_t back, uint16_t left, uint16_t right);
 		
-	void (*write_config)(fc_board_t self, const uint8_t *data, uint16_t size);
-	void (*read_config)(fc_board_t self, uint8_t *data, uint16_t size);
+	// return -1 on fail and 0 on success
+	int8_t (*write_config)(fc_board_t self, const uint8_t *data, uint16_t size);
+	// return -1 on fail and 0 on success
+	int8_t (*read_config)(fc_board_t self, uint8_t *data, uint16_t size);
 	
 	/// should return a serial interface to the communication channel with PC
 	serial_dev_t (*get_pc_link_interface)(fc_board_t self); 

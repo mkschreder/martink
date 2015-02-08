@@ -767,7 +767,7 @@ read_log_page(struct file_header *hdr, int16_t record_count,
   base = absolute_offset(hdr->log_page, log_records * sizeof(region));
   base += (cfs_offset_t)match_index * log_record_size;
   base += lp->offset;
-  COFFEE_READ(lp->buf, lp->size, base);
+  COFFEE_READ((void*)lp->buf, lp->size, base);
 
   return lp->size;
 }

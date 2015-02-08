@@ -99,7 +99,7 @@
 #define COFFEE_FD_SET_SIZE        8UL
 #define COFFEE_DYN_SIZE           (COFFEE_PAGE_SIZE*1)
 /* Micro logs are not needed for single page sectors */
-#define COFFEE_MICRO_LOGS         0
+#define COFFEE_MICRO_LOGS         1
 #define COFFEE_LOG_TABLE_LIMIT    16UL   /* It doesnt' matter as */
 #define COFFEE_LOG_SIZE           128UL   /* COFFEE_MICRO_LOGS is 0. */
 

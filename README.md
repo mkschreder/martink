@@ -28,10 +28,17 @@ Building libk can be a little tricky for a first timer. It is usually easier to 
 
 To build with LibK you need to make sure that you have necessary toolchain installed for your architecture. For avr it's avr-gcc, for arm it's either arm-none-eabi-* or arm-linux-eabi-* packages. You also need libncurses-dev (for menuconfig). 
 
+New: it is now possible to easily build for multiple targets using BUILD option. 
+
+Currently available options: 
+	BUILD=avr-atmega328p - build for atmega
+	BUILD=arm-stm32f103 - build for stm32f103
+
 You can then build the library like this: 
 
     make menuconfig
-    make build
+    make BUILD=arm-stm32f103 
+    make BUILD=arm-stm32f103 install
 
 If everything goes well, the file that will be built will be libk.a. This is a library that you will then link your application with. It is often easier to integrate the build process for libk into the build process for your project. It is also good to make a symbolik link to libk code directory directly inside your project directory. This way you don't have to keep track of multiple copies of libk.
 

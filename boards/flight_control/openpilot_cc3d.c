@@ -266,7 +266,21 @@ void cc3d_process_events(void){
 }
 
 fc_board_t cc3d_get_fc_quad_interface(void){
-	static fc_board_t _brd; 
-	//static fc_board_t *brd = &_brd; 
-	return _brd; 
+	static struct fc_quad_interface hw = {0}; 
+	static struct fc_quad_interface *ptr = 0; 
+	if(!ptr){
+		hw = (struct fc_quad_interface){
+			.read_sensors = _cc3d_read_sensors, 
+			.read_receiver = _cc3d_read_receiver, 
+			
+			.write_motors = _cc3d_write_motors,
+			
+			.write_config = _cc3d_write_config, 
+			.read_config = _cc3d_read_config, 
+			
+			.get_pc_link_interface = _cc3d_get_pc_link_interface
+		}; 
+		ptr = &hw; 
+	}
+	return &ptr;  
 }

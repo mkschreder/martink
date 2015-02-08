@@ -31,11 +31,6 @@
 
 #define UART_TX_BUFFER_SIZE 32
 
-#include "f10x/stm32f10x.h"
-#include "f10x/stm32f10x_usart.h"
-#include "f10x/stm32f10x_gpio.h"
-#include "f10x/stm32f10x_rcc.h"
-
 #define gpioa_clock_en() 
 
 static void _uart_init(USART_TypeDef *uart, uint32_t baud){

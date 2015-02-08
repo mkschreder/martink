@@ -217,6 +217,20 @@ void cc3d_init(void){
 	while(1){
 		gpio_set(GPIO_PB3); 
 		
+		printf("short: %d\n", (int)(sizeof(short)));
+		printf("int: %d\n", (int)(sizeof(int)));
+		printf("long: %d\n", (int)(sizeof(long)));
+		printf("long long: %d\n", (int)(sizeof(long long)));
+		printf("long double: %d\n", (int)(sizeof(long double)));
+		printf("int8_t: %d\n", (int)(sizeof(int8_t)));
+		printf("int16_t: %d\n", (int)(sizeof(int16_t)));
+		printf("int32_t: %d\n", (int)(sizeof(int32_t)));
+		printf("int64_t: %d\n", (int)(sizeof(int64_t)));
+		printf("int_fast8_t: %d\n", (int)sizeof(int_fast8_t));
+		printf("int_fast16_t: %d\n", (int)sizeof(int_fast16_t));
+		printf("int_fast32_t: %d\n", (int)sizeof(int_fast32_t));
+		printf("int_fast64_t: %d\n", (int)sizeof(int_fast64_t));
+
 		printf("RC1: %d ", (int)pwm_read(FC_PWM_RC1)); 
 		printf("RC2: %d ", (int)pwm_read(FC_PWM_RC2)); 
 		printf("RC3: %d\n", (int)pwm_read(FC_PWM_RC3)); 

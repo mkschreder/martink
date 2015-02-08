@@ -31,5 +31,5 @@ arch/arm/stm32/f10x/stm32f10x_can.o  \
 arch/arm/stm32/f10x/stm32f10x_dma.o    \
 arch/arm/stm32/f10x/stm32f10x_i2c.o    \
 arch/arm/stm32/f10x/stm32f10x_sdio.o  \
-arch/arm/stm32/f10x/system_stm32f10x.o \
-arch/arm/stm32/f10x/startup_stm32f10x_md.o 
+arch/arm/stm32/CMSIS/system_stm32f10x.o \
+arch/arm/stm32/CMSIS/startup_stm32f10x_md.o 

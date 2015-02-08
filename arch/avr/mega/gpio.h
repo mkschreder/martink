@@ -125,46 +125,29 @@ extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0];
 	gpio_init_pin_states()\
 )
 
-#define gpio_configure(pin, fun) (\
-	((fun) & GP_OUTPUT)\
-		?RSET(DREG(pin), PIDX(pin))\
-		:RCLR(DREG(pin), PIDX(pin)), \
-	(((fun) & GP_PULL) && ((fun) & GP_PULLUP))\
-		?RSET(OREG(pin), PIDX(pin))\
-		:RCLR(OREG(pin), PIDX(pin)), \
-	((fun) & GP_PCINT)?gpio_enable_pcint(pin):(0)\
-)
+void gpio_configure(gpio_pin_t pin, uint16_t conf); 
 
+static inline uint8_t gpio_write_word(uint8_t addr, uint32_t value) {
+	return ((addr) >= 0 && (addr) < 4)?(*gPinPorts[addr].out_reg = ((value) & 0xff), 0):(1); 
+}
 
-#define gpio_write_word(addr, value) (\
-	((addr) >= 0 && (addr) < 4)?(*gPinPorts[addr].out_reg = ((value) & 0xff), 0):(1)\
-)
+static inline uint8_t gpio_read_word(uint8_t addr, uint32_t *value) {
+	return ((addr) >= 0 && (addr) < 4)?(*value = *gPinPorts[addr].in_reg, 0):(1); 
+}
 
-#define gpio_read_word(addr, value) (\
-	((addr) >= 0 && (addr) < 4)?(*value = *gPinPorts[addr].in_reg, 0):(1)\
-)
+static inline void gpio_write_pin(gpio_pin_t pin, uint8_t val) {
+	(val)?RSET(OREG(pin), PIDX(pin)):RCLR(OREG(pin), PIDX(pin)); 
+}
 
-#define gpio_write_pin(pin, val) (\
-	(val)?RSET(OREG(pin), PIDX(pin)):RCLR(OREG(pin), PIDX(pin))\
-)
-
-#define gpio_read_pin(pin) (\
-	(IREG(pin) & _BV(PIDX(pin)))?1:0 \
-)
+static inline uint8_t gpio_read_pin(gpio_pin_t pin) {
+	return (IREG(pin) & _BV(PIDX(pin)))?1:0; 
+}
 
 #define gpio_clear(pin) gpio_write_pin(pin, 0)
 #define gpio_set(pin) gpio_write_pin(pin, 1)
 
 // evaluates to bit that has been enabled or -1 if invalid pcint
-#define gpio_enable_pcint(pin) (\
-	((pin) >= GPIO_PB0 && (pin) <= GPIO_PB7)\
-		?(PCICR |= _BV(PCINT0), PCMSK0 = PCMSK0 | _BV((pin) - GPIO_PB0))\
-		:((pin) >= GPIO_PC0 && (pin) <= GPIO_PC7_NC)\
-			?(PCICR |= _BV(PCINT1), PCMSK1 = PCMSK1 | _BV((pin) - GPIO_PB0))\
-			:((pin) >= GPIO_PD0 && (pin) <= GPIO_PD7)\
-				?(PCICR |= _BV(PCINT2), PCMSK2 = PCMSK2 | _BV((pin) - GPIO_PD0))\
-				:(-1)\
-)
+void gpio_enable_pcint(gpio_pin_t pin); 
 
 #define gpio_disable_pcint(pin) (\
 	((pin) >= GPIO_PB0 && (pin) <= GPIO_PB7)\

@@ -81,6 +81,26 @@ const struct pin_decl gPinPorts[4] = {
 	ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));
 #endif
 
+void gpio_configure(gpio_pin_t pin, uint16_t fun){
+	((fun) & GP_OUTPUT)
+		?RSET(DREG(pin), PIDX(pin))
+		:RCLR(DREG(pin), PIDX(pin)), 
+	(((fun) & GP_PULL) && ((fun) & GP_PULLUP))
+		?RSET(OREG(pin), PIDX(pin))
+		:RCLR(OREG(pin), PIDX(pin)), 
+	((fun) & GP_PCINT)?gpio_enable_pcint(pin):(0); 
+}
+
+void gpio_enable_pcint(gpio_pin_t pin){
+	((pin) >= GPIO_PB0 && (pin) <= GPIO_PB7)
+		?(PCICR |= _BV(PCINT0), PCMSK0 = PCMSK0 | _BV((pin) - GPIO_PB0))
+		:((pin) >= GPIO_PC0 && (pin) <= GPIO_PC7_NC)
+			?(PCICR |= _BV(PCINT1), PCMSK1 = PCMSK1 | _BV((pin) - GPIO_PB0))
+			:((pin) >= GPIO_PD0 && (pin) <= GPIO_PD7)
+				?(PCICR |= _BV(PCINT2), PCMSK2 = PCMSK2 | _BV((pin) - GPIO_PD0))
+				:(-1);
+}
+
 // a pseudorandom function to make results even more "random"
 static uint16_t _fx_rand(void)
 {

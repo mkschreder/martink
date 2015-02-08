@@ -28,6 +28,26 @@ void timestamp_delay_us(timestamp_t usec) {
 	while(!timestamp_expired(t));
 }
 
+timestamp_t timestamp_ticks_to_us(timestamp_t ticks) {
+	return tsc_ticks_to_us((timestamp_t)(ticks)); 
+}
+
+timestamp_t timestamp_us_to_ticks(timestamp_t us) {
+	return tsc_us_to_ticks((timestamp_t)(us)); 
+}
+
+timestamp_t timestamp_from_now_us(timestamp_t us) {
+	return (timestamp_t)(tsc_read() + timestamp_us_to_ticks((timestamp_t)us)); 
+}
+
+uint8_t timestamp_expired(timestamp_t timeout) {
+	return timestamp_after(tsc_read(), timeout); 
+}
+
+timestamp_t timestamp_ticks_since(timestamp_t timestamp) {
+	return tsc_read() - (timestamp_t)(timestamp); 
+}
+
 void initproc time_init(void){
 #ifdef CONFIG_TIMESTAMP_COUNTER
 	timestamp_init();

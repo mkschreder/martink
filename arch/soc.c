@@ -20,6 +20,7 @@
 */
 
 #include "soc.h"
+#include <stdarg.h>
 
 void time_init(void); 
 void uart_init(void); 
@@ -37,4 +38,15 @@ void soc_init(void){
 	spi_init(); 
 	twi_init(); 
 	pwm_init(); 
+}
+
+uint16_t serial_printf(serial_dev_t port, const char *fmt, ...){
+	char buffer[512]; 
+	uint16_t n; 
+	va_list vl; 
+	va_start(vl, fmt);
+	n = vsnprintf(buffer, sizeof(buffer), fmt, vl); 
+	va_end(vl);
+	serial_putn(port, (uint8_t*)buffer, n); 
+	return n; 
 }

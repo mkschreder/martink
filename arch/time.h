@@ -30,21 +30,23 @@ extern "C" {
 #define timestamp_init() (tsc_init())
 #define timestamp_now() (tsc_read())
 
-#define timestamp_ticks_to_us(ticks) (tsc_ticks_to_us((timestamp_t)(ticks)))
-#define timestamp_us_to_ticks(us) (tsc_us_to_ticks((timestamp_t)(us)))
+timestamp_t timestamp_ticks_to_us(timestamp_t ticks);
+timestamp_t timestamp_us_to_ticks(timestamp_t us);
 
 #define timestamp_before(unknown, known) ((timestamp_t)(unknown) - (timestamp_t)(known) < 0)
 #define timestamp_after(a,b) timestamp_before(b, a)
-#define timestamp_from_now_us(us) ((timestamp_t)(tsc_read() + tsc_us_to_ticks((timestamp_t)us)))
+
+timestamp_t timestamp_from_now_us(timestamp_t us);
+
 // timeout expired: can handle overflow of timer correctly
-#define timestamp_expired(timeout) (timestamp_after(tsc_read(), timeout))
+uint8_t timestamp_expired(timestamp_t timeout);
 
 void timestamp_delay_us(timestamp_t usec);
 
 #define delay_us(usec) timestamp_delay_us(usec)
 #define delay_ms(msec) delay_us((msec) * 1000UL)
 
-#define timestamp_ticks_since(timestamp) (tsc_read() - (timestamp_t)(timestamp))
+timestamp_t timestamp_ticks_since(timestamp_t timestamp) ;
 
 void time_init(void); 
 

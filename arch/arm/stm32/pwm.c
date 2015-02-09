@@ -157,7 +157,7 @@ void pwm_configure(pwm_channel_t chan, uint32_t def_width, uint32_t period){
 	
 	TIM_TimeBaseStructInit(&timerInitStructure); 
 	
-	timerInitStructure.TIM_Prescaler = F_CPU/1000000UL; // set 1us resolution
+	timerInitStructure.TIM_Prescaler = SystemCoreClock/1000000UL; // set 1us resolution
 	timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
 	timerInitStructure.TIM_Period = period;
 	timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
@@ -217,7 +217,7 @@ void pwm_configure_capture(pwm_channel_t chan, uint32_t def_value){
 	TIM_TimeBaseInitTypeDef timerInitStructure;
 	TIM_TimeBaseStructInit(&timerInitStructure); 
 	
-	timerInitStructure.TIM_Prescaler = F_CPU/1000000UL; // set 1us resolution
+	timerInitStructure.TIM_Prescaler = SystemCoreClock/1000000UL; // set 1us resolution
 	timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
 	timerInitStructure.TIM_Period = 4000;
 	timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;

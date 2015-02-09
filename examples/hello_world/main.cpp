@@ -40,8 +40,8 @@ Application::Application():mConsole(0), mCounter(0){
 
 int Application::loop(){
 	//serial_printf(mConsole, "Hello World! %d seconds elapsed\n", mCounter++); 
-	serial_putn(mConsole, "Hello World!\n", 13); 
-	for(int c = 0; c < 10000; c++) mCounter++; 
+	serial_printf(mConsole, "Hello World!\n"); 
+	for(volatile int c = 0; c < 10000; c++) mCounter++; 
 	return 0; 
 }
 

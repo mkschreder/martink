@@ -4,8 +4,7 @@ choice
 	default AT91SAM3
 	
 	config STM32
-		bool 
-	
+		bool	
 	config SAM3
 		bool
 		
@@ -20,6 +19,12 @@ choice
 		select HAVE_SPI0
 		select HAVE_SPI1
 		bool "STM32F103"
+	
+	config STM32F100MDVL
+		select STM32
+		select HAVE_UART
+		select HAVE_UART0
+		bool "STM32F100MDVL
 		
 	config AT91SAM3
 		select SAM3

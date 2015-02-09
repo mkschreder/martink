@@ -2,7 +2,7 @@
  * Automatically generated C config: don't edit
  * version: 
  */
-#define AUTOCONF_TIMESTAMP "2015-02-05 01:14:32 CET"
+#define AUTOCONF_TIMESTAMP "2015-02-09 13:46:26 CET"
 
 
 /*
@@ -10,12 +10,6 @@
  */
 #define CONFIG_HAVE_UART 1
 #define CONFIG_HAVE_UART0 1
-#define CONFIG_HAVE_UART1 1
-#define CONFIG_HAVE_SPI 1
-#define CONFIG_HAVE_SPI0 1
-#define CONFIG_HAVE_SPI1 1
-#define CONFIG_HAVE_TWI 1
-#define CONFIG_HAVE_TWI0 1
 #define CONFIG_ARM 1
 #define CONFIG_STM32 1
 /*
@@ -31,7 +25,7 @@
 #define CONFIG_SPI2_NAME 
 #define CONFIG_TWI0_NAME 
 #define CONFIG_TWI1_NAME 
-#define CONFIG_STM32F103 1
+#define CONFIG_STM32F100MDVL 1
 
 /*
  * Board support
@@ -65,9 +59,6 @@
 /*
  * IO logic support
  */
-#define CONFIG_L74HC165 1
-#define CONFIG_L74HC4051 1
-#define CONFIG_L74HC595 1
 #define CONFIG_PCF8574 1
 
 /*
@@ -81,7 +72,6 @@
 /*
  * Radio modem support
  */
-#define CONFIG_NRF24L01 1
 
 /*
  * RFID readers support

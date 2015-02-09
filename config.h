@@ -4,3 +4,6 @@
 #ifdef BUILD_arm_stm32f103
 #include "include/configs/arm-stm32f103.h"
 #endif
+#ifdef BUILD_arm_stm32f100mdvl
+#include "include/configs/arm-stm32f100mdvl.h"
+#endif

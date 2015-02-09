@@ -6,7 +6,7 @@ AS := arm-none-eabi-as
 LD := arm-none-eabi-gcc
 LDXX := arm-none-eabi-g++
 
-ifeq ($(CONFIG_STM32F103), y)
+ifeq ($(CONFIG_STM32), y)
 	include $(srctree)/arch/arm/stm32/Makefile
 endif
 ifeq ($(CONFIG_AT91SAM3), y)

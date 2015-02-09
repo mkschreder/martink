@@ -1,19 +1,11 @@
 /*
-* STM32 Discovery Linker Script
+* STM32 generic linker script 
+* 
+* CAN NOT BE USED ON IT'S OWN! 
+* MUST BE INCLUDED FROM DEVICE SPECIFIC LINKER SCRIPT!
 */
 
-_ramstart = 0x20000000; 
-_estack = 0x20004FF0;    /* global needed for startup_stm3210x_md_vl.S */
-_minimum_stack_size = 0x100; /* 256 bytes miniumum stack size */
-
 ENTRY(Reset_Handler)
-
-
-MEMORY
-{
-  rom (rx)      : ORIGIN = 0x08000000, LENGTH = 128K
-  ram (xrw)     : ORIGIN = 0x20000000, LENGTH = 20K
-}
 
 SECTIONS
 {

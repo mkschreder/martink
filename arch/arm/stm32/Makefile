@@ -1,7 +1,10 @@
-COMMON_FLAGS += -I$(srctree)/arch/arm/stm32/CMSIS/ --specs=nano.specs -Wl,-u,vsnprintf
-LDFLAGS += -nostartfiles -nostdlib 
+COMMON_FLAGS += -I$(srctree)/arch/arm/stm32/CMSIS/ 
+LDFLAGS += -nostartfiles -nostdlib --specs=nano.specs -Wl,-u,vsnprintf
 
 ifeq ($(CONFIG_STM32F103), y)
+	include $(srctree)/arch/arm/stm32/f10x/Makefile
+endif
+ifeq ($(CONFIG_STM32F100MDVL), y)
 	include $(srctree)/arch/arm/stm32/f10x/Makefile
 endif
 

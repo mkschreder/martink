@@ -174,7 +174,7 @@ void pwm_configure(pwm_channel_t chan, uint32_t def_width, uint32_t period){
 	_pwm_configure_oc_chan(TIMx, chan_id, &outputChannelInit); 
 	
 	// make arr register buffered
-	TIM_ARRPreloadConfig(TIMx, ENABLE);
+	//TIM_ARRPreloadConfig(TIMx, ENABLE);
 	
 	TIM_CtrlPWMOutputs(TIMx, ENABLE);
 	TIM_Cmd(TIMx, ENABLE);
@@ -257,15 +257,22 @@ void pwm_configure_capture(pwm_channel_t chan, uint32_t def_value){
 }
 
 void pwm_write(pwm_channel_t chan, uint32_t width){
-	TIM_OCInitTypeDef outputChannelInit;
-	TIM_OCStructInit(&outputChannelInit); 
-	
-	outputChannelInit.TIM_OCMode = TIM_OCMode_PWM1;
-	outputChannelInit.TIM_Pulse = width;
-	outputChannelInit.TIM_OutputState = TIM_OutputState_Enable;
-	outputChannelInit.TIM_OCPolarity = TIM_OCPolarity_High;
-
-	_pwm_configure_oc_chan(_timers[(chan >> 2) & 0x7].tim, chan & 0x3, &outputChannelInit); 
+	TIM_TypeDef *TIMx = _timers[(chan >> 2) & 0x7].tim; 
+	switch(chan & 0x3){
+		case 0: 
+			TIM_SetCompare1(TIMx, width);
+			break; 
+		case 1: 
+			TIM_SetCompare2(TIMx, width);
+			break; 
+		case 2: 
+			TIM_SetCompare3(TIMx, width);
+			break; 
+		case 3: 
+			TIM_SetCompare4(TIMx, width);
+			break; 
+	}
+	//_pwm_configure_oc_chan(_timers[(chan >> 2) & 0x7].tim, chan & 0x3, &outputChannelInit); 
 }
 
 uint32_t pwm_read(pwm_channel_t chan){

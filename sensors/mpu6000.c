@@ -183,7 +183,7 @@ void mpu6000_init(struct mpu6000 *self, serial_dev_t port, pio_dev_t gpio, gpio_
 		{MPU6000_SMPLRT_DIV, 0},	// Accel Sample Rate 1000 Hz, Gyro Sample Rate 8000 Hz
 		//{MPU6000_CONFIG, dlpfsetting}, 
 		{MPU6000_ACCEL_CONFIG, BITS_FS_2G}, 
-		{MPU6000_GYRO_CONFIG, BITS_FS_1000DPS}
+		{MPU6000_GYRO_CONFIG, BITS_FS_2000DPS}
 	}; 
 	
 	for(int c = 0; c < sizeof(settings) / sizeof(settings[0]); c++){

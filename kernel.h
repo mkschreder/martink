@@ -27,7 +27,7 @@ extern "C" {
 
 #include "config.h"
 #include <inttypes.h>
-
+#include <string.h>
 #include <arch/soc.h>
 #include "util.h"
 

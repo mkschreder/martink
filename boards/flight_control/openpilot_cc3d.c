@@ -20,14 +20,13 @@
 #define FC_PWM_RC5 PWM_CH21
 #define FC_PWM_RC6 PWM_CH22
 
-#define led_on() gpio_clear(GPIO_PB3)
-#define led_off() gpio_set(GPIO_PB3)
 #define CONFIG_FILE "config"
 
 static struct cc3d {
 	struct serial_flash flash; 
 	struct mpu6000 mpu; 
 	serial_dev_t spi0, spi1; 
+	serial_dev_t uart0; 
 } cc3d; 
 
 	
@@ -54,26 +53,26 @@ void cc3d_init(void){
 	timestamp_init(); 
 	gpio_init(); 
 	
-	led_off(); 
+	fc_led_off(); 
 	gpio_configure(GPIO_PB3, GP_OUTPUT); 
 	  
 	uart_init(); 
 	//twi_init(); 
 	spi_init(); 
 	
-	led_on(); 
+	fc_led_on(); 
 	delay_ms(500); 
-	led_off(); 
+	fc_led_off(); 
 	delay_ms(500); 
-	led_on(); 
+	fc_led_on(); 
 	delay_ms(500); 
-	led_off(); 
+	fc_led_off(); 
 	
 	//i2c_dev_t i2c = twi_get_interface(0); 
-	//serial_dev_t con = uart_get_serial_interface(0); 
+	cc3d.uart0 = uart_get_serial_interface(0); 
 	pio_dev_t gpio = gpio_get_parallel_interface(); 
 	
-	printf("Initializing sensor..\n"); 
+	//printf("Initializing sensor..\n"); 
 	
 	serial_dev_t spi = spi_get_serial_interface(0); 
 	serial_dev_t spi2 = spi_get_serial_interface(1); 
@@ -87,7 +86,7 @@ void cc3d_init(void){
 	
 	serial_flash_init(&cc3d.flash, spi2, GPIO_PB12); 
 	
-	printf("Flash. ID: %x, Type: %x, Size: %x\n", cc3d.flash.props.id, cc3d.flash.props.type, cc3d.flash.props.size); 
+	//printf("Flash. ID: %x, Type: %x, Size: %x\n", cc3d.flash.props.id, cc3d.flash.props.type, cc3d.flash.props.size); 
 	
 	pwm_configure(FC_PWM_CH1, 1250, 4000); 
 	pwm_configure(FC_PWM_CH2, 1250, 4000); 
@@ -103,6 +102,12 @@ void cc3d_init(void){
 	pwm_configure_capture(FC_PWM_RC5, 1000); 
 	pwm_configure_capture(FC_PWM_RC6, 1000); 
 	
+	/*
+	serial_dev_t con = uart_get_serial_interface(0); 
+	while(1){
+		uint16_t ch = serial_getc(con); 
+		if(ch != SERIAL_NO_DATA) serial_putc(con, ch); 
+	}*/
 	/*
 	{
 		int fd = cfs_open("test", CFS_READ);
@@ -211,6 +216,8 @@ void cc3d_process_events(void){
 
 static int8_t _cc3d_read_sensors(fc_board_t self, struct fc_data *data){
 	data->flags = HAVE_ACC | HAVE_GYR; 
+	memset(data, 0, sizeof(struct fc_data)); 
+	
 	mpu6000_getRawData(&cc3d.mpu, 
 		&data->raw_acc.x, 
 		&data->raw_acc.y, 
@@ -285,7 +292,7 @@ static int8_t _cc3d_read_config(fc_board_t self, uint8_t *data, uint16_t size){
 }
 
 static serial_dev_t _cc3d_get_pc_link_interface(fc_board_t self){
-	return uart_get_serial_interface(0); 
+	return cc3d.uart0; 
 }
 
 fc_board_t cc3d_get_fc_quad_interface(void){

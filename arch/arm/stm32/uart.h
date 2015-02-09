@@ -24,9 +24,7 @@
 void uart0_init_default(uint32_t baud);
 uint16_t uart0_getc(void); 
 uint16_t uart0_putc(uint8_t ch);
-static inline int8_t uart0_waiting(void){
-	return 0; 
-}
+uint16_t uart0_waiting(void);
 
 void uart1_init_default(uint32_t baud); 
 uint16_t uart1_getc(void); 

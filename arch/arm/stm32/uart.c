@@ -27,31 +27,30 @@
 
 #include <arch/soc.h>
 
+#include <static_cbuf.h>
+
 #include "uart.h"
 
-#define UART_TX_BUFFER_SIZE 32
+#define UART_RX_BUFFER_SIZE 256
 
-#define gpioa_clock_en() 
-
-static void _uart_init(USART_TypeDef *uart, uint32_t baud){
-	// turn on uart
-	uart->CR1 |= USART_CR1_RE | USART_CR1_TE | USART_CR1_UE; 
-
-	// compute baud rate
-	uart->BRR = F_CPU/baud;
-	
-}
+DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 
 void uart0_init_default(uint32_t baud){
-	RCC->APB2ENR |= 0
-		// Turn on USART1
-		| RCC_APB2ENR_USART1EN
-		// Turn on IO Port A
-		| RCC_APB2ENR_IOPAEN
-		// Turn on the alternate function block
-		| RCC_APB2ENR_AFIOEN;
-	
-	_uart_init(USART1, baud); 
+	USART_InitTypeDef usartConfig;
+
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 |
+												 RCC_APB2Periph_GPIOA |
+												 RCC_APB2Periph_AFIO, ENABLE);
+	USART_Cmd(USART1, ENABLE);
+
+	usartConfig.USART_BaudRate = baud;
+	usartConfig.USART_WordLength = USART_WordLength_8b;
+	usartConfig.USART_StopBits = USART_StopBits_1;
+	usartConfig.USART_Parity = USART_Parity_No;
+	usartConfig.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+	usartConfig.USART_HardwareFlowControl =
+			 USART_HardwareFlowControl_None;
+	USART_Init(USART1, &usartConfig);
 	
 	GPIO_InitTypeDef gpioConfig;
 
@@ -62,20 +61,57 @@ void uart0_init_default(uint32_t baud){
 	GPIO_Init(GPIOA, &gpioConfig);
 
 	//PA10 = USART1.RX => Input
-	gpioConfig.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	gpioConfig.GPIO_Mode = GPIO_Mode_IPU;
 	gpioConfig.GPIO_Pin = GPIO_Pin_10;
 	GPIO_Init(GPIOA, &gpioConfig);
+	
+	NVIC_InitTypeDef NVIC_InitStructure;
+
+  /* Enable the USARTx Interrupt */
+  NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);
+  
+	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 }
 
 uint16_t uart0_getc(void){
-	if(!(USART1->SR & USART_SR_RXNE)) return SERIAL_NO_DATA; 
-	return USART1->DR & 0xff; 
+	uint16_t ret = SERIAL_NO_DATA; 
+	USART_ITConfig(USART1, USART_IT_RXNE, DISABLE);
+	if(!cbuf_is_empty(&uart0_rx_buf)) {
+		ret = cbuf_get(&uart0_rx_buf);
+	}
+	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+	return ret; 
+	//if(!(USART1->SR & USART_SR_RXNE)) return SERIAL_NO_DATA; 
+	//return USART1->DR & 0xff; 
 }
 
 uint16_t uart0_putc(uint8_t ch){
 	while(!(USART1->SR & USART_SR_TXE));
 	USART1->DR = ch;  
 	return 1; 
+}
+
+void USART1_IRQHandler(void)
+{
+	if(USART1->SR & USART_FLAG_RXNE){
+		char ch = USART_ReceiveData(USART1);
+		if(!cbuf_is_full(&uart0_rx_buf)){ 
+			cbuf_put(&uart0_rx_buf, ch); 
+		} 
+	}
+}
+
+uint16_t uart0_waiting(void){
+	USART_ITConfig(USART1, USART_IT_RXNE, DISABLE);
+	size_t cn = cbuf_get_data_count(&uart0_rx_buf);
+	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+	return cn; 
+	//if(USART1->SR & USART_SR_RXNE) return 1; 
+	//return 0; 
 }
 
 void uart1_init_default(uint32_t baud){

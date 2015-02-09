@@ -118,9 +118,7 @@ uint16_t _uart_putc(serial_dev_t self, uint8_t ch){
 uint16_t _uart_getc(serial_dev_t self) {
 	GET_DEV(self, dev);
 	switch(dev->id){
-		#define LABEL(id) case id: {int c = uart##id##_getc(); \
-			if(c == UART_NO_DATA) return SERIAL_NO_DATA; \
-			return c; break; }
+		#define LABEL(id) case id: { return uart##id##_getc(); break; }
 		#ifdef CONFIG_HAVE_UART0
 		LABEL(0)
 		#endif

@@ -321,7 +321,7 @@ s32_t SPIFFS_write(spiffs *fs, spiffs_file fh, void *buf, s32_t len) {
           // boundary violation, write back cache first and allocate new
           SPIFFS_CACHE_DBG("CACHE_WR_DUMP: dumping cache page %i for fd %i:&04x, boundary viol, offs:%i size:%i\n",
               fd->cache_page->ix, fd->file_nbr, fd->obj_id, fd->cache_page->offset, fd->cache_page->size);
-          res = spiffs_hydro_write(fs, fd,
+          spiffs_hydro_write(fs, fd,
               spiffs_get_cache_page(fs, spiffs_get_cache(fs), fd->cache_page->ix),
               fd->cache_page->offset, fd->cache_page->size);
           spiffs_cache_fd_release(fs, fd->cache_page);
@@ -366,7 +366,7 @@ s32_t SPIFFS_write(spiffs *fs, spiffs_file fh, void *buf, s32_t len) {
         // write back cache first
         SPIFFS_CACHE_DBG("CACHE_WR_DUMP: dumping cache page %i for fd %i:%04x, big write, offs:%i size:%i\n",
             fd->cache_page->ix, fd->file_nbr, fd->obj_id, fd->cache_page->offset, fd->cache_page->size);
-        res = spiffs_hydro_write(fs, fd,
+        spiffs_hydro_write(fs, fd,
             spiffs_get_cache_page(fs, spiffs_get_cache(fs), fd->cache_page->ix),
             fd->cache_page->offset, fd->cache_page->size);
         spiffs_cache_fd_release(fs, fd->cache_page);
@@ -697,11 +697,11 @@ s32_t SPIFFS_check(spiffs *fs) {
   SPIFFS_API_CHECK_MOUNT(fs);
   SPIFFS_LOCK(fs);
 
-  res = spiffs_lookup_consistency_check(fs, 0);
+  spiffs_lookup_consistency_check(fs, 0);
 
-  res = spiffs_object_index_consistency_check(fs);
+  spiffs_object_index_consistency_check(fs);
 
-  res = spiffs_page_consistency_check(fs);
+  spiffs_page_consistency_check(fs);
 
   res = spiffs_obj_lu_scan(fs);
 

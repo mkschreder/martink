@@ -39,13 +39,13 @@ void pcf8574_init(struct pcf8574 *self, i2c_dev_t i2c, uint8_t device_id) {
 	self->in_reg = self->out_reg = 0xff; 
 }
 
-void _pcf8574_flush(struct pcf8574 *self){
+static void _pcf8574_flush(struct pcf8574 *self){
 	i2c_start_write(self->i2c,
 		((PCF8574_ADDRBASE+self->device_id)<<1), &self->out_reg, 1);
 	i2c_stop(self->i2c);
 }
 
-void _pcf8574_read(struct pcf8574 *self){
+static void _pcf8574_read(struct pcf8574 *self){
 	i2c_start_read(self->i2c,
 		((PCF8574_ADDRBASE+self->device_id)<<1), &self->in_reg, 1);
 	i2c_stop(self->i2c);

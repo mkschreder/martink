@@ -8,4 +8,4 @@ MEMORY
 	ram (xrw)     : ORIGIN = 0x20000000, LENGTH = 8K
 }
 
-INCLUDE "arch/arm/stm32/f10x/stm32f10x.ld"
+INCLUDE "stm32f10x.ld"

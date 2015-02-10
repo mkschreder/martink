@@ -119,7 +119,7 @@ void adxl345_init(struct adxl345 *self, i2c_dev_t i2c, uint8_t addr) {
 /*
  * write the calibration offset
  */
-void adxl345_write_offset(struct adxl345 *self, int8_t offsetx, int8_t offsety, int8_t offsetz) {
+/*static void adxl345_write_offset(struct adxl345 *self, int8_t offsetx, int8_t offsety, int8_t offsetz) {
 	uint8_t data[2];
 	data[0] = 0x1E; data[1] = offsetx; 
 	i2c_start_write(self->i2c, self->addr, data, 2);
@@ -128,7 +128,7 @@ void adxl345_write_offset(struct adxl345 *self, int8_t offsetx, int8_t offsety, 
 	data[0] = 0x20; data[1] = offsetz;
 	i2c_start_write(self->i2c, self->addr, data, 2);
 	i2c_stop(self->i2c); 
-}
+}*/
 
 static uint8_t _adxl345_read_register(struct adxl345 *self, uint8_t reg) {
 	uint8_t value; 
@@ -153,10 +153,10 @@ int8_t adxl345_read_raw(struct adxl345 *self, int16_t *axraw, int16_t *ayraw, in
 	//read axis data
 	*axraw = _adxl345_read_register(self, 0x32);
 	*axraw += _adxl345_read_register(self, 0x33) << 8;
-	*axraw = _adxl345_read_register(self, 0x34);
-	*axraw += _adxl345_read_register(self, 0x35) << 8;
-	*axraw = _adxl345_read_register(self, 0x36);
-	*axraw += _adxl345_read_register(self, 0x37) << 8;
+	*ayraw = _adxl345_read_register(self, 0x34);
+	*ayraw += _adxl345_read_register(self, 0x35) << 8;
+	*azraw = _adxl345_read_register(self, 0x36);
+	*azraw += _adxl345_read_register(self, 0x37) << 8;
 
 	return 0; 
 }

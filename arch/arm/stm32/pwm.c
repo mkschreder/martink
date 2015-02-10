@@ -117,8 +117,8 @@ enum {
 	IC_FALL
 }; 
 
-const static int _channels[] = {TIM_Channel_1, TIM_Channel_2, TIM_Channel_3, TIM_Channel_4}; 
-const static int _int_ids[] = {TIM_IT_CC1, TIM_IT_CC2, TIM_IT_CC2, TIM_IT_CC3}; 
+static const int _channels[] = {TIM_Channel_1, TIM_Channel_2, TIM_Channel_3, TIM_Channel_4}; 
+static const int _int_ids[] = {TIM_IT_CC1, TIM_IT_CC2, TIM_IT_CC2, TIM_IT_CC3}; 
 	
 static void _pwm_configure_oc_chan(TIM_TypeDef *TIMx, uint8_t chan, TIM_OCInitTypeDef *conf){
 	switch(chan){
@@ -142,9 +142,9 @@ static void _pwm_configure_oc_chan(TIM_TypeDef *TIMx, uint8_t chan, TIM_OCInitTy
 }
 
 void pwm_configure(pwm_channel_t chan, uint32_t def_width, uint32_t period){
-	int chan_id = (chan & 0x3); 
-	int tim_id = (chan >> 2) & 0x7; 
-	if(tim_id > TIM_COUNT || tim_id < 0 || _timers[tim_id].tim == 0) return; 
+	uint8_t chan_id = (chan & 0x3); 
+	uint8_t tim_id = (chan >> 2) & 0x7; 
+	if(tim_id > TIM_COUNT || _timers[tim_id].tim == 0) return; 
 	TIM_TypeDef *TIMx = _timers[tim_id].tim; 
 	
 	if(tim_id == 0 || tim_id == 7)
@@ -195,9 +195,9 @@ void pwm_configure_capture(pwm_channel_t chan, uint32_t def_value){
 	NVIC_InitTypeDef NVIC_InitStructure;
 	TIM_ICInitTypeDef TIM_ICInitStructure;
 
-	int tim_id = (chan >> 2) & 0x7; 
-	int chan_id = (chan & 0x3); 
-	if(tim_id > TIM_COUNT || tim_id < 0 || _timers[tim_id].tim == 0 || _timers[tim_id].irq == 0) return; 
+	uint8_t tim_id = (chan >> 2) & 0x7; 
+	uint8_t chan_id = (chan & 0x3); 
+	if(tim_id > TIM_COUNT || _timers[tim_id].tim == 0 || _timers[tim_id].irq == 0) return; 
 	
 	const struct _timer *t = &_timers[tim_id]; 
 	struct PWM_State *in = &Inputs[tim_id][chan_id]; 
@@ -279,9 +279,9 @@ uint32_t pwm_read(pwm_channel_t chan){
 	return Inputs[(chan >> 2) & 0x7][chan & 0x3].capture; 
 }
 
-static inline void TIM_IRQHandler(int timer, TIM_TypeDef *TIMx){
+static void TIM_IRQHandler(int timer, TIM_TypeDef *TIMx){
 	// check for one of the capture events
-	for(int c = 0; c < sizeof(_int_ids) / sizeof(_int_ids[0]); c++){
+	for(unsigned int c = 0; c < sizeof(_int_ids) / sizeof(_int_ids[0]); c++){
 		if (TIM_GetITStatus(TIMx, _int_ids[c]) != RESET) {
 			TIM_ClearITPendingBit(TIMx, _int_ids[c]);
 			
@@ -349,6 +349,12 @@ static inline void TIM_IRQHandler(int timer, TIM_TypeDef *TIMx){
 		} 
 	}
 }
+
+void TIM1_UP_IRQHandler(void); 
+void TIM1_CC_IRQHandler(void); 
+void TIM2_IRQHandler(void); 
+void TIM3_IRQHandler(void); 
+void TIM4_IRQHandler(void); 
 
 void TIM1_UP_IRQHandler(void){
 	TIM_IRQHandler(0, TIM1); 

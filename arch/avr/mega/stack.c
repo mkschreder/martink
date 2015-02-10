@@ -16,6 +16,7 @@
 */
 
 #include <avr/io.h>
+#include "stack.h"
 
 extern uint8_t _end;
 extern uint8_t __stack;

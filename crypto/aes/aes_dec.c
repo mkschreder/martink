@@ -26,7 +26,8 @@
 #include "aes_dec.h"
 //#include <avr/pgmspace.h>
 
-void aes_invshiftrow(void* data, uint8_t shift){
+/*
+static void aes_invshiftrow(void* data, uint8_t shift){
 	uint8_t tmp[4];
 	tmp[0] = ((uint8_t*)data)[(4+0-shift)&3];
 	tmp[1] = ((uint8_t*)data)[(4+1-shift)&3];
@@ -34,8 +35,9 @@ void aes_invshiftrow(void* data, uint8_t shift){
 	tmp[3] = ((uint8_t*)data)[(4+3-shift)&3];
 	memcpy(data, tmp, 4);
 }
+*/
 
-void aes_invshiftcol(void* data, uint8_t shift){
+static void aes_invshiftcol(void* data, uint8_t shift){
 	uint8_t tmp[4];
 	tmp[0] = ((uint8_t*)data)[ 0];
 	tmp[1] = ((uint8_t*)data)[ 4];

@@ -45,7 +45,7 @@
 		uint8_t err = ( UART0_STATUS & (_BV(FE0)|_BV(DOR0))); 
 		uint8_t data = UDR0; 
 		if(cbuf_is_full(&uart0_rx_buf)){ 
-			err = UART_BUFFER_FULL >> 8; 
+			err = SERIAL_BUFFER_FULL >> 8; 
 		} else { 
 			cbuf_put(&uart0_rx_buf, data); 
 		} 
@@ -86,7 +86,7 @@
 		uart0_interrupt_rx_off(); 
 		if(cbuf_is_empty(&uart0_rx_buf)) {
 			uart0_interrupt_rx_on(); 
-			return UART_NO_DATA;
+			return SERIAL_NO_DATA;
 		}
 		uint8_t data = cbuf_get(&uart0_rx_buf);
 		uart0_interrupt_rx_on(); 
@@ -104,7 +104,7 @@
 			if(ret == -1) _delay_us(1);
 			else return 0; 
 		} while(timeout--);
-		return UART_BUFFER_FULL; 
+		return SERIAL_BUFFER_FULL; 
 	}
 
 #endif

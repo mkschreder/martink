@@ -3,16 +3,18 @@
 
 //#ifdef CONFIG_HAVE_EEPROM
 static size_t	_ee_write(memory_dev_t self, size_t address, const uint8_t *data, size_t max_sz){
+	(void)(self); 
 	eeprom_update_block(data, (uint8_t*)address, max_sz); 
 	return max_sz; 
 }
 
 static size_t	_ee_read(memory_dev_t self, size_t address, uint8_t *data, size_t max_sz){
+	(void)(self); 
 	eeprom_read_block(data, (uint8_t*)address, max_sz); 
 	return max_sz; 
 }
 	
-void 		_ee_readInfo(uint16_t *block_size, size_t *device_size){
+static void 		_ee_readInfo(uint16_t *block_size, size_t *device_size){
 	*block_size = 1; 
 	*device_size = 0; 
 }

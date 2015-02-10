@@ -1132,7 +1132,7 @@ s32_t spiffs_object_modify(spiffs_fd *fd, u32_t offset, u8_t *data, u32_t len) {
     p_hdr.flags = 0xff;
     if (page_offs == 0 && to_write == SPIFFS_DATA_PAGE_SIZE(fs)) {
       // a full page, allocate and write a new page of data
-      res = spiffs_page_allocate_data(fs, fd->obj_id & ~SPIFFS_OBJ_ID_IX_FLAG,
+      spiffs_page_allocate_data(fs, fd->obj_id & ~SPIFFS_OBJ_ID_IX_FLAG,
           &p_hdr, &data[written], to_write, page_offs, 1, &data_pix);
       SPIFFS_DBG("modify: store new data page, %04x:%04x offset:%i, len %i, written %i\n", data_pix, data_spix, page_offs, to_write, written);
     } else {
@@ -1707,7 +1707,13 @@ s32_t spiffs_obj_lu_find_free_obj_id(spiffs *fs, spiffs_obj_id *obj_id) {
       }
       // in a work memory of log_page_size bytes, we may fit in log_page_size ids
       // todo what if compaction is > 255 - then we cannot fit it in a byte
-      state.compaction = (state.max_obj_id-state.min_obj_id) / ((SPIFFS_CFG_LOG_PAGE_SZ(fs) / sizeof(u8_t)));
+      unsigned int divisor = ((SPIFFS_CFG_LOG_PAGE_SZ(fs) / sizeof(u8_t))); 
+      if(divisor != 0)
+				state.compaction = (state.max_obj_id-state.min_obj_id) / divisor;
+			else {
+				state.compaction = 0; 
+				SPIFFS_DBG("DIVISION BY ZERO!\n"); 
+			}
       SPIFFS_DBG("free_obj_id: COMP min:%04x max:%04x compact:%i\n", state.min_obj_id, state.max_obj_id, state.compaction);
 
       memset(fs->work, 0, SPIFFS_CFG_LOG_PAGE_SZ(fs));

@@ -119,7 +119,7 @@
 
 /* File descriptor macros. */
 #define FD_VALID(fd)					\
-	((fd) >= 0 && (fd) < COFFEE_FD_SET_SIZE && 	\
+	((fd) >= 0 && (fd) < (int)COFFEE_FD_SET_SIZE && 	\
 	coffee_fd_set[(fd)].flags != COFFEE_FD_FREE)
 #define FD_READABLE(fd)		(coffee_fd_set[(fd)].flags & CFS_READ)
 #define FD_WRITABLE(fd)		(coffee_fd_set[(fd)].flags & CFS_WRITE)
@@ -200,7 +200,8 @@ struct file_header {
 /* This is needed because of a buggy compiler. */
 struct log_param {
   cfs_offset_t offset;
-  const char *buf;
+  char *read_buf;
+  const char *write_buf; 
   uint16_t size;
 };
 
@@ -434,7 +435,8 @@ next_file(coffee_page_t page, struct file_header *hdr)
 static struct file *
 load_file(coffee_page_t start, struct file_header *hdr)
 {
-  int i, unreferenced, free;
+  unsigned int i; 
+  int unreferenced, free;
   struct file *file;
 
   /*
@@ -476,7 +478,7 @@ load_file(coffee_page_t start, struct file_header *hdr)
 static struct file *
 find_file(const char *name)
 {
-  int i;
+  unsigned int i;
   struct file_header hdr;
   coffee_page_t page;
   
@@ -521,17 +523,17 @@ file_end(coffee_page_t start)
    * are zeroes, then these are skipped from the calculation.
    */
 
-  for(page = hdr.max_pages - 1; page >= 0; page--) {
-    COFFEE_READ(buf, sizeof(buf), (start + page) * COFFEE_PAGE_SIZE);
-    for(i = COFFEE_PAGE_SIZE - 1; i >= 0; i--) {
-      if(buf[i] != 0) {
-	if(page == 0 && i < sizeof(hdr)) {
-	  return 0;
+	for(page = hdr.max_pages - 1; page >= 0; page--) {
+		COFFEE_READ(buf, sizeof(buf), (start + page) * COFFEE_PAGE_SIZE);
+		for(i = COFFEE_PAGE_SIZE - 1; i >= 0; i--) {
+			if(buf[i] != 0) {
+				if(page == 0 && i < (int)sizeof(hdr)) {
+					return 0;
+				}
+				return 1 + i + (page * COFFEE_PAGE_SIZE) - sizeof(hdr);
+			}
+		}
 	}
-	return 1 + i + (page * COFFEE_PAGE_SIZE) - sizeof(hdr);
-      }
-    }
-  }
 
   /* All bytes are writable. */
   return 0;
@@ -577,8 +579,9 @@ static int
 remove_by_page(coffee_page_t page, int remove_log, int close_fds,
                int gc_allowed)
 {
+	(void)(gc_allowed); 
   struct file_header hdr;
-  int i;
+  unsigned int i;
 
   read_header(&hdr, page);
   if(!HDR_ACTIVE(hdr)) {
@@ -718,25 +721,25 @@ get_record_index(coffee_page_t log_page, uint16_t search_records,
   match_index = -1;
 
   {
-  uint16_t indices[batch_size];
+		uint16_t indices[COFFEE_LOG_TABLE_LIMIT];
 
-  while(processed < search_records && match_index < 0) {
-    if(batch_size + processed > search_records) {
-      batch_size = search_records - processed;
-    }
+		while(processed < search_records && match_index < 0) {
+			if(batch_size + processed > search_records) {
+				batch_size = search_records - processed;
+			}
 
-    base -= batch_size * sizeof(indices[0]);
-    COFFEE_READ(&indices, sizeof(indices[0]) * batch_size, base);
+			base -= batch_size * sizeof(indices[0]);
+			COFFEE_READ(&indices, sizeof(indices[0]) * batch_size, base);
 
-    for(i = batch_size - 1; i >= 0; i--) {
-      if(indices[i] - 1 == region) {
-	match_index = search_records - processed - (batch_size - i);
-	break;
-      }
-    }
+			for(i = batch_size - 1; i >= 0; i--) {
+				if(indices[i] - 1 == region) {
+					match_index = search_records - processed - (batch_size - i);
+					break;
+				}
+			}
 
-    processed += batch_size;
-  }
+			processed += batch_size;
+		}
   }
 
   return match_index;
@@ -758,7 +761,7 @@ read_log_page(struct file_header *hdr, int16_t record_count,
   adjust_log_config(hdr, &log_record_size, &log_records);
   region = modify_log_buffer(log_record_size, &lp->offset, &lp->size);
 
-  search_records = record_count < 0 ? log_records : record_count;
+  search_records = record_count < 0 ? log_records : (uint16_t)record_count;
   match_index = get_record_index(hdr->log_page, search_records, region);
   if(match_index < 0) {
     return -1;
@@ -767,7 +770,7 @@ read_log_page(struct file_header *hdr, int16_t record_count,
   base = absolute_offset(hdr->log_page, log_records * sizeof(region));
   base += (cfs_offset_t)match_index * log_record_size;
   base += lp->offset;
-  COFFEE_READ((void*)lp->buf, lp->size, base);
+  COFFEE_READ(lp->read_buf, lp->size, base);
 
   return lp->size;
 }
@@ -808,7 +811,7 @@ merge_log(coffee_page_t file_page, int extend)
   cfs_offset_t offset;
   coffee_page_t max_pages;
   struct file *new_file;
-  int i;
+  unsigned int i;
 
   read_header(&hdr, file_page);
 
@@ -873,7 +876,7 @@ merge_log(coffee_page_t file_page, int extend)
 #if COFFEE_MICRO_LOGS
 static int
 find_next_record(struct file *file, coffee_page_t log_page,
-		int log_records)
+		int32_t log_records)
 {
   int log_record, preferred_batch_size;
 
@@ -881,13 +884,13 @@ find_next_record(struct file *file, coffee_page_t log_page,
     return file->record_count;
   }
 
-  preferred_batch_size = log_records > COFFEE_LOG_TABLE_LIMIT ?
-			 COFFEE_LOG_TABLE_LIMIT : log_records;
+  preferred_batch_size = log_records > (int)COFFEE_LOG_TABLE_LIMIT ?
+			 (int)COFFEE_LOG_TABLE_LIMIT : log_records;
   {
     /* The next log record is unknown at this point; search for it. */
     uint16_t indices[preferred_batch_size];
-    uint16_t processed;
-    uint16_t batch_size;
+    int32_t processed;
+    int32_t batch_size;
 
     log_record = log_records;
     for(processed = 0; processed < log_records; processed += batch_size) {
@@ -915,7 +918,7 @@ write_log_page(struct file *file, struct log_param *lp)
 {
   struct file_header hdr;
   uint16_t region;
-  coffee_page_t log_page;
+  coffee_page_t log_page = 0;
   int16_t log_record;
   uint16_t log_record_size;
   uint16_t log_records;
@@ -927,12 +930,11 @@ write_log_page(struct file *file, struct log_param *lp)
   adjust_log_config(&hdr, &log_record_size, &log_records);
   region = modify_log_buffer(log_record_size, &lp->offset, &lp->size);
 
-  log_page = 0;
   if(HDR_MODIFIED(hdr)) {
     /* A log structure has already been created. */
     log_page = hdr.log_page;
     log_record = find_next_record(file, log_page, log_records);
-    if(log_record >= log_records) {
+    if((uint16_t)log_record >= log_records) {
       /* The log is full; merge the log. */
       PRINTF("Coffee: Merging the file %s with its log\n", hdr.name);
       return merge_log(file->page, 0);
@@ -953,16 +955,18 @@ write_log_page(struct file *file, struct log_param *lp)
     char copy_buf[log_record_size];
 
     lp_out.offset = offset = region * log_record_size;
-    lp_out.buf = copy_buf;
+    
+		/// TODO: what is this?? it gets overwritten
+    lp_out.write_buf = copy_buf;
+    lp_out.read_buf = 0; 
     lp_out.size = log_record_size;
 
-    if((lp->offset > 0 || lp->size != log_record_size) &&
-	read_log_page(&hdr, log_record, &lp_out) < 0) {
-      COFFEE_READ(copy_buf, sizeof(copy_buf),
-	  absolute_offset(file->page, offset));
+    if((lp->offset > 0 || lp->size != log_record_size) && read_log_page(&hdr, log_record, &lp_out) < 0) {
+      COFFEE_READ(copy_buf, sizeof(copy_buf), absolute_offset(file->page, offset));
     }
-
-    memcpy(&copy_buf[lp->offset], lp->buf, lp->size);
+		
+		/// TODO: here.. 
+    memcpy(&copy_buf[lp->offset], lp->write_buf, lp->size);
 
     /*
      * Write the region number in the region index table.
@@ -986,7 +990,7 @@ write_log_page(struct file *file, struct log_param *lp)
 static int
 get_available_fd(void)
 {
-  int i;
+  unsigned int i;
 
   for(i = 0; i < COFFEE_FD_SET_SIZE; i++) {
     if(coffee_fd_set[i].flags == COFFEE_FD_FREE) {
@@ -1063,7 +1067,7 @@ cfs_seek(int fd, cfs_offset_t offset, int whence)
     return (cfs_offset_t)-1;
   }
 
-  if(new_offset < 0 || new_offset > fdp->file->max_pages * COFFEE_PAGE_SIZE) {
+  if(new_offset < 0 || new_offset > fdp->file->max_pages * (int)COFFEE_PAGE_SIZE) {
     return -1;
   }
 
@@ -1102,7 +1106,7 @@ cfs_read(int fd, void *buf, unsigned size)
   struct file_header hdr;
   struct log_param lp;
   unsigned bytes_left;
-  int r;
+  int r = -1;
 #endif
 
   if(!(FD_VALID(fd) && FD_READABLE(fd))) {
@@ -1111,7 +1115,7 @@ cfs_read(int fd, void *buf, unsigned size)
 
   fdp = &coffee_fd_set[fd];
   file = fdp->file;
-  if(fdp->offset + size > file->end) {
+  if(fdp->offset + size > (unsigned)file->end) {
     size = file->end - fdp->offset;
   }
 
@@ -1130,10 +1134,8 @@ cfs_read(int fd, void *buf, unsigned size)
    * ordinary file if the page has no log record.
    */
   for(bytes_left = size; bytes_left > 0; bytes_left -= r) {
-    r = -1;
-
     lp.offset = fdp->offset;
-    lp.buf = buf;
+    lp.read_buf = buf;
     lp.size = bytes_left;
     r = read_log_page(&hdr, file->record_count, &lp);
 
@@ -1192,39 +1194,39 @@ cfs_write(int fd, const void *buf, unsigned size)
 #else
   if(FILE_MODIFIED(file) || fdp->offset < file->end) {
 #endif
-    for(bytes_left = size; bytes_left > 0;) {
-      lp.offset = fdp->offset;
-      lp.buf = buf;
-      lp.size = bytes_left;
-      i = write_log_page(file, &lp);
-      if(i < 0) {
-	/* Return -1 if we wrote nothing because the log write failed. */
-	if(size == bytes_left) {
-	  return -1;
-	}
-	break;
-      } else if(i == 0) {
-        /* The file was merged with the log. */
-	file = fdp->file;
-      } else {
-	/* A log record was written. */
-	bytes_left -= i;
-	fdp->offset += i;
-	buf = (char *)buf + i;
+	for(bytes_left = size; bytes_left > 0;) {
+		lp.offset = fdp->offset;
+		lp.write_buf = buf;
+		lp.size = bytes_left;
+		i = write_log_page(file, &lp);
+		if(i < 0) {
+			/* Return -1 if we wrote nothing because the log write failed. */
+			if(size == (unsigned)bytes_left) {
+				return -1;
+			}
+			break;
+		} else if(i == 0) {
+				/* The file was merged with the log. */
+				file = fdp->file;
+			} else {
+				/* A log record was written. */
+				bytes_left -= i;
+				fdp->offset += i;
+				buf = (const char *)buf + i;
 
-        /* Update the file end for a potential log merge that might
-           occur while writing log records. */
-        if(fdp->offset > file->end) {
-          file->end = fdp->offset;
-        }
-      }
-    }
+				/* Update the file end for a potential log merge that might
+					 occur while writing log records. */
+				if(fdp->offset > file->end) {
+					file->end = fdp->offset;
+				}
+			}
+		}
 
-    if(fdp->offset > file->end) {
-      /* Update the original file's end with a dummy write. */
-      COFFEE_WRITE(dummy, 1, absolute_offset(file->page, fdp->offset));
-    }
-  } else {
+		if(fdp->offset > file->end) {
+			/* Update the original file's end with a dummy write. */
+			COFFEE_WRITE(dummy, 1, absolute_offset(file->page, fdp->offset));
+		}
+	} else {
 #endif /* COFFEE_MICRO_LOGS */
 #if COFFEE_APPEND_ONLY
     if(fdp->offset < file->end) {
@@ -1248,6 +1250,8 @@ cfs_write(int fd, const void *buf, unsigned size)
 int
 cfs_opendir(struct cfs_dir *dir, const char *name)
 {
+	(void)(dir); 
+	(void)(name); 
   /*
    * Coffee is only guaranteed to support "/" and ".", but it does not 
    * currently enforce this.
@@ -1285,6 +1289,7 @@ cfs_readdir(struct cfs_dir *dir, struct cfs_dirent *record)
 void
 cfs_closedir(struct cfs_dir *dir)
 {
+	(void)(dir); 
   return;
 }
 /*---------------------------------------------------------------------------*/

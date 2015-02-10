@@ -115,7 +115,7 @@ static uint8_t mma7455_read_reg(struct mma7455 *self, uint8_t reg){
 /*
  * wait for xyz data to be ready
  */
-int8_t mma7455_waitfordataready(struct mma7455 *self) {
+static int8_t mma7455_waitfordataready(struct mma7455 *self) {
 	//wait until data is ready
 	uint32_t timeout = 100000; 
 	while(!(mma7455_read_reg(self, 0x09) & 0x01)){

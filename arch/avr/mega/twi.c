@@ -244,11 +244,11 @@ uint8_t twi0_success(void)
 		return 0;
 	}
 }
-
+/*
 uint8_t twi0_get_status(void)
 {
 	return twi_status;
-}
+}*/
 
 int16_t twi0_stop(void)
 {

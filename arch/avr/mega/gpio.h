@@ -126,22 +126,10 @@ extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0];
 )
 
 void gpio_configure(gpio_pin_t pin, uint16_t conf); 
-
-static inline uint8_t gpio_write_word(uint8_t addr, uint32_t value) {
-	return ((addr) >= 0 && (addr) < 4)?(*gPinPorts[addr].out_reg = ((value) & 0xff), 0):(1); 
-}
-
-static inline uint8_t gpio_read_word(uint8_t addr, uint32_t *value) {
-	return ((addr) >= 0 && (addr) < 4)?(*value = *gPinPorts[addr].in_reg, 0):(1); 
-}
-
-static inline void gpio_write_pin(gpio_pin_t pin, uint8_t val) {
-	(val)?RSET(OREG(pin), PIDX(pin)):RCLR(OREG(pin), PIDX(pin)); 
-}
-
-static inline uint8_t gpio_read_pin(gpio_pin_t pin) {
-	return (IREG(pin) & _BV(PIDX(pin)))?1:0; 
-}
+uint8_t gpio_write_word(uint8_t addr, uint32_t value);
+uint8_t gpio_read_word(uint8_t addr, uint32_t *value);
+void gpio_write_pin(gpio_pin_t pin, uint8_t val);
+uint8_t gpio_read_pin(gpio_pin_t pin);
 
 #define gpio_clear(pin) gpio_write_pin(pin, 0)
 #define gpio_set(pin) gpio_write_pin(pin, 1)
@@ -164,6 +152,5 @@ void gpio_enable_pcint(gpio_pin_t pin);
 		timestamp_t *ch_up, timestamp_t *ch_down);
 #endif
 
-void gpio_init(void); 
 // attempt to gather entropy from floating gpio pin
 extern uint32_t gpio_read_prng(gpio_pin_t pin);

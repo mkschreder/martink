@@ -42,8 +42,8 @@ void gpio_init_default(void);
 
 void gpio_configure(gpio_pin_t pin, uint16_t flags); 
 
-#define gpio_write_word(addr, value) (0)
-#define gpio_read_word(addr, value) (0)
+#define gpio_write_word(addr, value) ((void)(addr), (void)(value), 0)
+#define gpio_read_word(addr, value) ((void)(addr), (void)(value), 0)
 void gpio_write_pin(gpio_pin_t pin, uint8_t val); 
 uint8_t gpio_read_pin(gpio_pin_t pin); 
 

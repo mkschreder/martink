@@ -143,6 +143,7 @@ int wiinunchuck_getangleZ(struct wiinunchuck *self) {
 }
 
 void wiinunchuck_getpitchroll(struct wiinunchuck *self, double ax, double ay, double az, double *pitch, double *roll) {
+	(void)(self); 
 	double magnitude = sqrt(((uint32_t)ax * (uint32_t)ax) + ((uint32_t)ay * (uint32_t)ay) + ((uint32_t)az * (uint32_t)az));
 	ax = ax / magnitude;
 	ay = ay / magnitude;
@@ -155,7 +156,8 @@ void wiinunchuck_getpitchroll(struct wiinunchuck *self, double ax, double ay, do
 /*
  * avarage filter over an array
  */
-int wiinunchuck_avaragefilter(struct wiinunchuck *self, int input, int  *wiinunchuck_avarageangle) {
+static int wiinunchuck_avaragefilter(struct wiinunchuck *self, int input, int  *wiinunchuck_avarageangle) {
+	(void)(self); 
 	uint8_t i=0;
 	long sum=0;
 	for (i=0; i<WIINUNCHUCK_ANGLEAVARAGECOEF; i++) {

@@ -27,9 +27,6 @@
 #include <arch/soc.h>
 #include "ks0713.h"
 
-#define KS0713_WIDTH		128
-#define KS0713_HEIGHT		64
-
 #define KS0713_CHAR_WIDTH 5
 #define KS0713_CHAR_HEIGHT 7
 
@@ -68,10 +65,6 @@
 #define KS0713_REG_RES_SEL		(0x20)
 #define KS0713_STATIC_IND_MODE	(0xAC)	// 2-byte cmd
 //#define KS0713_POWER_SAVE		Display off, Entire display ON.
-
-static uint8_t contrast = 0x28;
-
-uint8_t lcd_buffer[KS0713_WIDTH * KS0713_HEIGHT / 8];
 
 #define FONT_STRIDE				(16 * 5)
 
@@ -115,6 +108,9 @@ static void ks0713_send_command(struct ks0713 *self, uint8_t cmd)
   */
 static void ks0713_send_data(struct ks0713 *self, uint8_t *data, uint16_t len)
 {
+	(void)(self); 
+	(void)(data); 
+	(void)(len); 
 	/*uint16_t i;
 	uint16_t gpio = GPIO_ReadOutputData(GPIOC);
 
@@ -148,6 +144,7 @@ static void ks0713_send_data(struct ks0713 *self, uint8_t *data, uint16_t len)
 void ks0713_init(struct ks0713 *self, struct ks0713_interface *gpio)
 {
 	self->gpio = gpio; 
+	self->contrast = 0x28; 
 	
 	// set the pins high
 	self->port_state = KS0713_PIN_MASK; 
@@ -173,7 +170,7 @@ void ks0713_init(struct ks0713 *self, struct ks0713_interface *gpio)
 	ks0713_send_command(self, KS0713_POWER_CTRL | 0x07); 	// Control power circuit operation (VC,VR,VF on)
 	ks0713_send_command(self, KS0713_REG_RES_SEL | 0x04); 	// Select internal resistance ratio (0x05)
 	ks0713_send_command(self, KS0713_SET_REF_VOLTAGE); 		// Set reference voltage Mode (2-part cmd)
-	ks0713_send_command(self, contrast); 					// Set reference voltage register
+	ks0713_send_command(self, self->contrast); 					// Set reference voltage register
 	ks0713_send_command(self, KS0713_DISP_ON_OFF | 0x01); 	// Turn on LCD panel (DON = 1)
 
 	ks0713_commit(self);
@@ -229,7 +226,7 @@ void ks0713_init(struct ks0713 *self, struct ks0713_interface *gpio)
   * @param  on: Whether the backlight should be on or off.
   * @retval None
   */
-void ks0713_backlight(struct ks0713 *self, uint8_t on)
+void ks0713_set_backlight(struct ks0713 *self, uint8_t on)
 {
 	if (on)
 		self->port_state |= KS0713_BACKLIGHT; 
@@ -247,12 +244,12 @@ void ks0713_backlight(struct ks0713 *self, uint8_t on)
   */
 void ks0713_set_contrast(struct ks0713 *self, uint8_t val)
 {
-	contrast = val;
-	if ((contrast + val) > 0xff) contrast = 0xff;
-	else if (contrast + val < 0) contrast = 0;
+	self->contrast = val;
+	if ((self->contrast + val) > 0xff) self->contrast = 0xff;
+	else if (self->contrast + val < 0) self->contrast = 0;
 
 	ks0713_send_command(self, KS0713_SET_REF_VOLTAGE); 		// Set reference voltage Mode (2-part cmd)
-	ks0713_send_command(self, contrast); 						// Set reference voltage register
+	ks0713_send_command(self, self->contrast); 						// Set reference voltage register
 }
 
 /**
@@ -271,7 +268,7 @@ void ks0713_commit(struct ks0713 *self)
 		ks0713_send_command(self, KS0713_SET_PAGE_ADDR | row);
 		ks0713_send_command(self, KS0713_SET_COL_ADDR_LSB | 0x04); // low col
 		ks0713_send_command(self, KS0713_SET_COL_ADDR_MSB | 0x00);
-		ks0713_send_data(self, lcd_buffer + (KS0713_WIDTH * row), KS0713_WIDTH);
+		ks0713_send_data(self, self->lcd_buffer + (KS0713_WIDTH * row), KS0713_WIDTH);
 	}
 }
 
@@ -290,13 +287,13 @@ void ks0713_write_pixel(struct ks0713 *self, uint8_t x, uint8_t y, ks0713_pixel_
 	case KS0713_OP_NONE:
 		break;
 	case KS0713_OP_CLR:
-		lcd_buffer[x+ (y/8)*KS0713_WIDTH] &= ~(1 << (y%8));
+		self->lcd_buffer[x+ (y/8)*KS0713_WIDTH] &= ~(1 << (y%8));
 		break;
 	case KS0713_OP_SET:
-		lcd_buffer[x+(y/8)*KS0713_WIDTH] |= (1 << (y%8));
+		self->lcd_buffer[x+(y/8)*KS0713_WIDTH] |= (1 << (y%8));
 		break;
 	case KS0713_OP_XOR:
-		lcd_buffer[x+ (y/8)*KS0713_WIDTH] ^= (1 << (y%8));
+		self->lcd_buffer[x+ (y/8)*KS0713_WIDTH] ^= (1 << (y%8));
 		break;
 	}
 }
@@ -313,8 +310,8 @@ void ks0713_move_cursor(struct ks0713 *self, uint8_t x, uint8_t y)
 	if ((y+KS0713_CHAR_HEIGHT) >= KS0713_HEIGHT) return;
 	if ((x+KS0713_CHAR_WIDTH) >= KS0713_WIDTH) return;
 
-	//self->cursor_x = x;
-	//self->cursor_y = y;
+	self->cursor_x = x;
+	self->cursor_y = y;
 }
 
 /**
@@ -325,9 +322,10 @@ void ks0713_move_cursor(struct ks0713 *self, uint8_t x, uint8_t y)
   * @param  flags: LCD_FLAGS (CHAR_*)
   * @retval None
   */
+  /*
 void ks0713_write_char(struct ks0713 *self, uint8_t ch, ks0713_pixel_op_t op)
 {
-	/*
+	
 	uint8_t x, y;
 	uint8_t x1, y1, divX = 1, divY = 1;
 	uint8_t height = CHAR_HEIGHT;
@@ -394,9 +392,9 @@ void ks0713_write_char(struct ks0713 *self, uint8_t ch, ks0713_pixel_op_t op)
 		cursor_x--;
 
 	if (cursor_x >= LCD_WIDTH)
-	cursor_y += height + 1;*/
+	cursor_y += height + 1;
 }
-
+*/
 /**
   * @brief  Write a string.
   * @note	Iterate through a null terminated string.
@@ -405,9 +403,9 @@ void ks0713_write_char(struct ks0713 *self, uint8_t ch, ks0713_pixel_op_t op)
   * @param  flags: LCD_FLAGS (CHAR_*)
   * @retval None
   */
+  /*
 void ks0713_write_string(struct ks0713 *self, const char *s, ks0713_pixel_op_t op)
 {
-	/*
 	const char *ptr = s;
 	uint8_t n = strlen(s);
 
@@ -421,8 +419,8 @@ void ks0713_write_string(struct ks0713 *self, const char *s, ks0713_pixel_op_t o
 
 	if( flags & TRAILING_SPACE )
 		lcd_write_char(' ', op, flags);
-		*/
-}
+		
+}*/
 
 
 // Reduce stack usage.

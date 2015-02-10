@@ -31,7 +31,7 @@
 #include <math.h>  //include libm
 #endif
 
-static volatile uint8_t buffer[14];
+static uint8_t buffer[14];
 
 //enable the getattitude functions
 //because we do not have a magnetometer, we have to start the chip always in the same position
@@ -120,7 +120,7 @@ extern volatile uint8_t mpu6050_mpuInterrupt;
 /*
  * read bytes from chip register
  */
-int8_t mpu6050_readBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t *data) {
+static int8_t mpu6050_readBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t *data) {
 	i2c_start_write(self->i2c, self->addr, &regAddr, 1);
 	delay_us(10);
 	i2c_start_read(self->i2c, self->addr, data, length);
@@ -131,14 +131,14 @@ int8_t mpu6050_readBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, 
 /*
  * read 1 byte from chip register
  */
-int8_t mpu6050_readByte(struct mpu6050 *self, uint8_t regAddr, uint8_t *data) {
+static int8_t mpu6050_readByte(struct mpu6050 *self, uint8_t regAddr, uint8_t *data) {
     return mpu6050_readBytes(self, regAddr, 1, data);
 }
 
 /*
  * write bytes to chip register
  */
-void mpu6050_writeBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t* data) {
+static void mpu6050_writeBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t* data) {
 	uint8_t wr[16] = {regAddr};
 	length &= 0x0f; 
 	memcpy(&wr[1], data, length); 
@@ -152,14 +152,14 @@ void mpu6050_writeBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, u
 /*
  * write 1 byte to chip register
  */
-void mpu6050_writeByte(struct mpu6050 *self, uint8_t regAddr, uint8_t data) {
+static void mpu6050_writeByte(struct mpu6050 *self, uint8_t regAddr, uint8_t data) {
   return mpu6050_writeBytes(self, regAddr, 1, &data);
 }
 
 /*
  * read bits from chip register
  */
-int8_t mpu6050_readBits(struct mpu6050 *self, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t *data) {
+static int8_t mpu6050_readBits(struct mpu6050 *self, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t *data) {
     // 01101001 read byte
     // 76543210 bit numbers
     //    xxx   args: bitStart=4, length=3
@@ -181,17 +181,18 @@ int8_t mpu6050_readBits(struct mpu6050 *self, uint8_t regAddr, uint8_t bitStart,
 /*
  * read 1 bit from chip register
  */
-int8_t mpu6050_readBit(struct mpu6050 *self, uint8_t regAddr, uint8_t bitNum, uint8_t *data) {
+ /*
+static int8_t mpu6050_readBit(struct mpu6050 *self, uint8_t regAddr, uint8_t bitNum, uint8_t *data) {
     uint8_t b;
     uint8_t count = mpu6050_readByte(self, regAddr, &b);
     *data = b & (1 << bitNum);
     return count;
-}
+}*/
 
 /*
  * write bit/bits to chip register
  */
-void mpu6050_writeBits(struct mpu6050 *self, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t data) {
+static void mpu6050_writeBits(struct mpu6050 *self, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t data) {
     //      010 value to write
     // 76543210 bit numbers
     //    xxx   args: bitStart=4, length=3
@@ -215,7 +216,7 @@ void mpu6050_writeBits(struct mpu6050 *self, uint8_t regAddr, uint8_t bitStart, 
 /*
  * write one bit to chip register
  */
-void mpu6050_writeBit(struct mpu6050 *self, uint8_t regAddr, uint8_t bitNum, uint8_t data) {
+static void mpu6050_writeBit(struct mpu6050 *self, uint8_t regAddr, uint8_t bitNum, uint8_t data) {
     uint8_t b;
     mpu6050_readByte(self, regAddr, &b);
     b = (data != 0) ? (b | (1 << bitNum)) : (b & ~(1 << bitNum));
@@ -431,7 +432,7 @@ void mpu6050_resetFIFO(void) {
 #endif 
 
 int8_t mpu6050_getTCXGyroOffset(struct mpu6050 *self) {
-	mpu6050_readBits(self, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, (uint8_t *)buffer);
+	mpu6050_readBits(self, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, buffer);
     return buffer[0];
 }
 
@@ -458,96 +459,92 @@ void mpu6050_setTCZGyroOffset(struct mpu6050 *self, int8_t offset) {
 }
 
 int16_t mpu6050_getXGyroOffset(struct mpu6050 *self) {
-	uint8_t buffer[2]; 
-	mpu6050_readByte(self, MPU6050_RA_XG_OFFS_USRH, &buffer[0]);
-	mpu6050_readByte(self, MPU6050_RA_XG_OFFS_USRL, &buffer[1]);
-  return (((int16_t)buffer[0]) << 8) | buffer[1]; 
+	uint8_t buf[2]; 
+	mpu6050_readByte(self, MPU6050_RA_XG_OFFS_USRH, &buf[0]);
+	mpu6050_readByte(self, MPU6050_RA_XG_OFFS_USRL, &buf[1]);
+  return (((int16_t)buf[0]) << 8) | buf[1]; 
 }
 
 void mpu6050_setXGyroOffset(struct mpu6050 *self, int16_t offset) {
-	uint8_t buffer[2] = {offset >> 8, offset}; 
-	mpu6050_writeByte(self, MPU6050_RA_XG_OFFS_USRH, buffer[0]);
-	mpu6050_writeByte(self, MPU6050_RA_XG_OFFS_USRL, buffer[1]);
+	uint8_t buf[2] = {offset >> 8, offset}; 
+	mpu6050_writeByte(self, MPU6050_RA_XG_OFFS_USRH, buf[0]);
+	mpu6050_writeByte(self, MPU6050_RA_XG_OFFS_USRL, buf[1]);
 }
 
 int16_t mpu6050_getYGyroOffset(struct mpu6050 *self) {
-	uint8_t buffer[2]; 
-	mpu6050_readByte(self, MPU6050_RA_YG_OFFS_USRH, &buffer[0]);
-	mpu6050_readByte(self, MPU6050_RA_YG_OFFS_USRL, &buffer[1]);
-  return (((int16_t)buffer[0]) << 8) | buffer[1]; 
+	uint8_t buf[2]; 
+	mpu6050_readByte(self, MPU6050_RA_YG_OFFS_USRH, &buf[0]);
+	mpu6050_readByte(self, MPU6050_RA_YG_OFFS_USRL, &buf[1]);
+  return (((int16_t)buf[0]) << 8) | buf[1]; 
 }
 
 void mpu6050_setYGyroOffset(struct mpu6050 *self, int16_t offset) {
-	uint8_t buffer[2] = {offset >> 8, offset}; 
-	mpu6050_writeByte(self, MPU6050_RA_YG_OFFS_USRH, buffer[0]);
-	mpu6050_writeByte(self, MPU6050_RA_YG_OFFS_USRL, buffer[1]);
+	uint8_t buf[2] = {offset >> 8, offset}; 
+	mpu6050_writeByte(self, MPU6050_RA_YG_OFFS_USRH, buf[0]);
+	mpu6050_writeByte(self, MPU6050_RA_YG_OFFS_USRL, buf[1]);
 }
 
 int16_t mpu6050_getZGyroOffset(struct mpu6050 *self) {
-	uint8_t buffer[2]; 
-	mpu6050_readByte(self, MPU6050_RA_ZG_OFFS_USRH, &buffer[0]);
-	mpu6050_readByte(self, MPU6050_RA_ZG_OFFS_USRL, &buffer[1]);
-  return (((int16_t)buffer[0]) << 8) | buffer[1]; 
+	uint8_t buf[2]; 
+	mpu6050_readByte(self, MPU6050_RA_ZG_OFFS_USRH, &buf[0]);
+	mpu6050_readByte(self, MPU6050_RA_ZG_OFFS_USRL, &buf[1]);
+  return (((int16_t)buf[0]) << 8) | buf[1]; 
 }
 
 void mpu6050_setZGyroOffset(struct mpu6050 *self, int16_t offset) {
-	uint8_t buffer[2] = {offset >> 8, offset}; 
-	mpu6050_writeByte(self, MPU6050_RA_ZG_OFFS_USRH, buffer[0]);
-	mpu6050_writeByte(self, MPU6050_RA_ZG_OFFS_USRL, buffer[1]);
+	uint8_t buf[2] = {offset >> 8, offset}; 
+	mpu6050_writeByte(self, MPU6050_RA_ZG_OFFS_USRH, buf[0]);
+	mpu6050_writeByte(self, MPU6050_RA_ZG_OFFS_USRL, buf[1]);
 }
 
 /*** ACCELEROMETER OFFSETS ***/
 
 int16_t mpu6050_getXAccOffset(struct mpu6050 *self) {
-	uint8_t buffer[2]; 
-	mpu6050_readByte(self, MPU6050_RA_XA_OFFS_H, &buffer[0]);
-	mpu6050_readByte(self, MPU6050_RA_XA_OFFS_L_TC, &buffer[1]);
-  return (((int16_t)buffer[0]) << 8) | buffer[1]; 
+	uint8_t buf[2]; 
+	mpu6050_readByte(self, MPU6050_RA_XA_OFFS_H, &buf[0]);
+	mpu6050_readByte(self, MPU6050_RA_XA_OFFS_L_TC, &buf[1]);
+  return (((int16_t)buf[0]) << 8) | buf[1]; 
 }
 
 void mpu6050_setXAccOffset(struct mpu6050 *self, int16_t offset) {
-	uint8_t buffer[2] = {offset >> 8, offset}; 
-	mpu6050_writeByte(self, MPU6050_RA_XA_OFFS_H, buffer[0]);
-	mpu6050_writeByte(self, MPU6050_RA_XA_OFFS_L_TC, buffer[1]);
+	uint8_t buf[2] = {offset >> 8, offset}; 
+	mpu6050_writeByte(self, MPU6050_RA_XA_OFFS_H, buf[0]);
+	mpu6050_writeByte(self, MPU6050_RA_XA_OFFS_L_TC, buf[1]);
 }
 
 int16_t mpu6050_getYAccOffset(struct mpu6050 *self) {
-	uint8_t buffer[2]; 
-	mpu6050_readByte(self, MPU6050_RA_YA_OFFS_H, &buffer[0]);
-	mpu6050_readByte(self, MPU6050_RA_YA_OFFS_L_TC, &buffer[1]);
-  return (((int16_t)buffer[0]) << 8) | buffer[1]; 
+	uint8_t buf[2]; 
+	mpu6050_readByte(self, MPU6050_RA_YA_OFFS_H, &buf[0]);
+	mpu6050_readByte(self, MPU6050_RA_YA_OFFS_L_TC, &buf[1]);
+  return (((int16_t)buf[0]) << 8) | buf[1]; 
 }
 
 void mpu6050_setYAccOffset(struct mpu6050 *self, int16_t offset) {
-	uint8_t buffer[2] = {offset >> 8, offset}; 
-	mpu6050_writeByte(self, MPU6050_RA_YA_OFFS_H, buffer[0]);
-	mpu6050_writeByte(self, MPU6050_RA_YA_OFFS_L_TC, buffer[1]);
+	uint8_t buf[2] = {offset >> 8, offset}; 
+	mpu6050_writeByte(self, MPU6050_RA_YA_OFFS_H, buf[0]);
+	mpu6050_writeByte(self, MPU6050_RA_YA_OFFS_L_TC, buf[1]);
 }
 
 int16_t mpu6050_getZAccOffset(struct mpu6050 *self) {
-	uint8_t buffer[2]; 
-	mpu6050_readByte(self, MPU6050_RA_ZA_OFFS_H, &buffer[0]);
-	mpu6050_readByte(self, MPU6050_RA_ZA_OFFS_L_TC, &buffer[1]);
-  return (((int16_t)buffer[0]) << 8) | buffer[1]; 
+	uint8_t buf[2]; 
+	mpu6050_readByte(self, MPU6050_RA_ZA_OFFS_H, &buf[0]);
+	mpu6050_readByte(self, MPU6050_RA_ZA_OFFS_L_TC, &buf[1]);
+  return (((int16_t)buf[0]) << 8) | buf[1]; 
 }
 
 void mpu6050_setZAccOffset(struct mpu6050 *self, int16_t offset) {
-	uint8_t buffer[2] = {offset >> 8, offset}; 
-	mpu6050_writeByte(self, MPU6050_RA_ZA_OFFS_H, buffer[0]);
-	mpu6050_writeByte(self, MPU6050_RA_ZA_OFFS_L_TC, buffer[1]);
+	uint8_t buf[2] = {offset >> 8, offset}; 
+	mpu6050_writeByte(self, MPU6050_RA_ZA_OFFS_H, buf[0]);
+	mpu6050_writeByte(self, MPU6050_RA_ZA_OFFS_L_TC, buf[1]);
 }
 
-void mpu6050_setSleepDisabled(struct mpu6050 *self) {
+static void mpu6050_setSleepDisabled(struct mpu6050 *self) {
 	mpu6050_writeBit(self, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_SLEEP_BIT, 0);
 }
-
 /*
- * set sleep enabled
- */
-void mpu6050_setSleepEnabled(struct mpu6050 *self) {
+static void mpu6050_setSleepEnabled(struct mpu6050 *self) {
 	mpu6050_writeBit(self, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_SLEEP_BIT, 1);
-}
-
+}*/
 
 /*
  * test connectino to chip
@@ -664,6 +661,7 @@ void mpu6050_convertData(struct mpu6050 *self,
 	float *axg, float *ayg, float *azg, 
 	float *gxd, float *gyd, float *gzd
 ){
+	(void)(self); 
 	*axg = (float)(ax-MPU6050_AXOFFSET)/MPU6050_AXGAIN;
 	*ayg = (float)(ay-MPU6050_AYOFFSET)/MPU6050_AYGAIN;
 	*azg = (float)(az-MPU6050_AZOFFSET)/MPU6050_AZGAIN;

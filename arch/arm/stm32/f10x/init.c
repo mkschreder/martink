@@ -6,7 +6,7 @@
 extern int __init_array_start;
 extern int __init_array_end;
 
-void ConstructorsInit(void)
+static void ConstructorsInit(void)
 {
 	int *s, *e;
 
@@ -20,12 +20,14 @@ void ConstructorsInit(void)
 }
 
 extern int main(void); 
-extern void SystemInit(void); 
+//extern void SystemInit(void); 
 
+void c_startup(void); 
+extern char _ramstart, _estack, _etext, _sdata, _sbss, _ebss, _edata; 
+	
 void c_startup(void)
 {
 	char *src, *dst;
-	extern char _ramstart, _estack, _etext, _sdata, _sbss, _ebss, _edata; 
 	
 	dst = &_ramstart; 
 	while(dst < &_estack)

@@ -1,6 +1,6 @@
  
 _ramstart = 0x20000000; 
-_estack = 0x20004FF0; // 20k ram
+_estack = 0x20004FF0; 
 _minimum_stack_size = 0x100; 
 
 MEMORY
@@ -9,4 +9,4 @@ MEMORY
 	ram (xrw)     : ORIGIN = 0x20000000, LENGTH = 20K
 }
 
-INCLUDE arch/arm/stm32/f10x/stm32f10x.ld
+INCLUDE "stm32f10x.ld"

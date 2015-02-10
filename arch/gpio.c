@@ -21,28 +21,34 @@
 
 #include <arch/soc.h>
 
-void _gpio_write_pin(pio_dev_t self, uint16_t pin, uint8_t value){
+static void _gpio_write_pin(pio_dev_t self, uint16_t pin, uint8_t value){
+	(void)(self); 
 	gpio_write_pin(pin, value);
 }
 
-uint8_t _gpio_read_pin(pio_dev_t self, uint16_t pin){
+static uint8_t _gpio_read_pin(pio_dev_t self, uint16_t pin){
+	(void)(self); 
 	return gpio_read_pin(pin);
 }
 
-uint8_t _gpio_configure_pin(pio_dev_t self, uint16_t pin, uint16_t flags){
+static uint8_t _gpio_configure_pin(pio_dev_t self, uint16_t pin, uint16_t flags){
+	(void)(self); 
 	gpio_configure(pin, flags);
 	return 0; 
 }
 
-uint8_t _gpio_get_pin_status(pio_dev_t self, uint16_t pin, timestamp_t *t_up, timestamp_t *t_down){
+static uint8_t _gpio_get_pin_status(pio_dev_t self, uint16_t pin, timestamp_t *t_up, timestamp_t *t_down){
+	(void)(self); 
 	return gpio_get_status(pin, t_up, t_down);
 }
 
-uint8_t _gpio_write_word(pio_dev_t self, uint16_t addr, uint32_t value){
+static uint8_t _gpio_write_word(pio_dev_t self, uint16_t addr, uint32_t value){
+	(void)(self); 
 	return gpio_write_word(addr, value);
 }
 
-uint8_t _gpio_read_word(pio_dev_t self, uint16_t addr, uint32_t *output){
+static uint8_t _gpio_read_word(pio_dev_t self, uint16_t addr, uint32_t *output){
+	(void)(self); 
 	return gpio_read_word(addr, output);
 }
 

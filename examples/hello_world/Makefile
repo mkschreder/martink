@@ -4,7 +4,9 @@ build-hello-world: build
 		 examples/hello_world/main.o -lk-$(BUILD) -lc -lm -lgcc \
 	-Wl,--end-group 
 	
-install-hello-world: 
+install-hello-world-arm-stm32f103: 
 	arm-none-eabi-objcopy -j .text -j .data examples/hello_world/hello-world examples/hello_world/hello-world.bin -O binary
 	make -C $(srctree)/scripts/stm32flash/
 	sudo $(srctree)/scripts/stm32flash/stm32flash -w examples/hello_world/hello-world.bin -v -g 0x0 /dev/ttyUSB0
+
+install-hello-world-arm-stm32f100mdvl: install-hello-world-arm-stm32f103; 

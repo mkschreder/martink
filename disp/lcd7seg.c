@@ -118,7 +118,7 @@ void led7seg_init(struct led7seg *self, pio_dev_t port, uint8_t data_port, gpio_
 
 	led7seg_off(self); 
 }
-
+/*
 void sevseg_putc(struct led7seg *self, uint8_t c, uint8_t dot) {
 	uint8_t cdisp = pgm_read_byte(&sevsegascii_table[c]);
 	if(dot)
@@ -127,4 +127,4 @@ void sevseg_putc(struct led7seg *self, uint8_t c, uint8_t dot) {
 		self->data = 0XFF ^ cdisp; 
 	else if(self->type == SEVSEG_TYPECA || self->type == SEVSEG_TYPECCT)
 		self->data = cdisp;
-}
+}*/

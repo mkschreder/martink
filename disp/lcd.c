@@ -302,11 +302,10 @@ void lcd_gotoxy(struct lcd *self, uint8_t x, uint8_t y)
 
 /*************************************************************************
 *************************************************************************/
-int lcd_getxy(struct lcd *self)
+/*static int lcd_getxy(struct lcd *self)
 {
     return lcd_waitbusy(self);
-}
-
+}*/
 
 /*************************************************************************
 Clear display and set cursor to home position
@@ -418,7 +417,7 @@ void lcd_puts_p(struct lcd *self, const char *progmem_s)
 
 }/* lcd_puts_p */
 
-
+/*
 uint16_t lcd_printf(struct lcd *self, const char *fmt, ...){
 	char buf[32]; 
 	uint16_t n; 
@@ -429,6 +428,7 @@ uint16_t lcd_printf(struct lcd *self, const char *fmt, ...){
 	lcd_puts(self, buf);
 	return n; 
 }
+*/
 
 /*************************************************************************
 Initialize display and select type of cursor 
@@ -440,6 +440,7 @@ Returns:  none
 *************************************************************************/
 void lcd_init(struct lcd *self, pio_dev_t port, uint8_t dispAttr)
 {
+	(void)(dispAttr); 
 	self->port = port;
 	
 	#if LCD_PCF8574_INIT == 1

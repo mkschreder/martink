@@ -34,8 +34,8 @@ struct l74hc4051 {
 	gpio_pin_t s2_pin; 
 };
 
-extern void l74hc4051_init(struct l74hc4051 *self, pio_dev_t port,
+void l74hc4051_init(struct l74hc4051 *self, pio_dev_t port,
 		gpio_pin_t s0_pin, gpio_pin_t s1_pin, gpio_pin_t s2_pin);
-extern void l74hc4051_setchannel(struct l74hc4051 *self, uint8_t channel);
+void l74hc4051_set_channel(struct l74hc4051 *self, uint8_t channel);
 
 #endif

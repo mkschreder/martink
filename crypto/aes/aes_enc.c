@@ -35,7 +35,7 @@
 #include "aes_enc.h"
 //#include <avr/pgmspace.h>
 
-void aes_shiftcol(void* data, uint8_t shift){
+static void aes_shiftcol(void* data, uint8_t shift){
 	uint8_t tmp[4];
 	tmp[0] = ((uint8_t*)data)[ 0];
 	tmp[1] = ((uint8_t*)data)[ 4];

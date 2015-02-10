@@ -186,7 +186,7 @@ void mpu6000_init(struct mpu6000 *self, serial_dev_t port, pio_dev_t gpio, gpio_
 		{MPU6000_GYRO_CONFIG, BITS_FS_2000DPS}
 	}; 
 	
-	for(int c = 0; c < sizeof(settings) / sizeof(settings[0]); c++){
+	for(unsigned c = 0; c < sizeof(settings) / sizeof(settings[0]); c++){
 		mpu6000_write_reg(self, settings[c].reg, settings[c].data); 
 		delay_us(1); 
 	}
@@ -220,6 +220,7 @@ void mpu6000_convertData(struct mpu6000 *self,
 	float *axg, float *ayg, float *azg, 
 	float *gxd, float *gyd, float *gzd
 ){
+	(void)(self); 
 	*axg = (float)(ax-MPU6000_AXOFFSET)/MPU6000_AXGAIN;
 	*ayg = (float)(ay-MPU6000_AYOFFSET)/MPU6000_AYGAIN;
 	*azg = (float)(az-MPU6000_AZOFFSET)/MPU6000_AZGAIN;

@@ -5,11 +5,16 @@ VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty
 # define defaults that can be added to in submakefiles
 INCLUDES := -I. -Iinclude -Iinclude/c++ -Ikernel
 COMMON_FLAGS := -MD -ffunction-sections -fdata-sections -Wall -Werror -Os
-CFLAGS := -Wuninitialized -Werror=implicit-function-declaration -Werror=strict-prototypes -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
-CXXFLAGS := 
+CFLAGS := -Wall -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
+-Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
+-Wshadow -Wcast-align -Wchar-subscripts -Winline \
+-Wnested-externs -Wredundant-decls 
+CXXFLAGS := -Wall -Wno-format-y2k -W \
+-Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
+-Wcast-align -Wchar-subscripts -Wredundant-decls
 LDFLAGS := -Wl,--relax,--gc-sections
 EXTRALIBS := 
-BUILD_DIR := build
+BUILD_DIR := build/$(BUILD)
 CONFIG := configs/$(BUILD).config
 CONFIG_H := include/configs/$(BUILD).h
 ARCH := $(firstword $(subst -, ,$(BUILD)))
@@ -107,6 +112,11 @@ build: config fixdirs fixdep check $(obj-y)
 	ar rs $(APPNAME) $(obj-y) 
 	#$(patsubst %, $(BUILD_DIR)/%, $(obj-y))
 
+buildall: 
+	make -C . BUILD=arm-stm32f100mdvl
+	make -C . BUILD=arm-stm32f103
+	make -C . BUILD=avr-atmega328p
+	
 $(BUILD_DIR)/%.o: %.cpp .config 
 	mkdir -p `dirname $@`
 	$(CXX) -c $(CXXFLAGS) $< -o $@

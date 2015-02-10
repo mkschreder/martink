@@ -37,7 +37,7 @@
 #define VT100_HEIGHT (VT100_SCREEN_HEIGHT / VT100_CHAR_HEIGHT)
 #define VT100_WIDTH (VT100_SCREEN_WIDTH / VT100_CHAR_WIDTH)*/
 
-#define STATE(NAME, TERM, EV, ARG) void NAME(struct vt100_private *TERM, uint8_t EV, uint16_t ARG)
+#define STATE(NAME, TERM, EV, ARG) static void NAME(struct vt100 *TERM, uint8_t EV, uint16_t ARG)
 
 // states 
 enum {
@@ -57,7 +57,7 @@ STATE(_st_esc_sq_bracket, term, ev, arg);
 STATE(_st_esc_question, term, ev, arg);
 STATE(_st_esc_hash, term, ev, arg);
 
-static void _vt100_reset(struct vt100_private *self){
+static void _vt100_reset(struct vt100 *self){
 	//self->screen_width = VT100_SCREEN_WIDTH;
   //self->screen_height = VT100_SCREEN_HEIGHT;
   self->display->get_size(self->display, &self->screen_width, &self->screen_height); 
@@ -85,7 +85,7 @@ static void _vt100_reset(struct vt100_private *self){
 	self->display->set_top_line(self->display, 0); 
 }
 
-void _vt100_resetScroll(struct vt100_private *self){
+static void _vt100_resetScroll(struct vt100 *self){
 	self->scroll_start_row = 0;
 	self->scroll_end_row = self->screen_height;
 	self->scroll_value = 0;
@@ -96,7 +96,7 @@ void _vt100_resetScroll(struct vt100_private *self){
 
 #define VT100_CURSOR_X(TERM) (TERM->cursor_x * TERM->char_width)
 
-static inline uint16_t VT100_CURSOR_Y(struct vt100_private *t){
+static uint16_t VT100_CURSOR_Y(struct vt100 *t){
 	// if within the top or bottom margin areas then normal addressing
 	if(t->cursor_y < t->scroll_start_row || t->cursor_y >= t->scroll_end_row){
 		return t->cursor_y * VT100_CHAR_HEIGHT; 
@@ -135,8 +135,8 @@ static inline uint16_t VT100_CURSOR_Y(struct vt100_private *t){
 	return y % VT100_SCREEN_HEIGHT;*/
 }
 
-static void _vt100_clearLines(struct vt100_private *t, uint16_t start_line, uint16_t end_line){
-	for(int c = start_line; c <= end_line; c++){
+static void _vt100_clearLines(struct vt100 *t, uint16_t start_line, uint16_t end_line){
+	for(unsigned c = start_line; c <= end_line; c++){
 		uint16_t cy = t->cursor_y;
 		t->cursor_y = c;
 		t->display->clear(t->display); 
@@ -149,7 +149,7 @@ static void _vt100_clearLines(struct vt100_private *t, uint16_t start_line, uint
 }
 
 // scrolls the scroll region up (lines > 0) or down (lines < 0)
-static void _vt100_scroll(struct vt100_private *t, int16_t lines){
+static void _vt100_scroll(struct vt100 *t, int16_t lines){
 	if(!lines) return;
 
 	// get height of scroll area in rows
@@ -193,9 +193,9 @@ static void _vt100_scroll(struct vt100_private *t, int16_t lines){
 }
 
 // moves the cursor relative to current cursor position and scrolls the screen
-static void _vt100_move(struct vt100_private *term, int16_t right_left, int16_t bottom_top){
+static void _vt100_move(struct vt100 *term, uint16_t right_left, uint16_t bottom_top){
 	// calculate how many lines we need to move down or up if x movement goes outside screen
-	int16_t new_x = right_left + term->cursor_x;
+	uint16_t new_x = right_left + term->cursor_x;
 	uint16_t width = (term->screen_width / VT100_CHAR_WIDTH); 
 	if(new_x > width){
 		if(term->flags.cursor_wrap){
@@ -204,16 +204,16 @@ static void _vt100_move(struct vt100_private *term, int16_t right_left, int16_t 
 		} else {
 			term->cursor_x = width;
 		}
-	} else if(new_x < 0){
+	} /*else if(new_x < 0){
 		bottom_top += new_x / width - 1;
 		term->cursor_x = width - (abs(new_x) % width) + 1; 
-	} else {
+	} */else {
 		term->cursor_x = new_x;
 	}
 
 	if(bottom_top){
-		int16_t new_y = term->cursor_y + bottom_top;
-		int16_t to_scroll = 0;
+		uint16_t new_y = term->cursor_y + bottom_top;
+		uint16_t to_scroll = 0;
 		// bottom margin 39 marks last line as static on 40 line display
 		// therefore, we would scroll when new cursor has moved to line 39
 		// (or we could use new_y > VT100_HEIGHT here
@@ -239,7 +239,8 @@ static void _vt100_move(struct vt100_private *term, int16_t right_left, int16_t 
 	}
 }
 
-static void _vt100_drawCursor(struct vt100_private *t){
+static void _vt100_drawCursor(struct vt100 *t){
+	(void)(t); 
 	//uint16_t x = t->cursor_x * t->char_width;
 	//uint16_t y = t->cursor_y * t->char_height;
 
@@ -247,7 +248,7 @@ static void _vt100_drawCursor(struct vt100_private *t){
 }
 
 // sends the character to the display and updates cursor position
-static void _vt100_putc(struct vt100_private *t, uint8_t ch){
+static void _vt100_putc(struct vt100 *t, uint8_t ch){
 	if(ch < 0x20 || ch > 0x7e){
 		static const char hex[] = "0123456789abcdef"; 
 		_vt100_putc(t, '0'); 
@@ -273,7 +274,7 @@ static void _vt100_putc(struct vt100_private *t, uint8_t ch){
 
 void vt100_puts(struct vt100 *term, const char *str){
 	while(*str){
-		_vt100_putc((struct vt100_private*)term, *str++);
+		_vt100_putc(term, *str++);
 	}
 }
 
@@ -313,30 +314,30 @@ STATE(_st_esc_sq_bracket, term, ev, arg){
 			} else { // otherwise we execute the command and go back to idle
 				switch(arg){
 					case 'A': {// move cursor up (cursor stops at top margin)
-						int n = (term->narg > 0)?term->args[0]:1;
-						term->cursor_y -= n;
-						if(term->cursor_y < 0) term->cursor_y = 0; 
+						unsigned n = (term->narg > 0)?term->args[0]:1;
+						if(term->cursor_y < n) term->cursor_y = 0; 
+						else term->cursor_y -= n;
 						term->state = _st_idle; 
 						break;
 					} 
 					case 'B': { // cursor down (cursor stops at bottom margin)
-						int n = (term->narg > 0)?term->args[0]:1;
+						unsigned n = (term->narg > 0)?term->args[0]:1;
 						term->cursor_y += n;
 						if(term->cursor_y > term->screen_height) term->cursor_y = term->screen_height; 
 						term->state = _st_idle; 
 						break;
 					}
 					case 'C': { // cursor right (cursor stops at right margin)
-						int n = (term->narg > 0)?term->args[0]:1;
+						unsigned n = (term->narg > 0)?term->args[0]:1;
 						term->cursor_x += n;
 						if(term->cursor_x > term->screen_width) term->cursor_x = term->screen_width;
 						term->state = _st_idle; 
 						break;
 					}
 					case 'D': { // cursor left
-						int n = (term->narg > 0)?term->args[0]:1;
-						term->cursor_x -= n;
-						if(term->cursor_x < 0) term->cursor_x = 0;
+						unsigned n = (term->narg > 0)?term->args[0]:1;
+						if(term->cursor_x < n) term->cursor_x = 0; 
+						else term->cursor_x -= n;
 						term->state = _st_idle; 
 						break;
 					}
@@ -827,14 +828,14 @@ STATE(_st_idle, term, ev, arg){
 }
 
 void vt100_init(struct vt100 *_self, struct text_display_interface *display){
-	struct vt100_private *self = (struct vt100_private*)_self; 
+	struct vt100 *self = (struct vt100*)_self; 
 	self->display = display; 
   //self->send_response = send_response; 
 	_vt100_reset(self); 
 }
 
 void vt100_putc(struct vt100 *t, uint8_t c){
-	struct vt100_private *self = (struct vt100_private*)t; 
+	struct vt100 *self = (struct vt100*)t; 
 	/*char *buffer = 0; 
 	switch(c){
 		case KEY_UP:         buffer="\e[A";    break;

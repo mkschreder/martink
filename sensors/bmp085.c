@@ -89,6 +89,7 @@ static void bmp085_readmem(struct bmp085 *self, uint8_t reg, uint8_t *buff, uint
 
 #if BMP085_FILTERPRESSURE == 1
 #define BMP085_AVARAGECOEF 21
+/*
 static long k[BMP085_AVARAGECOEF];
 long bmp085_avaragefilter(long input) {
 	uint8_t i=0;
@@ -101,7 +102,7 @@ long bmp085_avaragefilter(long input) {
 		sum += k[i];
 	}
 	return (sum /BMP085_AVARAGECOEF) ;
-}
+}*/
 #endif
 
 /*

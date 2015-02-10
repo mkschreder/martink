@@ -60,7 +60,7 @@ void aes_init(const void* key, uint16_t keysize_b, aes_genctx_t* ctx){
 	memcpy(ctx, key, keysize_b/8);
 	next_nk = nk;
 	for(i=nk;i<hi;++i){
-		tmp.v32 = ((uint32_t*)(ctx->key[0].ks))[i-1];
+		tmp.v32 = ((uint32_t*)((void*)ctx->key[0].ks))[i-1];
 		if(i!=next_nk){
 			if(nk==8 && i%8==4){
 				tmp.v8[0] = pgm_read_byte(aes_sbox+tmp.v8[0]);
@@ -78,7 +78,7 @@ void aes_init(const void* key, uint16_t keysize_b, aes_genctx_t* ctx){
 			tmp.v8[0] ^= pgm_read_byte(rc_tab+rc);
 			rc++;
 		}
-		((uint32_t*)(ctx->key[0].ks))[i] = ((uint32_t*)(ctx->key[0].ks))[i-nk]
+		((uint32_t*)((void*)ctx->key[0].ks))[i] = ((uint32_t*)((void*)ctx->key[0].ks))[i-nk]
 		                                   ^ tmp.v32;
 	}
 }

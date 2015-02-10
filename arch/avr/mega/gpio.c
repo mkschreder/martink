@@ -48,7 +48,7 @@ const struct pin_decl gPinPorts[4] = {
 		return ret; 
 	}
 	
-	ISR(PCINT0_vect){
+	static void PCINT_vect(void){
 		timestamp_t time = timestamp_now(); 
 		static uint8_t prev[3] = {0xff, 0xff, 0xff}; 
 		uint8_t current[3] = {PINB, PINC, PIND}; 
@@ -75,10 +75,18 @@ const struct pin_decl gPinPorts[4] = {
 			}
 		}
 	}
+	
+	ISR(PCINT0_vect){
+		PCINT_vect(); 
+	}
+	
+	ISR(PCINT1_vect){
+		PCINT_vect(); 
+	}
 
-	ISR(PCINT1_vect, ISR_ALIASOF(PCINT0_vect)); 
-
-	ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));
+	ISR(PCINT2_vect){
+		PCINT_vect(); 
+	}
 #endif
 
 void gpio_configure(gpio_pin_t pin, uint16_t fun){
@@ -99,6 +107,22 @@ void gpio_enable_pcint(gpio_pin_t pin){
 			:((pin) >= GPIO_PD0 && (pin) <= GPIO_PD7)
 				?(PCICR |= _BV(PCINT2), PCMSK2 = PCMSK2 | _BV((pin) - GPIO_PD0))
 				:(-1);
+}
+
+uint8_t gpio_write_word(uint8_t addr, uint32_t value) {
+	return ((addr) < 4)?(*gPinPorts[addr].out_reg = ((value) & 0xff), 0):(1); 
+}
+
+uint8_t gpio_read_word(uint8_t addr, uint32_t *value) {
+	return ((addr) < 4)?(*value = *gPinPorts[addr].in_reg, 0):(1); 
+}
+
+void gpio_write_pin(gpio_pin_t pin, uint8_t val) {
+	(val)?RSET(OREG(pin), PIDX(pin)):RCLR(OREG(pin), PIDX(pin)); 
+}
+
+uint8_t gpio_read_pin(gpio_pin_t pin) {
+	return (IREG(pin) & _BV(PIDX(pin)))?1:0; 
 }
 
 // a pseudorandom function to make results even more "random"
@@ -146,7 +170,7 @@ uint32_t gpio_read_prng(gpio_pin_t pin){
 	for(int byte = 0; byte < size; byte++){
 		buf[byte] = 0; 
 		uint16_t timeout = 0xff;
-		for(int c = 0; c < 8 * sizeof(char); c++){
+		for(unsigned c = 0; c < 8 * sizeof(char); c++){
 			uint16_t x = 0;
 			uint8_t d = IREG(pin) & _BV(PIDX(pin));
 			while((d == (IREG(pin) & _BV(PIDX(pin)))) && timeout--){

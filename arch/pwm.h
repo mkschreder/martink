@@ -21,4 +21,5 @@
 
 #pragma once
 
+void pwm_init(void); 
 struct pwm_interface pwm_get_interface(void);

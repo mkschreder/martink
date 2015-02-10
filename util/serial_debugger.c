@@ -116,7 +116,7 @@ uint16_t serial_debugger_putc(serial_dev_t self, uint8_t ch){
 
 size_t serial_debugger_putn(serial_dev_t self, const uint8_t *data, size_t max_sz){
 	DEVICE_CAST(self, dbg); 
-	for(int c = 0; c < max_sz; c++) _on_put(dbg, *data++); 
+	for(unsigned c = 0; c < max_sz; c++) _on_put(dbg, *data++); 
 	//assert(dbg->device);
 	return serial_putn(dbg->device, data, max_sz); 
 }
@@ -125,7 +125,7 @@ size_t serial_debugger_getn(serial_dev_t self, uint8_t *data, size_t max_sz){
 	DEVICE_CAST(self, dbg); 
 	//assert(dbg->device);
 	size_t ret = serial_getn(dbg->device, data, max_sz); 
-	for(int c = 0; c < max_sz; c++) _on_get(dbg, *data++); 
+	for(unsigned c = 0; c < max_sz; c++) _on_get(dbg, *data++); 
 	return ret; 
 }
 

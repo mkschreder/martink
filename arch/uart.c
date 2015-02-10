@@ -40,20 +40,20 @@
 #else 
 #define UART_COUNT 0
 #endif
-
+/*
 #ifdef CONFIG_AVR
 static FILE _fd; 
 FILE *uart0_fd = &_fd;
 
-int _uart0_fd_get(FILE *fd){
+static int _uart0_fd_get(FILE *fd){
 	return uart0_getc();
 }
 
-int _uart0_fd_put(char data, FILE *fd){
+static int _uart0_fd_put(char data, FILE *fd){
 	return uart0_putc(data);
 }
 #endif
-
+*/
 
 struct uart_device {
 	uint8_t id; 
@@ -94,7 +94,7 @@ uint16_t uart0_printf(const char *fmt, ...){
 #define GET_DEV(s, dev) \
 	struct uart_device *dev = container_of((s), struct uart_device, serial)
 	
-uint16_t _uart_putc(serial_dev_t self, uint8_t ch){
+static uint16_t _uart_putc(serial_dev_t self, uint8_t ch){
 	GET_DEV(self, dev);
 	switch(dev->id){
 		#define LABEL(id) case id: return uart##id##_putc(ch); break; 
@@ -115,7 +115,7 @@ uint16_t _uart_putc(serial_dev_t self, uint8_t ch){
 	return 0; 
 }
 
-uint16_t _uart_getc(serial_dev_t self) {
+static uint16_t _uart_getc(serial_dev_t self) {
 	GET_DEV(self, dev);
 	switch(dev->id){
 		#define LABEL(id) case id: { return uart##id##_getc(); break; }
@@ -136,7 +136,7 @@ uint16_t _uart_getc(serial_dev_t self) {
 	return -1; 
 }
 
-size_t _uart_putn(serial_dev_t self, const uint8_t *data, size_t sz){
+static size_t _uart_putn(serial_dev_t self, const uint8_t *data, size_t sz){
 	size_t size = sz;
 	while(sz--){
 		_uart_putc(self, *data++); 
@@ -144,7 +144,7 @@ size_t _uart_putn(serial_dev_t self, const uint8_t *data, size_t sz){
 	return size; 
 }
 
-size_t _uart_getn(serial_dev_t self, uint8_t *data, size_t sz){
+static size_t _uart_getn(serial_dev_t self, uint8_t *data, size_t sz){
 	size_t count = 0;
 	while(sz--){
 		int c = _uart_getc(self); 
@@ -158,7 +158,7 @@ size_t _uart_getn(serial_dev_t self, uint8_t *data, size_t sz){
 	return count; 
 }
 
-size_t _uart_waiting(serial_dev_t self){
+static size_t _uart_waiting(serial_dev_t self){
 	GET_DEV(self, dev);
 	switch(dev->id){
 		#define LABEL(id) case id: return uart##id##_waiting(); break; 
@@ -179,13 +179,15 @@ size_t _uart_waiting(serial_dev_t self){
 	return 0; 
 }
 
-int16_t _uart_begin(serial_dev_t self){
+static int16_t _uart_begin(serial_dev_t self){
 	// do nothing (but may be useful for interrupt driven version) 
+	(void)(self); 
 	return 0; 
 }
 
-int16_t _uart_end(serial_dev_t self){
+static int16_t _uart_end(serial_dev_t self){
 	// do nothing (but may be useful for interrupt driven version) 
+	(void)(self); 
 	return 0; 
 }
 

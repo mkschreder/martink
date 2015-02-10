@@ -123,9 +123,9 @@ struct ili9340 {
 };
 
 void ili9340_init(struct ili9340 *self, serial_dev_t spi, gpio_pin_t cs_pin, gpio_pin_t dc_pin, gpio_pin_t rst_pin);
-void ili9340_drawFastVLine(struct ili9340 *self, int16_t x, int16_t y, int16_t h,
+void ili9340_drawFastVLine(struct ili9340 *self, uint16_t x, uint16_t y, uint16_t h,
  uint16_t color);
-void ili9340_drawFastHLine(struct ili9340 *self, int16_t x, int16_t y, int16_t h,
+void ili9340_drawFastHLine(struct ili9340 *self, uint16_t x, uint16_t y, uint16_t h,
  uint16_t color);
 void ili9340_drawLine(struct ili9340 *self, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, 
 	uint16_t col); 

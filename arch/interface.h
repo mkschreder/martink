@@ -72,43 +72,29 @@ struct serial_if {
 
 /// begins a serial transactions. A device driver can for example clear 
 /// any cache buffers when begin is called. This call may block until device is ready. 
-static inline int16_t serial_begin(serial_dev_t dev){
-	return (*dev)->begin(dev); 
-}
+int16_t serial_begin(serial_dev_t dev);
 
 /// finishes a transaction. This call may block until all data has been
 /// transfered by the device. It serves as a way to sync transaction with
 /// other actions necessary to control a device. 
-static inline int16_t serial_end(serial_dev_t dev){
-	return (*dev)->end(dev); 
-}
+int16_t serial_end(serial_dev_t dev);
 
 /// writes one character to a generic serial interface
-static inline uint16_t serial_putc(serial_dev_t dev, uint8_t ch){
-	return (*dev)->put(dev, ch); 
-}
+uint16_t serial_putc(serial_dev_t dev, uint8_t ch);
 
 /// reads one character form a generic serial interface
-static inline uint16_t serial_getc(serial_dev_t dev){
-	return (*dev)->get(dev);
-}
+uint16_t serial_getc(serial_dev_t dev);
 
 /// writes a string of characters to a generic serial interface
-static inline size_t	  serial_putn(serial_dev_t dev,
-	const uint8_t *data, size_t max_sz){
-	return (*dev)->putn(dev, data, max_sz);
-}
-
+size_t	  serial_putn(serial_dev_t dev,
+	const uint8_t *data, size_t max_sz);
+	
 /// reads a string of characters from a generic serial interface
-static inline size_t serial_getn(serial_dev_t dev,
-	uint8_t *data, size_t max_sz){
-	return (*dev)->getn(dev, data, max_sz); 
-}
-
+size_t serial_getn(serial_dev_t dev,
+	uint8_t *data, size_t max_sz);
+	
 /// gets number of bytes waiting in rx buffer
-static inline size_t  serial_waiting(serial_dev_t dev){
-	return (*dev)->waiting(dev);
-}
+size_t  serial_waiting(serial_dev_t dev);
 
 /// status codes returned by methods of the interface
 #define SERIAL_PARITY_ERROR			0x1000
@@ -225,42 +211,30 @@ struct pio_if {
 }; 
 
 /// set pin of the output port either high or low. 
-inline void 		pio_write_pin(pio_dev_t self, uint16_t pin_number, uint8_t value){
-	(*self)->write_pin(self, pin_number, value);
-}
+void 		pio_write_pin(pio_dev_t self, uint16_t pin_number, uint8_t value);
 
 /// used to read an input pin. Always returns 0 when reading an output pin. 
-inline uint8_t pio_read_pin(pio_dev_t self, uint16_t pin_number){
-	return (*self)->read_pin(self, pin_number);
-}
+uint8_t pio_read_pin(pio_dev_t self, uint16_t pin_number);
 
 /// configure pin to be input, output, pulled up, pulled down etc. Not all options may
 /// be supported by implementation. Function returns 0 on success and 1 on failure. 
-inline uint8_t	pio_configure_pin(pio_dev_t self, uint16_t pin_number, uint16_t flags){
-	return (*self)->configure_pin(self, pin_number, flags);
-}
+uint8_t	pio_configure_pin(pio_dev_t self, uint16_t pin_number, uint16_t flags);
 
 /// used to get status of the pin. 
-inline uint8_t pio_get_pin_status(pio_dev_t self, uint16_t pin_number, timestamp_t *t_up, timestamp_t *t_down){
-	return (*self)->get_pin_status(self, pin_number, t_up, t_down);
-}
+uint8_t pio_get_pin_status(pio_dev_t self, uint16_t pin_number, timestamp_t *t_up, timestamp_t *t_down);
 
 /// used to write byte or int to an io address. If you have pins PA0, PA1 .. PA7 and
 /// your registers are 8 bit long then writing to addr 0 should write all of PA pins
 /// at the same time. For implementations with larger registers, more bits may be
 /// written. This method is used to write multiple bits in one operation. 
-inline uint8_t pio_write_word(pio_dev_t self, uint16_t addr, uint32_t value){
-	return (*self)->write_word(self, addr, value);
-}
+uint8_t pio_write_word(pio_dev_t self, uint16_t addr, uint32_t value);
 
 /// user to read word from an io register. The size of the word depends on the
 /// implementation. It may be 8 bit or 16 bit or 32 bit. The size is equivalent to
 /// the full size of io registers of implementation. addr is the index of the io
 /// register. Implementation must check this value for a valid range and return
 /// error if it is invalid. 
-inline uint8_t pio_read_word(pio_dev_t self, uint16_t addr, uint32_t *output){
-	return (*self)->read_word(self, addr, output);
-}
+uint8_t pio_read_word(pio_dev_t self, uint16_t addr, uint32_t *output);
 
 /// ===========================================
 
@@ -281,19 +255,13 @@ struct i2c_interface {
 	int16_t 			(*stop)(i2c_dev_t self); 
 };
 
-inline uint32_t i2c_start_write(i2c_dev_t dev,
-	uint8_t address, uint8_t *data, uint16_t max_sz){
-	return (*dev)->start_write(dev, address, data, max_sz);
-}
+uint32_t i2c_start_write(i2c_dev_t dev,
+	uint8_t address, uint8_t *data, uint16_t max_sz);
 
-inline uint32_t	i2c_start_read(i2c_dev_t dev,
-	uint8_t address, uint8_t *data, uint16_t max_sz){
-	return (*dev)->start_read(dev, address, data, max_sz);
-}
+uint32_t	i2c_start_read(i2c_dev_t dev,
+	uint8_t address, uint8_t *data, uint16_t max_sz);
 
-static inline int16_t i2c_stop(i2c_dev_t dev){
-	return (*dev)->stop(dev); 
-}
+int16_t i2c_stop(i2c_dev_t dev);
 
 /**
  * Memory interface can be used for any storage medium

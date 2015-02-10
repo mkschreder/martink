@@ -46,52 +46,20 @@ static struct spi_dev _spi[] = {
 #define GET_SPI_DEV(s, dev) \
 	struct spi_dev *dev = container_of(s, struct spi_dev, serial)
 	
-uint16_t _spi_putc(serial_dev_t self, uint8_t ch){
+static uint16_t _spi_putc(serial_dev_t self, uint8_t ch){
 	GET_SPI_DEV(self, dev);
 	dev->data = spi_transfer(dev->id, ch); 
 	return dev->data; 
-	/*
-	switch(dev->id){
-		case 0: {
-			uint8_t data = spi0_transfer(ch); 
-			cbuf_put(&spi0_rx_buf, data);
-			return data; 
-			break;
-		}
-		case 1: {
-			uint8_t data = spi1_transfer(ch); 
-			cbuf_put(&spi1_rx_buf, data);
-			return data; 
-			break;
-		}
-	}
-	return SERIAL_NO_DATA; */
 }
 
-uint16_t _spi_getc(serial_dev_t self) {
+static uint16_t _spi_getc(serial_dev_t self) {
 	GET_SPI_DEV(self, dev);
 	uint16_t d = dev->data; 
 	dev->data = SERIAL_NO_DATA; 
 	return d; 
-	/*
-	switch(dev->id){
-		case 0: {
-			if(!cbuf_get_data_count(&spi0_rx_buf)) return SERIAL_NO_DATA; 
-			int ret = cbuf_get(&spi0_rx_buf); 
-			return (ret == -1)?SERIAL_NO_DATA:((uint16_t)ret & 0xff);
-			break;
-		}
-		case 1: {
-			if(!cbuf_get_data_count(&spi1_rx_buf)) return SERIAL_NO_DATA; 
-			int ret = cbuf_get(&spi1_rx_buf); 
-			return (ret == -1)?SERIAL_NO_DATA:((uint16_t)ret & 0xff);
-			break;
-		}
-	}
-	return SERIAL_NO_DATA; */
 }
 
-size_t _spi_putn(serial_dev_t self, const uint8_t *data, size_t sz){
+static size_t _spi_putn(serial_dev_t self, const uint8_t *data, size_t sz){
 	size_t size = sz;
 	while(sz--){
 		_spi_putc(self, *data++); 
@@ -99,7 +67,7 @@ size_t _spi_putn(serial_dev_t self, const uint8_t *data, size_t sz){
 	return size; 
 }
 
-size_t _spi_getn(serial_dev_t self, uint8_t *data, size_t sz){
+static size_t _spi_getn(serial_dev_t self, uint8_t *data, size_t sz){
 	size_t count = 0;
 	while(sz--){
 		*data = _spi_putc(self, 0); 
@@ -109,29 +77,20 @@ size_t _spi_getn(serial_dev_t self, uint8_t *data, size_t sz){
 	return count; 
 }
 
-size_t _spi_waiting(serial_dev_t self){
+static size_t _spi_waiting(serial_dev_t self){
 	GET_SPI_DEV(self, dev);
 	return dev->data != SERIAL_NO_DATA; 
-	/*
-	switch(dev->id){
-		case 0: 
-			return cbuf_get_data_count(&spi0_rx_buf); 
-			break;
-		case 1: 
-			return cbuf_get_data_count(&spi1_rx_buf); 
-			break;
-	}
-	return 0; */
 }
 
-int16_t _spi_begin(serial_dev_t self){
+static int16_t _spi_begin(serial_dev_t self){
 	GET_SPI_DEV(self, dev);
 	dev->data = SERIAL_NO_DATA; 
 	return 0; 
 }
 
-int16_t _spi_end(serial_dev_t self){
+static int16_t _spi_end(serial_dev_t self){
 	// do nothing (but may be useful for interrupt driven version) 
+	(void)(self); 
 	return 0; 
 }
 

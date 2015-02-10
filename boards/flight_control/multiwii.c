@@ -37,14 +37,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-
-void time_init(void); 
-void uart_init(void); 
-void gpio_init(void); 
-void spi_init(void); 
-void twi_init(void); 
-void pwm_init(void); 
-
 /*
 #define FRONT_PIN PD3
 #define RIGHT_PIN PB1
@@ -76,7 +68,7 @@ void pwm_init(void);
 #define GPIO_MWII_HCSR_TRIGGER GPIO_PB1
 #define GPIO_MWII_HCSR_ECHO 	GPIO_PB2
 
-const static uint16_t rc_defaults[6] = {1000, 1500, 1500, 1500, 1500, 1500}; 
+static const uint16_t rc_defaults[6] = {1000, 1500, 1500, 1500, 1500, 1500}; 
 
 struct multiwii_board {
 	uint16_t 				rc_values[6]; 
@@ -149,7 +141,8 @@ void mwii_process_events(void){
 	
 }
 
-static uint8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
+static int8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
+	(void)(self); 
 	data->flags = 0xffff; // all
 	mpu6050_getRawData(&_brd.mpu, 
 		&data->raw_acc.x, 
@@ -197,17 +190,20 @@ static uint8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 	data->temperature = bmp085_read_temperature(&brd->bmp); 
 	data->pressure = bmp085_read_pressure(&brd->bmp); 
 	data->vbat = (adc0_read_immediate(2) / 65535.0);
-	return 1; 
+	return 0; 
 }
 
-static void _mwii_write_motors(fc_board_t self,
+static int8_t _mwii_write_motors(fc_board_t self,
 	uint16_t front, uint16_t back, uint16_t left, uint16_t right){
+	(void)(self); 
 	mwii_write_motors(front, back, left, right); 
+	return 0; 
 }
 
-static uint8_t _mwii_read_receiver(fc_board_t self, 
+static int8_t _mwii_read_receiver(fc_board_t self, 
 		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1) {
+	(void)(self); 
 	*rc_thr = 		brd->rc_values[RC_THROTTLE]; 
 	*rc_pitch = 	brd->rc_values[RC_PITCH]; 
 	*rc_yaw = 		brd->rc_values[RC_YAW]; 
@@ -225,17 +221,22 @@ static uint8_t _mwii_read_receiver(fc_board_t self,
 	return 0; 
 }
 
-static void _mwii_write_config(fc_board_t self, const uint8_t *data, uint16_t size){
+static int8_t _mwii_write_config(fc_board_t self, const uint8_t *data, uint16_t size){
+	(void)(self); 
 	memory_dev_t ee = eeprom_get_memory_interface(); 
 	mem_write(ee, 0, data, size); 
+	return 0; 
 }
 
-static void _mwii_read_config(fc_board_t self, uint8_t *data, uint16_t size){
+static int8_t _mwii_read_config(fc_board_t self, uint8_t *data, uint16_t size){
+	(void)(self); 
 	memory_dev_t ee = eeprom_get_memory_interface(); 
 	mem_read(ee, 0, data, size); 
+	return 0; 
 }
 
 static serial_dev_t _mwii_get_pc_link_interface(fc_board_t self){
+	(void)(self); 
 	return uart_get_serial_interface(0); 
 }
 

@@ -19,6 +19,8 @@
 	LibK project on github: https://github.com/mkschreder
 */
 
+#include "gf256mul.h"
+
 unsigned char gf256mul(unsigned char a, unsigned char b, unsigned char reducer){
 	unsigned char t,ret=0;
 	while(a){

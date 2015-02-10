@@ -28,10 +28,10 @@
 #define DECLARE_STATIC_CBUF(name, elem_type, size) \
 static struct {\
 	elem_type buffer[NEXT_POW2(size)];\
-	uint32_t head;\
-	uint32_t tail;\
-	const uint32_t total_size;\
-	const uint32_t size_mask; \
+	int32_t head;\
+	int32_t tail;\
+	const int32_t total_size;\
+	const int32_t size_mask; \
 } name = { \
 	.buffer = {0}, \
 	.head = 0, \

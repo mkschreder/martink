@@ -493,7 +493,7 @@ void ili9340_setScrollMargins(struct ili9340 *self, uint16_t top, uint16_t botto
   _wr_data16(self, bottom); 
 }
 
-void _ili9340_setAddrWindow(struct ili9340 *self, int16_t x0, int16_t y0, int16_t x1, int16_t y1){
+static void _ili9340_setAddrWindow(struct ili9340 *self, int16_t x0, int16_t y0, int16_t x1, int16_t y1){
 	_wr_command(self, ILI9340_CASET); // Column addr set
   _wr_data(self, x0 >> 8);
   _wr_data(self, x0 & 0xFF);     // XSTART 
@@ -507,7 +507,7 @@ void _ili9340_setAddrWindow(struct ili9340 *self, int16_t x0, int16_t y0, int16_
   _wr_data(self, y1);     // YEND
 }
 
-void ili9340_setAddrWindow_WR(struct ili9340 *self, int16_t x0, int16_t y0, int16_t x1,
+static void ili9340_setAddrWindow_WR(struct ili9340 *self, int16_t x0, int16_t y0, int16_t x1,
  int16_t y1) {
   _ili9340_setAddrWindow(self, x0, y0, x1, y1); 
   _wr_command(self, ILI9340_RAMWR); // write to RAM
@@ -560,8 +560,8 @@ void ili9340_writeRect(struct ili9340 *self,uint16_t x, uint16_t y, uint16_t w, 
 
 	CS_HI; 
 }
-
-void ili9340_pushColor(struct ili9340 *self, uint16_t color) {
+/*
+static void ili9340_pushColor(struct ili9340 *self, uint16_t color) {
   DC_HI;
   CS_LO; 
 
@@ -569,7 +569,7 @@ void ili9340_pushColor(struct ili9340 *self, uint16_t color) {
   spi_writereadbyte(color);
 
 	CS_HI; 
-}
+}*/
 uint16_t ili9340_width(struct ili9340 *self){
 	return self->screen_width;
 }
@@ -712,7 +712,7 @@ void ili9340_drawSprite(uint16_t x, uint16_t y, const uint8_t *sprite, const uin
 }
 */
 
-void ili9340_drawFastHLine(struct ili9340 *self, int16_t x, int16_t y, int16_t w,
+void ili9340_drawFastHLine(struct ili9340 *self, uint16_t x, uint16_t y, uint16_t w,
   uint16_t color) {
   // Rudimentary clipping
   
@@ -734,7 +734,7 @@ void ili9340_drawFastHLine(struct ili9340 *self, int16_t x, int16_t y, int16_t w
 }
 
 
-void ili9340_drawFastVLine(struct ili9340 *self, int16_t x, int16_t y, int16_t h,
+void ili9340_drawFastVLine(struct ili9340 *self, uint16_t x, uint16_t y, uint16_t h,
   uint16_t color) {
 	
 	ili9340_fillRect(self, (h > 0)?x:(x + h), y, 1, (h > 0)?(x + h):x, color); 

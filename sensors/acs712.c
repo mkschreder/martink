@@ -33,6 +33,7 @@
 
 float acs712_read_current(uint8_t adc_chan,
 	float sensitivity, float vcc_volt) {
+	(void)(adc_chan); 
 	uint16_t adc_value = adc0_read_immediate_ref(adc_chan, ADC_REF_AVCC_CAP_AREF);
 	float volt = ((float)(adc_value) / (float)(65535)) * vcc_volt;
 	return (volt - (vcc_volt / 2)) / sensitivity; 

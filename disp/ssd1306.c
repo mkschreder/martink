@@ -134,19 +134,19 @@
 #define SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL 0x29
 #define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
 
-static inline void ssd1306_command(ssd1306_t *self, uint8_t cmd){
+static void ssd1306_command(ssd1306_t *self, uint8_t cmd){
 	uint8_t buf[2] = {0, cmd};
 	i2c_start_write(self->i2c, DISPLAY_ADDRESS, buf, 2);
 	i2c_stop(self->i2c); 
 }
-
-static inline void ssd1306_data(ssd1306_t *self, uint8_t data){
+/*
+static void ssd1306_data(ssd1306_t *self, uint8_t data){
 	uint8_t buf[2] = {0x40, data};
 	i2c_start_write(self->i2c, DISPLAY_ADDRESS, buf, 2);
 	i2c_stop(self->i2c); 
-}
+}*/
 
-static inline void ssd1306_data_buffer(ssd1306_t *self, uint8_t *data, uint16_t size){
+static void ssd1306_data_buffer(ssd1306_t *self, uint8_t *data, uint16_t size){
 	i2c_start_write(self->i2c, DISPLAY_ADDRESS, data, size);
 	i2c_stop(self->i2c); 
 }
@@ -154,7 +154,7 @@ static inline void ssd1306_data_buffer(ssd1306_t *self, uint8_t *data, uint16_t 
 void ssd1306_init(ssd1306_t *dev, i2c_dev_t i2c){
 	dev->i2c = i2c;
 	
-	for(int c = 0; c < sizeof(cmd_init); c++){
+	for(unsigned c = 0; c < sizeof(cmd_init); c++){
 		ssd1306_command(dev, pgm_read_byte(&cmd_init[c]));
 		delay_us(10); 
 	}
@@ -175,7 +175,7 @@ void ssd1306_gotoChar(ssd1306_t *dev, uint8_t x, uint8_t y){
 	
 		U8G_ESC_END,                // end of sequence 
 	}; 
-	for(int c = 0; c < sizeof(home); c++){
+	for(unsigned c = 0; c < sizeof(home); c++){
 		ssd1306_command(dev, home[c]); 
 	}
 }
@@ -261,10 +261,10 @@ void ssd1306_draw(ssd1306_t *self, uint16_t x, uint16_t y, fb_image_t img){
 	//size_t total_size = (img.w * img.h) >> 3; 
 	uint8_t buffer[8]; 
 	
-	for(int top = 0; top < img.h; top++){
-		for(int left = 0; left < img.w; left++){
-			for(int col = 0; (col < 8 && (left + col) < img.w); col++){
-				for(int row = 0; (row < 8 && (top + row) < img.h); row++){
+	for(unsigned top = 0; top < img.h; top++){
+		for(unsigned left = 0; left < img.w; left++){
+			for(unsigned col = 0; (col < 8 && (left + col) < img.w); col++){
+				for(unsigned row = 0; (row < 8 && (top + row) < img.h); row++){
 					if(img.data[left + col + ((top + row) * img.w) + 1] & _BV(7 - col)){
 						byte |= _BV(7 - col); 
 					} 

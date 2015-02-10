@@ -154,7 +154,7 @@ void l3g4200d_read_converted(struct l3g4200d *self, float* gx, float* gy, float*
 	int16_t gxraw = 0;
 	int16_t gyraw = 0;
 	int16_t gzraw = 0;
-	l3g4200d_getrawdata(self, &gxraw, &gyraw, &gzraw);
+	l3g4200d_read_raw(self, &gxraw, &gyraw, &gzraw);
 
 	//#if L3G4200D_CALIBRATED == 1 && L3G4200D_CALIBRATEDDOTEMPCOMP == 1
 	//l3g4200d_gtemp = l3g4200d_gtemp*0.95 + 0.05*l3g4200d_gettemperaturediff(); //filtered temperature compansation
@@ -181,7 +181,9 @@ void l3g4200d_read_converted(struct l3g4200d *self, float* gx, float* gy, float*
  * init L3G4200D_
  */
 void l3g4200d_init(struct l3g4200d *self, i2c_dev_t i2c, uint8_t addr) {
-	//enable chip
+	self->i2c = i2c; 
+	self->addr = addr; 
+	
 	uint8_t reg[] = {L3G4200D_CTRL_REG1, 0};
 	reg[1] = 0x0f; // normal power mode, all axes
 	i2c_start_write(self->i2c, self->addr, reg, 2);

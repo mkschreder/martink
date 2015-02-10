@@ -618,7 +618,6 @@ void SetCNTR(uint16_t /*wRegValue*/);
 void SetISTR(uint16_t /*wRegValue*/);
 void SetDADDR(uint16_t /*wRegValue*/);
 void SetBTABLE(uint16_t /*wRegValue*/);
-void SetBTABLE(uint16_t /*wRegValue*/);
 uint16_t GetCNTR(void);
 uint16_t GetISTR(void);
 uint16_t GetFNR(void);

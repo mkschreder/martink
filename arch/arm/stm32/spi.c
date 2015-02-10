@@ -39,9 +39,9 @@ int16_t spi_init_device(uint8_t dev){
 	GPIO_InitTypeDef gpio;
 	SPI_InitTypeDef spi; 
 	
-	const int count = sizeof(_spi) / sizeof(_spi[0]); 
+	const uint8_t count = sizeof(_spi) / sizeof(_spi[0]); 
 	
-	if(dev < 0 || dev > count) return -1; 
+	if(dev > count) return -1; 
 	
 	struct spi_device *d = &_spi[dev]; 
 	
@@ -89,8 +89,8 @@ int16_t spi_init_device(uint8_t dev){
 }
 
 uint8_t spi_transfer(uint8_t dev, uint8_t data){
-	const int count = sizeof(_spi) / sizeof(_spi[0]); 
-	if(dev < 0 || dev > count) return 0xff; 
+	const uint8_t count = sizeof(_spi) / sizeof(_spi[0]); 
+	if(dev > count) return 0xff; 
 	struct spi_device *d = &_spi[dev]; 
 	
 	while (SPI_I2S_GetFlagStatus(d->spi, SPI_I2S_FLAG_TXE) == RESET);

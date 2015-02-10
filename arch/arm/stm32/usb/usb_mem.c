@@ -77,10 +77,12 @@ void PMAToUserBufferCopy(uint8_t *pbUsrBuf, uint16_t wPMABufAddr, uint16_t wNByt
   uint32_t i;
   uint32_t *pdwVal;
   pdwVal = (uint32_t *)(wPMABufAddr * 2 + PMAAddr);
+  uint16_t *ub = (uint16_t*)(void*)(pbUsrBuf); 
   for (i = n; i != 0; i--)
   {
-    *(uint16_t*)pbUsrBuf++ = *pdwVal++;
-    pbUsrBuf++;
+		*ub++ = *pdwVal++; 
+    //*(uint16_t*)pbUsrBuf++ = *pdwVal++;
+    //pbUsrBuf++;
   }
 }
 

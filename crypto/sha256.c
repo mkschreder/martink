@@ -77,7 +77,7 @@ void sha256_init(sha256_ctx_t *state){
 /**
  * rotate x right by n positions
  */
-uint32_t rotr32( uint32_t x, uint8_t n){
+static uint32_t rotr32( uint32_t x, uint8_t n){
 	return ((x>>n) | (x<<(32-n)));
 }
 
@@ -86,7 +86,7 @@ uint32_t rotr32( uint32_t x, uint8_t n){
 
 // #define CHANGE_ENDIAN32(x) (((x)<<24) | ((x)>>24) | (((x)& 0x0000ff00)<<8) | (((x)& 0x00ff0000)>>8))
 
-uint32_t change_endian32(uint32_t x){
+static uint32_t change_endian32(uint32_t x){
 	return (((x)<<24) | ((x)>>24) | (((x)& 0x0000ff00)<<8) | (((x)& 0x00ff0000)>>8));
 }
 
@@ -129,7 +129,7 @@ void sha256_nextBlock (sha256_ctx_t *state, const void* block){
 	/* init w */
 #if defined LITTLE_ENDIAN
 		for (i=0; i<16; ++i){
-			w[i]= change_endian32(((uint32_t*)block)[i]);
+			w[i]= change_endian32(((const uint32_t*)block)[i]);
 		}
 #elif defined BIG_ENDIAN
 		memcpy((void*)w, block, 64);
@@ -173,7 +173,7 @@ void sha256_lastBlock(sha256_ctx_t *state, const void* block, uint16_t length){
 	while(length>=SHA256_BLOCK_BITS){
 		sha256_nextBlock(state, block);
 		length -= SHA256_BLOCK_BITS;
-		block = (uint8_t*)block+SHA256_BLOCK_BYTES;
+		block = (const uint8_t*)block+SHA256_BLOCK_BYTES;
 	}
 
 	state->length += length;
@@ -181,7 +181,7 @@ void sha256_lastBlock(sha256_ctx_t *state, const void* block, uint16_t length){
 
 	/* set the final one bit */
 	if (length & 0x7){ // if we have single bits at the end
-		lb[length/8] = ((uint8_t*)(block))[length/8];
+		lb[length/8] = ((const uint8_t*)(block))[length/8];
 	} else {
 		lb[length/8] = 0;
 	}
@@ -220,7 +220,7 @@ void sha256(sha256_hash_t *dest, const void* msg, uint32_t len){
 	uint32_t length = len * 8; 
 	while(length >= SHA256_BLOCK_BITS){
 		sha256_nextBlock(&s, msg);
-		msg = (uint8_t*)msg + SHA256_BLOCK_BITS/8;
+		msg = (const uint8_t*)msg + SHA256_BLOCK_BITS/8;
 		length -= SHA256_BLOCK_BITS;
 	}
 	sha256_lastBlock(&s, msg, length);
@@ -235,7 +235,7 @@ void sha256_ctx2hash(sha256_hash_t *dest, const sha256_ctx_t *state){
 #if defined LITTLE_ENDIAN
 	uint8_t i;
 	for(i=0; i<8; ++i){
-		((uint32_t*)dest)[i] = change_endian32(state->h[i]);
+		((uint32_t*)(void*)dest)[i] = change_endian32(state->h[i]);
 	}
 #elif BIG_ENDIAN
 	if (dest != state->h)

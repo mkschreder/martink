@@ -22,7 +22,8 @@
 #include <arch/soc.h>
 
 
-uint16_t 		_pwm_set_channel_duty(struct pwm_interface *self, uint8_t channel, uint16_t value_us){
+static uint16_t 		_pwm_set_channel_duty(struct pwm_interface *self, uint8_t channel, uint16_t value_us){
+	(void)(self); 
 	switch(channel){
 		case 0: return pwm0_set(value_us);
 		case 1: return pwm1_set(value_us);
@@ -35,7 +36,10 @@ uint16_t 		_pwm_set_channel_duty(struct pwm_interface *self, uint8_t channel, ui
 	}
 }
 
-uint16_t 		_pwm_set_channel_period(struct pwm_interface *self, uint8_t channel, uint16_t value_us){
+static uint16_t 		_pwm_set_channel_period(struct pwm_interface *self, uint8_t channel, uint16_t value_us){
+	(void)(self); 
+	(void)(channel); 
+	(void)(value_us); 
 	return 0; 
 }
 

@@ -95,6 +95,7 @@ uint16_t uart0_putc(uint8_t ch){
 	return 1; 
 }
 
+void USART1_IRQHandler(void);
 void USART1_IRQHandler(void)
 {
 	if(USART1->SR & USART_FLAG_RXNE){
@@ -115,7 +116,7 @@ uint16_t uart0_waiting(void){
 }
 
 void uart1_init_default(uint32_t baud){
-	
+	(void)(baud);
 }
 
 uint16_t uart1_getc(void){

@@ -33,7 +33,7 @@ extern "C" {
 #define VT100_MAX_COMMAND_ARGS 4
 
 
-struct vt100_private {
+struct vt100 {
 	union flags {
 		uint8_t val;
 		struct {
@@ -49,11 +49,11 @@ struct vt100_private {
 	
 	//uint16_t screen_width, screen_height;
 	// cursor position on the screen (0, 0) = top left corner. 
-	int16_t cursor_x, cursor_y;
-	int16_t saved_cursor_x, saved_cursor_y; // used for cursor save restore
-	int16_t scroll_start_row, scroll_end_row; 
+	uint16_t cursor_x, cursor_y;
+	uint16_t saved_cursor_x, saved_cursor_y; // used for cursor save restore
+	uint16_t scroll_start_row, scroll_end_row; 
 	// character width and height
-	int8_t char_width, char_height;
+	uint8_t char_width, char_height;
 	// colors used for rendering current characters
 	uint16_t back_color, front_color;
 	// the starting y-position of the screen scroll
@@ -64,17 +64,11 @@ struct vt100_private {
 	uint8_t carg;
 	uint16_t screen_height, screen_width;
 	
-	void (*state)(struct vt100_private *term, uint8_t ev, uint16_t arg);
+	void (*state)(struct vt100 *term, uint8_t ev, uint16_t arg);
 	//void (*send_response)(char *str);
-	void (*ret_state)(struct vt100_private *term, uint8_t ev, uint16_t arg);
+	void (*ret_state)(struct vt100 *term, uint8_t ev, uint16_t arg);
 };
 
-// we could hide the implementation completely, but then we would need to always use
-// dynamic allocation. So we do it like this instead just to tell the user that the
-// private variables are not meant to be accessed. 
-struct vt100 {
-	uint8_t data[sizeof(struct vt100_private)]; 
-}; 
 
 //void vt100_init(void (*send_response)(char *str));
 void vt100_init(struct vt100 *self, struct text_display_interface *display); 

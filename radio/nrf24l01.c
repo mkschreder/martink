@@ -43,7 +43,7 @@
 /*
  * read one register
  */
-uint8_t nrf24l01_readregister(struct nrf24l01 *nrf, uint8_t reg) {
+static uint8_t nrf24l01_readregister(struct nrf24l01 *nrf, uint8_t reg) {
 	delay_us(10); 
 	nrf24l01_CSNlo; //low CSN
 	delay_us(10); 
@@ -58,7 +58,8 @@ uint8_t nrf24l01_readregister(struct nrf24l01 *nrf, uint8_t reg) {
 /*
  * read many registers
  */
-void nrf24l01_readregisters(struct nrf24l01 *nrf, uint8_t reg, uint8_t *value, uint8_t len) {
+ /*
+static void nrf24l01_readregisters(struct nrf24l01 *nrf, uint8_t reg, uint8_t *value, uint8_t len) {
 	uint8_t i = 0;
 	delay_us(10); 
 	nrf24l01_CSNlo; //low CSN
@@ -70,12 +71,12 @@ void nrf24l01_readregisters(struct nrf24l01 *nrf, uint8_t reg, uint8_t *value, u
 		delay_us(10); 
 	}
 	nrf24l01_CSNhi; //high CSN
-}
+}*/
 
 /*
  * write one register
  */
-void nrf24l01_writeregister(struct nrf24l01 *nrf, uint8_t reg, uint8_t value) {
+static void nrf24l01_writeregister(struct nrf24l01 *nrf, uint8_t reg, uint8_t value) {
 	delay_us(10); 
 	nrf24l01_CSNlo; //low CSN
 	delay_us(10); 
@@ -89,7 +90,7 @@ void nrf24l01_writeregister(struct nrf24l01 *nrf, uint8_t reg, uint8_t value) {
 /*
  * write many registers
  */
-void nrf24l01_writeregisters(struct nrf24l01 *nrf, uint8_t reg, uint8_t *value, uint8_t len) {
+static void nrf24l01_writeregisters(struct nrf24l01 *nrf, uint8_t reg, uint8_t *value, uint8_t len) {
 	uint8_t i = 0;
 	delay_us(10); 
 	nrf24l01_CSNlo; //low CSN
@@ -106,7 +107,7 @@ void nrf24l01_writeregisters(struct nrf24l01 *nrf, uint8_t reg, uint8_t *value, 
 /*
  * reverse an array, NRF24L01 expects LSB first
  */
-void nrf24l01_revaddress(uint8_t *addr, uint8_t *addrrev) {
+static void nrf24l01_revaddress(uint8_t *addr, uint8_t *addrrev) {
 	//reverse address
 	uint8_t i = 0;
 	for(i=0; i<NRF24L01_ADDRSIZE; i++)
@@ -156,7 +157,7 @@ void nrf24l01_settxaddr(struct nrf24l01 *nrf, uint8_t *addr) {
 /*
  * flush RX fifo
  */
-void nrf24l01_flushRXfifo(struct nrf24l01 *nrf) {
+static void nrf24l01_flushRXfifo(struct nrf24l01 *nrf) {
 	nrf24l01_CSNlo; //low CSN
 	spi_writereadbyte(NRF24L01_CMD_FLUSH_RX);
 	nrf24l01_CSNhi; //high CSN
@@ -165,7 +166,7 @@ void nrf24l01_flushRXfifo(struct nrf24l01 *nrf) {
 /*
  * flush RX fifo
  */
-void nrf24l01_flushTXfifo(struct nrf24l01 *nrf) {
+static void nrf24l01_flushTXfifo(struct nrf24l01 *nrf) {
 	nrf24l01_CSNlo; //low CSN
 	spi_writereadbyte(NRF24L01_CMD_FLUSH_TX);
 	nrf24l01_CSNhi; //high CSN
@@ -174,7 +175,7 @@ void nrf24l01_flushTXfifo(struct nrf24l01 *nrf) {
 /*
  * set chip as RX
  */
-void nrf24l01_setRX(struct nrf24l01 *nrf) {
+static void nrf24l01_setRX(struct nrf24l01 *nrf) {
 	//nrf24l01_setrxaddr(0, nrf24l01_addr0); //restore pipe 0 address
 	nrf24l01_writeregister(nrf, NRF24L01_REG_CONFIG, nrf24l01_readregister(nrf, NRF24L01_REG_CONFIG) | (1<<NRF24L01_REG_PRIM_RX)); //prx mode
 	nrf24l01_writeregister(nrf, NRF24L01_REG_CONFIG, nrf24l01_readregister(nrf, NRF24L01_REG_CONFIG) | (1<<NRF24L01_REG_PWR_UP)); //power up
@@ -188,7 +189,7 @@ void nrf24l01_setRX(struct nrf24l01 *nrf) {
 /*
  * set chip as TX
  */
-void nrf24l01_setTX(struct nrf24l01 *nrf) {
+static void nrf24l01_setTX(struct nrf24l01 *nrf) {
 	nrf24l01_CElo; //stop listening
 	nrf24l01_writeregister(nrf, NRF24L01_REG_CONFIG, nrf24l01_readregister(nrf, NRF24L01_REG_CONFIG) & ~(1<<NRF24L01_REG_PRIM_RX)); //ptx mode
 	nrf24l01_writeregister(nrf, NRF24L01_REG_CONFIG, nrf24l01_readregister(nrf, NRF24L01_REG_CONFIG) | (1<<NRF24L01_REG_PWR_UP)); //power up
@@ -233,6 +234,7 @@ void nrf24l01_printinfo(void(*prints)(const char *), void(*printc)(unsigned char
 */
 
 void nrf24l01_powerdown(struct nrf24l01 *nrf){
+	(void)(nrf); 
 	//nrf24l01_writeregister(NRF24L01_REG_CONFIG, nrf24l01_readregister(NRF24L01_REG_CONFIG) & ~(1<<NRF24L01_REG_PWR_UP));
 	//_delay_ms(10); 
 }
@@ -347,7 +349,7 @@ uint8_t nrf24l01_write(struct nrf24l01 *nrf, uint8_t *data) {
 /*
  * set power level
  */
-void nrf24l01_setpalevel(struct nrf24l01 *nrf) {
+static void nrf24l01_setpalevel(struct nrf24l01 *nrf) {
   uint8_t setup = nrf24l01_readregister(nrf, NRF24L01_REG_RF_SETUP);
   setup &= ~((1<<NRF24L01_REG_RF_PWR_LOW) | (1<<NRF24L01_REG_RF_PWR_HIGH));
 
@@ -369,7 +371,7 @@ void nrf24l01_setpalevel(struct nrf24l01 *nrf) {
 /*
  * set datarate
  */
-void nrf24l01_setdatarate(struct nrf24l01 *nrf) {
+static void nrf24l01_setdatarate(struct nrf24l01 *nrf) {
   uint8_t setup = nrf24l01_readregister(nrf, NRF24L01_REG_RF_SETUP) ;
 
   setup &= ~((1<<NRF24L01_REG_RF_DR_LOW) | (1<<NRF24L01_REG_RF_DR_HIGH));
@@ -389,7 +391,7 @@ void nrf24l01_setdatarate(struct nrf24l01 *nrf) {
 /*
  * set crc length
  */
-void nrf24l01_setcrclength(struct nrf24l01 *nrf) {
+static void nrf24l01_setcrclength(struct nrf24l01 *nrf) {
   uint8_t config = nrf24l01_readregister(nrf, NRF24L01_REG_CONFIG) & ~((1<<NRF24L01_REG_CRCO) | (1<<NRF24L01_REG_EN_CRC));
 
   if (NRF24L01_RF24_CRC == NRF24L01_RF24_CRC_DISABLED) {

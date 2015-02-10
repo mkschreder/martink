@@ -4,6 +4,7 @@
 
 static volatile int32_t _millis = 0, _micros = 0; 
 
+void SysTick_Handler(void); 
 void SysTick_Handler(void){
 	_micros++; 
 	if(_micros % 1000 == 0) {

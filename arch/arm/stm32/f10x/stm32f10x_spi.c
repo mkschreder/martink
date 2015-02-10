@@ -267,6 +267,10 @@ void I2S_Init(SPI_TypeDef* SPIx, I2S_InitTypeDef* I2S_InitStruct)
       packetlength = 2;
     }
 
+    /* Check the I2S clock source configuration depending on the Device:
+       Only Connectivity line devices have the PLL3 VCO clock */
+#ifdef STM32F10X_CL
+		
     /* Get the I2S clock source mask depending on the peripheral number */
     if(((uint32_t)SPIx) == SPI2_BASE)
     {
@@ -279,9 +283,6 @@ void I2S_Init(SPI_TypeDef* SPIx, I2S_InitTypeDef* I2S_InitStruct)
       tmp = I2S3_CLOCK_SRC;
     }
 
-    /* Check the I2S clock source configuration depending on the Device:
-       Only Connectivity line devices have the PLL3 VCO clock */
-#ifdef STM32F10X_CL
     if((RCC->CFGR2 & tmp) != 0)
     {
       /* Get the configuration bits of RCC PLL3 multiplier */

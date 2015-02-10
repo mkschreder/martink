@@ -9,6 +9,8 @@
 #include <sys/times.h>
 #include <sys/unistd.h>
 
+
+
 #ifndef STDOUT_USART
 #define STDOUT_USART 0
 #endif
@@ -32,16 +34,35 @@ extern int errno;
 char *__env[1] = { 0 };
 char **environ = __env;
 
-int _write(int file, char *ptr, int len);
+int _write(int file, const char *ptr, int len);
+//void _exit(int status); 
+int _close(int file) ; 
+int _execve(char *name, char **argv, char **env) ; 
+int _fork(void) ; 
+int _fstat(int file, struct stat *st) ; 
+int _getpid(void) ; 
+int _isatty(int file) ; 
+int _kill(int pid, int sig) ; 
+int _link(char *old, char *new) ; 
+int _lseek(int file, int ptr, int dir); 
+caddr_t _sbrk(int incr); 
+int _read(int file, char *ptr, int len); 
+int _stat(const char *filepath, struct stat *st); 
+int _unlink(char *name); 
+int _wait(int *status); 
+clock_t _times(struct tms *buf) ; 
 
 void _exit(int status) {
-	_write(1, "exit", 4);
+	(void)(status); 
+	//printf("SYSCALL: exit(%d)\n", status); 
 	while (1) {
-			;
+		printf("."); 
 	}
 }
 
 int _close(int file) {
+	(void)(file); 
+	//printf("SYSCALL: close(%d)\n", file); 
 	return -1;
 }
 /*
@@ -49,6 +70,10 @@ int _close(int file) {
  Transfer control to a new process. Minimal implementation (for a system without processes):
  */
 int _execve(char *name, char **argv, char **env) {
+	(void)(name); 
+	(void)(argv); 
+	(void)(env); 
+	//printf("SYSCALL: execve(%d)\n", file); 
 	errno = ENOMEM;
 	return -1;
 }
@@ -68,6 +93,7 @@ int _fork(void) {
  The `sys/stat.h' header file required is distributed in the `include' subdirectory for this C library.
  */
 int _fstat(int file, struct stat *st) {
+	(void)(file); 
 	st->st_mode = S_IFCHR;
 	return 0;
 }
@@ -104,8 +130,10 @@ int _isatty(int file) {
  Send a signal. Minimal implementation:
  */
 int _kill(int pid, int sig) {
-    errno = EINVAL;
-    return (-1);
+	(void)(pid); 
+	(void)(sig); 
+	errno = EINVAL;
+	return (-1);
 }
 
 /*
@@ -114,8 +142,10 @@ int _kill(int pid, int sig) {
  */
 
 int _link(char *old, char *new) {
-    errno = EMLINK;
-    return -1;
+	(void)(old); 
+	(void)(new); 
+	errno = EMLINK;
+	return -1;
 }
 
 /*
@@ -123,7 +153,10 @@ int _link(char *old, char *new) {
  Set position in a file. Minimal implementation:
  */
 int _lseek(int file, int ptr, int dir) {
-    return 0;
+	(void)(file); 
+	(void)(ptr); 
+	(void)(dir); 
+	return 0;
 }
 
 /*
@@ -131,8 +164,9 @@ int _lseek(int file, int ptr, int dir) {
  Increase program data space.
  Malloc and related functions depend on this
  */
+extern char _ebss; // Defined by the linker
+
 caddr_t _sbrk(int incr) {
-	extern char _ebss; // Defined by the linker
 	static char *heap_end = 0;
 	char *prev_heap_end;
 
@@ -185,6 +219,7 @@ int _read(int file, char *ptr, int len) {
  */
 
 int _stat(const char *filepath, struct stat *st) {
+	(void)(filepath); 
     st->st_mode = S_IFCHR;
     return 0;
 }
@@ -195,6 +230,7 @@ int _stat(const char *filepath, struct stat *st) {
  */
 
 clock_t _times(struct tms *buf) {
+	(void)(buf); 
     return -1;
 }
 
@@ -203,8 +239,9 @@ clock_t _times(struct tms *buf) {
  Remove a file's directory entry. Minimal implementation:
  */
 int _unlink(char *name) {
-    errno = ENOENT;
-    return -1;
+	(void)(name); 
+	errno = ENOENT;
+	return -1;
 }
 
 /*
@@ -212,8 +249,9 @@ int _unlink(char *name) {
  Wait for a child process. Minimal implementation:
  */
 int _wait(int *status) {
-    errno = ECHILD;
-    return -1;
+	(void)(status); 
+	errno = ECHILD;
+	return -1;
 }
 
 /*
@@ -221,7 +259,7 @@ int _wait(int *status) {
  Write a character to a file. `libc' subroutines will use this system routine for output to all files, including stdout
  Returns -1 on error or number of bytes sent
  */
-int _write(int file, char *ptr, int len) {
+int _write(int file, const char *ptr, int len) {
 	static serial_dev_t out = 0, err = 0; 
 	
 	if(!out)
@@ -232,11 +270,11 @@ int _write(int file, char *ptr, int len) {
 	switch (file) {
 		case STDOUT_FILENO: 
 			if(out)
-				return serial_putn(out, (uint8_t*)ptr, len); 
+				return serial_putn(out, (const uint8_t*)ptr, len); 
 			break;
 		case STDERR_FILENO: /* stderr */
 			if(err)
-				return serial_putn(err, (uint8_t*)ptr, len); 
+				return serial_putn(err, (const uint8_t*)ptr, len); 
 			break;
 		default:
 			errno = EBADF;

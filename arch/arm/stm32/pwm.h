@@ -56,9 +56,9 @@ uint32_t pwm_read(pwm_channel_t chan);
 void pwm_write(pwm_channel_t chan, uint32_t width); 
 void pwm_configure_capture(pwm_channel_t chan, uint32_t def_value); 
 
-#define pwm0_set(a) (0)
-#define pwm1_set(a) (0)
-#define pwm2_set(a) (0)
-#define pwm3_set(a) (0)
-#define pwm4_set(a) (0)
-#define pwm5_set(a) (0) 
+#define pwm0_set(a) ((void)(a), 0)
+#define pwm1_set(a) ((void)(a), 0)
+#define pwm2_set(a) ((void)(a), 0)
+#define pwm3_set(a) ((void)(a), 0)
+#define pwm4_set(a) ((void)(a), 0)
+#define pwm5_set(a) ((void)(a), 0) 

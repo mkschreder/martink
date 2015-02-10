@@ -39,7 +39,7 @@ void stm32w_flash_read(uint32_t address, void *data, uint32_t length){
 void stm32w_flash_write(uint32_t address, const void *data, uint32_t length){
 	//serial_dev_t con = uart_get_serial_interface(0); 
 	//printf("WRITE: @%x -> @%p %d\n", (int)address, data, (int)length); 
-	serial_flash_write(&cc3d.flash, (int)address, (uint8_t*)data, (int)length); 
+	serial_flash_write(&cc3d.flash, (int)address, (const uint8_t*)data, (int)length); 
 }
 
 void stm32w_flash_erase(uint8_t sector){
@@ -215,6 +215,8 @@ void cc3d_process_events(void){
 }
 
 static int8_t _cc3d_read_sensors(fc_board_t self, struct fc_data *data){
+	(void)(self); 
+	
 	data->flags = HAVE_ACC | HAVE_GYR; 
 	memset(data, 0, sizeof(struct fc_data)); 
 	
@@ -246,6 +248,7 @@ static int8_t _cc3d_read_sensors(fc_board_t self, struct fc_data *data){
 
 static int8_t _cc3d_write_motors(fc_board_t self,
 	uint16_t front, uint16_t back, uint16_t left, uint16_t right){
+	(void)(self); 
 	cc3d_write_motors(front, back, left, right); 
 	return 0; 
 }
@@ -253,7 +256,7 @@ static int8_t _cc3d_write_motors(fc_board_t self,
 static int8_t _cc3d_read_receiver(fc_board_t self, 
 		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1) {
-	
+	(void)(self); 
 	*rc_thr = 		pwm_read(FC_PWM_RC1); 
 	*rc_pitch = 	pwm_read(FC_PWM_RC2); 
 	*rc_yaw = 		pwm_read(FC_PWM_RC3); 
@@ -270,6 +273,7 @@ static int8_t _cc3d_read_receiver(fc_board_t self,
 }
 
 static int8_t _cc3d_write_config(fc_board_t self, const uint8_t *data, uint16_t size){
+	(void)(self); 
 	int fd = cfs_open(CONFIG_FILE, CFS_WRITE);
 	if(fd != -1) {
 		cfs_write(fd, data, size);
@@ -281,6 +285,7 @@ static int8_t _cc3d_write_config(fc_board_t self, const uint8_t *data, uint16_t 
 }
 
 static int8_t _cc3d_read_config(fc_board_t self, uint8_t *data, uint16_t size){
+	(void)(self); 
 	int fd = cfs_open(CONFIG_FILE, CFS_READ);
 	if(fd != -1) {
 		cfs_read(fd, data, size);
@@ -292,6 +297,7 @@ static int8_t _cc3d_read_config(fc_board_t self, uint8_t *data, uint16_t size){
 }
 
 static serial_dev_t _cc3d_get_pc_link_interface(fc_board_t self){
+	(void)(self); 
 	return cc3d.uart0; 
 }
 

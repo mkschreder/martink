@@ -73,7 +73,7 @@ void gpio_configure(gpio_pin_t p, uint16_t flags){
 
 void gpio_write_pin(gpio_pin_t p, uint8_t val){
 	uint32_t pin = p; 
-	if(pin < 0 || pin >= GPIO_COUNT) return; 
+	if(pin >= GPIO_COUNT) return; 
 	if(val) // the output is inverted for some reason?
 		_ports[pin >> 4].gpio->BSRR = (1 << (pin & 0xf)); 
 	else
@@ -82,10 +82,13 @@ void gpio_write_pin(gpio_pin_t p, uint8_t val){
 
 uint8_t gpio_read_pin(gpio_pin_t p){
 	uint32_t pin = p; 
-	if(pin < 0 || pin >= GPIO_COUNT) return 0; 
+	if(pin >= GPIO_COUNT) return 0; 
 	return _ports[pin >> 4].gpio->IDR & (1 << (pin & 0xf)); 
 }
 
 uint16_t gpio_get_status(gpio_pin_t pin, timestamp_t *t_up, timestamp_t *t_down){
+	*t_up = 0; 
+	*t_down = 0; 
+	(void)(pin); 
 	return 0; 
 }

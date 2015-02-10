@@ -80,9 +80,9 @@ extern "C" {
 #define PROGMEM
 #define PSTR(a) (a)
 #define pgm_read_byte(a) (*a)
-#define pgm_read_word(a) (*((uint16_t*)a))
-#define pgm_read_dword(a) (*((uint32_t*)a))
-#define pgm_read_float(a) (*((float*)a))
+#define pgm_read_word(a) (*((const uint16_t*)a))
+#define pgm_read_dword(a) (*((const uint32_t*)a))
+#define pgm_read_float(a) (*((const float*)a))
 #define pgm_streq(str, pstr) (strcmp(str, pstr) == 0)
 #define pgm_snprintf(str, size, fmt, ...) snprintf(str, size, fmt, ##__VA_ARGS__)
 #else

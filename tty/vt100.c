@@ -375,17 +375,17 @@ STATE(_st_esc_sq_bracket, term, ev, arg){
 						if(term->narg == 0 || (term->narg == 1 && term->args[0] == 0)){
 							// clear to end of line (to \n or to edge?)
 							// including cursor
-							for(int c = term->cursor_x; c < term->screen_width; c++) _vt100_putc(term, ' '); 
+							for(unsigned c = term->cursor_x; c < term->screen_width; c++) _vt100_putc(term, ' '); 
 							//term->display->draw_fill_rect(term->display, x, y, w - x, VT100_CHAR_HEIGHT, term->back_color); 
 							//ili9340_fillRect(x, y, VT100_SCREEN_WIDTH - x, VT100_CHAR_HEIGHT, term->back_color);
 						} else if(term->narg == 1 && term->args[0] == 1){
 							term->cursor_x = 0; 
-							for(int c = term->cursor_x; c < cx; c++) _vt100_putc(term, ' '); 
+							for(unsigned c = term->cursor_x; c < cx; c++) _vt100_putc(term, ' '); 
 							// clear from left to current cursor position
 							//term->display->draw_fill_rect(term->display, 0, y, x + w, VT100_CHAR_HEIGHT, term->back_color);
 						} else if(term->narg == 1 && term->args[0] == 2){
 							term->cursor_x = 0; 
-							for(int c = term->cursor_x; c < term->screen_width; c++) _vt100_putc(term, ' '); 
+							for(unsigned c = term->cursor_x; c < term->screen_width; c++) _vt100_putc(term, ' '); 
 							// clear whole current line
 							//term->display->draw_fill_rect(term->display, 0, y, w, VT100_CHAR_HEIGHT, term->back_color);
 						}

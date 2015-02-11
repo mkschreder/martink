@@ -21,6 +21,8 @@
 #define KEYS_SWC GPIO_PB5
 #define KEYS_SWD GPIO_PC13
 
+#define FST6_ADC_BATTERY 6
+
 struct fst6 {
 	struct ks0713 disp;
 	struct vt100 vt; 
@@ -43,24 +45,24 @@ fst6_key_mask_t fst6_read_keys(void){
 	gpio_set(KEYS_COL4); 
 	keys = 0; 
 	gpio_clear(KEYS_COL1); 
-	delay_us(5); 
+	//delay_us(5); 
 	if(!gpio_read_pin(KEYS_ROW1)) keys |= FST6_KEY_CH1P; 
 	if(!gpio_read_pin(KEYS_ROW2)) keys |= FST6_KEY_CH3P; 
 	gpio_set(KEYS_COL1); 
 	gpio_clear(KEYS_COL2); 
-	delay_us(5); 
+	//delay_us(5); 
 	if(!gpio_read_pin(KEYS_ROW1)) keys |= FST6_KEY_CH1M; 
 	if(!gpio_read_pin(KEYS_ROW2)) keys |= FST6_KEY_CH3M; 
 	if(!gpio_read_pin(KEYS_ROW3)) keys |= FST6_KEY_SELECT; 
 	gpio_set(KEYS_COL2); 
 	gpio_clear(KEYS_COL3); 
-	delay_us(5); 
+	//delay_us(5); 
 	if(!gpio_read_pin(KEYS_ROW1)) keys |= FST6_KEY_CH2P; 
 	if(!gpio_read_pin(KEYS_ROW2)) keys |= FST6_KEY_CH4P; 
 	if(!gpio_read_pin(KEYS_ROW3)) keys |= FST6_KEY_OK; 
 	gpio_set(KEYS_COL3); 
 	gpio_clear(KEYS_COL4); 
-	delay_us(5); 
+	//delay_us(5); 
 	if(!gpio_read_pin(KEYS_ROW1)) keys |= FST6_KEY_CH2M; 
 	if(!gpio_read_pin(KEYS_ROW2)) keys |= FST6_KEY_CH4M; 
 	if(!gpio_read_pin(KEYS_ROW3)) keys |= FST6_KEY_CANCEL; 
@@ -75,6 +77,14 @@ fst6_key_mask_t fst6_read_keys(void){
 	return keys; 
 }
 
+uint16_t fst6_read_stick(fst6_stick_t id){
+	if(id > FST6_STICKS_COUNT) return 0; 
+	return adc_read(id); 
+}
+
+uint16_t fst6_read_battery_voltage(void){
+	return adc_read(FST6_ADC_BATTERY); 
+}
 
 void fst6_init(void){
 	//time_init(); 
@@ -82,8 +92,6 @@ void fst6_init(void){
 	timestamp_init(); 
 	
 	gpio_init(); 
-	uart_init(); 
-	adc_init(); 
 	
 	GPIO_InitTypeDef gpioInit;
 	
@@ -113,6 +121,17 @@ void fst6_init(void){
 	gpio_configure(KEYS_SWB, GP_INPUT | GP_PULLUP); 
 	gpio_configure(KEYS_SWC, GP_INPUT | GP_PULLUP); 
 	gpio_configure(KEYS_SWD, GP_INPUT | GP_PULLUP); 
+	
+	gpio_configure(GPIO_PA0, GP_INPUT | GP_ANALOG); 
+	gpio_configure(GPIO_PA1, GP_INPUT | GP_ANALOG); 
+	gpio_configure(GPIO_PA2, GP_INPUT | GP_ANALOG); 
+	gpio_configure(GPIO_PA3, GP_INPUT | GP_ANALOG); 
+	gpio_configure(GPIO_PA4, GP_INPUT | GP_ANALOG); 
+	gpio_configure(GPIO_PA5, GP_INPUT | GP_ANALOG); 
+	gpio_configure(GPIO_PA6, GP_INPUT | GP_ANALOG); 
+	
+	uart_init(); 
+	adc_init(); 
 	
 	ks0713_init(&_board.disp, _fst6_write_ks0713); 
 	tty_dev_t tty = ks0713_get_tty_interface(&_board.disp); 

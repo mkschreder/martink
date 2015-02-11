@@ -25,8 +25,21 @@ typedef enum {
 	FST6_KEY_ROTB = (1 << 16)
 } fst6_key_mask_t; 
 
+typedef enum {
+	FST6_STICK0, 
+	FST6_STICK1, 
+	FST6_STICK2, 
+	FST6_STICK3, 
+	FST6_STICK4, 
+	FST6_STICK5,
+	FST6_STICKS_COUNT
+} fst6_stick_t; 
+
 void fst6_init(void); 
 fst6_key_mask_t fst6_read_keys(void); 
+uint16_t fst6_read_battery_voltage(void); 
+uint16_t fst6_read_stick(fst6_stick_t id); 
+
 void fst6_process_events(void); 
 serial_dev_t fst6_get_screen_serial_interface(void); 
 

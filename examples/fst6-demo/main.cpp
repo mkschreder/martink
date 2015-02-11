@@ -17,8 +17,11 @@ int main(void){
 		serial_printf(screen, "    FlySky FS-T6    \n"); 
 		serial_printf(screen, " LibK example program\n"); 
 		for(int c = 0; c < 6; c+=2) {
-			serial_printf(screen, "CH%d: %04d CH%d: %04d\n", c, (int)adc_read(c), c + 1, (int)adc_read(c+1)); 
+			serial_printf(screen, "CH%d: %04d CH%d: %04d\n", 
+				c, (int)fst6_read_stick((fst6_stick_t)c), 
+				c + 1, (int)fst6_read_stick((fst6_stick_t)(c+1))); 
 		}
+		serial_printf(screen, "VBAT: %d\n", (int)fst6_read_battery_voltage()); 
 		
 		fst6_key_mask_t keys = fst6_read_keys(); 
 	

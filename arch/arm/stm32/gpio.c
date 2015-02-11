@@ -46,7 +46,8 @@ void gpio_configure(gpio_pin_t p, uint16_t flags){
 	//uint32_t reg = 0; 
 	
 	GPIO_InitTypeDef gpio;
-	gpio.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_StructInit(&gpio); // Reset init structure, if not it can cause issues...
+	
 	gpio.GPIO_Pin = (1 << (p & 0xf));
 	
 	if(flags & GP_INPUT){
@@ -55,10 +56,11 @@ void gpio_configure(gpio_pin_t p, uint16_t flags){
 			gpio.GPIO_Mode = GPIO_Mode_IPU; 
 		else if(flags & GP_PULLDOWN)
 			gpio.GPIO_Mode = GPIO_Mode_IPD;
-		//else if(flags & GP_ANALOG)
-		//	gpio.GPIO_Mode = GPIO_Mode_IN_ANALOG; 
+		else if(flags & GP_ANALOG)
+			gpio.GPIO_Mode = GPIO_Mode_AIN; 
 	} else if(flags & GP_OUTPUT){
 		gpio.GPIO_Mode = GPIO_Mode_Out_PP; 
+		gpio.GPIO_Speed = GPIO_Speed_50MHz;
 		if(flags & GP_OPEN_DRAIN)
 			gpio.GPIO_Mode = GPIO_Mode_Out_OD; 
 		else if(flags & GP_PUSH_PULL)

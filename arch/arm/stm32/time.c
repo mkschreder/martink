@@ -4,9 +4,12 @@
 
 static volatile int32_t _millis = 0, _micros = 0; 
 
+#define SYSTICK_DIV 10000UL
+#define SYSTICK_INTERVAL (1000000UL / SYSTICK_DIV)
+
 void SysTick_Handler(void); 
 void SysTick_Handler(void){
-	_micros++; 
+	_micros+=SYSTICK_INTERVAL; 
 	if(_micros % 1000 == 0) {
 		_millis++; 
 		_micros = 0; 
@@ -15,7 +18,11 @@ void SysTick_Handler(void){
     
 void tsc_init(void)
 {
-	SysTick_Config (SystemCoreClock / 1000000UL); 
+	RCC_ClocksTypeDef RCC_Clocks;
+
+  RCC_GetClocksFreq(&RCC_Clocks);
+  SysTick_Config(RCC_Clocks.SYSCLK_Frequency / SYSTICK_DIV); 
+	//SysTick_Config (SystemCoreClock / 1000000UL); 
 	
 	//set systick interrupt priority
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);    //4 bits for preemp priority 0 bit for sub priority

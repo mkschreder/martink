@@ -8,6 +8,7 @@
 #include "f10x/stm32f10x_spi.h"
 #include "f10x/stm32f10x_rcc.h"
 #include "f10x/stm32f10x_tim.h"
+#include "f10x/stm32f10x_adc.h"
 #include "f10x/misc.h"
 #endif
 

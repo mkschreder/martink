@@ -150,7 +150,7 @@ FORCE:
 
 
 include examples/hello_world/Makefile
-
+include examples/fst6-demo/Makefile
 
 # Declare the contents of the .PHONY variable as phony.  We keep that
 # information in a variable se we can use it in if_changed and friends.

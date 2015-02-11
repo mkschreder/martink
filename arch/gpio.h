@@ -25,24 +25,28 @@
 #pragma once
 
 // GPIO pin functions
-/// configures a gpio pin as input
-#define GP_INPUT 		(0)
-/// configures a gpio pin as output
-#define GP_OUTPUT 	(1 << 0)
-/// enables pull(up/down) on gpio pin
-#define GP_PULL 		(1 << 1)
-/// no pullup on gpio pin
-#define GP_HIZ			(0)
-/// enable pullup
-#define GP_PULLUP 	(GP_PULL | (1 << 2))
-/// enable pulldown (if arch supports it)
-#define GP_PULLDOWN (GP_PULL | (0 << 2))
-/// alternative function on the pin
-#define GP_AF 	(1 << 3)
-/// output open drain mode
-#define GP_OPEN_DRAIN		(1 << 4)
-/// analog input
-#define GP_ANALOG (1 << 5)
+enum {
+	/// configures a gpio pin as input
+	GP_INPUT 		= (1 << 0),
+	/// configures a gpio pin as output
+	GP_OUTPUT 	= (1 << 1),
+	/// enables pull(up/down) on gpio pin
+	GP_PULL 		= (1 << 2),
+	/// no pullup on gpio pin
+	GP_HIZ			= (1 << 3),
+	/// enable pullup
+	GP_PULLUP 	= (1 << 4),
+	/// enable pulldown (if arch supports it)
+	GP_PULLDOWN = (1 << 5),
+	/// alternative function on the pin
+	GP_AF 			= (1 << 6),
+	/// output open drain mode
+	GP_OPEN_DRAIN		= (1 << 7),
+	/// push pull output
+	GP_PUSH_PULL 	= (1 << 8), 
+	/// analog input
+	GP_ANALOG 	= (1 << 9)
+}; 
 
 /// pin change interrupt will run when pin gets toggled
 /// make sure that pin change handler is defined

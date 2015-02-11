@@ -56,14 +56,15 @@ STATE(_st_idle, term, ev, arg);
 STATE(_st_esc_sq_bracket, term, ev, arg);
 STATE(_st_esc_question, term, ev, arg);
 STATE(_st_esc_hash, term, ev, arg);
+static void _vt100_putc(struct vt100 *t, uint8_t ch); 
 
 static void _vt100_reset(struct vt100 *self){
 	//self->screen_width = VT100_SCREEN_WIDTH;
   //self->screen_height = VT100_SCREEN_HEIGHT;
-  self->display->get_size(self->display, &self->screen_width, &self->screen_height); 
+	tty_get_size(self->display, &self->screen_width, &self->screen_height); 
   
-  self->char_height = 8;
-  self->char_width = 6;
+  //self->char_height = 8;
+  //self->char_width = 6;
   self->back_color = 0x0000;
   self->front_color = 0xffff;
   self->cursor_x = self->cursor_y = self->saved_cursor_x = self->saved_cursor_y = 0;
@@ -73,7 +74,7 @@ static void _vt100_reset(struct vt100 *self){
   self->scroll_value = 0; 
   self->scroll_start_row = 0;
   self->scroll_end_row = self->screen_height; // outside of screen = whole screen scrollable
-  self->flags.cursor_wrap = 0;
+  self->flags.cursor_wrap = 1;
   self->flags.origin_mode = 0;
   
   /*
@@ -81,8 +82,8 @@ static void _vt100_reset(struct vt100 *self){
 	ili9340_setBackColor(self->back_color);
 	ili9340_setScrollMargins(0, 0); 
 	ili9340_setScrollStart(0); */
-	self->display->set_scroll_region(self->display, 0, 0);
-	self->display->set_top_line(self->display, 0); 
+	//self->display->set_scroll_region(self->display, 0, 0);
+	//self->display->set_top_line(self->display, 0); 
 }
 
 static void _vt100_resetScroll(struct vt100 *self){
@@ -90,10 +91,11 @@ static void _vt100_resetScroll(struct vt100 *self){
 	self->scroll_end_row = self->screen_height;
 	self->scroll_value = 0;
 	
-	self->display->set_scroll_region(self->display, 0, 0);
-	self->display->set_top_line(self->display, 0); 
+	//self->display->set_scroll_region(self->display, 0, 0);
+	//self->display->set_top_line(self->display, 0); 
 }
 
+/*
 #define VT100_CURSOR_X(TERM) (TERM->cursor_x * TERM->char_width)
 
 static uint16_t VT100_CURSOR_Y(struct vt100 *t){
@@ -110,39 +112,29 @@ static uint16_t VT100_CURSOR_Y(struct vt100 *t){
 		// if scroll_value == 1 && scroll_start_row == 2 && scroll_end_row == 38:
 		// 		y = t->cursor_y + scroll_value; 
 		//uint16_t row = (t->cursor_y - t->scroll_start_row) % scroll_height; 
-		/*uint16_t skip = t->scroll_value - t->scroll_start_row; 
-		uint16_t row = t->cursor_y + skip;
-		uint16_t scroll_height = t->scroll_end_row - t->scroll_start_row; 
-		//row = (row % scroll_height);// + t->scroll_start_row;*/
+		//uint16_t skip = t->scroll_value - t->scroll_start_row; 
+		//uint16_t row = t->cursor_y + skip;
+		//uint16_t scroll_height = t->scroll_end_row - t->scroll_start_row; 
+		//row = (row % scroll_height);// + t->scroll_start_row;
 		return row * VT100_CHAR_HEIGHT; 
 	}
-	/*uint16_t y = 0;
-	if(t->cursor_y >= t->top_margin && t->cursor_y < t->bottom_margin){
-		y = t->cursor_y * VT100_CHAR_HEIGHT;
-		if(t->scroll >= (t->top_margin * VT100_CHAR_HEIGHT)){
-			y += t->scroll - t->top_margin * VT100_CHAR_HEIGHT;
-		}
-	} else if(t->cursor_y < t->top_margin){
-		y = (t->cursor_y * VT100_CHAR_HEIGHT);
-	} else if(t->cursor_y >= t->bottom_margin){
-		y = (t->cursor_y * VT100_CHAR_HEIGHT);
-		if(t->scroll >= (t->top_margin * VT100_CHAR_HEIGHT)){
-			y += t->scroll - t->top_margin * VT100_CHAR_HEIGHT;
-		}
-	}
-	//y = ((t->cursor_y - (VT100_HEIGHT - t->bottom_margin)) * VT100_CHAR_HEIGHT);// % VT100_SCREEN_HEIGHT;
-	//y = ((t->cursor_y * VT100_CHAR_HEIGHT) + t->scroll) % VT100_SCREEN_HEIGHT; 
-	return y % VT100_SCREEN_HEIGHT;*/
-}
+}*/
 
-static void _vt100_clearLines(struct vt100 *t, uint16_t start_line, uint16_t end_line){
+static void _vt100_clearLines(struct vt100 *self, uint16_t start_line, uint16_t end_line){
 	for(unsigned c = start_line; c <= end_line; c++){
-		uint16_t cy = t->cursor_y;
-		t->cursor_y = c;
-		t->display->clear(t->display); 
+		self->cursor_y = c; 
+		self->cursor_x = 0; 
+		for(unsigned j = 0; j < self->screen_width; j++){
+			_vt100_putc(self, ' '); 
+		}
+		//uint16_t cy = t->cursor_y;
+		//t->cursor_y = c;
+		//tty_clear(t->display); 
 		//ili9340_fillRect(0, VT100_CURSOR_Y(t), VT100_SCREEN_WIDTH, VT100_CHAR_HEIGHT, 0x0000);
-		t->cursor_y = cy;
+		//t->cursor_y = cy;
 	}
+	self->cursor_x = 0; 
+	self->cursor_y = start_line; 
 	/*uint16_t start = ((start_line * t->char_height) + t->scroll) % VT100_SCREEN_HEIGHT;
 	uint16_t h = (end_line - start_line) * VT100_CHAR_HEIGHT;
 	ili9340_fillRect(0, start, VT100_SCREEN_WIDTH, h, 0x0000); */
@@ -170,8 +162,8 @@ static void _vt100_scroll(struct vt100 *t, int16_t lines){
 		//uint16_t y = (t->scroll_start_row + t->scroll_value) * VT100_CHAR_HEIGHT; 
 		//ili9340_fillRect(0, y, VT100_SCREEN_WIDTH, lines * VT100_CHAR_HEIGHT, 0x0000);
 	}
-	uint16_t scroll_start = (t->scroll_start_row + t->scroll_value) * VT100_CHAR_HEIGHT; 
-	t->display->set_top_line(t->display, scroll_start); 
+	//uint16_t scroll_start = (t->scroll_start_row + t->scroll_value) * VT100_CHAR_HEIGHT; 
+	//t->display->set_top_line(t->display, scroll_start); 
 	
 	/*
 	int16_t pixels = lines * VT100_CHAR_HEIGHT;
@@ -193,21 +185,21 @@ static void _vt100_scroll(struct vt100 *t, int16_t lines){
 }
 
 // moves the cursor relative to current cursor position and scrolls the screen
-static void _vt100_move(struct vt100 *term, uint16_t right_left, uint16_t bottom_top){
+static void _vt100_move(struct vt100 *term, int16_t right_left, int16_t bottom_top){
 	// calculate how many lines we need to move down or up if x movement goes outside screen
-	uint16_t new_x = right_left + term->cursor_x;
-	uint16_t width = (term->screen_width / VT100_CHAR_WIDTH); 
-	if(new_x > width){
+	int16_t new_x = right_left + term->cursor_x;
+	int16_t width = term->screen_width; //(term->screen_width / VT100_CHAR_WIDTH); 
+	if(new_x >= width){
 		if(term->flags.cursor_wrap){
 			bottom_top += new_x / width;
-			term->cursor_x = new_x % width - 1;
+			term->cursor_x = new_x % width;
 		} else {
-			term->cursor_x = width;
+			term->cursor_x = new_x;
 		}
-	} /*else if(new_x < 0){
+	} else if(new_x < 0){
 		bottom_top += new_x / width - 1;
 		term->cursor_x = width - (abs(new_x) % width) + 1; 
-	} */else {
+	} else {
 		term->cursor_x = new_x;
 	}
 
@@ -249,7 +241,7 @@ static void _vt100_drawCursor(struct vt100 *t){
 
 // sends the character to the display and updates cursor position
 static void _vt100_putc(struct vt100 *t, uint8_t ch){
-	if(ch < 0x20 || ch > 0x7e){
+	/*if(ch < 0x20 || ch > 0x7e){
 		static const char hex[] = "0123456789abcdef"; 
 		_vt100_putc(t, '0'); 
 		_vt100_putc(t, 'x'); 
@@ -257,12 +249,15 @@ static void _vt100_putc(struct vt100 *t, uint8_t ch){
 		_vt100_putc(t, hex[(ch & 0x0f)]);
 		return;
 	}
-	
+	*/
 	// calculate current cursor position in the display ram
-	uint16_t x = VT100_CURSOR_X(t);
-	uint16_t y = VT100_CURSOR_Y(t);
-
-	t->display->draw_char(t->display, ch, x, y, t->front_color, t->back_color); 
+	//uint16_t x = VT100_CURSOR_X(t);
+	//uint16_t y = VT100_CURSOR_Y(t);
+	
+	tty_move_cursor(t->display, t->cursor_x, t->cursor_y); 
+	tty_put(t->display, ch, t->front_color, t->back_color); 
+	
+	//t->display->draw_char(t->display, ch, x, y, t->front_color, t->back_color); 
 	/*ili9340_setFrontColor(t->front_color);
 	ili9340_setBackColor(t->back_color); 
 	ili9340_drawChar(x, y, ch);*/
@@ -272,11 +267,6 @@ static void _vt100_putc(struct vt100 *t, uint8_t ch){
 	_vt100_drawCursor(t); 
 }
 
-void vt100_puts(struct vt100 *term, const char *str){
-	while(*str){
-		_vt100_putc(term, *str++);
-	}
-}
 
 STATE(_st_command_arg, term, ev, arg){
 	switch(ev){
@@ -361,13 +351,13 @@ STATE(_st_esc_sq_bracket, term, ev, arg){
 						//uint16_t y = VT100_CURSOR_Y(term); 
 						if(term->narg == 0 || (term->narg == 1 && term->args[0] == 0)){
 							// clear down to the bottom of screen (including cursor)
-							_vt100_clearLines(term, term->cursor_y, term->screen_height / VT100_CHAR_HEIGHT); 
+							_vt100_clearLines(term, term->cursor_y, term->screen_height); 
 						} else if(term->narg == 1 && term->args[0] == 1){
 							// clear top of screen to current line (including cursor)
 							_vt100_clearLines(term, 0, term->cursor_y); 
 						} else if(term->narg == 1 && term->args[0] == 2){
 							// clear whole screen
-							_vt100_clearLines(term, 0, term->screen_height / VT100_CHAR_HEIGHT);
+							_vt100_clearLines(term, 0, term->screen_height);
 							// reset scroll value
 							_vt100_resetScroll(term); 
 						}
@@ -375,23 +365,32 @@ STATE(_st_esc_sq_bracket, term, ev, arg){
 						break;
 					}
 					case 'K':{// clear line from cursor right/left
-						uint16_t x = VT100_CURSOR_X(term);
-						uint16_t y = VT100_CURSOR_Y(term);
-						uint16_t w = term->screen_width / VT100_CHAR_WIDTH;
+						uint16_t cx = term->cursor_x; 
+						uint16_t cy = term->cursor_y; 
+						//uint16_t x = VT100_CURSOR_X(term);
+						//uint16_t y = VT100_CURSOR_Y(term);
+						//uint16_t w = term->screen_width / VT100_CHAR_WIDTH;
 						//uint16_t h = term->screen_height / VT100_CHAR_HEIGHT;
 						
 						if(term->narg == 0 || (term->narg == 1 && term->args[0] == 0)){
 							// clear to end of line (to \n or to edge?)
 							// including cursor
-							term->display->draw_fill_rect(term->display, x, y, w - x, VT100_CHAR_HEIGHT, term->back_color); 
+							for(int c = term->cursor_x; c < term->screen_width; c++) _vt100_putc(term, ' '); 
+							//term->display->draw_fill_rect(term->display, x, y, w - x, VT100_CHAR_HEIGHT, term->back_color); 
 							//ili9340_fillRect(x, y, VT100_SCREEN_WIDTH - x, VT100_CHAR_HEIGHT, term->back_color);
 						} else if(term->narg == 1 && term->args[0] == 1){
+							term->cursor_x = 0; 
+							for(int c = term->cursor_x; c < cx; c++) _vt100_putc(term, ' '); 
 							// clear from left to current cursor position
-							term->display->draw_fill_rect(term->display, 0, y, x + w, VT100_CHAR_HEIGHT, term->back_color);
+							//term->display->draw_fill_rect(term->display, 0, y, x + w, VT100_CHAR_HEIGHT, term->back_color);
 						} else if(term->narg == 1 && term->args[0] == 2){
+							term->cursor_x = 0; 
+							for(int c = term->cursor_x; c < term->screen_width; c++) _vt100_putc(term, ' '); 
 							// clear whole current line
-							term->display->draw_fill_rect(term->display, 0, y, w, VT100_CHAR_HEIGHT, term->back_color);
+							//term->display->draw_fill_rect(term->display, 0, y, w, VT100_CHAR_HEIGHT, term->back_color);
 						}
+						term->cursor_x = cx; 
+						term->cursor_y = cy; 
 						term->state = _st_idle; 
 						break;
 					}
@@ -487,10 +486,10 @@ STATE(_st_esc_sq_bracket, term, ev, arg){
 							// bottom margin is 320 - (40 - 1) * 8 = 8 pix
 							term->scroll_start_row = term->args[0] - 1;
 							term->scroll_end_row = term->args[1] - 1; 
-							uint16_t top_margin = term->scroll_start_row * VT100_CHAR_HEIGHT;
-							uint16_t bottom_margin = term->screen_height -
-								(term->scroll_end_row * VT100_CHAR_HEIGHT); 
-							term->display->set_scroll_region(term->display, top_margin, bottom_margin);
+							//uint16_t top_margin = term->scroll_start_row * VT100_CHAR_HEIGHT;
+							//uint16_t bottom_margin = term->screen_height -
+							//	(term->scroll_end_row * VT100_CHAR_HEIGHT); 
+							//term->display->set_scroll_region(term->display, top_margin, bottom_margin);
 							//ili9340_setScrollStart(0); // reset scroll 
 						} else {
 							_vt100_resetScroll(term); 
@@ -827,15 +826,13 @@ STATE(_st_idle, term, ev, arg){
 	}
 }
 
-void vt100_init(struct vt100 *_self, struct text_display_interface *display){
-	struct vt100 *self = (struct vt100*)_self; 
+void vt100_init(struct vt100 *self, tty_dev_t display){
 	self->display = display; 
   //self->send_response = send_response; 
 	_vt100_reset(self); 
 }
 
-void vt100_putc(struct vt100 *t, uint8_t c){
-	struct vt100 *self = (struct vt100*)t; 
+void vt100_putc(struct vt100 *self, uint8_t c){
 	/*char *buffer = 0; 
 	switch(c){
 		case KEY_UP:         buffer="\e[A";    break;
@@ -868,5 +865,75 @@ void vt100_putc(struct vt100 *t, uint8_t c){
 	} else {
 		self->state(&term, EV_CHAR, 0x0000 | c);
 	}*/
-	self->state(self, EV_CHAR, 0x0000 | c);
+	self->state(self, EV_CHAR, c);
+}
+
+
+void vt100_puts(struct vt100 *term, const char *str){
+	while(*str){
+		vt100_putc(term, *str++);
+	}
+}
+
+/*******************
+* SERIAL INTERFACE
+********************/
+
+static uint16_t _vt100_serial_putc(serial_dev_t self, uint8_t ch){
+	struct vt100 *dev = container_of(self, struct vt100, serial); 
+	vt100_putc(dev, ch); 
+	return 0; 
+}
+
+static uint16_t _vt100_serial_getc(serial_dev_t self) {
+	(void)(self); 
+	return SERIAL_NO_DATA; 
+}
+
+static size_t _vt100_serial_putn(serial_dev_t self, const uint8_t *data, size_t sz){
+	size_t size = sz;
+	while(sz--){
+		_vt100_serial_putc(self, *data++); 
+	}
+	return size; 
+}
+
+static size_t _vt100_serial_getn(serial_dev_t self, uint8_t *data, size_t sz){
+	(void)(self); 
+	(void)(data); 
+	(void)(sz); 
+	return 0; 
+}
+
+static size_t _vt100_serial_waiting(serial_dev_t self){
+	(void)(self); 
+	return 0; 
+}
+
+static int16_t _vt100_serial_begin(serial_dev_t self){
+	// do nothing (but may be useful for interrupt driven version) 
+	(void)(self); 
+	return 0; 
+}
+
+static int16_t _vt100_serial_end(serial_dev_t self){
+	// do nothing (but may be useful for interrupt driven version) 
+	(void)(self); 
+	return 0; 
+}
+
+serial_dev_t vt100_get_serial_interface(struct vt100 *self){
+	static struct serial_if _if;
+	_if = (struct serial_if) {
+		.put = _vt100_serial_putc,
+		.get = _vt100_serial_getc,
+		.putn = _vt100_serial_putn,
+		.getn = _vt100_serial_getn,
+		.begin = _vt100_serial_begin,
+		.end = _vt100_serial_end,
+		.waiting = _vt100_serial_waiting
+	}; 
+	
+	self->serial = &_if;
+	return &self->serial; 
 }

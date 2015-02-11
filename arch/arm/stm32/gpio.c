@@ -42,9 +42,31 @@ void gpio_init_default(void){
 }
 
 void gpio_configure(gpio_pin_t p, uint16_t flags){
-	uint32_t pin = p; 
-	uint32_t reg = 0; 
+	//uint32_t pin = p; 
+	//uint32_t reg = 0; 
 	
+	GPIO_InitTypeDef gpio;
+	gpio.GPIO_Speed = GPIO_Speed_50MHz;
+	gpio.GPIO_Pin = (1 << (p & 0xf));
+	
+	if(flags & GP_INPUT){
+		gpio.GPIO_Mode = GPIO_Mode_IN_FLOATING; 
+		if(flags & GP_PULLUP)
+			gpio.GPIO_Mode = GPIO_Mode_IPU; 
+		else if(flags & GP_PULLDOWN)
+			gpio.GPIO_Mode = GPIO_Mode_IPD;
+		//else if(flags & GP_ANALOG)
+		//	gpio.GPIO_Mode = GPIO_Mode_IN_ANALOG; 
+	} else if(flags & GP_OUTPUT){
+		gpio.GPIO_Mode = GPIO_Mode_Out_PP; 
+		if(flags & GP_OPEN_DRAIN)
+			gpio.GPIO_Mode = GPIO_Mode_Out_OD; 
+		else if(flags & GP_PUSH_PULL)
+			gpio.GPIO_Mode = GPIO_Mode_Out_PP; 
+	}
+	
+	GPIO_Init(_ports[p >> 4].gpio, &gpio);
+	/*
 	// set output 50mhz with push pull or floating input
 	reg = (flags & GP_OUTPUT)?3:4; 
 	
@@ -68,7 +90,7 @@ void gpio_configure(gpio_pin_t p, uint16_t flags){
 		uint32_t tmp = _ports[pin >> 4].gpio->CRL; 
 		uint8_t shift = ((pin & 0xf) * 4); 
 		_ports[pin >> 4].gpio->CRL = (tmp & ~(0xf << shift)) | (reg << shift); 
-	}
+	}*/
 }
 
 void gpio_write_pin(gpio_pin_t p, uint8_t val){
@@ -83,7 +105,7 @@ void gpio_write_pin(gpio_pin_t p, uint8_t val){
 uint8_t gpio_read_pin(gpio_pin_t p){
 	uint32_t pin = p; 
 	if(pin >= GPIO_COUNT) return 0; 
-	return _ports[pin >> 4].gpio->IDR & (1 << (pin & 0xf)); 
+	return (_ports[pin >> 4].gpio->IDR & (1 << (pin & 0xf))) != 0; 
 }
 
 uint16_t gpio_get_status(gpio_pin_t pin, timestamp_t *t_up, timestamp_t *t_down){

@@ -25,10 +25,11 @@
 #include <string.h>
 
 #include <arch/soc.h>
+
 #include "ks0713.h"
 
-#define KS0713_CHAR_WIDTH 5
-#define KS0713_CHAR_HEIGHT 7
+#define KS0713_CHAR_WIDTH 6
+#define KS0713_CHAR_HEIGHT 8
 
 #define KS0713_CONTRAST_MIN	25
 #define KS0713_CONTRAST_MAX	60
@@ -45,7 +46,8 @@
 #define KS0713_RES			(1 << 11)	// Reset
 #define KS0713_CS1			(1 << 12)	// Chip Select 1
 
-#define KS0713_BACKLIGHT	(1 << 2)
+//#define KS0713_BACKLIGHT	(1 << 2)
+#define KS0713_BACKLIGHT	(1 << 13)
 
 #define KS0713_DISP_ON_OFF		(0xAE)
 #define KS0713_DISPLAY_LINE		(0x40)
@@ -82,7 +84,15 @@ static void ks0713_send_command(struct ks0713 *self, uint8_t cmd)
 {
 	self->port_state &= ~(KS0713_WR | KS0713_DATA | KS0713_A0); 
 	self->port_state |= cmd; 
-	self->gpio->write_word(self->gpio, self->port_state); 
+	self->write_word(self, self->port_state); 
+	
+	self->port_state &= ~KS0713_CS1;
+	self->port_state |= KS0713_RD;
+	self->write_word(self, self->port_state); 
+	
+	self->port_state |= KS0713_CS1;
+	self->port_state &= ~KS0713_RD;
+	self->write_word(self, self->port_state); 
 	
 	/*uint16_t gpio = GPIO_ReadOutputData(GPIOC);
 
@@ -108,9 +118,26 @@ static void ks0713_send_command(struct ks0713 *self, uint8_t cmd)
   */
 static void ks0713_send_data(struct ks0713 *self, uint8_t *data, uint16_t len)
 {
-	(void)(self); 
-	(void)(data); 
-	(void)(len); 
+	self->port_state &= ~(KS0713_WR | KS0713_DATA ); 
+	self->port_state |= KS0713_A0; 
+	self->write_word(self, self->port_state); 
+	
+	data += (len-1);
+	
+	for (uint16_t i=0; i<len; ++i)
+	{
+		self->port_state &= ~KS0713_DATA;
+		self->port_state |= *data--;
+		self->write_word(self, self->port_state); 
+	
+		// Toggle the Enable lines.
+		self->port_state &= ~KS0713_CS1;
+		self->port_state |= KS0713_RD;
+		self->write_word(self, self->port_state); 
+		self->port_state |= KS0713_CS1;
+		self->port_state &= ~KS0713_RD;
+		self->write_word(self, self->port_state); 
+	}
 	/*uint16_t i;
 	uint16_t gpio = GPIO_ReadOutputData(GPIOC);
 
@@ -141,22 +168,25 @@ static void ks0713_send_data(struct ks0713 *self, uint8_t *data, uint16_t len)
   * @param  None
   * @retval None
   */
-void ks0713_init(struct ks0713 *self, struct ks0713_interface *gpio)
+void ks0713_init(struct ks0713 *self, void (*write_word)(struct ks0713 *self, uint16_t word))
 {
-	self->gpio = gpio; 
+	self->write_word = write_word; 
 	self->contrast = 0x28; 
+	self->cursor_x = self->cursor_y = 0; 
 	
 	// set the pins high
 	self->port_state = KS0713_PIN_MASK; 
 	self->port_state |= KS0713_BACKLIGHT; 
-	self->port_state |= KS0713_RES; 
+	self->port_state &= (KS0713_RD | KS0713_WR); 
 	
-	// write the port
-	self->gpio->write_word(self->gpio, self->port_state); 
+	self->write_word(self, self->port_state); 
+	
+	self->port_state &= ~KS0713_RES; 
+	self->write_word(self, self->port_state); 
 	delay_us(5); 
 	// now pull reset high
-	self->port_state &= ~KS0713_RES; 
-	self->gpio->write_word(self->gpio, self->port_state); 
+	self->port_state |= KS0713_RES; 
+	self->write_word(self, self->port_state); 
 	
 	delay_us(50); 
 	
@@ -232,7 +262,7 @@ void ks0713_set_backlight(struct ks0713 *self, uint8_t on)
 		self->port_state |= KS0713_BACKLIGHT; 
 	else
 		self->port_state &= ~KS0713_BACKLIGHT; 
-	self->gpio->write_word(self->gpio, self->port_state); 
+	self->write_word(self, self->port_state); 
 }
 
 
@@ -260,11 +290,7 @@ void ks0713_set_contrast(struct ks0713 *self, uint8_t val)
   */
 void ks0713_commit(struct ks0713 *self)
 {
-	int row;
-
-	// Update CGRAM
-	for (row = 0; row < KS0713_HEIGHT / 8; ++row)
-	{
+	for (unsigned row = 0; row < KS0713_HEIGHT / 8; ++row){
 		ks0713_send_command(self, KS0713_SET_PAGE_ADDR | row);
 		ks0713_send_command(self, KS0713_SET_COL_ADDR_LSB | 0x04); // low col
 		ks0713_send_command(self, KS0713_SET_COL_ADDR_MSB | 0x00);
@@ -282,6 +308,8 @@ void ks0713_commit(struct ks0713 *self)
   */
 void ks0713_write_pixel(struct ks0713 *self, uint8_t x, uint8_t y, ks0713_pixel_op_t op)
 {
+	if(x > KS0713_WIDTH || y > KS0713_HEIGHT) return; 
+	
 	switch (op)
 	{
 	case KS0713_OP_NONE:
@@ -307,11 +335,61 @@ void ks0713_write_pixel(struct ks0713 *self, uint8_t x, uint8_t y, ks0713_pixel_
   */
 void ks0713_move_cursor(struct ks0713 *self, uint8_t x, uint8_t y)
 {
-	if ((y+KS0713_CHAR_HEIGHT) >= KS0713_HEIGHT) return;
-	if ((x+KS0713_CHAR_WIDTH) >= KS0713_WIDTH) return;
+	if (((y * KS0713_CHAR_HEIGHT)+KS0713_CHAR_HEIGHT) > KS0713_HEIGHT) return;
+	if (((x * KS0713_CHAR_WIDTH) +KS0713_CHAR_WIDTH) > KS0713_WIDTH) return;
 
 	self->cursor_x = x;
 	self->cursor_y = y;
+}
+
+void ks0713_clear(struct ks0713 *self){
+	for(unsigned c = 0; c < sizeof(self->lcd_buffer); c++){
+		self->lcd_buffer[c] = 0; 
+	}
+}
+
+#include "lcd_font_5x7.h"
+
+static void _ks0713_put(tty_dev_t self, uint8_t ch, color_t fg, color_t bg){
+	struct ks0713 *dev = container_of(self, struct ks0713, tty); 
+	(void)(fg); 
+	(void)(bg); 
+	const unsigned char *glyph = &lcd_font_5x7[ch * 5]; 
+	uint16_t x = dev->cursor_x * KS0713_CHAR_WIDTH; 
+	uint16_t y = dev->cursor_y * KS0713_CHAR_HEIGHT; 
+	for(unsigned j = 0; j < 5; j++){
+		dev->lcd_buffer[x + j + (y/8)*KS0713_WIDTH] = glyph[j];
+	}
+	dev->lcd_buffer[x + 6 + (y/8)*KS0713_WIDTH + 1] = 0; 
+}
+
+static void _ks0713_move_cursor(tty_dev_t self, uint16_t x, uint16_t y){
+	struct ks0713 *dev = container_of(self, struct ks0713, tty); 
+	ks0713_move_cursor(dev, x, y); 
+}
+
+static void _ks0713_get_size(tty_dev_t self, uint16_t *w, uint16_t *h){
+	//struct ks0713 *dev = container_of(self, struct tty_device, tty); 
+	(void)(self); 
+	*w = KS0713_WIDTH / KS0713_CHAR_WIDTH; 
+	*h = KS0713_HEIGHT / KS0713_CHAR_HEIGHT; 
+}
+
+static void _ks0713_clear(tty_dev_t self){
+	struct ks0713 *dev = container_of(self, struct ks0713, tty); 
+	ks0713_clear(dev); 
+}
+
+tty_dev_t ks0713_get_tty_interface(struct ks0713 *self){
+	static struct tty_device _if; 
+	_if = (struct tty_device) {
+		.put = _ks0713_put, 
+		.move_cursor = _ks0713_move_cursor, 
+		.get_size = _ks0713_get_size, 
+		.clear = _ks0713_clear
+	}; 
+	self->tty = &_if; 
+	return &self->tty; 
 }
 
 /**
@@ -502,42 +580,27 @@ void lcd_write_hex(uint32_t val, ks0713_pixel_op_t op, uint16_t flags)
 			lcd_write_char(digit + '0', op, flags);
 	}
 }
-
-void lcd_draw_line(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, ks0713_pixel_op_t op)
+*/
+void ks0713_draw_line(struct ks0713 *self, int8_t x0, int8_t y0, int8_t x1, int8_t y1, ks0713_pixel_op_t op)
 {
-	uint8_t x = x1, y = y1;
-	uint8_t max_steps;
-	uint8_t xsteps;
-	uint8_t ysteps;
-	uint8_t step;
+	int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+	int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+	int err = (dx>dy ? dx : -dy)/2, e2;
 
-	if (x1 > x2 || y1 > y2)
-		return;
-
-	xsteps = x2 - x1;
-	ysteps = y2 - y1;
-	max_steps = ysteps;
-	if (xsteps > max_steps)
-		max_steps = xsteps;
-
-	xsteps = max_steps / xsteps;
-	ysteps = max_steps / ysteps;
-
-	for (step = 0; step <= max_steps; step++) {
-		if (step > 0) {
-			if (xsteps > 0 && step % xsteps == 0)
-				x++;
-			if (ysteps > 0 && step % ysteps == 0)
-				y++;
-		}
-		lcd_set_pixel(x, y, op);
+	for(;;){
+		ks0713_write_pixel(self, x0, y0, op);
+		
+		if (x0==x1 && y0==y1) break;
+		e2 = err;
+		if (e2 >-dx) { err -= dy; x0 += sx; }
+		if (e2 < dy) { err += dx; y0 += sy; }
 	}
 }
 
-void lcd_draw_rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, ks0713_pixel_op_t op, uint16_t flags)
+void ks0713_draw_rect(struct ks0713 *self, int8_t x1, int8_t y1, int8_t x2, int8_t y2, ks0713_pixel_op_t op)
 {
-	uint8_t x, y;
-
+	int8_t x, y;
+	
 	if (x1 > x2 || y1 > y2)
 		return;
 
@@ -545,8 +608,10 @@ void lcd_draw_rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, ks0713_pixel_
 	{
 		for (x = x1; x <= x2; ++x)
 		{
-			if ((flags & RECT_FILL) || y == y1 || y == y2 || x == x1 || x == x2)
+			//if ((flags & RECT_FILL) || y == y1 || y == y2 || x == x1 || x == x2)
+			if (y == y1 || y == y2 || x == x1 || x == x2)
 			{
+				/*
 				if (flags & RECT_ROUNDED)
 				{
 					if (!( (x == x1 && y == y1) ||
@@ -554,17 +619,17 @@ void lcd_draw_rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, ks0713_pixel_
 						   (x == x1 && y == y2) ||
 						   (x == x2 && y == y2) ))
 					{
-						lcd_set_pixel(x, y, op);
+						ks0713_write_pixel(self, x, y, op);
 					}
 
 				}
-				else
-					lcd_set_pixel(x, y, op);
+				else*/
+					ks0713_write_pixel(self, x, y, op);
 			}
 		}
 	}
 }
-
+/*
 char lcd_draw_message(const char *msg, ks0713_pixel_op_t op, ks0713_pixel_op_t op2, char selectedLine)
 {
 	char line = 1;

@@ -54,15 +54,29 @@ struct fb_device {
 	fb_get_size		get_size; 
 }; 
 
-typedef struct text_display_interface text_display_t;
+typedef struct tty_device **tty_dev_t;
 typedef uint16_t color_t;
 
-struct text_display_interface {
-	void (*draw_char)(text_display_t *disp, uint8_t ch, uint16_t x, uint16_t y, color_t fg, color_t bg);
-	void (*draw_fill_rect)(text_display_t *disp, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, color_t color);
+struct tty_device {
+	void (*put)(tty_dev_t self, uint8_t ch, color_t fg, color_t bg);
+	void (*move_cursor)(tty_dev_t self, uint16_t x, uint16_t y); 
+	
+	//void (*draw_fill_rect)(tty_dev_t *disp, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, color_t color);
 
-	void (*get_size)(text_display_t *disp, uint16_t *w, uint16_t *h); 
-	void (*set_scroll_region)(text_display_t *disp, uint16_t start, uint16_t end);
-	void (*set_top_line)(text_display_t *disp, uint16_t idx);
-	void (*clear)(text_display_t *disp);
+	void (*get_size)(tty_dev_t self, uint16_t *w, uint16_t *h); 
+	//void (*set_scroll_region)(tty_dev_t *disp, uint16_t start, uint16_t end);
+	//void (*set_top_line)(tty_dev_t *disp, uint16_t idx);
+	void (*clear)(tty_dev_t self);
 }; 
+
+static inline void tty_put(tty_dev_t self, uint8_t ch, color_t fg, color_t bg){
+	(*self)->put(self, ch, fg, bg); 
+}
+
+static inline void tty_move_cursor(tty_dev_t self, uint16_t x, uint16_t y){
+	(*self)->move_cursor(self, x, y); 
+}
+
+static inline void tty_get_size(tty_dev_t self, uint16_t *w, uint16_t *h){
+	(*self)->get_size(self, w, h); 
+}

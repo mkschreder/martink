@@ -256,6 +256,19 @@ void pwm_configure_capture(pwm_channel_t chan, uint32_t def_value){
 	NVIC_Init(&NVIC_InitStructure);
 }
 
+void pwm_set_period(pwm_channel_t chan, uint32_t period){
+	TIM_TypeDef *TIMx = _timers[(chan >> 2) & 0x7].tim; 
+	TIM_TimeBaseInitTypeDef timerInitStructure;
+	TIM_TimeBaseStructInit(&timerInitStructure); 
+	
+	timerInitStructure.TIM_Prescaler = SystemCoreClock/1000000UL; // set 1us resolution
+	timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
+	timerInitStructure.TIM_Period = period;
+	timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+	timerInitStructure.TIM_RepetitionCounter = 0;
+	TIM_TimeBaseInit(TIMx, &timerInitStructure);
+}
+
 void pwm_write(pwm_channel_t chan, uint32_t width){
 	TIM_TypeDef *TIMx = _timers[(chan >> 2) & 0x7].tim; 
 	switch(chan & 0x3){

@@ -39,7 +39,7 @@ void fst6_init(void);
 fst6_key_mask_t fst6_read_keys(void); 
 uint16_t fst6_read_battery_voltage(void); 
 uint16_t fst6_read_stick(fst6_stick_t id); 
-
+void fst6_play_tone(uint32_t frequency, uint32_t duration_ms); 
 void fst6_process_events(void); 
 serial_dev_t fst6_get_screen_serial_interface(void); 
 

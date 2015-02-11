@@ -54,6 +54,7 @@ gpio_capture_configure(pin, 1000, 2000);
 void pwm_configure(pwm_channel_t chan, uint32_t def_width, uint32_t period); 
 uint32_t pwm_read(pwm_channel_t chan); 
 void pwm_write(pwm_channel_t chan, uint32_t width); 
+void pwm_set_period(pwm_channel_t chan, uint32_t period); 
 void pwm_configure_capture(pwm_channel_t chan, uint32_t def_value); 
 
 #define pwm0_set(a) ((void)(a), 0)

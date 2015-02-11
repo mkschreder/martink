@@ -62,7 +62,7 @@ void adc_init(void){
 	
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE); 
 	
-  ADC_InitTypeDef ADC_InitStructure;
+	ADC_InitTypeDef ADC_InitStructure;
 	//ADC1 configuration
 	//select continuous conversion mode
 	ADC_InitStructure.ADC_Mode = ADC_Mode_Independent;
@@ -102,14 +102,16 @@ void adc_init(void){
 	//Check the end of ADC1 calibration
 	while(ADC_GetCalibrationStatus(ADC1));
 	
-  adc_dma_init(); 
-  
+	adc_dma_init(); 
+
+	// first conversion
 	ADC_SoftwareStartConvCmd(ADC1, ENABLE);
 }
 
 // fast adc read from the dma buffer
 uint16_t adc_read(uint8_t channel)
 {
+	if(channel > 8) return 0; 
 	return (uint16_t)((_adc_values[channel]+_adc_values[channel+8]
 					+_adc_values[channel+16]+_adc_values[channel+24])/4); 
 }

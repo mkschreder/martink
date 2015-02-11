@@ -23,9 +23,12 @@
 
 #define FST6_ADC_BATTERY 6
 
+#define FST6_PWM_SPEAKER PWM_CH11
+
 struct fst6 {
 	struct ks0713 disp;
 	struct vt100 vt; 
+	timestamp_t pwm_end_time; 
 	uint32_t keys; 
 }; 
 
@@ -86,8 +89,18 @@ uint16_t fst6_read_battery_voltage(void){
 	return adc_read(FST6_ADC_BATTERY); 
 }
 
+void fst6_play_tone(uint32_t freq, uint32_t duration_ms){
+	// exit if invalid frequency or if another tone is in progress
+	if(freq == 0 || !timestamp_expired(_board.pwm_end_time)) return; 
+	uint32_t period = 1000000UL / freq; 
+	pwm_set_period(FST6_PWM_SPEAKER, period); 
+	pwm_write(FST6_PWM_SPEAKER, period >> 2); 
+	_board.pwm_end_time = timestamp_from_now_us(duration_ms * 1000UL); 
+}
+
 void fst6_init(void){
 	//time_init(); 
+	_board.pwm_end_time = 0; 
 	
 	timestamp_init(); 
 	
@@ -130,6 +143,8 @@ void fst6_init(void){
 	gpio_configure(GPIO_PA5, GP_INPUT | GP_ANALOG); 
 	gpio_configure(GPIO_PA6, GP_INPUT | GP_ANALOG); 
 	
+	pwm_configure(PWM_CH11, 2000, 4000); 
+	
 	uart_init(); 
 	adc_init(); 
 	
@@ -137,30 +152,14 @@ void fst6_init(void){
 	tty_dev_t tty = ks0713_get_tty_interface(&_board.disp); 
 	vt100_init(&_board.vt, tty); 
 	
-	/*
-	vt100_puts(&vt, "\x1b[A\x1b[KHello World! This is FlySky FS-T6 transmitter. We are currently testing the terminal! We are printing text that goes on the screen and looking at how it all works out!"); 
-	
-	while(1){
-		for(int c = 0; c < 6; c++) {
-			printf("ADC%d: %d\n", c, (int)adc_read(c)); 
-		}
-		
-		_fst6_scan_keys(&_board); 
-	
-		printf("KEYS: "); 
-		for(int c = 0; c < 32; c++){
-			if(_board.keys & (1 << c)){
-				printf("%d ", c); 
-			}
-		}
-		printf("\n"); 
-		//ks0713_draw_line(&disp, 1, 1, 10, 10, KS0713_OP_SET); 
-		ks0713_commit(&disp); 
-	}*/
 }
 
 void fst6_process_events(void){
 	ks0713_commit(&_board.disp); 
+	
+	if(timestamp_expired(_board.pwm_end_time)){
+		pwm_write(FST6_PWM_SPEAKER, 0); 
+	}
 }
 
 serial_dev_t fst6_get_screen_serial_interface(void){

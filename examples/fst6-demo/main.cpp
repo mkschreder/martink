@@ -12,8 +12,6 @@ int main(void){
 	
 	serial_dev_t screen = fst6_get_screen_serial_interface(); 
 	
-	//vt100_puts(&vt, "\x1b[A\x1b[KHello World! This is FlySky FS-T6 transmitter. We are currently testing the terminal! We are printing text that goes on the screen and looking at how it all works out!"); 
-	
 	while(1){
 		serial_printf(screen, "\x1b[2J\x1b[1;1H"); 
 		serial_printf(screen, "    FlySky FS-T6    \n"); 

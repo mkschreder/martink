@@ -3,6 +3,23 @@ MartinK IC Firmware Project (LibK)
 
 LibK is more than just a firmware library. It is a toolchain, a philosophy, a way to organize your code. It is maximum flexibility at minimum cost. It is a collection of reusable components for writing bare metal embedded applications.
 
+Easy building instructions
+-------------------------
+
+    make buildall
+
+This will build all supported architectures and produce corresponding libraries. 
+
+Building and installing examples
+--------------------------
+
+Examples are located in the examples folder. They can be built using "make BUILD=(target) build-(example)". 
+
+    make BUILD=arm-stm32f100mdvl build-fst6-demo && make BUILD=arm-stm32f100mdvl install-fst6-demo
+
+More information
+---------------
+
 For documentation check out the following pages:
 
 * [Detailed hardware and api documentation for libk](https://github.com/mkschreder/martink/tree/master/doc/)
@@ -19,8 +36,12 @@ Yes unfortunately there has not been a good alternative to linux speciffically d
 
 LibK provides a framework for solving all of these problems. It comes with specialized build system based on menuconfig that provides a highly fine grained build configuration and lets you only compile the things that you need. It also makes it easy to switch between different targets that require completely different low level implementations.
 
-Building
+Building with menuconfig
 --------------
+
+** note ** 
+Docs need to be updated here.. manuconfig can still be used, but preconfigured configs are also available in "configs/" and "include/configs" directories. This makes it not necessary to run menuconfig unless one wants to have more detailed control over what is actually being built. 
+** end not **
 
 Building libk can be a little tricky for a first timer. It is usually easier to call libk Makefile from within your own application Makefile. For how to do this, you can have a look at quadcopter example project using libk: 
 

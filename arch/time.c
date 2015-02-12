@@ -24,8 +24,9 @@
 #include <arch/soc.h>
 
 void timestamp_delay_us(timestamp_t usec) {
-	timestamp_t t = timestamp_from_now_us(usec); 
-	while(!timestamp_expired(t));
+	volatile timestamp_t t = timestamp_from_now_us(usec); 
+	//printf("waiting.. %d %d\n", (int)t, (int)timestamp_now()); 
+	while(!timestamp_expired(t)); // printf("waiting.. %d %d\n", (int)t, (int)timestamp_now()); 
 }
 
 timestamp_t timestamp_ticks_to_us(timestamp_t ticks) {

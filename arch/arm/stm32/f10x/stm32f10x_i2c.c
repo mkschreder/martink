@@ -198,7 +198,7 @@ void I2C_Init(I2C_TypeDef* I2Cx, I2C_InitTypeDef* I2C_InitStruct)
 {
   uint16_t tmpreg = 0, freqrange = 0;
   uint16_t result = 0x04;
-  uint32_t pclk1 = 8000000;
+  uint32_t pclk1 = HSE_VALUE;
   RCC_ClocksTypeDef  rcc_clocks;
   /* Check the parameters */
   assert_param(IS_I2C_ALL_PERIPH(I2Cx));

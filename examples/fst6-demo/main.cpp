@@ -9,15 +9,27 @@ Example for the fst6 radio transmitter board
 
 static int _key_state[32] = {0}; 
 
+extern char _sdata; 
+
 int main(void){
 	fst6_init(); 
 	
 	serial_dev_t screen = fst6_get_screen_serial_interface(); 
 	
+	// test config read/write (to eeprom)
+	const char str[] = "Hello World!"; 
+	uint8_t buf[13] = {0}; 
+	printf("Writing string to config: %s\n", str); 
+	fst6_write_config((const uint8_t*)str, sizeof(str)); 
+	printf("Reading string from config: "); 
+	fst6_read_config(buf, sizeof(str)); 
+	printf("%s\n", buf); 
+	
 	while(1){
 		serial_printf(screen, "\x1b[2J\x1b[1;1H"); 
 		serial_printf(screen, "    FlySky FS-T6    \n"); 
 		serial_printf(screen, " LibK example program\n"); 
+		//serial_printf(screen, "%s\n", (char*)buf); 
 		for(int c = 0; c < 6; c+=2) {
 			serial_printf(screen, "CH%d: %04d CH%d: %04d\n", 
 				c, (int)fst6_read_stick((fst6_stick_t)c), 

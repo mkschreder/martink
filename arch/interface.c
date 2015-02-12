@@ -85,7 +85,7 @@ uint8_t pio_read_word(pio_dev_t self, uint16_t addr, uint32_t *output){
 
 
 uint32_t i2c_start_write(i2c_dev_t dev,
-	uint8_t address, uint8_t *data, uint16_t max_sz){
+	uint8_t address, const uint8_t *data, uint16_t max_sz){
 	return (*dev)->start_write(dev, address, data, max_sz);
 }
 
@@ -96,5 +96,9 @@ uint32_t	i2c_start_read(i2c_dev_t dev,
 
 int16_t i2c_stop(i2c_dev_t dev){
 	return (*dev)->stop(dev); 
+}
+
+void i2c_wait(i2c_dev_t dev, uint8_t addr){
+	(*dev)->wait(dev, addr); 
 }
 

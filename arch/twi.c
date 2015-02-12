@@ -40,7 +40,7 @@ static int16_t 			_twi_stop(i2c_dev_t self){
 	return -1; 
 }
 
-static uint32_t	_twi_write(i2c_dev_t self, uint8_t adr, uint8_t *data, uint16_t max_sz){
+static uint32_t	_twi_write(i2c_dev_t self, uint8_t adr, const uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
 	switch(dev->id){
 		case 0: twi0_start_write(adr, data, max_sz); return 0;
@@ -55,20 +55,21 @@ static uint32_t	_twi_read(i2c_dev_t self, uint8_t adr, uint8_t *data, uint16_t m
 	}
 	return PK_ERR_INVALID; 
 }
-/*
-static void			_twi_sync(i2c_dev_t self){
+
+static void			_twi_wait(i2c_dev_t self, uint8_t addr){
 	DEVICE_CAST(self, dev);
 	switch(dev->id){
-		case 0: while(twi0_busy()); break;
+		case 0: twi0_wait(addr); break;
 	}
 }
-*/
+
 i2c_dev_t twi_get_interface(uint8_t id){
 	static struct i2c_interface _if;
 	_if = (struct i2c_interface) {
 		.start_write = 	_twi_write,
 		.start_read = 	_twi_read,
 		.stop = 		_twi_stop, 
+		.wait = _twi_wait
 	};
 	_twi[id].interface = &_if; 
 	return &_twi[id].interface; 

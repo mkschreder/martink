@@ -2,18 +2,14 @@
 #include "stm32.h"
 #include "time.h"
 
-static volatile int32_t _millis = 0, _micros = 0; 
+static volatile long long _ticks = 0; 
 
 #define SYSTICK_DIV 10000UL
 #define SYSTICK_INTERVAL (1000000UL / SYSTICK_DIV)
 
 void SysTick_Handler(void); 
 void SysTick_Handler(void){
-	_micros+=SYSTICK_INTERVAL; 
-	if(_micros % 1000 == 0) {
-		_millis++; 
-		_micros = 0; 
-	}
+	_ticks ++; 
 }
     
 void tsc_init(void)
@@ -25,17 +21,14 @@ void tsc_init(void)
 	//SysTick_Config (SystemCoreClock / 1000000UL); 
 	
 	//set systick interrupt priority
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);    //4 bits for preemp priority 0 bit for sub priority
-	NVIC_SetPriority(SysTick_IRQn, 0);//i want to make sure systick has highest priority amount all other interrupts
+	//4 bits for preemp priority 0 bit for sub priority
+	//NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);    
+	NVIC_SetPriority(SysTick_IRQn, 0);
 }
 
 timestamp_t tsc_read(void)
 {
-	timestamp_t ts = 0; 
-	//__disable_irq(); 
-	ts = _millis * 1000 + _micros;
-	//__enable_irq(); 
-	return ts; 
+	return _ticks * SYSTICK_INTERVAL; 
 }
 /*
 uint32_t millis(void)

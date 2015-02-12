@@ -1,6 +1,7 @@
 #include <arch/soc.h>
 #include <disp/ks0713.h>
 #include <tty/vt100.h>
+#include <block/at24.h>
 
 #include "flysky-t6-tx.h"
 
@@ -28,6 +29,7 @@
 struct fst6 {
 	struct ks0713 disp;
 	struct vt100 vt; 
+	struct at24 eeprom; 
 	timestamp_t pwm_end_time; 
 	uint32_t keys; 
 }; 
@@ -103,8 +105,8 @@ void fst6_init(void){
 	_board.pwm_end_time = 0; 
 	
 	timestamp_init(); 
-	
 	gpio_init(); 
+	uart_init(); 
 	
 	GPIO_InitTypeDef gpioInit;
 	
@@ -145,8 +147,13 @@ void fst6_init(void){
 	
 	pwm_configure(PWM_CH11, 2000, 4000); 
 	
-	uart_init(); 
 	adc_init(); 
+	
+	twi0_init_default(); 
+	
+	//delay_ms(1000); 
+	
+	at24_init(&_board.eeprom, twi_get_interface(0)); 
 	
 	ks0713_init(&_board.disp, _fst6_write_ks0713); 
 	tty_dev_t tty = ks0713_get_tty_interface(&_board.disp); 
@@ -160,6 +167,20 @@ void fst6_process_events(void){
 	if(timestamp_expired(_board.pwm_end_time)){
 		pwm_write(FST6_PWM_SPEAKER, 0); 
 	}
+}
+
+int8_t fst6_write_config(const uint8_t *data, uint16_t size){
+	(void)(data); 
+	(void)(size); 
+	at24_write(&_board.eeprom, 0, data, size); 
+	return 0; 
+}
+
+int8_t fst6_read_config(uint8_t *data, uint16_t size){
+	(void)(data); 
+	(void)(size); 
+	at24_read(&_board.eeprom, 0, data, size); 
+	return 0; 
 }
 
 serial_dev_t fst6_get_screen_serial_interface(void){

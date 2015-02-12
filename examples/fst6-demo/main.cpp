@@ -52,7 +52,7 @@ int main(void){
 				serial_printf(screen, "%d ", c); 
 			}
 		}
-		serial_printf(screen, "\n"); 
+		//serial_printf(screen, "\n"); 
 		fst6_process_events(); 
 	}
 }

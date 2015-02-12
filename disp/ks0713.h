@@ -23,9 +23,19 @@
 #define KS0713_WIDTH		128
 #define KS0713_HEIGHT		64
 
-struct ks0713_interface {
-	void (*write_word)(struct ks0713_interface *self, uint16_t word); 
-}; 
+// pin positions as they are outputted by the driver
+#define KS0713_PIN_MASK	(0x1FFF)
+
+#define KS0713_DATA		(0xFF)		// D0-D7
+#define KS0713_RD			(1 << 8)	// RD / E
+#define KS0713_WR			(1 << 9)	// RD / #WR
+#define KS0713_A0			(1 << 10)	// A0 / RS / Data / #CMD
+#define KS0713_RES			(1 << 11)	// Reset
+#define KS0713_CS1			(1 << 12)	// Chip Select 1
+
+#define KS0713_BACKLIGHT	(1 << 13)
+
+#define KS0713_COMMAND_BUFFER_SIZE (KS0713_WIDTH / 8 * 2)
 
 struct ks0713 {
 	uint16_t port_state; 
@@ -33,7 +43,7 @@ struct ks0713 {
 	uint8_t lcd_buffer[KS0713_WIDTH * KS0713_HEIGHT / 8];
 	uint16_t cursor_x, cursor_y; 
 	
-	void (*write_word)(struct ks0713 *self, uint16_t word); 
+	void (*putn)(struct ks0713 *self, uint16_t *data, size_t size); 
 	
 	struct tty_device *tty; 
 }; 
@@ -45,7 +55,7 @@ typedef enum {
 	KS0713_OP_XOR
 } ks0713_pixel_op_t; 
 
-void ks0713_init(struct ks0713 *self, void (*write_word)(struct ks0713 *self, uint16_t word));
+void ks0713_init(struct ks0713 *self, void (*putn)(struct ks0713 *self, uint16_t *data, size_t size));
 void ks0713_set_backlight(struct ks0713 *self, uint8_t on);
 void ks0713_set_contrast(struct ks0713 *self, uint8_t val);
 void ks0713_clear(struct ks0713 *self);

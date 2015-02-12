@@ -37,18 +37,6 @@
 //#define KS0713_HEIGHT				7
 //#define KS0713_WIDTH				5
 
-#define KS0713_PIN_MASK	(0x1FFF)
-
-#define KS0713_DATA		(0xFF)		// D0-D7
-#define KS0713_RD			(1 << 8)	// RD / E
-#define KS0713_WR			(1 << 9)	// RD / #WR
-#define KS0713_A0			(1 << 10)	// A0 / RS / Data / #CMD
-#define KS0713_RES			(1 << 11)	// Reset
-#define KS0713_CS1			(1 << 12)	// Chip Select 1
-
-//#define KS0713_BACKLIGHT	(1 << 2)
-#define KS0713_BACKLIGHT	(1 << 13)
-
 #define KS0713_DISP_ON_OFF		(0xAE)
 #define KS0713_DISPLAY_LINE		(0x40)
 #define KS0713_SET_REF_VOLTAGE	(0x81)	// 2-byte cmd
@@ -82,17 +70,13 @@
   */
 static void ks0713_send_command(struct ks0713 *self, uint8_t cmd)
 {
-	self->port_state &= ~(KS0713_WR | KS0713_DATA | KS0713_A0); 
-	self->port_state |= cmd; 
-	self->write_word(self, self->port_state); 
-	
-	self->port_state &= ~KS0713_CS1;
-	self->port_state |= KS0713_RD;
-	self->write_word(self, self->port_state); 
+	self->port_state &= ~(KS0713_CS1 | KS0713_WR | KS0713_DATA | KS0713_A0);
+	self->port_state |= (KS0713_RD | (uint16_t)cmd);
+	self->putn(self, &self->port_state, 1); 
 	
 	self->port_state |= KS0713_CS1;
 	self->port_state &= ~KS0713_RD;
-	self->write_word(self, self->port_state); 
+	self->putn(self, &self->port_state, 1); 
 	
 	/*uint16_t gpio = GPIO_ReadOutputData(GPIOC);
 
@@ -109,58 +93,6 @@ static void ks0713_send_command(struct ks0713 *self, uint8_t cmd)
 	GPIO_Write(GPIOC, gpio);*/
 }
 
-/**
-  * @brief  Send data to the LCD.
-  * @note	Switch the MPU interface to data mode and send
-  * @param  data: pointer to LCD data
-  * @param  len: Number of bytes of data to send
-  * @retval None
-  */
-static void ks0713_send_data(struct ks0713 *self, uint8_t *data, uint16_t len)
-{
-	self->port_state &= ~(KS0713_WR | KS0713_DATA ); 
-	self->port_state |= KS0713_A0; 
-	self->write_word(self, self->port_state); 
-	
-	data += (len-1);
-	
-	for (uint16_t i=0; i<len; ++i)
-	{
-		self->port_state &= ~KS0713_DATA;
-		self->port_state |= *data--;
-		self->write_word(self, self->port_state); 
-	
-		// Toggle the Enable lines.
-		self->port_state &= ~KS0713_CS1;
-		self->port_state |= KS0713_RD;
-		self->write_word(self, self->port_state); 
-		self->port_state |= KS0713_CS1;
-		self->port_state &= ~KS0713_RD;
-		self->write_word(self, self->port_state); 
-	}
-	/*uint16_t i;
-	uint16_t gpio = GPIO_ReadOutputData(GPIOC);
-
-	gpio &= ~(LCD_WR | LCD_DATA);
-	gpio |= LCD_A0;
-
-	data += (len-1);
-
-	for (i=0; i<len; ++i)
-	{
-		gpio &= ~LCD_DATA;
-		gpio |= *data--;
-		GPIO_Write(GPIOC, gpio);
-
-		// Toggle the Enable lines.
-		gpio &= ~LCD_CS1;
-		gpio |= LCD_RD;
-		GPIO_Write(GPIOC, gpio);
-		gpio |= LCD_CS1;
-		gpio &= ~LCD_RD;
-		GPIO_Write(GPIOC, gpio);
-	}*/
-}
 
 /**
   * @brief  Initialise the lcd panel.
@@ -168,9 +100,9 @@ static void ks0713_send_data(struct ks0713 *self, uint8_t *data, uint16_t len)
   * @param  None
   * @retval None
   */
-void ks0713_init(struct ks0713 *self, void (*write_word)(struct ks0713 *self, uint16_t word))
+void ks0713_init(struct ks0713 *self, void (*putn)(struct ks0713 *self, uint16_t *data, size_t size))
 {
-	self->write_word = write_word; 
+	self->putn = putn; 
 	self->contrast = 0x28; 
 	self->cursor_x = self->cursor_y = 0; 
 	
@@ -179,14 +111,14 @@ void ks0713_init(struct ks0713 *self, void (*write_word)(struct ks0713 *self, ui
 	self->port_state |= KS0713_BACKLIGHT; 
 	self->port_state &= (KS0713_RD | KS0713_WR); 
 	
-	self->write_word(self, self->port_state); 
+	self->putn(self, &self->port_state, 1); 
 	
 	self->port_state &= ~KS0713_RES; 
-	self->write_word(self, self->port_state); 
+	self->putn(self, &self->port_state, 1); 
 	delay_us(5); 
 	// now pull reset high
 	self->port_state |= KS0713_RES; 
-	self->write_word(self, self->port_state); 
+	self->putn(self, &self->port_state, 1); 
 	
 	delay_us(50); 
 	
@@ -203,6 +135,8 @@ void ks0713_init(struct ks0713 *self, void (*write_word)(struct ks0713 *self, ui
 	ks0713_send_command(self, self->contrast); 					// Set reference voltage register
 	ks0713_send_command(self, KS0713_DISP_ON_OFF | 0x01); 	// Turn on LCD panel (DON = 1)
 
+	memset(self->lcd_buffer, 0, sizeof(self->lcd_buffer)); 
+	
 	ks0713_commit(self);
 	ks0713_set_backlight(self, 1);
 	
@@ -262,7 +196,7 @@ void ks0713_set_backlight(struct ks0713 *self, uint8_t on)
 		self->port_state |= KS0713_BACKLIGHT; 
 	else
 		self->port_state &= ~KS0713_BACKLIGHT; 
-	self->write_word(self, self->port_state); 
+	self->putn(self, &self->port_state, 1); 
 }
 
 
@@ -282,21 +216,116 @@ void ks0713_set_contrast(struct ks0713 *self, uint8_t val)
 	ks0713_send_command(self, self->contrast); 						// Set reference voltage register
 }
 
-/**
-  * @brief  Transfer frame buffer to LCD.
-  * @note
-  * @param  None
-  * @retval None
-  */
-void ks0713_commit(struct ks0713 *self)
-{
-	for (unsigned row = 0; row < KS0713_HEIGHT / 8; ++row){
-		ks0713_send_command(self, KS0713_SET_PAGE_ADDR | row);
-		ks0713_send_command(self, KS0713_SET_COL_ADDR_LSB | 0x04); // low col
-		ks0713_send_command(self, KS0713_SET_COL_ADDR_MSB | 0x00);
-		ks0713_send_data(self, self->lcd_buffer + (KS0713_WIDTH * row), KS0713_WIDTH);
+#ifdef CONFIG_SAVE_MEMORY
+	// do not use large command buffer if we have to save memory
+	// instead send each word by itself (3ms on 24mhz stm32)
+	void ks0713_commit(struct ks0713 *self)
+	{
+		uint16_t word = self->port_state; 
+		
+		for (unsigned row = 0; row < KS0713_HEIGHT / 8; ++row){
+			word &= ~(KS0713_CS1 | KS0713_WR | KS0713_DATA | KS0713_A0);
+			word |= (KS0713_RD | (uint16_t)(KS0713_SET_PAGE_ADDR | row));
+			self->putn(self, &word, 1); 
+			
+			word |= KS0713_CS1;
+			word &= ~KS0713_RD;
+			self->putn(self, &word, 1); 
+				
+			word &= ~(KS0713_CS1 | KS0713_WR | KS0713_DATA | KS0713_A0);
+			word |= (KS0713_RD | (uint16_t)(KS0713_SET_COL_ADDR_LSB | 0x04));
+			self->putn(self, &word, 1); 
+				
+			word |= KS0713_CS1;
+			word &= ~KS0713_RD;
+			self->putn(self, &word, 1); 
+				
+			word &= ~(KS0713_CS1 | KS0713_WR | KS0713_DATA | KS0713_A0);
+			word |= (KS0713_RD | (uint16_t)(KS0713_SET_COL_ADDR_MSB | 0x00));
+			self->putn(self, &word, 1); 
+			
+			word |= KS0713_CS1;
+			word &= ~KS0713_RD;
+			self->putn(self, &word, 1); 
+				
+			word &= ~(KS0713_WR | KS0713_DATA ); 
+			word |= KS0713_A0; 
+			
+			uint8_t *data = self->lcd_buffer + (KS0713_WIDTH * row); 
+			data += (KS0713_WIDTH-1);
+			
+			for (uint16_t i=0; i<KS0713_WIDTH; ++i)
+			{
+				word &= ~(KS0713_CS1 | KS0713_DATA);
+				word |= (KS0713_RD | (uint16_t)(*data--));
+				self->putn(self, &word, 1); 
+			
+				word |= KS0713_CS1;
+				word &= ~KS0713_RD;
+				self->putn(self, &word, 1); 
+			}
+		}
 	}
-}
+#else 
+	// this one takes ~1ms on 24mhz stm32 without dma. 
+	// construction of command buffer takes ~400us. 
+	void ks0713_commit(struct ks0713 *self)
+	{
+		const int cmd_buf_size = ((KS0713_HEIGHT / 8) * (KS0713_WIDTH * 2 + 6)); 
+		uint16_t cmd_buffer[cmd_buf_size]; 
+		uint16_t *cmd = cmd_buffer; 
+		uint16_t word = self->port_state; 
+		
+		for (unsigned row = 0; row < KS0713_HEIGHT / 8; ++row){
+			word &= ~(KS0713_CS1 | KS0713_WR | KS0713_DATA | KS0713_A0);
+			word |= (KS0713_RD | (uint16_t)(KS0713_SET_PAGE_ADDR | row));
+			*cmd++ = word; 
+			
+			word |= KS0713_CS1;
+			word &= ~KS0713_RD;
+			*cmd++ = word; 
+				
+			word &= ~(KS0713_CS1 | KS0713_WR | KS0713_DATA | KS0713_A0);
+			word |= (KS0713_RD | (uint16_t)(KS0713_SET_COL_ADDR_LSB | 0x04));
+			//self->putn(self, &self->port_state, 1); 
+			*cmd++ = word; 
+				
+			word |= KS0713_CS1;
+			word &= ~KS0713_RD;
+			*cmd++ = word; 
+				
+			word &= ~(KS0713_CS1 | KS0713_WR | KS0713_DATA | KS0713_A0);
+			word |= (KS0713_RD | (uint16_t)(KS0713_SET_COL_ADDR_MSB | 0x00));
+			*cmd++ = word; 
+			
+			word |= KS0713_CS1;
+			word &= ~KS0713_RD;
+			*cmd++ = word; 
+				
+			word &= ~(KS0713_WR | KS0713_DATA ); 
+			word |= KS0713_A0; 
+			
+			uint8_t *data = self->lcd_buffer + (KS0713_WIDTH * row); 
+			data += (KS0713_WIDTH-1);
+			
+			for (uint16_t i=0; i<KS0713_WIDTH; ++i)
+			{
+				word &= ~(KS0713_CS1 | KS0713_DATA);
+				word |= (KS0713_RD | (uint16_t)(*data--));
+				*cmd++ = word; 
+				
+				word |= KS0713_CS1;
+				word &= ~KS0713_RD;
+				*cmd++ = word; 
+			}
+			
+			//self->putn(self, cmd_buffer, KS0713_WIDTH * 2);
+			//ks0713_send_data(self, self->lcd_buffer + (KS0713_WIDTH * row), KS0713_WIDTH);
+		}
+		// commit data to the lcd 
+		self->putn(self, cmd_buffer, cmd_buf_size); 
+	}
+#endif // save memory
 
 /**
   * @brief  Set / Clean a specific pixel.

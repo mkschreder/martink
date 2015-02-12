@@ -5,8 +5,7 @@
 
 #include "flysky-t6-tx.h"
 
-#define KS0713_PIN_MASK 0x1fffUL
-#define KS0713_BACKLIGHT_PIN (1 << 2)
+#define KS0713_BACKLIGHT_PIN GPIO_PD2
 
 #define KEYS_COL1 GPIO_PB8
 #define KEYS_COL2 GPIO_PB9
@@ -30,13 +29,20 @@ struct fst6 {
 	struct ks0713 disp;
 	struct vt100 vt; 
 	struct at24 eeprom; 
+	timestamp_t time_to_render; 
 	timestamp_t pwm_end_time; 
 	uint32_t keys; 
 }; 
 
-static void _fst6_write_ks0713(struct ks0713 *self, uint16_t byte){
+static void _fst6_write_ks0713(struct ks0713 *self, uint16_t *data, size_t size){
 	(void)(self); 
-	GPIO_Write(GPIOC, byte & KS0713_PIN_MASK);
+	// special handling for backlight. We check only first byte to save time
+	// backlight is connected to PD2 on flysky transmitter board
+	if(size && *data | KS0713_BACKLIGHT) gpio_set(KS0713_BACKLIGHT_PIN); 
+	else gpio_clear(KS0713_BACKLIGHT_PIN); 
+	while(size--){
+		GPIOC->ODR = (*data++ & KS0713_PIN_MASK); 
+	}
 }
 
 static struct fst6 _board; 
@@ -94,15 +100,16 @@ uint16_t fst6_read_battery_voltage(void){
 void fst6_play_tone(uint32_t freq, uint32_t duration_ms){
 	// exit if invalid frequency or if another tone is in progress
 	if(freq == 0 || !timestamp_expired(_board.pwm_end_time)) return; 
-	uint32_t period = 1000000UL / freq; 
-	pwm_set_period(FST6_PWM_SPEAKER, period); 
-	pwm_write(FST6_PWM_SPEAKER, period >> 2); 
+	//uint32_t period = 1000000UL / freq; 
+	//pwm_set_period(FST6_PWM_SPEAKER, period); 
+	//pwm_write(FST6_PWM_SPEAKER, period >> 2); 
 	_board.pwm_end_time = timestamp_from_now_us(duration_ms * 1000UL); 
 }
 
 void fst6_init(void){
 	//time_init(); 
 	_board.pwm_end_time = 0; 
+	_board.time_to_render = timestamp_now(); 
 	
 	timestamp_init(); 
 	gpio_init(); 
@@ -116,10 +123,8 @@ void fst6_init(void){
 	gpioInit.GPIO_Pin = KS0713_PIN_MASK;
 	GPIO_Init(GPIOC, &gpioInit);
 
-	gpioInit.GPIO_Pin = KS0713_BACKLIGHT_PIN;
-	GPIO_Init(GPIOD, &gpioInit);
-	
-	GPIO_SetBits(GPIOD, KS0713_BACKLIGHT_PIN); 
+	gpio_configure(KS0713_BACKLIGHT_PIN, GP_OUTPUT | GP_PUSH_PULL); 
+	gpio_set(KS0713_BACKLIGHT_PIN); 
 	
 	// configure pins for keys
 	gpio_configure(KEYS_COL1, GP_OUTPUT); 
@@ -145,11 +150,11 @@ void fst6_init(void){
 	gpio_configure(GPIO_PA5, GP_INPUT | GP_ANALOG); 
 	gpio_configure(GPIO_PA6, GP_INPUT | GP_ANALOG); 
 	
-	pwm_configure(PWM_CH11, 2000, 4000); 
-	
 	adc_init(); 
 	
 	twi0_init_default(); 
+	
+	pwm_configure(PWM_CH14, 2000, 2000+200); 
 	
 	//delay_ms(1000); 
 	
@@ -157,12 +162,20 @@ void fst6_init(void){
 	
 	ks0713_init(&_board.disp, _fst6_write_ks0713); 
 	tty_dev_t tty = ks0713_get_tty_interface(&_board.disp); 
+	
 	vt100_init(&_board.vt, tty); 
+	
+	//static uint16_t length[6] = {1200, 1400, 1600, 1800, 2000, 1000}; 
+	//ppm_configure(PWM_CH14, 0, 0, length, 6); 
 	
 }
 
 void fst6_process_events(void){
-	ks0713_commit(&_board.disp); 
+	// limit screen updates to 50fps
+	if(timestamp_expired(_board.time_to_render)){
+		ks0713_commit(&_board.disp); 
+		_board.time_to_render = timestamp_from_now_us(20000); 
+	}
 	
 	if(timestamp_expired(_board.pwm_end_time)){
 		pwm_write(FST6_PWM_SPEAKER, 0); 

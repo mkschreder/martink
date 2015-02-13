@@ -32,6 +32,7 @@ struct fst6 {
 	timestamp_t time_to_render; 
 	timestamp_t pwm_end_time; 
 	uint32_t keys; 
+	uint16_t ppm_buffer[7]; 
 }; 
 
 static void _fst6_write_ks0713(struct ks0713 *self, uint16_t *data, size_t size){
@@ -106,6 +107,17 @@ void fst6_play_tone(uint32_t freq, uint32_t duration_ms){
 	_board.pwm_end_time = timestamp_from_now_us(duration_ms * 1000UL); 
 }
 
+void fst6_write_ppm(uint16_t ch1, uint16_t ch2, uint16_t ch3, 
+	uint16_t ch4, uint16_t ch5, uint16_t ch6){
+	_board.ppm_buffer[0] = ch1; 
+	_board.ppm_buffer[1] = ch2; 
+	_board.ppm_buffer[2] = ch3; 
+	_board.ppm_buffer[3] = ch4; 
+	_board.ppm_buffer[4] = ch5; 
+	_board.ppm_buffer[5] = ch6; 
+	_board.ppm_buffer[6] = 20000 - ch1 - ch2 - ch3 - ch4 - ch5 - ch6; 
+}
+
 void fst6_init(void){
 	//time_init(); 
 	_board.pwm_end_time = 0; 
@@ -154,8 +166,6 @@ void fst6_init(void){
 	
 	twi0_init_default(); 
 	
-	pwm_configure(PWM_CH14, 2000, 2000+200); 
-	
 	//delay_ms(1000); 
 	
 	at24_init(&_board.eeprom, twi_get_interface(0)); 
@@ -165,9 +175,18 @@ void fst6_init(void){
 	
 	vt100_init(&_board.vt, tty); 
 	
-	//static uint16_t length[6] = {1200, 1400, 1600, 1800, 2000, 1000}; 
-	//ppm_configure(PWM_CH14, 0, 0, length, 6); 
+	for(int c = 0; c < 7; c++) _board.ppm_buffer[c] = 1000; 
 	
+	//static uint16_t ppm[6] = {1000, 1000, 2000, 2000, 5000, 5000}; 
+	/*static uint16_t length[7]; 
+	uint16_t acc = 0; 
+	for(int c = 0; c < 6; c++){
+		acc += ppm[c]; 
+		length[c] = acc; 
+	}
+	length[6] = 20000 - acc; */
+	//ppm_configure(PWM_CH14, 0, 0, ppm, 6); 
+	ppm_configure(PWM_CH14, 0, 0, _board.ppm_buffer, 7); 
 }
 
 void fst6_process_events(void){

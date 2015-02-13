@@ -136,19 +136,15 @@ static void _pwm_configure_oc_chan(TIM_TypeDef *TIMx, uint8_t chan, TIM_OCInitTy
 	switch(chan){
 		case 0: 
 			TIM_OC1Init(TIMx, conf);
-			TIM_OC1PreloadConfig(TIMx, TIM_OCPreload_Enable);
 			break; 
 		case 1: 
 			TIM_OC2Init(TIMx, conf);
-			TIM_OC2PreloadConfig(TIMx, TIM_OCPreload_Enable);
 			break; 
 		case 2: 
 			TIM_OC3Init(TIMx, conf);
-			TIM_OC3PreloadConfig(TIMx, TIM_OCPreload_Enable);
 			break; 
 		case 3: 
 			TIM_OC4Init(TIMx, conf);
-			TIM_OC4PreloadConfig(TIMx, TIM_OCPreload_Enable);
 			break; 
 	}; 
 }
@@ -169,7 +165,7 @@ void pwm_configure(pwm_channel_t chan, uint32_t def_width, uint32_t period){
 	
 	TIM_TimeBaseStructInit(&timerInitStructure); 
 	
-	timerInitStructure.TIM_Prescaler = SystemCoreClock/1000000UL; // set 1us resolution
+	timerInitStructure.TIM_Prescaler = SystemCoreClock / 4 / 1000000UL; // set 1us resolution
 	timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
 	timerInitStructure.TIM_Period = period;
 	timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
@@ -187,8 +183,11 @@ void pwm_configure(pwm_channel_t chan, uint32_t def_width, uint32_t period){
 	pwm_write(chan, def_width); 
 	
 	// make arr register buffered
-	//TIM_ARRPreloadConfig(TIMx, ENABLE);
-	
+	/*TIM_ARRPreloadConfig(TIMx, ENABLE);
+	TIM_OC1PreloadConfig(TIMx, ENABLE); 
+	TIM_OC2PreloadConfig(TIMx, ENABLE); 
+	TIM_OC3PreloadConfig(TIMx, ENABLE); 
+	TIM_OC4PreloadConfig(TIMx, ENABLE); */
 	
 	TIM_CtrlPWMOutputs(TIMx, ENABLE);
 	TIM_Cmd(TIMx, ENABLE);
@@ -228,6 +227,8 @@ void ppm_configure(pwm_channel_t chan, uint16_t spacing, uint16_t period, uint16
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 	TIM_ITConfig(TIMx, _int_ids[chan_id], ENABLE);
+	
+	TIM_ITConfig(TIMx, TIM_IT_Update, ENABLE);
 	
 }
 
@@ -299,6 +300,8 @@ void pwm_configure_capture(pwm_channel_t chan, uint32_t def_value){
 
 void pwm_set_period(pwm_channel_t chan, uint32_t period){
 	TIM_TypeDef *TIMx = _timers[(chan >> 2) & 0x7].tim; 
+	TIMx->ARR = period; 
+	/*
 	TIM_TimeBaseInitTypeDef timerInitStructure;
 	TIM_TimeBaseStructInit(&timerInitStructure); 
 	
@@ -307,7 +310,7 @@ void pwm_set_period(pwm_channel_t chan, uint32_t period){
 	timerInitStructure.TIM_Period = period;
 	timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
 	timerInitStructure.TIM_RepetitionCounter = 0;
-	TIM_TimeBaseInit(TIMx, &timerInitStructure);
+	TIM_TimeBaseInit(TIMx, &timerInitStructure);*/
 }
 
 void pwm_write(pwm_channel_t chan, uint32_t width){
@@ -335,6 +338,8 @@ uint32_t pwm_read(pwm_channel_t chan){
 
 static void TIM_IRQHandler(int timer, TIM_TypeDef *TIMx){
 	// check for one of the capture events
+	//uint16_t cnt = TIMx->CNT; 
+	
 	for(unsigned int c = 0; c < sizeof(_int_ids) / sizeof(_int_ids[0]); c++){
 		if (TIM_GetITStatus(TIMx, _int_ids[c]) != RESET) {
 			TIM_ClearITPendingBit(TIMx, _int_ids[c]);
@@ -343,19 +348,6 @@ static void TIM_IRQHandler(int timer, TIM_TypeDef *TIMx){
 			struct channel_state *ch = &Outputs[timer][c]; 
 			
 			if(ch->mode == MODE_PPM_OUTPUT){
-				pwm_channel_t chan_id = (timer << 2) | c; 
-				
-				if(ch->ppm_current == ch->ppm_count) {
-					ch->ppm_current = 0; 
-					pwm_set_period(chan_id, 2000); 
-					pwm_write(chan_id, 2000); 
-				} else {
-					pwm_set_period(chan_id, ch->ppm_buffer[ch->ppm_current]+200); 
-					pwm_write(chan_id, ch->ppm_buffer[ch->ppm_current]); 
-					ch->ppm_current++; 
-				}
-				TIM_ClearITPendingBit(TIMx, _int_ids[c]);
-				TIM_ClearITPendingBit(TIMx, TIM_IT_Update);
 				continue; 
 			}
 			
@@ -401,6 +393,20 @@ static void TIM_IRQHandler(int timer, TIM_TypeDef *TIMx){
 		TIM_ClearITPendingBit(TIMx, TIM_IT_Update);
 		for(int c = 0; c < 4; c++){
 			struct PWM_State *in = &Inputs[timer][c]; 
+			struct channel_state *ch = &Outputs[timer][c]; 
+			
+			if(ch->mode == MODE_PPM_OUTPUT){
+				pwm_channel_t chan_id = (timer << 2) | c; 
+				
+				if(ch->ppm_current == ch->ppm_count){
+					ch->ppm_current = 0; 
+				} 
+				TIMx->ARR = ch->ppm_buffer[ch->ppm_current]; 
+				pwm_write(chan_id, ch->ppm_buffer[ch->ppm_current]-400); 
+				ch->ppm_current++; 
+				
+				continue; 
+			}
 			
 			// skip disabled input channels
 			if(Inputs[timer][c].state == IC_DISABLED) continue; 

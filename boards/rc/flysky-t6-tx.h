@@ -40,6 +40,8 @@ fst6_key_mask_t fst6_read_keys(void);
 uint16_t fst6_read_battery_voltage(void); 
 uint16_t fst6_read_stick(fst6_stick_t id); 
 void fst6_play_tone(uint32_t frequency, uint32_t duration_ms); 
+void fst6_write_ppm(uint16_t ch1, uint16_t ch2, uint16_t ch3, 
+	uint16_t ch4, uint16_t ch5, uint16_t ch6); 
 void fst6_process_events(void); 
 int8_t fst6_write_config(const uint8_t *data, uint16_t size);
 int8_t fst6_read_config(uint8_t *data, uint16_t size); 

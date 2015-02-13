@@ -63,7 +63,7 @@ extern volatile uint8_t _twi0_status;
 extern void 		twi0_init_default(void);
 
 /// address is the first byte of data
-void 		twi0_start_write(uint8_t addr, uint8_t *data, uint8_t data_sz);
+void 		twi0_start_write(uint8_t addr, const uint8_t *data, uint8_t data_sz);
 /// address is the first byte of data
 void 		twi0_start_read(uint8_t addr, uint8_t *data, uint8_t data_sz);
 
@@ -75,6 +75,8 @@ uint8_t twi0_busy(void);
 
 /// returns 1 if previous transaction was successful
 uint8_t twi0_success(void); 
+
+void twi0_wait(uint8_t addr); 
 
 /*
 void twi0_slave_init(uint8_t addr);

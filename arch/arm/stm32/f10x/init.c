@@ -46,6 +46,12 @@ void c_startup(void)
 	
 	ConstructorsInit(); 
 	
+	RCC_HCLKConfig(RCC_SYSCLK_Div1);
+	RCC_PCLK1Config(RCC_HCLK_Div4); 
+	RCC_PCLK2Config(RCC_HCLK_Div4);
+	
+	SystemCoreClock = 72000000UL; 
+	
 	main();
 }
 

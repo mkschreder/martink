@@ -57,7 +57,8 @@ Revision Info:  $Id: twi_master.c 117 2010-06-24 20:21:28Z pieterconradie $
 
 /* _____LOCAL VARIABLES______________________________________________________ */
 static volatile uint8_t twi_adr;
-static volatile uint8_t *twi_data;
+static volatile uint8_t *twi_rd_data;
+static volatile const uint8_t *twi_wr_data; 
 static volatile uint8_t twi_data_counter;
 static volatile uint8_t twi_status;
 
@@ -92,7 +93,7 @@ ISR(TWI_vect)
 			// Decrement counter
 			twi_data_counter--;
 			// Load data register with next byte
-			TWDR = *twi_data++;
+			TWDR = *twi_wr_data++;
 			// TWI Interrupt enabled and clear flag to send next byte
 			TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 		}
@@ -112,7 +113,7 @@ ISR(TWI_vect)
 	case TW_MR_DATA_ACK:
 		// Data byte has been received and ACK tramsmitted
 		// Buffer received byte
-		*twi_data++ = TWDR;
+		*twi_rd_data++ = TWDR;
 		// Decrement counter
 		twi_data_counter--;
 		// Fall through...
@@ -135,7 +136,7 @@ ISR(TWI_vect)
 	case TW_MR_DATA_NACK:
 		// Data byte has been received and NACK tramsmitted
 		// Buffer received byte
-		*twi_data++ = TWDR;
+		*twi_rd_data++ = TWDR;
 		// Decrement counter
 		twi_data_counter--;
 
@@ -183,7 +184,7 @@ void twi0_init_default(void)
 	PORTC |= _BV(5) | _BV(4); 
 }
 
-void twi0_start_write(uint8_t adr, uint8_t *data, uint8_t bytes_to_send)
+void twi0_start_write(uint8_t adr, const uint8_t *data, uint8_t bytes_to_send)
 {
 	// Wait for previous transaction to finish
 	while(twi0_busy())
@@ -195,7 +196,7 @@ void twi0_start_write(uint8_t adr, uint8_t *data, uint8_t bytes_to_send)
 	twi_adr = adr & ~I2C_READ;
 
 	// Save pointer to data and number of bytes to send
-	twi_data		= data;
+	twi_wr_data		= data;
 	twi_data_counter = bytes_to_send;
 
 	// Initiate a START condition; Interrupt enabled and flag cleared
@@ -214,7 +215,7 @@ void twi0_start_read(uint8_t adr, uint8_t *data, uint8_t bytes_to_receive)
 	twi_adr = adr | I2C_READ;
 
 	// Save pointer to data and number of bytes to receive
-	twi_data		 = data;
+	twi_rd_data		 = data;
 	twi_data_counter = bytes_to_receive;
 
 	// Initiate a START condition; Interrupt enabled and flag cleared
@@ -271,6 +272,11 @@ int16_t twi0_stop(void)
 	while(TWCR & _BV(TWSTO));
 	
 	return twi_status == TWI_STATUS_DONE; 
+}
+
+void twi0_wait(uint8_t addr){
+	// not implemented
+	(void)(addr); 
 }
 
 /*

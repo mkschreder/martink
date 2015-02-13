@@ -171,22 +171,6 @@ void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr) {
   delay_us(7000L);
 }
 
-/*
- * get raw data
- */
-void hmc5883l_read_raw(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, int16_t *mzraw) {
-	uint8_t buff[6] = {HMC5883L_DATAREGBEGIN};
-	i2c_start_write(self->i2c, self->addr, buff, 1);
-	i2c_stop(self->i2c); // sensor needs a stop
-	memset(buff, 0, sizeof(buff)); 
-	i2c_start_read(self->i2c, self->addr, buff, 6);
-	i2c_stop(self->i2c);
-	
-	*mxraw = (int16_t)((buff[0] << 8) | buff[1]);
-	*mzraw = (int16_t)((buff[2] << 8) | buff[3]);
-	*myraw = (int16_t)((buff[4] << 8) | buff[5]);
-}
-
 uint32_t hmc5883l_read_id(struct hmc5883l *self){
 	uint8_t reg = HMC5883L_REG_IDA; 
 	uint8_t buf[3] = {0}; /* = {
@@ -201,7 +185,20 @@ uint32_t hmc5883l_read_id(struct hmc5883l *self){
 	return ((uint32_t)buf[0] << 16) | ((uint32_t)buf[1] << 8) | buf[2]; 
 }
 
-void hmc5883l_convertData(struct hmc5883l *self, 
+void hmc5883l_readRawMag(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, int16_t *mzraw) {
+	uint8_t buff[6] = {HMC5883L_DATAREGBEGIN};
+	i2c_start_write(self->i2c, self->addr, buff, 1);
+	i2c_stop(self->i2c); // sensor needs a stop
+	memset(buff, 0, sizeof(buff)); 
+	i2c_start_read(self->i2c, self->addr, buff, 6);
+	i2c_stop(self->i2c);
+	
+	*mxraw = (int16_t)((buff[0] << 8) | buff[1]);
+	*mzraw = (int16_t)((buff[2] << 8) | buff[3]);
+	*myraw = (int16_t)((buff[4] << 8) | buff[5]);
+}
+
+void hmc5883l_convertMag(struct hmc5883l *self, 
 	int16_t mxraw, int16_t myraw, int16_t mzraw, 
 	float *mx, float *my, float *mz){
 	*mx = mxraw * self->scale; 

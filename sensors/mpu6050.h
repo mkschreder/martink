@@ -50,15 +50,19 @@ void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr);
 uint8_t mpu6050_probe(struct mpu6050 *self);
 
 //#if MPU6050_GETATTITUDE == 0
-void mpu6050_getRawData(struct mpu6050 *self, int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz);
-void mpu6050_convertData(struct mpu6050 *self, 
+void mpu6050_readRawAcc(struct mpu6050 *self, int16_t* ax, int16_t* ay, int16_t* az);
+void mpu6050_readRawGyr(struct mpu6050 *self, int16_t* gx, int16_t* gy, int16_t* gz);
+void mpu6050_convertAcc(struct mpu6050 *self, int16_t ax, int16_t ay, int16_t az, float *axg, float *ayg, float *azg);
+void mpu6050_convertGyr(struct mpu6050 *self, int16_t gx, int16_t gy, int16_t gz, float *gxd, float *gyd, float *gyz);
+//void mpu6050_getRawData(struct mpu6050 *self, int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz);
+/*void mpu6050_convertData(struct mpu6050 *self, 
 	int16_t ax, int16_t ay, int16_t az, 
 	int16_t gx, int16_t gy, int16_t gz, 
 	float *axg, float *ayg, float *azg, 
 	float *gxd, float *gyd, float *gyz
-); 
-void mpu6050_getConvAcc(struct mpu6050 *self, double* axg, double* ayg, double* azg);
-void mpu6050_getConvGyr(struct mpu6050 *self, double* gxds, double* gyds, double* gzds);
+)*/
+//void mpu6050_getConvAcc(struct mpu6050 *self, double* axg, double* ayg, double* azg);
+//void mpu6050_getConvGyr(struct mpu6050 *self, double* gxds, double* gyds, double* gzds);
 //#endif
 
 /*

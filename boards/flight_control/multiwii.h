@@ -41,12 +41,64 @@ extern "C" {
 #include <inttypes.h>
 #include "../interface.h"
 
-/*
-#define PWM_MIN MINCOMMAND
-#define PWM_MAX MAXCOMMAND
-*/
+typedef enum {
+	MWII_OUT_PWM0, 
+	MWII_OUT_PWM1,
+	MWII_OUT_PWM2, 
+	MWII_OUT_PWM3
+} mwii_out_pwm_channel_t; 
 
+typedef enum {
+	MWII_IN_PWM0, 
+	MWII_IN_PWM1, 
+	MWII_IN_PWM2, 
+	MWII_IN_PWM3
+} mwii_in_pwm_channel_t; 
+
+/// initializes all on board peripherals and interfaces
 void mwii_init(void); 
+/// writes a pwm pulse to specified pwm channel
+void mwii_write_pwm(mwii_out_pwm_channel_t chan, uint16_t value); 
+/// reads most recent captured pwm pulse length from channel
+uint16_t mwii_read_pwm(mwii_in_pwm_channel_t chan); 
+/// gets main i2c interface of the board (it only has one) 
+i2c_dev_t mwii_get_i2c_interface(void); 
+/// gets main usart interface
+serial_dev_t mwii_get_uart_interface(void); 
+
+//**********************
+// READING SENSOR DATA
+//**********************
+/// reads last measured acceleration in G
+void mwii_read_acceleration_g(float *ax, float *ay, float *az); 
+/// reads last measured angular velocity in degrees / sec
+void mwii_read_angular_velocity_dps(float *gyrx, float *gyry, float *gyrz); 
+/// reads last measured magnetic field in ? 
+void mwii_read_magnetic_field(float *mx, float *my, float *mz); 
+/// reads temperature in degrees C
+float mwii_read_temperature_c(void); 
+/// reads pressure in pascal
+float mwii_read_pressure_pa(void); 
+
+//************************
+// CONFIG 
+//************************
+/// read config from internal storage
+void mwii_read_config(uint8_t *data, uint8_t size); 
+/// write config to internal storage
+void mwii_write_config(const uint8_t *data, uint8_t size); 
+
+//************************
+// UTILITIES
+//************************
+
+/// schedules an esc calibration to be done upon next powerup
+void mwii_calibrate_escs_on_reboot(void); 
+
+//************************
+// PROCESSING FRAME EVENTS
+//************************
+/// processes any events. Must be called as part of the main loop. 
 void mwii_process_events(void);
 
 fc_board_t mwii_get_fc_quad_interface(void);
@@ -54,6 +106,9 @@ fc_board_t mwii_get_fc_quad_interface(void);
 void mwii_calibrate_escs(void); 
 
 #define MWII_LED_PIN GPIO_PB5
+
+#define mwii_led_on() gpio_set(MWII_LED_PIN)
+#define mwii_led_off() gpio_clear(MWII_LED_PIN)
 
 enum {
 	RC_THROTTLE = 0, 

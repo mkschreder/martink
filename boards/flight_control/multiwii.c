@@ -87,7 +87,6 @@ struct multiwii_board {
 static struct multiwii_board _brd; 
 static struct multiwii_board *brd = &_brd;
 
-
 static void reset_rc(void){
 	for(int c = 0; c < 6; c++){
 		brd->rc_values[c] = rc_defaults[c]; 
@@ -124,11 +123,251 @@ static void compute_rc_values(void){
 	}
 }
 
+
 static inline void mwii_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right){
 	pwm0_set(front);
 	pwm1_set(back);
 	pwm4_set(left);
 	pwm5_set(right); 
+}
+
+
+static void mwii_calibrate_mpu6050(void){
+	// calibrate gyro offset
+	int16_t ax, ay, az, gx, gy, gz; 
+	
+	mpu6050_setTCXGyroOffset(&_brd.mpu, 0); //14
+	mpu6050_setTCYGyroOffset(&_brd.mpu, 0); //20
+	mpu6050_setTCZGyroOffset(&_brd.mpu, 0); //-49
+	mpu6050_setXGyroOffset(&_brd.mpu, 0); //14
+	mpu6050_setYGyroOffset(&_brd.mpu, 0); //20
+	mpu6050_setZGyroOffset(&_brd.mpu, 0); //-49
+	
+	int32_t aax = 0, aay= 0, aaz = 0, ggx = 0, ggy = 0, ggz = 0; 
+	static const int iterations = 100; 
+	for(int c = 0; c < iterations; c++){
+		mpu6050_readRawAcc(&_brd.mpu, &ax, &ay, &az); 
+		mpu6050_readRawGyr(&_brd.mpu, &gx, &gy, &gz); 
+		aax += ax; aay += ay; aaz += az; 
+		ggx += gx; ggy += gy; ggz += gz; 
+		delay_us(10); 
+	}
+	brd->acc_bias_x = aax / iterations; 
+	brd->acc_bias_y = aay / iterations; 
+	brd->acc_bias_z = (aaz / iterations) + 16384; 
+	
+	mpu6050_setXGyroOffset(&_brd.mpu, -(int16_t)(ggx / iterations * 2) | 1); //14
+	mpu6050_setYGyroOffset(&_brd.mpu, -(int16_t)(ggy / iterations * 2) | 1); //20
+	mpu6050_setZGyroOffset(&_brd.mpu, -(int16_t)(ggz / iterations * 2) | 1); //-49
+	
+	// Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
+	// factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
+	// non-zero values. In addition, bit 0 of the lower byte must be preserved since it is used for temperature
+	// compensation calculations. Accelerometer bias registers expect bias input as 2048 LSB per g, so that
+	// the accelerometer biases calculated above must be divided by 8.
+	
+	// Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
+	// preserve temperature compensation bit when writing back to accelerometer bias registers
+	//bias_x = (int16_t)(bias_x - (aax / iterations / 16384.0 * 2048)) | 1; 
+	//bias_y = (int16_t)(bias_y - (aay / iterations / 16384.0 * 2048)) | 1; 
+	//bias_z = (int16_t)(bias_z - (aaz / iterations / 16384.0 * 2048)) | 1; 
+	
+	//mpu6050_setXAccOffset(&_brd.mpu, -(int16_t)(bias_x)); 
+	//mpu6050_setYAccOffset(&_brd.mpu, -(int16_t)(bias_y)); 
+	//mpu6050_setZAccOffset(&_brd.mpu, -(int16_t)(aaz)); 
+	
+	/*mpu6050_setXAccOffset(&_brd.mpu, 0x0100); 
+	mpu6050_setYAccOffset(&_brd.mpu, 0x0100); 
+	mpu6050_setZAccOffset(&_brd.mpu, 0x0100); */
+	
+	//mpu6050_setXGyroOffset(&_brd.mpu, -15 * 2); //14
+	//mpu6050_setYGyroOffset(&_brd.mpu, -20 * 2); //20
+	//mpu6050_setZGyroOffset(&_brd.mpu, 54 * 2); //-49
+	//mpu6050_setZAccOffset(&_brd.mpu, -20); // 15818
+	/*
+	mpu6050_getRawData(&_brd.mpu, &ax, &ay, &az, &gx, &gy, &gz); 
+	
+	mpu6050_setXGyroOffset(&_brd.mpu, gx); 
+	mpu6050_setYGyroOffset(&_brd.mpu, gy); 
+	mpu6050_setZGyroOffset(&_brd.mpu, gz); */
+}
+
+static void _serial_fd_putc(int c, FILE *stream){
+	serial_dev_t dev = fdev_get_udata(stream); 
+	serial_putc(dev, c); 
+}
+
+static int _serial_fd_getc(FILE *stream){
+	serial_dev_t dev = fdev_get_udata(stream); 
+	return serial_getc(dev) & 0xff; 
+}
+
+static FILE uart_fd = FDEV_SETUP_STREAM(_serial_fd_putc, _serial_fd_getc, _FDEV_SETUP_RW);
+
+void mwii_init(void){
+	//soc_init(); 
+	time_init(); 
+	uart_init(); 
+	gpio_init();
+	//spi_init(); 
+	twi_init(); 
+	pwm_init(); 
+	adc0_init_default(); 
+	sei(); 
+	
+	// setup printf stuff (specific to avr-libc)
+	fdev_set_udata(&uart_fd, uart_get_serial_interface(0)); 
+	stdout = &uart_fd; 
+	stderr = &uart_fd; 
+	
+	/*
+	// setup stdout and stderr (avr-libc specific) 
+	fdev_setup_stream(stdout, _serial_fd_putc, _serial_fd_getc, _FDEV_SETUP_RW); 
+	fdev_set_udata(stdout, uart_get_serial_interface(0)); 
+	fdev_setup_stream(stderr, _serial_fd_putc, _serial_fd_getc, _FDEV_SETUP_RW); 
+	fdev_set_udata(stderr, uart_get_serial_interface(0)); 
+*/
+	// first thing must enable interrupts
+	kdebug("BOOT\n");
+	
+	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
+	//gpio_set(GPIO_MWII_LED); 
+	
+	gpio_configure(GPIO_MWII_MOTOR0, GP_OUTPUT);
+	gpio_configure(GPIO_MWII_MOTOR1, GP_OUTPUT);
+	gpio_configure(GPIO_MWII_MOTOR2, GP_OUTPUT);
+	gpio_configure(GPIO_MWII_MOTOR3, GP_OUTPUT);
+	
+	gpio_configure(GPIO_MWII_RX0, GP_INPUT | GP_PULLUP | GP_PCINT);
+	gpio_configure(GPIO_MWII_RX1, GP_INPUT | GP_PULLUP | GP_PCINT);
+	gpio_configure(GPIO_MWII_RX2, GP_INPUT | GP_PULLUP | GP_PCINT);
+	gpio_configure(GPIO_MWII_RX3, GP_INPUT | GP_PULLUP | GP_PCINT);
+	
+	// calibrate escs
+	//mwii_calibrate_escs(); 
+	
+	// set initial motor speeds
+	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 
+	
+	brd->gpio0 = gpio_get_parallel_interface();
+	
+	brd->twi0 = twi_get_interface(0);
+	
+	/* 
+	// I2C scanner 
+	for(int c = 0; c < 255; c++){
+		uint8_t buf[2]; 
+		i2c_start_read(brd->twi0, c, buf, 1); 
+		if(i2c_stop(brd->twi0) == 1 && c & 1){
+			kprintf("Device %x@i2c\n", c >> 1); 
+		}
+		delay_us(10000); 
+	}
+	*/
+	gpio_set(GPIO_MWII_LED);
+	 
+	mpu6050_init(&brd->mpu, brd->twi0, MPU6050_ADDR); 
+	kdebug("MPU6050: %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
+	
+	bmp085_init(&brd->bmp, brd->twi0, BMP085_ADDR); 
+	kdebug("BMP085: found\n");
+	
+	hmc5883l_init(&brd->hmc, brd->twi0, HMC5883L_ADDR);
+	
+	gpio_clear(GPIO_MWII_LED); 
+	
+	hcsr04_init(&brd->hcsr, brd->gpio0, GPIO_MWII_HCSR_TRIGGER, GPIO_MWII_HCSR_ECHO); 
+	
+	reset_rc();
+	
+	mwii_calibrate_mpu6050(); 
+	// let the escs init as well
+	delay_us(500000L); 
+}
+
+/// writes a pwm pulse to specified pwm channel
+void mwii_write_pwm(mwii_out_pwm_channel_t chan, uint16_t value){
+	switch(chan){
+		case MWII_OUT_PWM0: pwm0_set(value); break; 
+		case MWII_OUT_PWM1: pwm1_set(value);  break; 
+		case MWII_OUT_PWM2: pwm4_set(value);  break; 
+		case MWII_OUT_PWM3: pwm5_set(value);  break; 
+	}
+}
+
+/// reads most recent captured pwm pulse length from channel
+uint16_t mwii_read_pwm(mwii_in_pwm_channel_t chan){
+	switch(chan){
+		case MWII_IN_PWM0: return brd->rc_values[0]; 
+		case MWII_IN_PWM1: return brd->rc_values[1]; 
+		case MWII_IN_PWM2: return brd->rc_values[2]; 
+		case MWII_IN_PWM3: return brd->rc_values[3]; 
+	}
+	return 0; 
+}
+
+/// gets main i2c interface of the board (it only has one) 
+i2c_dev_t mwii_get_i2c_interface(void){
+	return twi_get_interface(0); 
+}
+
+/// gets main usart interface
+serial_dev_t mwii_get_uart_interface(void){
+	return uart_get_serial_interface(0); 
+}
+
+//**********************
+// READING SENSOR DATA
+//**********************
+/// reads last measured acceleration in G
+void mwii_read_acceleration_g(float *ax, float *ay, float *az){
+	int16_t x, y, z; 
+	mpu6050_readRawAcc(&_brd.mpu, &x, &y, &z); 
+	mpu6050_convertAcc(&_brd.mpu, x, y, z, ax, ay, az); 
+}
+
+/// reads last measured angular velocity in degrees / sec
+void mwii_read_angular_velocity_dps(float *gyrx, float *gyry, float *gyrz){
+	int16_t x, y, z; 
+	mpu6050_readRawGyr(&_brd.mpu, &x, &y, &z); 
+	mpu6050_convertGyr(&_brd.mpu, x, y, z, gyrx, gyry, gyrz); 
+}
+
+/// reads last measured magnetic field in ? 
+void mwii_read_magnetic_field(float *mx, float *my, float *mz){
+	int16_t x, y, z; 
+	hmc5883l_readRawMag(&_brd.hmc, &x, &y, &z); 
+	hmc5883l_convertMag(&_brd.hmc, x, y, z, mx, my, mz); 
+}
+
+/// reads temperature in degrees C
+float mwii_read_temperature_c(void){
+	return bmp085_read_temperature(&brd->bmp); 
+}
+
+/// reads pressure in pascal
+float mwii_read_pressure_pa(void){
+	return bmp085_read_pressure(&brd->bmp); 
+}
+
+
+void mwii_write_config(const uint8_t *data, uint8_t size){
+	memory_dev_t ee = eeprom_get_memory_interface(); 
+	mem_write(ee, 0, data, size); 
+}
+
+void mwii_read_config(uint8_t *data, uint8_t size){
+	memory_dev_t ee = eeprom_get_memory_interface(); 
+	mem_read(ee, 0, data, size); 
+}
+
+//************************
+// UTILITIES
+//************************
+
+/// schedules an esc calibration to be done upon next powerup
+void mwii_calibrate_escs_on_reboot(void){
+	// TODO: save a flag and check it upon reboot
 }
 
 void mwii_process_events(void){
@@ -144,38 +383,37 @@ void mwii_process_events(void){
 static int8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 	(void)(self); 
 	data->flags = 0xffff; // all
-	mpu6050_getRawData(&_brd.mpu, 
+	mpu6050_readRawAcc(&_brd.mpu, 
 		&data->raw_acc.x, 
 		&data->raw_acc.y, 
-		&data->raw_acc.z,
+		&data->raw_acc.z); 
+	mpu6050_readRawGyr(&_brd.mpu, 
 		&data->raw_gyr.x, 
 		&data->raw_gyr.y, 
 		&data->raw_gyr.z
 	); 
-	/*data->raw_acc.x -= brd->acc_bias_x; 
-	data->raw_acc.y -= brd->acc_bias_y; 
-	data->raw_acc.z -= brd->acc_bias_z; 
-	*/
-	mpu6050_convertData(&_brd.mpu, 
+	mpu6050_convertAcc(&_brd.mpu, 
 		data->raw_acc.x, 
 		data->raw_acc.y, 
 		data->raw_acc.z, 
+		&data->acc_g.x, 
+		&data->acc_g.y, 
+		&data->acc_g.z
+	); 
+	mpu6050_convertAcc(&_brd.mpu, 
 		data->raw_gyr.x, 
 		data->raw_gyr.y, 
 		data->raw_gyr.z, 
-		&data->acc_g.x, 
-		&data->acc_g.y, 
-		&data->acc_g.z,
 		&data->gyr_deg.x,
 		&data->gyr_deg.y,
 		&data->gyr_deg.z
 	); 
-	hmc5883l_read_raw(&_brd.hmc, 
+	hmc5883l_readRawMag(&_brd.hmc, 
 		&data->raw_mag.x, 
 		&data->raw_mag.y, 
 		&data->raw_mag.z
 	); 
-	hmc5883l_convertData(&_brd.hmc, 
+	hmc5883l_convertMag(&_brd.hmc, 
 		data->raw_mag.x, 
 		data->raw_mag.y, 
 		data->raw_mag.z, 
@@ -275,143 +513,4 @@ void mwii_calibrate_escs(void){
 	_delay_ms(500); 
 	// reset the motors
 	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 
-}
-
-static void mwii_calibrate_mpu6050(void){
-	// calibrate gyro offset
-	int16_t ax, ay, az, gx, gy, gz; 
-	
-	mpu6050_setTCXGyroOffset(&_brd.mpu, 0); //14
-	mpu6050_setTCYGyroOffset(&_brd.mpu, 0); //20
-	mpu6050_setTCZGyroOffset(&_brd.mpu, 0); //-49
-	mpu6050_setXGyroOffset(&_brd.mpu, 0); //14
-	mpu6050_setYGyroOffset(&_brd.mpu, 0); //20
-	mpu6050_setZGyroOffset(&_brd.mpu, 0); //-49
-	
-	/*
-	int16_t bias_x = mpu6050_getXAccOffset(&_brd.mpu); 
-	int16_t bias_y = mpu6050_getYAccOffset(&_brd.mpu); 
-	int16_t bias_z = mpu6050_getZAccOffset(&_brd.mpu); 
-	*/
-	/*mpu6050_setXAccOffset(&_brd.mpu, 0); 
-	mpu6050_setYAccOffset(&_brd.mpu, 0); 
-	mpu6050_setZAccOffset(&_brd.mpu, 0); 
-	*/
-	int32_t aax = 0, aay= 0, aaz = 0, ggx = 0, ggy = 0, ggz = 0; 
-	static const int iterations = 100; 
-	for(int c = 0; c < iterations; c++){
-		mpu6050_getRawData(&_brd.mpu, &ax, &ay, &az, &gx, &gy, &gz); 
-		aax += ax; aay += ay; aaz += az; 
-		ggx += gx; ggy += gy; ggz += gz; 
-		delay_us(10); 
-	}
-	brd->acc_bias_x = aax / iterations; 
-	brd->acc_bias_y = aay / iterations; 
-	brd->acc_bias_z = (aaz / iterations) + 16384; 
-	
-	mpu6050_setXGyroOffset(&_brd.mpu, -(int16_t)(ggx / iterations * 2) | 1); //14
-	mpu6050_setYGyroOffset(&_brd.mpu, -(int16_t)(ggy / iterations * 2) | 1); //20
-	mpu6050_setZGyroOffset(&_brd.mpu, -(int16_t)(ggz / iterations * 2) | 1); //-49
-	
-	// Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
-	// factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
-	// non-zero values. In addition, bit 0 of the lower byte must be preserved since it is used for temperature
-	// compensation calculations. Accelerometer bias registers expect bias input as 2048 LSB per g, so that
-	// the accelerometer biases calculated above must be divided by 8.
-	
-	// Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
-	// preserve temperature compensation bit when writing back to accelerometer bias registers
-	//bias_x = (int16_t)(bias_x - (aax / iterations / 16384.0 * 2048)) | 1; 
-	//bias_y = (int16_t)(bias_y - (aay / iterations / 16384.0 * 2048)) | 1; 
-	//bias_z = (int16_t)(bias_z - (aaz / iterations / 16384.0 * 2048)) | 1; 
-	
-	//mpu6050_setXAccOffset(&_brd.mpu, -(int16_t)(bias_x)); 
-	//mpu6050_setYAccOffset(&_brd.mpu, -(int16_t)(bias_y)); 
-	//mpu6050_setZAccOffset(&_brd.mpu, -(int16_t)(aaz)); 
-	
-	/*mpu6050_setXAccOffset(&_brd.mpu, 0x0100); 
-	mpu6050_setYAccOffset(&_brd.mpu, 0x0100); 
-	mpu6050_setZAccOffset(&_brd.mpu, 0x0100); */
-	
-	//mpu6050_setXGyroOffset(&_brd.mpu, -15 * 2); //14
-	//mpu6050_setYGyroOffset(&_brd.mpu, -20 * 2); //20
-	//mpu6050_setZGyroOffset(&_brd.mpu, 54 * 2); //-49
-	//mpu6050_setZAccOffset(&_brd.mpu, -20); // 15818
-	/*
-	mpu6050_getRawData(&_brd.mpu, &ax, &ay, &az, &gx, &gy, &gz); 
-	
-	mpu6050_setXGyroOffset(&_brd.mpu, gx); 
-	mpu6050_setYGyroOffset(&_brd.mpu, gy); 
-	mpu6050_setZGyroOffset(&_brd.mpu, gz); */
-}
-
-void mwii_init(void){
-	//soc_init(); 
-	time_init(); 
-	uart_init(); 
-	gpio_init();
-	//spi_init(); 
-	twi_init(); 
-	pwm_init(); 
-	adc0_init_default(); 
-	sei(); 
-	
-	// first thing must enable interrupts
-	kdebug("BOOT\n");
-	
-	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
-	//gpio_set(GPIO_MWII_LED); 
-	
-	gpio_configure(GPIO_MWII_MOTOR0, GP_OUTPUT);
-	gpio_configure(GPIO_MWII_MOTOR1, GP_OUTPUT);
-	gpio_configure(GPIO_MWII_MOTOR2, GP_OUTPUT);
-	gpio_configure(GPIO_MWII_MOTOR3, GP_OUTPUT);
-	
-	gpio_configure(GPIO_MWII_RX0, GP_INPUT | GP_PULLUP | GP_PCINT);
-	gpio_configure(GPIO_MWII_RX1, GP_INPUT | GP_PULLUP | GP_PCINT);
-	gpio_configure(GPIO_MWII_RX2, GP_INPUT | GP_PULLUP | GP_PCINT);
-	gpio_configure(GPIO_MWII_RX3, GP_INPUT | GP_PULLUP | GP_PCINT);
-	
-	// calibrate escs
-	mwii_calibrate_escs(); 
-	
-	// set initial motor speeds
-	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 
-	
-	brd->gpio0 = gpio_get_parallel_interface();
-	
-	brd->twi0 = twi_get_interface(0);
-	
-	/* 
-	// I2C scanner 
-	for(int c = 0; c < 255; c++){
-		uint8_t buf[2]; 
-		i2c_start_read(brd->twi0, c, buf, 1); 
-		if(i2c_stop(brd->twi0) == 1 && c & 1){
-			kprintf("Device %x@i2c\n", c >> 1); 
-		}
-		delay_us(10000); 
-	}
-	*/
-	gpio_set(GPIO_MWII_LED);
-	 
-	mpu6050_init(&brd->mpu, brd->twi0, MPU6050_ADDR); 
-	kdebug("MPU6050: %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
-	
-	bmp085_init(&brd->bmp, brd->twi0, BMP085_ADDR); 
-	kdebug("BMP085: found\n");
-	
-	hmc5883l_init(&brd->hmc, brd->twi0, HMC5883L_ADDR);
-	//uint32_t hmcid = hmc5883l_read_id(&brd->hmc);  
-	//kdebug("HMC5883: %c%c%c\n", (uint8_t)(hmcid >> 16), (uint8_t)(hmcid >> 8), (uint8_t)hmcid); 
-	
-	gpio_clear(GPIO_MWII_LED); 
-	
-	hcsr04_init(&brd->hcsr, brd->gpio0, GPIO_MWII_HCSR_TRIGGER, GPIO_MWII_HCSR_ECHO); 
-	
-	reset_rc();
-	
-	mwii_calibrate_mpu6050(); 
-	// let the escs init as well
-	delay_us(500000L); 
 }

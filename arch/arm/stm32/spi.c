@@ -3,6 +3,8 @@
 
 #include <kernel/device.h>
 
+#define SPI_TIMEOUT 10
+
 struct spi_device {
 	SPI_TypeDef *spi; 
 	GPIO_TypeDef *gpio; 
@@ -93,10 +95,10 @@ uint8_t spi_transfer(uint8_t dev, uint8_t data){
 	if(dev > count) return 0xff; 
 	struct spi_device *d = &_spi[dev]; 
 	
-	while (SPI_I2S_GetFlagStatus(d->spi, SPI_I2S_FLAG_TXE) == RESET);
+	wait_on_us(SPI_I2S_GetFlagStatus(d->spi, SPI_I2S_FLAG_TXE) == RESET, SPI_TIMEOUT);
 
 	d->spi->DR = data;
-	while (SPI_I2S_GetFlagStatus(d->spi, SPI_I2S_FLAG_RXNE) == RESET);
+	wait_on_us(SPI_I2S_GetFlagStatus(d->spi, SPI_I2S_FLAG_RXNE) == RESET, SPI_TIMEOUT);
 
 	return d->spi->DR; 
 }

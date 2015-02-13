@@ -48,6 +48,8 @@ void timestamp_delay_us(timestamp_t usec);
 
 timestamp_t timestamp_ticks_since(timestamp_t timestamp) ;
 
+#define wait_on_us(cond, timeout) {timestamp_t ts = timeout; while((cond) && ts--) delay_us(1); }
+
 void time_init(void); 
 
 #ifdef __cplusplus

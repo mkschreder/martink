@@ -34,6 +34,12 @@ typedef enum {
 	MODE_PPM_OUTPUT
 } channel_mode_t; 
 
+typedef enum {
+	TIMER_FREE, 
+	TIMER_PWM_OUTPUT, 
+	TIMER_PPM_OUTPUT
+} timer_mode_t; 
+
 // table for mapping pwm channels to timers
 static const struct _timer {
 	TIM_TypeDef *tim; 
@@ -113,15 +119,18 @@ static struct PWM_State {
     uint32_t def_value; 
 } Inputs[8][4] = { { { 0, } }, };
 
-static struct channel_state {
+struct channel_state {
 	channel_mode_t mode; 
 	uint16_t *ppm_buffer; 
-	uint16_t ppm_period; 
 	uint16_t ppm_spacing; 
 	uint8_t ppm_count; 
-	uint16_t ppm_acc; 
 	uint8_t ppm_current; 
-} Outputs[8][4] = {{{0,}},};
+}; 
+
+static struct timer_state {
+	uint8_t mode; 
+	struct channel_state chan[4]; 
+} Outputs[8] = {{0,},};
 
 enum {
 	IC_DISABLED, 
@@ -165,7 +174,7 @@ void pwm_configure(pwm_channel_t chan, uint32_t def_width, uint32_t period){
 	
 	TIM_TimeBaseStructInit(&timerInitStructure); 
 	
-	timerInitStructure.TIM_Prescaler = SystemCoreClock / 4 / 1000000UL; // set 1us resolution
+	timerInitStructure.TIM_Prescaler = SystemCoreClock / 1000000UL; // set 1us resolution
 	timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
 	timerInitStructure.TIM_Period = period;
 	timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
@@ -202,23 +211,23 @@ void pwm_configure(pwm_channel_t chan, uint32_t def_width, uint32_t period){
 	GPIO_PinRemapConfig(GPIO_PartialRemap_TIM3, ENABLE);
 }
 
-void ppm_configure(pwm_channel_t chan, uint16_t spacing, uint16_t period, uint16_t *pulses, uint8_t npulse){
+void ppm_configure(pwm_channel_t chan, uint16_t *pulses, uint8_t npulse, uint16_t spacing){
 	uint8_t tim_id = (chan >> 2) & 0x7; 
 	uint8_t chan_id = (chan & 0x3); 
 	
-	pwm_configure(chan, 2000, 2000); 
+	pwm_configure(chan, 19600, 20000); 
 	
-	struct channel_state *out = &Outputs[tim_id][chan_id]; 
+	struct timer_state *ti = &Outputs[tim_id]; 
+	ti->mode = TIMER_PPM_OUTPUT; 
+	struct channel_state *out = &ti->chan[chan_id]; 
 	out->mode = MODE_PPM_OUTPUT; 
-	out->ppm_period = period; 
 	out->ppm_spacing = spacing; 
 	out->ppm_buffer = pulses; 
 	out->ppm_count = npulse; 
-	out->ppm_acc = 0; 
 	out->ppm_current = 0; 
 	
+	// enable update interrupt
 	TIM_TypeDef *TIMx = _timers[tim_id].tim; 
-	
 	NVIC_InitTypeDef NVIC_InitStructure;
 	
 	NVIC_InitStructure.NVIC_IRQChannel = _timers[tim_id].irq;
@@ -226,10 +235,17 @@ void ppm_configure(pwm_channel_t chan, uint16_t spacing, uint16_t period, uint16
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
+	
+	// no need for the capture interrupt if we are using ppm
+	// also, using ppm disables all other channels on this timer 
+	// (because we are controlling period)
+	/*TIM_ITConfig(TIMx, TIM_IT_CC1, DISABLE);
+	TIM_ITConfig(TIMx, TIM_IT_CC2, DISABLE);
+	TIM_ITConfig(TIMx, TIM_IT_CC3, DISABLE);
+	TIM_ITConfig(TIMx, TIM_IT_CC4, DISABLE);*/
 	TIM_ITConfig(TIMx, _int_ids[chan_id], ENABLE);
 	
 	TIM_ITConfig(TIMx, TIM_IT_Update, ENABLE);
-	
 }
 
 void pwm_configure_capture(pwm_channel_t chan, uint32_t def_value){
@@ -301,16 +317,6 @@ void pwm_configure_capture(pwm_channel_t chan, uint32_t def_value){
 void pwm_set_period(pwm_channel_t chan, uint32_t period){
 	TIM_TypeDef *TIMx = _timers[(chan >> 2) & 0x7].tim; 
 	TIMx->ARR = period; 
-	/*
-	TIM_TimeBaseInitTypeDef timerInitStructure;
-	TIM_TimeBaseStructInit(&timerInitStructure); 
-	
-	timerInitStructure.TIM_Prescaler = SystemCoreClock/1000000UL; // set 1us resolution
-	timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
-	timerInitStructure.TIM_Period = period;
-	timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-	timerInitStructure.TIM_RepetitionCounter = 0;
-	TIM_TimeBaseInit(TIMx, &timerInitStructure);*/
 }
 
 void pwm_write(pwm_channel_t chan, uint32_t width){
@@ -345,7 +351,7 @@ static void TIM_IRQHandler(int timer, TIM_TypeDef *TIMx){
 			TIM_ClearITPendingBit(TIMx, _int_ids[c]);
 			
 			struct PWM_State *in = &Inputs[timer][c]; 
-			struct channel_state *ch = &Outputs[timer][c]; 
+			struct channel_state *ch = &Outputs[timer].chan[c]; 
 			
 			if(ch->mode == MODE_PPM_OUTPUT){
 				continue; 
@@ -393,7 +399,7 @@ static void TIM_IRQHandler(int timer, TIM_TypeDef *TIMx){
 		TIM_ClearITPendingBit(TIMx, TIM_IT_Update);
 		for(int c = 0; c < 4; c++){
 			struct PWM_State *in = &Inputs[timer][c]; 
-			struct channel_state *ch = &Outputs[timer][c]; 
+			struct channel_state *ch = &Outputs[timer].chan[c]; 
 			
 			if(ch->mode == MODE_PPM_OUTPUT){
 				pwm_channel_t chan_id = (timer << 2) | c; 
@@ -402,7 +408,7 @@ static void TIM_IRQHandler(int timer, TIM_TypeDef *TIMx){
 					ch->ppm_current = 0; 
 				} 
 				TIMx->ARR = ch->ppm_buffer[ch->ppm_current]; 
-				pwm_write(chan_id, ch->ppm_buffer[ch->ppm_current]-400); 
+				pwm_write(chan_id, ch->ppm_buffer[ch->ppm_current]-ch->ppm_spacing); 
 				ch->ppm_current++; 
 				
 				continue; 

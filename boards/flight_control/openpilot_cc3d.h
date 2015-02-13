@@ -66,8 +66,37 @@
 extern "C" {
 #endif
 
+
+#define FC_PWM_CH1 PWM_CH44
+#define FC_PWM_CH2 PWM_CH43
+#define FC_PWM_CH3 PWM_CH42
+#define FC_PWM_CH4 PWM_CH11
+#define FC_PWM_CH5 PWM_CH31
+#define FC_PWM_CH6 PWM_CH23
+
+#define FC_PWM_RC1 PWM_CH41
+#define FC_PWM_RC2 PWM_CH32
+#define FC_PWM_RC3 PWM_CH33
+#define FC_PWM_RC4 PWM_CH34
+#define FC_PWM_RC5 PWM_CH21
+#define FC_PWM_RC6 PWM_CH22
+
 void cc3d_init(void); 
+int8_t cc3d_read_receiver(
+		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
+		uint16_t *rc_aux0, uint16_t *rc_aux1);
+		
+int8_t cc3d_read_config(uint8_t *data, uint16_t size);
+int8_t cc3d_write_config(const uint8_t *data, uint16_t size);
+
+int8_t cc3d_read_sensors(struct fc_data *data); 
+
+void cc3d_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right);
+
 void cc3d_process_events(void);
+
+#define cc3d_led_on() gpio_clear(GPIO_PB3)
+#define cc3d_led_off() gpio_set(GPIO_PB3)
 
 fc_board_t cc3d_get_fc_quad_interface(void);
 

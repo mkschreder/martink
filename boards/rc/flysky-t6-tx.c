@@ -186,7 +186,7 @@ void fst6_init(void){
 	}
 	length[6] = 20000 - acc; */
 	//ppm_configure(PWM_CH14, 0, 0, ppm, 6); 
-	ppm_configure(PWM_CH14, 0, 0, _board.ppm_buffer, 7); 
+	ppm_configure(PWM_CH14, _board.ppm_buffer, 7, 400); 
 }
 
 void fst6_process_events(void){

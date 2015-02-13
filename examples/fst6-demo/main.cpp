@@ -14,6 +14,8 @@ extern char _sdata;
 int main(void){
 	fst6_init(); 
 	
+	printf("SystemCoreClock: %d\n", (int)SystemCoreClock); 
+	
 	serial_dev_t screen = fst6_get_screen_serial_interface(); 
 	
 	// test config read/write (to eeprom)
@@ -27,7 +29,7 @@ int main(void){
 	
 	while(1){
 		serial_printf(screen, "\x1b[2J\x1b[1;1H"); 
-		serial_printf(screen, "    FlySky FS-T6    \n"); 
+		serial_printf(screen, "FlySky FS-T6 %dMhz\n", (SystemCoreClock / 1000000UL)); 
 		serial_printf(screen, " LibK example program\n"); 
 		//serial_printf(screen, "%s\n", (char*)buf); 
 		uint16_t sticks[6]; 

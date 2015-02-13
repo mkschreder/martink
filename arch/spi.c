@@ -89,8 +89,8 @@ static int16_t _spi_begin(serial_dev_t self){
 }
 
 static int16_t _spi_end(serial_dev_t self){
-	// do nothing (but may be useful for interrupt driven version) 
-	(void)(self); 
+	GET_SPI_DEV(self, dev);
+	dev->data = SERIAL_NO_DATA; 
 	return 0; 
 }
 

@@ -32,8 +32,8 @@
 #include <arch/soc.h>
 #include <block/serial_flash.h>
 
-#define select() gpio_clear(self->cs_pin)
-#define deselect() gpio_set(self->cs_pin)
+#define select() (gpio_clear(self->cs_pin), serial_begin(self->port))
+#define deselect() (gpio_set(self->cs_pin), serial_end(self->port))
 #define write_byte(byte) serial_putc(self->port, (byte) & 0xff)
 #define read_status() 
 #define write_enabled() (_read_status(self) & M25P16_SR_WEL)

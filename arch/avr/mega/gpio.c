@@ -90,13 +90,18 @@ const struct pin_decl gPinPorts[4] = {
 #endif
 
 void gpio_configure(gpio_pin_t pin, uint16_t fun){
-	((fun) & GP_OUTPUT)
+	if(fun & GP_OUTPUT) RSET(DREG(pin), PIDX(pin)); 
+	else RCLR(DREG(pin), PIDX(pin)); 
+	if(fun & GP_PULLUP) RSET(OREG(pin), PIDX(pin)); 
+	else RCLR(OREG(pin), PIDX(pin)); 
+	if((fun) & GP_PCINT) gpio_enable_pcint(pin); 
+	/*((fun) & GP_OUTPUT)
 		?RSET(DREG(pin), PIDX(pin))
 		:RCLR(DREG(pin), PIDX(pin)), 
 	(((fun) & GP_PULL) && ((fun) & GP_PULLUP))
 		?RSET(OREG(pin), PIDX(pin))
 		:RCLR(OREG(pin), PIDX(pin)), 
-	((fun) & GP_PCINT)?gpio_enable_pcint(pin):(0); 
+	((fun) & GP_PCINT)?gpio_enable_pcint(pin):(0); */
 }
 
 void gpio_enable_pcint(gpio_pin_t pin){

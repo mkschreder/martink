@@ -25,6 +25,8 @@ int main(void){
 	timestamp_t ts = timestamp_from_now_us(500000); 
 	
 	while(1){
+		mwii_process_events(); 
+		
 		printf("RC1: %d ", (int)mwii_read_pwm(MWII_IN_PWM0)); 
 		printf("RC2: %d ", (int)mwii_read_pwm(MWII_IN_PWM1)); 
 		printf("RC3: %d ", (int)mwii_read_pwm(MWII_IN_PWM2)); 
@@ -35,6 +37,11 @@ int main(void){
 		mwii_read_angular_velocity_dps(&gx, &gy, &gz); 
 		pres = mwii_read_pressure_pa(); 
 		temp = mwii_read_temperature_c(); 
+		
+		mwii_write_pwm(MWII_OUT_PWM0, 800); 
+		mwii_write_pwm(MWII_OUT_PWM1, 1200); 
+		mwii_write_pwm(MWII_OUT_PWM2, 1500); 
+		mwii_write_pwm(MWII_OUT_PWM3, 1800); 
 		
 		printf("Time: %ld ", (long int)timestamp_ticks_to_us(timestamp_now())); 
 		printf("Temp: %d, Pres: %d, Gyro: %d %d %d, Acc: %d %d %d\n", 

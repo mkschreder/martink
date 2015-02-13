@@ -31,7 +31,7 @@ enum {
 	/// configures a gpio pin as output
 	GP_OUTPUT 	= (1 << 1),
 	/// enables pull(up/down) on gpio pin
-	GP_PULL 		= (1 << 2),
+	//GP_PULL 		= (1 << 2),
 	/// no pullup on gpio pin
 	GP_HIZ			= (1 << 3),
 	/// enable pullup

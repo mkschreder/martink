@@ -62,6 +62,8 @@
 #define GPIO_STATUS_LED	GPIO_PB3
 #define GPIO_FLASH_CS 	GPIO_PB12
 
+#define CC3D_LED_PIN GPIO_PB3
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -104,8 +106,10 @@ fc_board_t cc3d_get_fc_quad_interface(void);
 }
 #endif
 
+/*
 #define fc_init() cc3d_init()
 #define fc_process_events() cc3d_process_events()
 #define fc_interface() cc3d_get_fc_quad_interface()
 #define fc_led_on() gpio_clear(GPIO_PB3)
 #define fc_led_off() gpio_set(GPIO_PB3)
+*/

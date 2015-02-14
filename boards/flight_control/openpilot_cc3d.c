@@ -39,20 +39,20 @@ void cc3d_init(void){
 	timestamp_init(); 
 	gpio_init(); 
 	
-	fc_led_off(); 
+	cc3d_led_off(); 
 	gpio_configure(GPIO_PB3, GP_OUTPUT); 
 	  
 	uart_init(); 
 	//twi_init(); 
 	spi_init(); 
 	
-	fc_led_on(); 
+	cc3d_led_on(); 
 	delay_ms(500); 
-	fc_led_off(); 
+	cc3d_led_off(); 
 	delay_ms(500); 
-	fc_led_on(); 
+	cc3d_led_on(); 
 	delay_ms(500); 
-	fc_led_off(); 
+	cc3d_led_off(); 
 	
 	//i2c_dev_t i2c = twi_get_interface(0); 
 	cc3d.uart0 = uart_get_serial_interface(0); 
@@ -75,12 +75,12 @@ void cc3d_init(void){
 	
 	//printf("Flash. ID: %x, Type: %x, Size: %x\n", cc3d.flash.props.id, cc3d.flash.props.type, cc3d.flash.props.size); 
 	
-	pwm_configure(FC_PWM_CH1, 1250, 4000); 
-	pwm_configure(FC_PWM_CH2, 1250, 4000); 
-	pwm_configure(FC_PWM_CH3, 1250, 4000); 
-	pwm_configure(FC_PWM_CH4, 1250, 4000); 
-	pwm_configure(FC_PWM_CH5, 1250, 4000); 
-	pwm_configure(FC_PWM_CH6, 1250, 4000); 
+	pwm_configure(FC_PWM_CH1, 950, 4000); 
+	pwm_configure(FC_PWM_CH2, 950, 4000); 
+	pwm_configure(FC_PWM_CH3, 950, 4000); 
+	pwm_configure(FC_PWM_CH4, 950, 4000); 
+	pwm_configure(FC_PWM_CH5, 950, 4000); 
+	pwm_configure(FC_PWM_CH6, 950, 4000); 
 	
 	pwm_configure_capture(FC_PWM_RC1, 1000); 
 	pwm_configure_capture(FC_PWM_RC2, 1000); 

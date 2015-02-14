@@ -22,7 +22,7 @@ typedef enum {
 	FST6_KEY_SWD = (1 << 13),
 	FST6_KEY_SELECT = (1 << 14), 
 	FST6_KEY_ROTA = (1 << 15),
-	FST6_KEY_ROTB = (1 << 16)
+	FST6_KEY_ROTB = (1L << 16)
 } fst6_key_mask_t; 
 
 typedef enum {

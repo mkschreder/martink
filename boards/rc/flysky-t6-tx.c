@@ -176,7 +176,20 @@ void fst6_init(void){
 	vt100_init(&_board.vt, tty); 
 	
 	for(int c = 0; c < 7; c++) _board.ppm_buffer[c] = 1000; 
-	
+	/*
+	uint8_t buf[10]; 
+	at24_read(&_board.eeprom, 0, buf, 10); 
+	for(int c = 0; c < 10; c++) printf("%c ", buf[c]); 
+	printf("\n");
+	at24_write(&_board.eeprom, 0, (const uint8_t*)"0000000000", 10);  
+	at24_write(&_board.eeprom, 5, (const uint8_t*)"12345", 5); 
+	at24_read(&_board.eeprom, 0, buf, 10); 
+	for(int c = 0; c < 10; c++) printf("%c ", buf[c]); 
+	printf("\n"); 
+	at24_write(&_board.eeprom, 0, (const uint8_t*)"12345", 5); 
+	at24_read(&_board.eeprom, 0, buf, 10); 
+	for(int c = 0; c < 10; c++) printf("%c ", buf[c]); 
+	printf("\n"); */
 	//static uint16_t ppm[6] = {1000, 1000, 2000, 2000, 5000, 5000}; 
 	/*static uint16_t length[7]; 
 	uint16_t acc = 0; 

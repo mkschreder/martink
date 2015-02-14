@@ -42,18 +42,41 @@ extern "C" {
 #include "../interface.h"
 
 typedef enum {
-	MWII_OUT_PWM0, 
-	MWII_OUT_PWM1,
-	MWII_OUT_PWM2, 
-	MWII_OUT_PWM3
+	MWII_OUT_PWM_D6, 
+	MWII_OUT_PWM_D5,
+	MWII_OUT_PWM_D11, 
+	MWII_OUT_PWM_D3
 } mwii_out_pwm_channel_t; 
 
 typedef enum {
-	MWII_IN_PWM0, 
-	MWII_IN_PWM1, 
-	MWII_IN_PWM2, 
-	MWII_IN_PWM3
+	MWII_IN_PWM_D2, 
+	MWII_IN_PWM_D4, 
+	MWII_IN_PWM_D7, 
+	MWII_IN_PWM_D8
 } mwii_in_pwm_channel_t; 
+	
+#define MWII_OUT_PWM0 	MWII_OUT_PWM_D6
+#define MWII_OUT_PWM1 	MWII_OUT_PWM_D5
+#define MWII_OUT_PWM2 	MWII_OUT_PWM_D11
+#define MWII_OUT_PWM3  	MWII_OUT_PWM_D3
+	
+#define MWII_IN_PWM0		MWII_IN_PWM_D2
+#define MWII_IN_PWM1		MWII_IN_PWM_D4
+#define MWII_IN_PWM2		MWII_IN_PWM_D7
+#define MWII_IN_PWM3		MWII_IN_PWM_D8
+
+#define MWII_GPIO_A0  GPIO_PC0
+#define MWII_GPIO_A1  GPIO_PC1
+#define MWII_GPIO_A2  GPIO_PC2
+#define MWII_GPIO_A3  GPIO_PC3
+#define MWII_GPIO_D9  GPIO_PB1
+#define MWII_GPIO_D10 GPIO_PB2
+#define MWII_GPIO_D12 GPIO_PB4
+
+#define MWII_LED_PIN GPIO_PB5
+
+#define mwii_led_on() gpio_set(MWII_LED_PIN)
+#define mwii_led_off() gpio_clear(MWII_LED_PIN)
 
 /// initializes all on board peripherals and interfaces
 void mwii_init(void); 
@@ -95,6 +118,11 @@ void mwii_write_config(const uint8_t *data, uint8_t size);
 /// schedules an esc calibration to be done upon next powerup
 void mwii_calibrate_escs_on_reboot(void); 
 
+#define mwii_read_pin(mwii_pin) gpio_read(mwii_pin); 
+#define mwii_write_pin(mwii_pin, val) gpio_write(mwii_pin, val)
+#define mwii_configure_pin(mwii_pin, flags) gpio_configure(mwii_pin, flags)
+#define mwii_read_adc(mwii_pin) (uint16_t)adc0_read_cached(((mwii_pin - MWII_GPIO_A0) & 0x3))
+
 //************************
 // PROCESSING FRAME EVENTS
 //************************
@@ -103,29 +131,14 @@ void mwii_process_events(void);
 
 fc_board_t mwii_get_fc_quad_interface(void);
 
-void mwii_calibrate_escs(void); 
-
-#define MWII_LED_PIN GPIO_PB5
-
-#define mwii_led_on() gpio_set(MWII_LED_PIN)
-#define mwii_led_off() gpio_clear(MWII_LED_PIN)
-
-enum {
-	RC_THROTTLE = 0, 
-	RC_YAW 			= 1, 
-	RC_PITCH 		= 2,
-	RC_ROLL 		= 3,
-	RC_MODE 		= 4,
-	RC_MODE2		= 5
-};
-
+/*
 #define fc_init() mwii_init()
 #define fc_process_events() mwii_process_events()
 #define fc_interface() mwii_get_fc_quad_interface()
 #define fc_led_on() gpio_set(MWII_LED_PIN)
 #define fc_led_off() gpio_clear(MWII_LED_PIN)
 #define fc_calibrate_escs() mwii_calibrate_escs()
-
+*/
 #ifdef __cplusplus
 }
 #endif

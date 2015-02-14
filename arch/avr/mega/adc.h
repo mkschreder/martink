@@ -84,7 +84,8 @@
 	adc0_set_vref(ADC_REF_AVCC_CAP_AREF),\
 	adc0_set_prescaler(ADC_CLOCK_DIV128),\
 	adc0_set_alignment(ADC_ALIGN_LEFT), \
-	adc0_enable()\
+	adc0_enable(),\
+	adc0_interrupt_on(), adc0_start_conversion()\
 )
 
 #define adc0_interrupt_on() (ADCSRA |= _BV(ADIE))
@@ -117,7 +118,7 @@
 #define adc0_read() (uint16_t)(\
 	adc0_wait_for_completed_conversion(), \
 ADC)
-
+/*
 #define adc0_read_immediate(chan) (\
 	adc0_wait_for_completed_conversion(), \
 	adc0_interrupt_off(),\
@@ -127,7 +128,7 @@ ADC)
 		?(adc0_interrupt_on(), adc0_start_conversion())\
 		:(0)\
 , adc0_read())
-
+*/
 #define adc0_read_immediate_ref(chan, ref) (\
 	adc0_wait_for_completed_conversion(), \
 	adc0_interrupt_off(),\
@@ -141,12 +142,12 @@ ADC)
 #define ADC_MODE_AUTOMATIC (1)
 extern uint8_t _adc_mode;
 
-#if defined(CONFIG_ADC_MODE_AUTOMATIC)
+//#if defined(CONFIG_ADC_MODE_AUTOMATIC)
 
 	extern uint16_t _adc_values[8];
 
 	#define adc0_read_cached(chan) (_adc_values[(chan) & 0x07])
-#endif
+//#endif
 
 #define adc0_set_mode(adc_mode) (\
 	_adc_mode = adc_mode,\

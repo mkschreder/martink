@@ -191,9 +191,9 @@ static long bmp085_getrawpressure(struct bmp085 *self) {
 	return p + ((x1 + x2 + 3791) >> 4);
 }
 
-int16_t bmp085_read_temperature(struct bmp085 *self) {
+float bmp085_read_temperature(struct bmp085 *self) {
 	long temperature = bmp085_getrawtemperature(self);
-	return ((temperature + 8)>>4);
+	return ((temperature + 8) / 16.4) / 10.0;
 }
 
 long bmp085_read_pressure(struct bmp085 *self) {

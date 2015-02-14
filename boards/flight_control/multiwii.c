@@ -68,6 +68,15 @@
 #define GPIO_MWII_HCSR_TRIGGER GPIO_PB1
 #define GPIO_MWII_HCSR_ECHO 	GPIO_PB2
 
+enum {
+	RC_THROTTLE = 0, 
+	RC_YAW 			= 1, 
+	RC_PITCH 		= 2,
+	RC_ROLL 		= 3,
+	RC_MODE 		= 4,
+	RC_MODE2		= 5
+};
+
 static const uint16_t rc_defaults[6] = {1000, 1500, 1500, 1500, 1500, 1500}; 
 
 struct multiwii_board {
@@ -207,7 +216,8 @@ static FILE uart_fd = FDEV_SETUP_STREAM(_serial_fd_putc, _serial_fd_getc, _FDEV_
 void mwii_init(void){
 	//soc_init(); 
 	time_init(); 
-	uart_init(); 
+	uart_init();
+	uart0_set_baudrate_async(38400);  
 	gpio_init();
 	//spi_init(); 
 	twi_init(); 
@@ -427,7 +437,7 @@ static int8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 	data->sonar_altitude = (sonar > 0)?((float)sonar / 100.0):-1; 
 	data->temperature = bmp085_read_temperature(&brd->bmp); 
 	data->pressure = bmp085_read_pressure(&brd->bmp); 
-	data->vbat = (adc0_read_immediate(2) / 65535.0);
+	data->vbat = (adc0_read_cached(2) / 65535.0);
 	return 0; 
 }
 
@@ -499,8 +509,8 @@ fc_board_t mwii_get_fc_quad_interface(void){
 	return &ptr; 
 }
 
-
-void mwii_calibrate_escs(void){
+/*
+static void _mwii_calibrate_escs(void){
 	// set all outputs to maximum
 	mwii_write_motors(2000, 2000, 2000, 2000); 
 	// wait for the escs to initialize
@@ -514,3 +524,4 @@ void mwii_calibrate_escs(void){
 	// reset the motors
 	mwii_write_motors(MINCOMMAND, MINCOMMAND, MINCOMMAND, MINCOMMAND); 
 }
+*/

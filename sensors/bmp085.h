@@ -48,7 +48,7 @@ long bmp085_read_pressure(struct bmp085 *self);
 /// returns altitude
 float bmp085_read_altitude(struct bmp085 *self);
 /// returns temperature
-int16_t bmp085_read_temperature(struct bmp085 *self);
+float bmp085_read_temperature(struct bmp085 *self);
 
 #ifdef __cplusplus
 }

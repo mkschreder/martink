@@ -25,15 +25,16 @@
 
 #include "adc.h"
 
-uint8_t _adc_mode = ADC_MODE_MANUAL;
+uint8_t _adc_mode = ADC_MODE_AUTOMATIC;
 
-#if defined(CONFIG_ADC_MODE_AUTOMATIC)
-	uint16_t _adc_values[8];
+//#if defined(CONFIG_ADC_MODE_AUTOMATIC)
+uint16_t _adc_values[8];
 
-	ISR(ADC_vect){
-		_adc_values[adc0_get_channel() & 0x07] = ADC;
-		if(_adc_mode == ADC_MODE_AUTOMATIC){
-			adc0_set_channel((adc0_get_channel() + 1) & 0x07); 
-			adc0_start_conversion(); 
+ISR(ADC_vect){
+	_adc_values[adc0_get_channel() & 0x07] = ADC;
+	if(_adc_mode == ADC_MODE_AUTOMATIC){
+		adc0_set_channel((adc0_get_channel() + 1) & 0x07); 
+		adc0_start_conversion(); 
 	}
-#endif
+}
+//#endif

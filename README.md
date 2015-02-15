@@ -1,6 +1,8 @@
 MartinK IC Firmware Project (LibK)
 ===============
 
+As the desktop world has advanced far ahead of the embedded world, the embedded world has been left behind. It is no longer feasable to compile linux for a flash based controller with 128kb flash. A new library is needed for adding solid hardware support for the much cheaper and simpler hardware that is in use today. Hardware that does not need multiuser support, that does not have external ram, that does not even have a filesystem and does not ever load external code after flashing the firmware. But this hardware still needs driver support, it still needs multiplatform support and it has to have code that is compact and lightweight. LibK offers exactly this.
+
 LibK is more than just a firmware library. It is a toolchain, a philosophy, a way to organize your code. It is maximum flexibility at minimum cost. It is a collection of reusable components for writing bare metal embedded applications.
 
 Easy building instructions

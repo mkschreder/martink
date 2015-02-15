@@ -48,8 +48,23 @@ void cc3d_init(void){
 	cc3d_led_off(); 
 	gpio_configure(GPIO_PB3, GP_OUTPUT); 
 	
+	cc3d_led_on(); 
 	uart_init(CC3D_MAINPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE); 
-	uart_init(CC3D_FLEXIPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE); 
+	uart_init(CC3D_FLEXIPORT_UART_ID, 57600); 
+	/*serial_dev_t sp = uart_get_serial_interface(CC3D_FLEXIPORT_UART_ID); 
+	serial_printf(sp, "AT"); 
+	delay_ms(500); 
+	serial_printf(sp, "AT+NAMEcc3dd"); 
+	delay_ms(500); 
+	serial_printf(sp, "AT+BAUD6"); 
+	delay_ms(500); 
+	uart_set_baudrate(CC3D_FLEXIPORT_UART_ID, 38400); */
+	
+	cc3d_led_off(); 
+	/*while(1){
+		serial_printf(uart_get_serial_interface(0), "Running!\n"); 
+		serial_printf(sp, "Hello World!\n"); 
+	}*/
 	
 	//twi_init(); 
 	spi_init(); 
@@ -79,7 +94,6 @@ void cc3d_init(void){
 	mpu6000_init(&cc3d.mpu, spi, gpio, GPIO_PA4); 
 	
 	serial_flash_init(&cc3d.flash, spi2, GPIO_PB12); 
-	
 	
 	//printf("Flash. ID: %x, Type: %x, Size: %x\n", cc3d.flash.props.id, cc3d.flash.props.type, cc3d.flash.props.size); 
 	

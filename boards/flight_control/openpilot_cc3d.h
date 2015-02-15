@@ -32,6 +32,8 @@
 */
 #pragma once
 
+#include <arch/soc.h>
+
 #include "../interface.h"
 
 #define MINCOMMAND 1000
@@ -68,7 +70,7 @@
 extern "C" {
 #endif
 
-
+/*
 #define FC_PWM_CH1 PWM_CH44
 #define FC_PWM_CH2 PWM_CH43
 #define FC_PWM_CH3 PWM_CH42
@@ -82,36 +84,90 @@ extern "C" {
 #define FC_PWM_RC4 PWM_CH34
 #define FC_PWM_RC5 PWM_CH21
 #define FC_PWM_RC6 PWM_CH22
+*/
+typedef enum {
+	CC3D_IN_PWM1 = PWM_CH41, 
+	CC3D_IN_PWM2 = PWM_CH32, 
+	CC3D_IN_PWM3 = PWM_CH33, 
+	CC3D_IN_PWM4 = PWM_CH34, 
+	CC3D_IN_PWM5 = PWM_CH21, 
+	CC3D_IN_PWM6 = PWM_CH22
+} cc3d_input_pwm_id_t; 
 
+typedef enum {
+	CC3D_OUT_PWM1 = PWM_CH44, 
+	CC3D_OUT_PWM2 = PWM_CH43, 
+	CC3D_OUT_PWM3 = PWM_CH42, 
+	CC3D_OUT_PWM4 = PWM_CH11, 
+	CC3D_OUT_PWM5 = PWM_CH31, 
+	CC3D_OUT_PWM6 = PWM_CH23
+} cc3d_output_pwm_id_t; 
+
+/// initializes the board and all peripherals
 void cc3d_init(void); 
-int8_t cc3d_read_receiver(
-		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
-		uint16_t *rc_aux0, uint16_t *rc_aux1);
-		
+
+/// process events must be called every frame
+void cc3d_process_events(void);
+
+//*************************
+// CONFIG
+//*************************
+
+/// reads config from internal flash
 int8_t cc3d_read_config(uint8_t *data, uint16_t size);
+
+/// writes config to internal flash
 int8_t cc3d_write_config(const uint8_t *data, uint16_t size);
-
-int8_t cc3d_read_sensors(struct fc_data *data); 
-
-void cc3d_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right);
-
-serial_dev_t cc3d_get_main_port_uart(void); 
 
 typedef enum {
 	CC3D_FLEXIPORT_UART, 
 	CC3D_FLEXIPORT_I2C
 }cc3d_flexi_port_mode_t; 
 
+/// configures flexiport mode
 void cc3d_configure_flexiport(cc3d_flexi_port_mode_t mode); 
 
-serial_dev_t cc3d_get_flexiport_serial_interface(void); 
-i2c_dev_t cc3d_get_flexiport_i2c_interface(void); 
+//*************************
+// INPUTS and OUTPUTS
+//*************************
 
-void cc3d_process_events(void);
+/// reads input pwm channels
+uint16_t cc3d_read_pwm(cc3d_input_pwm_id_t chan); 
+
+/// writes output pwm to motor outputs
+void cc3d_write_pwm(cc3d_output_pwm_id_t chan, uint16_t value);
+
+//*************************
+// SENSORS
+//*************************
+
+/// reads last measured acceleration in G
+void cc3d_read_acceleration_g(float *ax, float *ay, float *az); 
+/// reads last measured angular velocity in degrees / sec
+void cc3d_read_angular_velocity_dps(float *gyrx, float *gyry, float *gyrz); 
+
+//*************************
+// STATUS
+//*************************
 
 #define cc3d_led_on() gpio_clear(GPIO_PB3)
 #define cc3d_led_off() gpio_set(GPIO_PB3)
 
+//*************************
+// INTERFACES
+//*************************
+/// get generic serial interface for mainport
+
+serial_dev_t cc3d_get_mainport_serial_interface(void); 
+
+/// get generic serial interface for flexiport
+/// flexiport must be configured in uart mode
+serial_dev_t cc3d_get_flexiport_serial_interface(void); 
+
+/// get generic i2c interface for flexiport
+i2c_dev_t cc3d_get_flexiport_i2c_interface(void); 
+
+/// get generic flight controller interface
 fc_board_t cc3d_get_fc_quad_interface(void);
 
 #ifdef __cplusplus

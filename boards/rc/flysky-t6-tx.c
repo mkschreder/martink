@@ -164,7 +164,7 @@ void fst6_init(void){
 	
 	adc_init(); 
 	
-	twi0_init_default(); 
+	twi_init(0); 
 	
 	//delay_ms(1000); 
 	

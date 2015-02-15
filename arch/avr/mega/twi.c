@@ -164,9 +164,24 @@ ISR(TWI_vect)
 	}
 }
 
+static uint8_t twi_busy(void){
+	// IF TWI Interrupt is enabled then the peripheral is busy
+	if(TWCR & _BV(TWIE))
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 /* _____FUNCTIONS_____________________________________________________ */
-void twi0_init_default(void)
+int8_t twi_init(uint8_t dev_id)
 {
+	// only one twi interface for now
+	if(dev_id >= 1) return -1; 
+	
 	// Initialise variable
 	twi_data_counter = 0;
 
@@ -182,12 +197,21 @@ void twi0_init_default(void)
 
 	// set pins to internal pullups
 	PORTC |= _BV(5) | _BV(4); 
+	
+	return 0; 
 }
 
-void twi0_start_write(uint8_t adr, const uint8_t *data, uint8_t bytes_to_send)
+void twi_deinit(uint8_t dev_id){
+	(void)(dev_id); 
+	// TODO
+}
+
+int8_t twi_start_write(uint8_t dev_id, uint8_t adr, const uint8_t *data, uint8_t bytes_to_send)
 {
+	if(dev_id >= 1) return -1; 
+	
 	// Wait for previous transaction to finish
-	while(twi0_busy())
+	while(twi_busy())
 	{
 		;
 	}
@@ -201,12 +225,15 @@ void twi0_start_write(uint8_t adr, const uint8_t *data, uint8_t bytes_to_send)
 
 	// Initiate a START condition; Interrupt enabled and flag cleared
 	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
+	return 0; 
 }
 
-void twi0_start_read(uint8_t adr, uint8_t *data, uint8_t bytes_to_receive)
+int8_t twi_start_read(uint8_t dev_id, uint8_t adr, uint8_t *data, uint8_t bytes_to_receive)
 {
+	if(dev_id >= 1) return -1; 
+	
 	// Wait for previous transaction to finish
-	while(twi0_busy())
+	while(twi_busy())
 	{
 		;
 	}
@@ -220,8 +247,9 @@ void twi0_start_read(uint8_t adr, uint8_t *data, uint8_t bytes_to_receive)
 
 	// Initiate a START condition; Interrupt enabled and flag cleared
 	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
+	return 0; 
 }
-
+/*
 uint8_t twi0_busy(void){
 	// IF TWI Interrupt is enabled then the peripheral is busy
 	if(TWCR & _BV(TWIE))
@@ -245,16 +273,18 @@ uint8_t twi0_success(void)
 		return 0;
 	}
 }
-/*
+
 uint8_t twi0_get_status(void)
 {
 	return twi_status;
 }*/
 
-int16_t twi0_stop(void)
+int8_t twi_stop(uint8_t dev_id)
 {
+	if(dev_id >= 1) return -1; 
+	
 	// Wait for transaction to finish
-	while(twi0_busy())
+	while(twi_busy())
 	{
 		;
 	}
@@ -274,8 +304,9 @@ int16_t twi0_stop(void)
 	return twi_status == TWI_STATUS_DONE; 
 }
 
-void twi0_wait(uint8_t addr){
+void twi_wait(uint8_t dev_id, uint8_t addr){
 	// not implemented
+	(void)(dev_id); 
 	(void)(addr); 
 }
 

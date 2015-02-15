@@ -141,6 +141,14 @@ int8_t uart_init(uint8_t dev_id, uint32_t baud){
 	return 0; 
 }
 
+void uart_deinit(uint8_t dev_id){
+	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
+	if(dev_id >= count) return; 
+	USART_TypeDef *dev = _devices[dev_id].dev; 
+	
+	USART_DeInit(dev); 
+}
+
 uint16_t uart_getc(uint8_t dev_id){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
 	if(dev_id >= count) return SERIAL_NO_DATA; 

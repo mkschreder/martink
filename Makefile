@@ -116,6 +116,10 @@ buildall:
 	make -C . BUILD=arm-stm32f100mdvl
 	make -C . BUILD=arm-stm32f103
 	make -C . BUILD=avr-atmega328p
+	make -C . BUILD=arm-stm32f100mdvl build-fst6-demo
+	make -C . BUILD=arm-stm32f103 build-cc3d-demo
+	make -C . BUILD=avr-atmega328p build-mwii-demo
+
 	
 $(BUILD_DIR)/%.o: %.cpp .config 
 	mkdir -p `dirname $@`

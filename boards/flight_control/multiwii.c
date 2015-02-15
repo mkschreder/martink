@@ -219,7 +219,7 @@ void mwii_init(void){
 	uart_init(0, 38400); 
 	gpio_init();
 	//spi_init(); 
-	twi_init(); 
+	twi_init(0); 
 	pwm_init(); 
 	adc0_init_default(); 
 	sei(); 

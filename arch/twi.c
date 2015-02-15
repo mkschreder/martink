@@ -25,6 +25,11 @@
 
 #define DEVICE_CAST(from, to) struct twi_device *to = container_of(from, struct twi_device, interface);  
 
+struct twi_device {
+	uint8_t id;
+	struct i2c_interface *interface; 
+};
+
 static struct twi_device _twi[4] = {
 	{.id = 0, .interface = 0},
 	{.id = 1, .interface = 0},
@@ -34,33 +39,24 @@ static struct twi_device _twi[4] = {
 
 static int16_t 			_twi_stop(i2c_dev_t self){
 	DEVICE_CAST(self, dev);
-	switch(dev->id){
-		case 0: return twi0_stop(); break;
-	}
-	return -1; 
+	return twi_stop(dev->id); 
 }
 
 static uint32_t	_twi_write(i2c_dev_t self, uint8_t adr, const uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
-	switch(dev->id){
-		case 0: twi0_start_write(adr, data, max_sz); return 0;
-	}
-	return PK_ERR_INVALID; 
+	if(twi_start_write(dev->id, adr, data, max_sz) != -1) return max_sz; 
+	return 0; 
 }
 
 static uint32_t	_twi_read(i2c_dev_t self, uint8_t adr, uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
-	switch(dev->id){
-		case 0: twi0_start_read(adr, data, max_sz); return 0;
-	}
-	return PK_ERR_INVALID; 
+	if(twi_start_read(dev->id, adr, data, max_sz) != -1) return max_sz; 
+	return 0; 
 }
 
 static void			_twi_wait(i2c_dev_t self, uint8_t addr){
 	DEVICE_CAST(self, dev);
-	switch(dev->id){
-		case 0: twi0_wait(addr); break;
-	}
+	twi_wait(dev->id, addr); 
 }
 
 i2c_dev_t twi_get_interface(uint8_t id){
@@ -78,16 +74,3 @@ i2c_dev_t twi_get_interface(uint8_t id){
 	return &_twi[id].interface; 
 }
 
-void initproc twi_init(void){
-	kdebug("TWI: starting interfaces: ");
-#ifdef CONFIG_HAVE_TWI0
-	twi0_init_default(); kdebug("twi0 ");
-#endif
-#ifdef CONFIG_HAVE_TWI1
-	twi1_init_default(); kdebug("twi1 "); 
-#endif
-#ifdef CONFIG_HAVE_TWI2
-	twi2_init_default(); kdebug("twi2 "); 
-#endif
-	kdebug("\n"); 
-}

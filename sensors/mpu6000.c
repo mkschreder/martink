@@ -195,10 +195,38 @@ void mpu6000_init(struct mpu6000 *self, serial_dev_t port, pio_dev_t gpio, gpio_
 }
 
 
-//can not accept many request if we alreay have getattitude requests
+void mpu6000_readRawAcc(struct mpu6000 *self, int16_t* ax, int16_t* ay, int16_t* az){
+	uint8_t buffer[16]; 
+	mpu6000_readBytes(self, MPU6000_ACCEL_XOUT_H, 6, (uint8_t *)buffer);
+
+	*ax = (((int16_t)buffer[0]) << 8) | buffer[1];
+	*ay = (((int16_t)buffer[2]) << 8) | buffer[3];
+	*az = (((int16_t)buffer[4]) << 8) | buffer[5];
+}
+
+void mpu6000_readRawGyr(struct mpu6000 *self, int16_t* gx, int16_t* gy, int16_t* gz){
+	uint8_t buffer[16]; 
+	mpu6000_readBytes(self, MPU6000_GYRO_XOUT_H, 6, (uint8_t *)buffer);
+
+	*gx = (((int16_t)buffer[0]) << 8) | buffer[1];
+	*gy = (((int16_t)buffer[2]) << 8) | buffer[3];
+	*gz = (((int16_t)buffer[4]) << 8) | buffer[5];
+}
+
+void mpu6000_convertAcc(struct mpu6000 *self, int16_t ax, int16_t ay, int16_t az, float *axg, float *ayg, float *azg){
+	(void)(self); 
+	*axg = (float)(ax-MPU6000_AXOFFSET)/MPU6000_AXGAIN;
+	*ayg = (float)(ay-MPU6000_AYOFFSET)/MPU6000_AYGAIN;
+	*azg = (float)(az-MPU6000_AZOFFSET)/MPU6000_AZGAIN;
+}
+
+void mpu6000_convertGyr(struct mpu6000 *self, int16_t gx, int16_t gy, int16_t gz, float *gxd, float *gyd, float *gzd){
+	(void)(self); 
+	*gxd = (float)(gx-MPU6000_GXOFFSET)/MPU6000_GXGAIN;
+	*gyd = (float)(gy-MPU6000_GYOFFSET)/MPU6000_GYGAIN;
+	*gzd = (float)(gz-MPU6000_GZOFFSET)/MPU6000_GZGAIN;
+}
 /*
- * get raw data
- */
 void mpu6000_getRawData(struct mpu6000 *self, int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz) {
 	uint8_t buffer[16]; 
 	
@@ -228,7 +256,7 @@ void mpu6000_convertData(struct mpu6000 *self,
 	*gyd = (float)(gy-MPU6000_GYOFFSET)/MPU6000_GYGAIN;
 	*gzd = (float)(gz-MPU6000_GZOFFSET)/MPU6000_GZGAIN;
 }
-
+*/
 /*
 void readMPU6000(void)
 {

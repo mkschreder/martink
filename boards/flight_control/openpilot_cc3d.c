@@ -1,16 +1,18 @@
 #include "openpilot_cc3d.h"
 #include <stdio.h>
+
+#include <kernel.h>
 #include <sensors/mpu6000.h>
 #include <block/serial_flash.h>
 #include <fs/cfs/cfs.h>
 
-#include <kernel.h>
 
 #define CONFIG_FILE "config"
 
 #define CC3D_MAINPORT_UART_ID 0
 #define CC3D_FLEXIPORT_UART_ID 2
 #define CC3D_FLEXIPORT_I2C_ID 1
+#define CC3D_DEFAULT_UART_BAUDRATE 38400
 
 static struct cc3d {
 	struct serial_flash flash; 
@@ -46,8 +48,8 @@ void cc3d_init(void){
 	cc3d_led_off(); 
 	gpio_configure(GPIO_PB3, GP_OUTPUT); 
 	
-	uart_init(CC3D_MAINPORT_UART_ID, 38400); 
-	uart_init(CC3D_FLEXIPORT_UART_ID, 38400); 
+	uart_init(CC3D_MAINPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE); 
+	uart_init(CC3D_FLEXIPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE); 
 	
 	//twi_init(); 
 	spi_init(); 
@@ -81,77 +83,27 @@ void cc3d_init(void){
 	
 	//printf("Flash. ID: %x, Type: %x, Size: %x\n", cc3d.flash.props.id, cc3d.flash.props.type, cc3d.flash.props.size); 
 	
-	pwm_configure(FC_PWM_CH1, 950, 4000); 
-	pwm_configure(FC_PWM_CH2, 950, 4000); 
-	pwm_configure(FC_PWM_CH3, 950, 4000); 
-	pwm_configure(FC_PWM_CH4, 950, 4000); 
-	pwm_configure(FC_PWM_CH5, 950, 4000); 
-	pwm_configure(FC_PWM_CH6, 950, 4000); 
+	pwm_configure(CC3D_OUT_PWM1, 950, 4000); 
+	pwm_configure(CC3D_OUT_PWM2, 950, 4000); 
+	pwm_configure(CC3D_OUT_PWM3, 950, 4000); 
+	pwm_configure(CC3D_OUT_PWM4, 950, 4000); 
+	pwm_configure(CC3D_OUT_PWM5, 950, 4000); 
+	pwm_configure(CC3D_OUT_PWM6, 950, 4000); 
 	
-	pwm_configure_capture(FC_PWM_RC1, 1000); 
-	pwm_configure_capture(FC_PWM_RC2, 1000); 
-	pwm_configure_capture(FC_PWM_RC3, 1000); 
-	pwm_configure_capture(FC_PWM_RC4, 1000); 
-	pwm_configure_capture(FC_PWM_RC5, 1000); 
-	pwm_configure_capture(FC_PWM_RC6, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM1, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM2, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM3, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM4, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM5, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM6, 1000); 
 	
 }
 
-void cc3d_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right){
-	pwm_write(FC_PWM_CH1, front); 
-	pwm_write(FC_PWM_CH2, back); 
-	pwm_write(FC_PWM_CH3, left); 
-	pwm_write(FC_PWM_CH4, right); 
+
+uint16_t cc3d_read_pwm(cc3d_input_pwm_id_t chan){
+	return pwm_read(chan); 
 }
-
-
-void cc3d_configure_flexiport(cc3d_flexi_port_mode_t mode){
-	switch(mode){
-		case CC3D_FLEXIPORT_UART: 
-			
-			break; 
-		case CC3D_FLEXIPORT_I2C: 
-			break; 
-	};
-}
-
-serial_dev_t cc3d_get_flexiport_serial_interface(void){
-	return uart_get_serial_interface(CC3D_FLEXIPORT_UART_ID); 
-}
-
-i2c_dev_t cc3d_get_flexiport_i2c_interface(void){
-	return twi_get_interface(CC3D_FLEXIPORT_I2C_ID); 
-}
-
-int8_t cc3d_read_sensors(struct fc_data *data){
-	data->flags = HAVE_ACC | HAVE_GYR; 
-	memset(data, 0, sizeof(struct fc_data)); 
-	
-	mpu6000_getRawData(&cc3d.mpu, 
-		&data->raw_acc.x, 
-		&data->raw_acc.y, 
-		&data->raw_acc.z,
-		&data->raw_gyr.x, 
-		&data->raw_gyr.y, 
-		&data->raw_gyr.z
-	); 
-	mpu6000_convertData(&cc3d.mpu, 
-		data->raw_acc.x, 
-		data->raw_acc.y, 
-		data->raw_acc.z, 
-		data->raw_gyr.x, 
-		data->raw_gyr.y, 
-		data->raw_gyr.z, 
-		&data->acc_g.x, 
-		&data->acc_g.y, 
-		&data->acc_g.z,
-		&data->gyr_deg.x,
-		&data->gyr_deg.y,
-		&data->gyr_deg.z
-	); 
-	return 0; 
-}
-
+/*
 int8_t cc3d_read_receiver(uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1){
 	*rc_thr = 		pwm_read(FC_PWM_RC1); 
@@ -165,6 +117,88 @@ int8_t cc3d_read_receiver(uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch
 	if(abs(*rc_pitch - 1500) < 20) *rc_pitch = 1500; 
 	if(abs(*rc_roll - 1500) < 20) *rc_roll = 1500; 
 	if(abs(*rc_yaw - 1500) < 20) *rc_yaw = 1500;
+	return 0; 
+}*/
+
+void cc3d_write_pwm(cc3d_output_pwm_id_t ch, uint16_t data){
+	pwm_write(ch, data); 
+	/*
+	pwm_write(FC_PWM_CH1, front); 
+	pwm_write(FC_PWM_CH2, back); 
+	pwm_write(FC_PWM_CH3, left); 
+	pwm_write(FC_PWM_CH4, right); */
+}
+
+
+void cc3d_configure_flexiport(cc3d_flexi_port_mode_t mode){
+	switch(mode){
+		case CC3D_FLEXIPORT_UART: 
+			twi_deinit(CC3D_FLEXIPORT_I2C_ID); 
+			uart_init(CC3D_FLEXIPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE); 
+			break; 
+		case CC3D_FLEXIPORT_I2C: 
+			uart_deinit(CC3D_FLEXIPORT_UART_ID); 
+			twi_init(CC3D_FLEXIPORT_UART_ID); 
+			break; 
+	};
+}
+
+serial_dev_t cc3d_get_mainport_serial_interface(void){
+	return uart_get_serial_interface(CC3D_MAINPORT_UART_ID); 
+}
+
+serial_dev_t cc3d_get_flexiport_serial_interface(void){
+	return uart_get_serial_interface(CC3D_FLEXIPORT_UART_ID); 
+}
+
+i2c_dev_t cc3d_get_flexiport_i2c_interface(void){
+	return twi_get_interface(CC3D_FLEXIPORT_I2C_ID); 
+}
+
+/// reads last measured acceleration in G
+void cc3d_read_acceleration_g(float *ax, float *ay, float *az){
+	int16_t x, y, z; 
+	mpu6000_readRawAcc(&cc3d.mpu, &x, &y, &z); 
+	mpu6000_convertAcc(&cc3d.mpu, x, y, z, ax, ay, az); 
+}
+
+/// reads last measured angular velocity in degrees / sec
+void cc3d_read_angular_velocity_dps(float *gyrx, float *gyry, float *gyrz){
+	int16_t x, y, z; 
+	mpu6000_readRawGyr(&cc3d.mpu, &x, &y, &z); 
+	mpu6000_convertGyr(&cc3d.mpu, x, y, z, gyrx, gyry, gyrz); 
+} 
+
+static int8_t cc3d_read_sensors(struct fc_data *data){
+	data->flags = HAVE_ACC | HAVE_GYR; 
+	memset(data, 0, sizeof(struct fc_data)); 
+	
+	mpu6000_readRawAcc(&cc3d.mpu, 
+		&data->raw_acc.x, 
+		&data->raw_acc.y, 
+		&data->raw_acc.z
+	); 
+	mpu6000_convertAcc(&cc3d.mpu, 
+		data->raw_acc.x, 
+		data->raw_acc.y, 
+		data->raw_acc.z, 
+		&data->acc_g.x, 
+		&data->acc_g.y, 
+		&data->acc_g.z
+	); 
+	mpu6000_readRawGyr(&cc3d.mpu, 
+		&data->raw_gyr.x, 
+		&data->raw_gyr.y, 
+		&data->raw_gyr.z
+	); 
+	mpu6000_convertAcc(&cc3d.mpu, 
+		data->raw_gyr.x, 
+		data->raw_gyr.y, 
+		data->raw_gyr.z, 
+		&data->gyr_deg.x,
+		&data->gyr_deg.y,
+		&data->gyr_deg.z
+	); 
 	return 0; 
 }
 
@@ -261,7 +295,10 @@ static int8_t _cc3d_read_sensors(fc_board_t self, struct fc_data *data){
 static int8_t _cc3d_write_motors(fc_board_t self,
 	uint16_t front, uint16_t back, uint16_t left, uint16_t right){
 	(void)(self); 
-	cc3d_write_motors(front, back, left, right); 
+	cc3d_write_pwm(CC3D_OUT_PWM1, front); 
+	cc3d_write_pwm(CC3D_OUT_PWM2, back); 
+	cc3d_write_pwm(CC3D_OUT_PWM3, left); 
+	cc3d_write_pwm(CC3D_OUT_PWM4, right); 
 	return 0; 
 }
 
@@ -269,7 +306,18 @@ static int8_t _cc3d_read_receiver(fc_board_t self,
 		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
 		uint16_t *rc_aux0, uint16_t *rc_aux1) {
 	(void)(self); 
-	return cc3d_read_receiver(rc_thr, rc_yaw, rc_pitch, rc_roll, rc_aux0, rc_aux1); 
+	*rc_thr = 	cc3d_read_pwm(CC3D_IN_PWM1); 
+	*rc_yaw = 	cc3d_read_pwm(CC3D_IN_PWM2); 
+	*rc_pitch = cc3d_read_pwm(CC3D_IN_PWM3); 
+	*rc_roll = 	cc3d_read_pwm(CC3D_IN_PWM4); 
+	*rc_aux0 = 	cc3d_read_pwm(CC3D_IN_PWM5); 
+	*rc_aux1 = 	cc3d_read_pwm(CC3D_IN_PWM6); 
+	
+	// prevent small changes when stick is not touched
+	if(abs(*rc_pitch - 1500) < 20) *rc_pitch = 1500; 
+	if(abs(*rc_roll - 1500) < 20) *rc_roll = 1500; 
+	if(abs(*rc_yaw - 1500) < 20) *rc_yaw = 1500;
+	return 0; 
 }
 
 static int8_t _cc3d_write_config(fc_board_t self, const uint8_t *data, uint16_t size){

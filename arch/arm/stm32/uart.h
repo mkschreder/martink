@@ -22,6 +22,7 @@
 #pragma once
 
 int8_t 		uart_init(uint8_t dev_id, uint32_t baud);
+void 			uart_deinit(uint8_t dev_id); 
 uint16_t 	uart_getc(uint8_t dev_id); 
 int8_t 		uart_putc(uint8_t dev_id, uint8_t ch);
 uint16_t 	uart_waiting(uint8_t dev_id);

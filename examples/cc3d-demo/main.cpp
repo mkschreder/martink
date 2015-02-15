@@ -28,21 +28,31 @@ int main(void){
 	
 	serial_dev_t flexiport = cc3d_get_flexiport_serial_interface(); 
 	
+	unsigned int loop = 0; 
+	
 	while(1){
-		printf("RC1: %d ", (int)pwm_read(FC_PWM_RC1)); 
-		printf("RC2: %d ", (int)pwm_read(FC_PWM_RC2)); 
-		printf("RC3: %d ", (int)pwm_read(FC_PWM_RC3)); 
-		printf("RC4: %d ", (int)pwm_read(FC_PWM_RC4)); 
-		printf("RC5: %d ", (int)pwm_read(FC_PWM_RC5)); 
-		printf("RC6: %d ", (int)pwm_read(FC_PWM_RC6)); 
+		printf("RC1: %d ", (int)cc3d_read_pwm(CC3D_IN_PWM1)); 
+		printf("RC2: %d ", (int)cc3d_read_pwm(CC3D_IN_PWM2)); 
+		printf("RC3: %d ", (int)cc3d_read_pwm(CC3D_IN_PWM3)); 
+		printf("RC4: %d ", (int)cc3d_read_pwm(CC3D_IN_PWM4)); 
+		printf("RC5: %d ", (int)cc3d_read_pwm(CC3D_IN_PWM5)); 
+		printf("RC6: %d ", (int)cc3d_read_pwm(CC3D_IN_PWM6)); 
 		
-		struct fc_data s; 
-		cc3d_read_sensors(&s); 
+		cc3d_write_pwm(CC3D_OUT_PWM1, 1000 + loop % 1000); 
+		cc3d_write_pwm(CC3D_OUT_PWM2, 1000 + loop % 1000); 
+		cc3d_write_pwm(CC3D_OUT_PWM3, 1000 + loop % 1000); 
+		cc3d_write_pwm(CC3D_OUT_PWM4, 1000 + loop % 1000); 
+		cc3d_write_pwm(CC3D_OUT_PWM5, 1000 + loop % 1000); 
+		cc3d_write_pwm(CC3D_OUT_PWM6, 1000 + loop % 1000); 
+		
+		float ax, ay, az, gx, gy, gz; 
+		cc3d_read_acceleration_g(&ax, &ay, &az); 
+		cc3d_read_angular_velocity_dps(&gx, &gy, &gz); 
 		
 		printf("Time: %ld ", (long int)timestamp_now()); 
 		printf("Gyro: %d %d %d, Acc: %d %d %d\n", 
-			(int)(s.acc_g.x * 1000), (int)(s.acc_g.y * 1000), (int)(s.acc_g.z * 1000), 
-			(int)(s.gyr_deg.x * 1000), (int)(s.gyr_deg.y * 1000), (int)(s.gyr_deg.z * 1000)); 
+			(int)(ax * 1000), (int)(ay * 1000), (int)(az * 1000), 
+			(int)(gx * 1000), (int)(gy * 1000), (int)(gz * 1000)); 
 		
 		serial_printf(flexiport, "Hello World!\n"); 
 		

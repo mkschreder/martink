@@ -60,23 +60,12 @@ extern volatile uint8_t _twi0_status;
 #define TWI_NO_RESPONSE 2
 #define TWI_REP_START_SENT 4
 
-extern void 		twi0_init_default(void);
-
-/// address is the first byte of data
-void 		twi0_start_write(uint8_t addr, const uint8_t *data, uint8_t data_sz);
-/// address is the first byte of data
-void 		twi0_start_read(uint8_t addr, uint8_t *data, uint8_t data_sz);
-
-/// sends stop signal on the bus
-int16_t twi0_stop(void);
-
-/// returns 1 if twi bus is processing another transaction
-uint8_t twi0_busy(void);
-
-/// returns 1 if previous transaction was successful
-uint8_t twi0_success(void); 
-
-void twi0_wait(uint8_t addr); 
+int8_t twi_init(uint8_t dev_id); 
+void twi_deinit(uint8_t dev_id); 
+int8_t twi_start_write(uint8_t dev_id, uint8_t addr, const uint8_t *data, uint8_t sz); 
+int8_t twi_start_read(uint8_t dev_id, uint8_t addr, uint8_t *data, uint8_t sz); 
+int8_t twi_stop(uint8_t dev_id); 
+void twi_wait(uint8_t dev_id, uint8_t addr); 
 
 /*
 void twi0_slave_init(uint8_t addr);

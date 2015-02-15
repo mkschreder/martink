@@ -90,7 +90,7 @@ extern "C" {
 #define pgm_snprintf(str, size, fmt, ...) snprintf_P(str, size, fmt, ##__VA_ARGS__)
 #endif
 
-void soc_init(void); 
+//void soc_init(void); 
 
 /// architecture specific implementation of serial_printf
 /// the implementation needs to be implemented separately because of 

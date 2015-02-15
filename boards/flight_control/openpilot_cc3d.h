@@ -95,6 +95,18 @@ int8_t cc3d_read_sensors(struct fc_data *data);
 
 void cc3d_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right);
 
+serial_dev_t cc3d_get_main_port_uart(void); 
+
+typedef enum {
+	CC3D_FLEXIPORT_UART, 
+	CC3D_FLEXIPORT_I2C
+}cc3d_flexi_port_mode_t; 
+
+void cc3d_configure_flexiport(cc3d_flexi_port_mode_t mode); 
+
+serial_dev_t cc3d_get_flexiport_serial_interface(void); 
+i2c_dev_t cc3d_get_flexiport_i2c_interface(void); 
+
 void cc3d_process_events(void);
 
 #define cc3d_led_on() gpio_clear(GPIO_PB3)

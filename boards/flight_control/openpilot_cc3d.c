@@ -8,6 +8,10 @@
 
 #define CONFIG_FILE "config"
 
+#define CC3D_MAINPORT_UART_ID 0
+#define CC3D_FLEXIPORT_UART_ID 2
+#define CC3D_FLEXIPORT_I2C_ID 1
+
 static struct cc3d {
 	struct serial_flash flash; 
 	struct mpu6000 mpu; 
@@ -41,8 +45,10 @@ void cc3d_init(void){
 	
 	cc3d_led_off(); 
 	gpio_configure(GPIO_PB3, GP_OUTPUT); 
-	  
-	uart_init(); 
+	
+	uart_init(CC3D_MAINPORT_UART_ID, 38400); 
+	uart_init(CC3D_FLEXIPORT_UART_ID, 38400); 
+	
 	//twi_init(); 
 	spi_init(); 
 	
@@ -96,6 +102,25 @@ void cc3d_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t ri
 	pwm_write(FC_PWM_CH2, back); 
 	pwm_write(FC_PWM_CH3, left); 
 	pwm_write(FC_PWM_CH4, right); 
+}
+
+
+void cc3d_configure_flexiport(cc3d_flexi_port_mode_t mode){
+	switch(mode){
+		case CC3D_FLEXIPORT_UART: 
+			
+			break; 
+		case CC3D_FLEXIPORT_I2C: 
+			break; 
+	};
+}
+
+serial_dev_t cc3d_get_flexiport_serial_interface(void){
+	return uart_get_serial_interface(CC3D_FLEXIPORT_UART_ID); 
+}
+
+i2c_dev_t cc3d_get_flexiport_i2c_interface(void){
+	return twi_get_interface(CC3D_FLEXIPORT_I2C_ID); 
 }
 
 int8_t cc3d_read_sensors(struct fc_data *data){

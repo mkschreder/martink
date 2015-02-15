@@ -166,6 +166,11 @@ extern "C" {
 	#define uart0_putc(data) uart0_putc_direct(data) 
 #endif
 
+int8_t 		uart_init(uint8_t dev_id, uint32_t baud);
+uint16_t 	uart_getc(uint8_t dev_id); 
+int8_t 		uart_putc(uint8_t dev_id, uint8_t ch);
+uint16_t 	uart_waiting(uint8_t dev_id);
+
 #ifdef __cplusplus
 }
 #endif

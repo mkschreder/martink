@@ -106,5 +106,33 @@
 		} while(timeout--);
 		return SERIAL_BUFFER_FULL; 
 	}
-
 #endif
+
+int8_t 		uart_init(uint8_t dev_id, uint32_t baud){
+	switch(dev_id){
+		case 0: uart0_init_default(baud); break; 
+		default: return -1; 
+	}
+	return 0; 
+}
+
+uint16_t 	uart_getc(uint8_t dev_id){
+	switch(dev_id){
+		case 0: return uart0_getc(); 
+		default: return SERIAL_NO_DATA; 
+	}
+}
+
+int8_t 		uart_putc(uint8_t dev_id, uint8_t ch){
+	switch(dev_id){
+		case 0: uart0_putc(ch); return 0; 
+		default: return -1; 
+	}
+}
+
+uint16_t 	uart_waiting(uint8_t dev_id){
+	switch(dev_id){
+		case 0: return uart0_waiting(); 
+		default: return 0; 
+	}
+}

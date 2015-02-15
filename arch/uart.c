@@ -25,115 +25,27 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <static_cbuf.h>
-
-#define UART_DEFAULT_BAUDRATE 38400
-
-#ifdef CONFIG_HAVE_UART3
-#define UART_COUNT 4
-#elif CONFIG_HAVE_UART2
-#define UART_COUNT 3
-#elif CONFIG_HAVE_UART1
-#define UART_COUNT 2
-#elif CONFIG_HAVE_UART0
-#define UART_COUNT 1
-#else 
-#define UART_COUNT 0
-#endif
-/*
-#ifdef CONFIG_AVR
-static FILE _fd; 
-FILE *uart0_fd = &_fd;
-
-static int _uart0_fd_get(FILE *fd){
-	return uart0_getc();
-}
-
-static int _uart0_fd_put(char data, FILE *fd){
-	return uart0_putc(data);
-}
-#endif
-*/
+//#define UART_DEFAULT_BAUDRATE 38400
 
 struct uart_device {
 	uint8_t id; 
 	struct serial_if *serial; 
 }; 
 
-struct uart_device _uart[1]; 
+struct uart_device _uart[UART_COUNT]; 
 
-void uart0_init(uint32_t baudrate) {
-	uart0_init_default(baudrate);
-	//uart0_fd->get = _uart0_fd_get;
-	//uart0_fd->put = _uart0_fd_put; 
-}
-
-size_t uart0_puts(const char *s )
-{
-	size_t count = 0; 
-	while (*s) {
-		uart0_putc(*s++);
-		count++; 
-	}
-	return count; 
-}
-/*
-uint16_t uart0_printf(const char *fmt, ...){
-	char buf[64]; 
-	
-	uint16_t n; 
-	va_list vl; 
-	va_start(vl, fmt);
-	n = vsnprintf(buf, sizeof(buf)-1, fmt, vl); 
-	va_end(vl);
-	uart0_puts(buf);
-	return n; 
-}
-
-*/
 #define GET_DEV(s, dev) \
 	struct uart_device *dev = container_of((s), struct uart_device, serial)
 	
 static uint16_t _uart_putc(serial_dev_t self, uint8_t ch){
 	GET_DEV(self, dev);
-	switch(dev->id){
-		#define LABEL(id) case id: return uart##id##_putc(ch); break; 
-		#ifdef CONFIG_HAVE_UART0
-		LABEL(0)
-		#endif
-		#ifdef CONFIG_HAVE_UART1
-		LABEL(1)
-		#endif
-		#ifdef CONFIG_HAVE_UART2
-		LABEL(2)
-		#endif
-		#ifdef CONFIG_HAVE_UART3
-		LABEL(3)
-		#endif
-		#undef LABEL
-	}
-	return 0; 
+	uart_putc(dev->id, ch); 
+	return SERIAL_NO_DATA; 
 }
 
 static uint16_t _uart_getc(serial_dev_t self) {
 	GET_DEV(self, dev);
-	switch(dev->id){
-		#define LABEL(id) case id: { return uart##id##_getc(); break; }
-		#ifdef CONFIG_HAVE_UART0
-		LABEL(0)
-		#endif
-		#ifdef CONFIG_HAVE_UART1
-		LABEL(1)
-		#endif
-		#ifdef CONFIG_HAVE_UART2
-		LABEL(2)
-		#endif
-		#ifdef CONFIG_HAVE_UART3
-		LABEL(3)
-		#endif
-		#undef LABEL
-	}
-	return -1; 
+	return uart_getc(dev->id); 
 }
 
 static size_t _uart_putn(serial_dev_t self, const uint8_t *data, size_t sz){
@@ -160,23 +72,7 @@ static size_t _uart_getn(serial_dev_t self, uint8_t *data, size_t sz){
 
 static size_t _uart_waiting(serial_dev_t self){
 	GET_DEV(self, dev);
-	switch(dev->id){
-		#define LABEL(id) case id: return uart##id##_waiting(); break; 
-		#ifdef CONFIG_HAVE_UART0
-		LABEL(0)
-		#endif
-		#ifdef CONFIG_HAVE_UART1
-		LABEL(1)
-		#endif
-		#ifdef CONFIG_HAVE_UART2
-		LABEL(2)
-		#endif
-		#ifdef CONFIG_HAVE_UART3
-		LABEL(3)
-		#endif
-		#undef LABEL
-	}
-	return 0; 
+	return uart_waiting(dev->id); 
 }
 
 static int16_t _uart_begin(serial_dev_t self){
@@ -191,8 +87,10 @@ static int16_t _uart_end(serial_dev_t self){
 	return 0; 
 }
 
-serial_dev_t uart_get_serial_interface(uint8_t dev){
-	if(dev >= UART_COUNT) return 0;  // currently only one device TODO
+serial_dev_t uart_get_serial_interface(uint8_t dev_id){
+	uint8_t count = sizeof(_uart) / sizeof(_uart[0]); 
+	if(dev_id >= count) return 0; 
+	
 	static struct serial_if _if;
 	static struct serial_if *i = 0; 
 	if(!i){
@@ -207,31 +105,9 @@ serial_dev_t uart_get_serial_interface(uint8_t dev){
 		}; 
 		i = &_if; 
 	}
-	_uart[dev].serial = i;
-	_uart[dev].id = dev; 
-	return &_uart[dev].serial; 
-}
-
-void initproc uart_init(void){
-	int c = 0; 
-#ifdef CONFIG_HAVE_UART0
-	uart0_init(UART_DEFAULT_BAUDRATE); 
-	c++; 
-#endif
-#ifdef CONFIG_HAVE_UART1
-	uart1_init(UART_DEFAULT_BAUDRATE); 
-	c++; 
-#endif
-#ifdef CONFIG_HAVE_UART2
-	uart2_init(UART_DEFAULT_BAUDRATE);  
-	c++; 
-#endif
-#ifdef CONFIG_HAVE_UART3
-	uart3_init(UART_DEFAULT_BAUDRATE); 
-	c++; 
-#endif
-	sei(); 
-	kdebug("UART: started %d uarts\n", c); 
+	_uart[dev_id].serial = i;
+	_uart[dev_id].id = dev_id; 
+	return &_uart[dev_id].serial; 
 }
 
 /*

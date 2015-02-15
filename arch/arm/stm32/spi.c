@@ -14,7 +14,7 @@ struct spi_device {
 	int out_pins, in_pins, nss_pin; 
 }; 
 
-static struct spi_device _spi[] = {
+static const struct spi_device _spi[] = {
 	{
 		.spi = SPI1, 
 		.gpio = GPIOA, 
@@ -45,7 +45,7 @@ int16_t spi_init_device(uint8_t dev){
 	
 	if(dev > count) return -1; 
 	
-	struct spi_device *d = &_spi[dev]; 
+	const struct spi_device *d = &_spi[dev]; 
 	
 	RCC_APB2PeriphClockCmd ( d->rcc_gpio | RCC_APB2Periph_AFIO, ENABLE); 
 	
@@ -93,7 +93,7 @@ int16_t spi_init_device(uint8_t dev){
 uint8_t spi_transfer(uint8_t dev, uint8_t data){
 	const uint8_t count = sizeof(_spi) / sizeof(_spi[0]); 
 	if(dev > count) return 0xff; 
-	struct spi_device *d = &_spi[dev]; 
+	const struct spi_device *d = &_spi[dev]; 
 	
 	wait_on_us(SPI_I2S_GetFlagStatus(d->spi, SPI_I2S_FLAG_TXE) == RESET, SPI_TIMEOUT);
 

@@ -64,6 +64,9 @@ static void			_twi_wait(i2c_dev_t self, uint8_t addr){
 }
 
 i2c_dev_t twi_get_interface(uint8_t id){
+	uint8_t count = sizeof(_twi) / sizeof(_twi[0]); 
+	if(id >= count) return 0; 
+	
 	static struct i2c_interface _if;
 	_if = (struct i2c_interface) {
 		.start_write = 	_twi_write,

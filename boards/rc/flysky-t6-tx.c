@@ -125,7 +125,7 @@ void fst6_init(void){
 	
 	timestamp_init(); 
 	gpio_init(); 
-	uart_init(); 
+	uart_init(0, 38400); 
 	
 	GPIO_InitTypeDef gpioInit;
 	

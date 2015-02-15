@@ -25,6 +25,24 @@
 
 #include "pp_math.h"
 
+#define DECLARE_CBUF(name, elem_type, size) \
+struct {\
+	elem_type buffer[NEXT_POW2(size)];\
+	int32_t head;\
+	int32_t tail;\
+	const int32_t total_size;\
+	const int32_t size_mask; \
+} name = { \
+	.buffer = {0}, \
+	.head = 0, \
+	.tail = 0, \
+	.total_size = NEXT_POW2(size), \
+	.size_mask = (NEXT_POW2(size) - (1))\
+}; 
+
+#define DECLARE_STATIC_CBUF(name, elem_type, size) DECLARE_CBUF(name, elem_type, size)
+
+/*
 #define DECLARE_STATIC_CBUF(name, elem_type, size) \
 static struct {\
 	elem_type buffer[NEXT_POW2(size)];\
@@ -39,7 +57,7 @@ static struct {\
 	.total_size = NEXT_POW2(size), \
 	.size_mask = (NEXT_POW2(size) - (1))\
 };\
-
+*/
 /// helper to get difference between head and tail counter
 #define _cbuf_hmt(name) ((name)->head - (name)->tail)
 

@@ -199,7 +199,7 @@ int _read(int file, char *ptr, int len) {
 	switch (file) {
 		case STDIN_FILENO:
 			for (n = 0; n < len; n++) {
-				uint16_t c = uart0_getc(); 
+				uint16_t c = uart_getc(0); 
 				if(c == SERIAL_NO_DATA) return -1; 
 				*ptr++ = c;
 				num++;

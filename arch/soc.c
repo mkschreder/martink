@@ -22,17 +22,18 @@
 #include "soc.h"
 #include <stdarg.h>
 
+/*
 void soc_init(void){
 	//clock_init(); 
 	timestamp_init(); 
 	time_init(); 
-	uart_init(); 
+	//uart_init(); 
 	gpio_init();
 	spi_init(); 
 	twi_init(); 
 	pwm_init(); 
 }
-
+*/
 uint16_t serial_printf(serial_dev_t port, const char *fmt, ...){
 	char buffer[512]; 
 	uint16_t n; 

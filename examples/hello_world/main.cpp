@@ -33,7 +33,7 @@ Application::Application():mConsole(0), mCounter(0){
 	*/
 	//soc_init(); 
 	
-	uart0_init(38400); 
+	uart_init(0, 38400); 
 	// we can no get the interface for the uart0 on the chip. 
 	mConsole = uart_get_serial_interface(0); 
 }

@@ -216,8 +216,7 @@ static FILE uart_fd = FDEV_SETUP_STREAM(_serial_fd_putc, _serial_fd_getc, _FDEV_
 void mwii_init(void){
 	//soc_init(); 
 	time_init(); 
-	uart_init();
-	uart0_set_baudrate_async(38400);  
+	uart_init(0, 38400); 
 	gpio_init();
 	//spi_init(); 
 	twi_init(); 

@@ -21,29 +21,7 @@
 
 #pragma once
 
-void uart0_init_default(uint32_t baud);
-uint16_t uart0_getc(void); 
-uint16_t uart0_putc(uint8_t ch);
-uint16_t uart0_waiting(void);
-
-void uart1_init_default(uint32_t baud); 
-uint16_t uart1_getc(void); 
-uint16_t uart1_putc(uint8_t ch);
-static inline int8_t uart1_waiting(void){
-	return 0; 
-}
-
-/*
-void uart0_init_default(uint16_t baudrate);
-
-#define uart0_waiting() (USART_IsDataAvailable(USART0))
-#define uart0_flush() do {} while(0)
-#define uart0_getc() ((uart0_waiting())?USART_GetChar(USART0):UART_NO_DATA)
-#define uart0_putc(data) (USART_PutChar(USART0, data), 0)
-
-void uart1_init_default(uint16_t baud); 
-#define uart1_waiting() (USART_IsDataAvailable(USART1))
-#define uart1_flush() do {} while(0)
-#define uart1_getc() ((uart0_waiting())?USART_GetChar(USART1):UART_NO_DATA)
-#define uart1_putc(data) (USART_PutChar(USART1, data), 0)
-*/
+int8_t 		uart_init(uint8_t dev_id, uint32_t baud);
+uint16_t 	uart_getc(uint8_t dev_id); 
+int8_t 		uart_putc(uint8_t dev_id, uint8_t ch);
+uint16_t 	uart_waiting(uint8_t dev_id);

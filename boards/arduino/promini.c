@@ -3,6 +3,6 @@
 #include <arch/soc.h>
 
 void promini_init(void){
-	soc_init(); 
+	//soc_init(); 
 }
 

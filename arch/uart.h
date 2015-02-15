@@ -30,27 +30,22 @@
 extern "C" {
 #endif
 
-extern FILE *uart0_fd;
+#ifdef CONFIG_HAVE_UART5
+#define UART_COUNT 6
+#elif CONFIG_HAVE_UART4
+#define UART_COUNT 5
+#elif CONFIG_HAVE_UART3
+#define UART_COUNT 4
+#elif CONFIG_HAVE_UART2
+#define UART_COUNT 3
+#elif CONFIG_HAVE_UART1
+#define UART_COUNT 2
+#elif CONFIG_HAVE_UART0
+#define UART_COUNT 1
+#else 
+#define UART_COUNT 0
+#endif
 
-void uart_init(void); 
-
-void uart0_init(uint32_t baudrate);
-
-size_t uart0_puts(const char *s );
-size_t uart0_putn(const char *buf, size_t size); 
-uint16_t uart0_printf(const char *fmt, ...); 
-
-//#define uart0_printf(format, ...) fprintf((uart0_fd), format, ## __VA_ARGS__)
-//#define uart0_puts(str) fputs(str, uart0_fd)
-
-#define uart1_init(baud) uart1_init_default(baud)
-/*
-#define UART_PARITY_ERROR			SERIAL_PARITY_ERROR
-#define UART_FRAME_ERROR      SERIAL_FRAME_ERROR              
-#define UART_OVERRUN_ERROR    SERIAL_OVERRUN_ERROR              
-#define UART_BUFFER_FULL  		SERIAL_BUFFER_FULL             
-#define UART_NO_DATA          SERIAL_NO_DATA              
-*/
 serial_dev_t uart_get_serial_interface(uint8_t dev);
 
 #ifdef __cplusplus

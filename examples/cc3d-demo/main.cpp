@@ -61,7 +61,10 @@ int main(void){
 			if(led_state) cc3d_led_on(); 
 			else cc3d_led_off(); 
 			ts = timestamp_from_now_us(500000); 
+			
+			loop += 100; 
 		}
+		
 	}
 	
 }

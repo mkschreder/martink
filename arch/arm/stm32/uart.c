@@ -93,6 +93,8 @@ int8_t uart_init(uint8_t dev_id, uint32_t baud){
 	const struct uart_device *conf = &_devices[dev_id]; 
 	USART_TypeDef *dev = _devices[dev_id].dev; 
 	
+	USART_DeInit(dev); 
+	
 	if(conf->apb_id == 2){
 		RCC_APB2PeriphClockCmd(conf->rcc_id, ENABLE);
 	} else if(conf->apb_id == 1){
@@ -147,6 +149,28 @@ void uart_deinit(uint8_t dev_id){
 	USART_TypeDef *dev = _devices[dev_id].dev; 
 	
 	USART_DeInit(dev); 
+}
+
+int8_t		uart_set_baudrate(uint8_t dev_id, uint32_t baud){
+	USART_InitTypeDef usartConfig;
+	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
+	if(dev_id >= count) return -1; 
+	USART_TypeDef *dev = _devices[dev_id].dev; 
+	
+	USART_Cmd(dev, DISABLE);
+
+	usartConfig.USART_BaudRate = baud;
+	usartConfig.USART_WordLength = USART_WordLength_8b;
+	usartConfig.USART_StopBits = USART_StopBits_1;
+	usartConfig.USART_Parity = USART_Parity_No;
+	usartConfig.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+	usartConfig.USART_HardwareFlowControl =
+			 USART_HardwareFlowControl_None;
+	USART_Init(dev, &usartConfig);
+	
+	USART_Cmd(dev, ENABLE);
+	
+	return 0; 
 }
 
 uint16_t uart_getc(uint8_t dev_id){
@@ -211,8 +235,8 @@ void USART2_IRQHandler(void)
 {
 	if(USART2->SR & USART_FLAG_RXNE){
 		char ch = USART_ReceiveData(USART2);
-		if(!cbuf_is_full(&uart3_rx_buf)){ 
-			cbuf_put(&uart3_rx_buf, ch); 
+		if(!cbuf_is_full(&uart1_rx_buf)){ 
+			cbuf_put(&uart1_rx_buf, ch); 
 		} 
 	}
 }
@@ -223,8 +247,8 @@ void USART3_IRQHandler(void)
 {
 	if(USART3->SR & USART_FLAG_RXNE){
 		char ch = USART_ReceiveData(USART3);
-		if(!cbuf_is_full(&uart3_rx_buf)){ 
-			cbuf_put(&uart3_rx_buf, ch); 
+		if(!cbuf_is_full(&uart2_rx_buf)){ 
+			cbuf_put(&uart2_rx_buf, ch); 
 		} 
 	}
 }

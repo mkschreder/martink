@@ -50,7 +50,7 @@ int main(void){
 		cc3d_read_angular_velocity_dps(&gx, &gy, &gz); 
 		
 		printf("Time: %ld ", (long int)timestamp_now()); 
-		printf("Gyro: %d %d %d, Acc: %d %d %d\n", 
+		printf("Gyro: %5d %5d %5d, Acc: %5d %5d %5d\n", 
 			(int)(ax * 1000), (int)(ay * 1000), (int)(az * 1000), 
 			(int)(gx * 1000), (int)(gy * 1000), (int)(gz * 1000)); 
 		

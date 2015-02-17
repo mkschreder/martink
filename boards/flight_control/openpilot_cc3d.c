@@ -205,7 +205,7 @@ static int8_t cc3d_read_sensors(struct fc_data *data){
 		&data->raw_gyr.y, 
 		&data->raw_gyr.z
 	); 
-	mpu6000_convertAcc(&cc3d.mpu, 
+	mpu6000_convertGyr(&cc3d.mpu, 
 		data->raw_gyr.x, 
 		data->raw_gyr.y, 
 		data->raw_gyr.z, 
@@ -235,7 +235,7 @@ int8_t cc3d_write_config(const uint8_t *data, uint16_t size){
 	
 	if(addr == -1) return -1; 
 	
-	printf("Found free sector %x at %x\n", (int)sect, (int)addr); 
+	//printf("Found free sector %x at %x\n", (int)sect, (int)addr); 
 	
 	unsigned c = 0; 
 	do {
@@ -245,7 +245,7 @@ int8_t cc3d_write_config(const uint8_t *data, uint16_t size){
 		serial_flash_read(&cc3d.flash, sect / 8, &flags, 1); 
 		flags |= (1 << (sect % 8)); 
 		serial_flash_write(&cc3d.flash, (sect / 8), &flags, 1); 
-		printf("Wrote block to sector %x\n", sect); 
+		//printf("Wrote block to sector %x\n", sect); 
 		sect++; 
 		c += 512; 
 	} while(c < size); 
@@ -282,7 +282,7 @@ int8_t cc3d_read_config(uint8_t *data, uint16_t size){
 	}
 	if(addr < 0) return -1; 
 	
-	printf("Found data at sector %x\n", sect); 
+	//printf("Found data at sector %x\n", sect); 
 	serial_flash_read(&cc3d.flash, addr, data, size); 
 	
 	return 0; 

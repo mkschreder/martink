@@ -20,6 +20,7 @@
 */
 
 #include <arch/soc.h>
+#include <util/cbuf.h>
 
 #if defined(CONFIG_BUFFERED_UART)
 	/** Size of the circular receive buffer, must be power of 2 */
@@ -34,8 +35,11 @@
 	#define UART_TX_BUFFER_SIZE CONFIG_UART0_TX_BUF_SIZE
 	#define UART_RX_BUFFER_SIZE CONFIG_UART0_RX_BUF_SIZE
 
-	DECLARE_STATIC_CBUF(uart0_tx_buf, uint8_t, UART_TX_BUFFER_SIZE);
-	DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
+	static uint8_t _buffer_data[2][UART_TX_BUFFER_SIZE]; 
+	static struct cbuf uart0_tx_buf, uart0_rx_buf; 
+	
+	//DECLARE_STATIC_CBUF(uart0_tx_buf, uint8_t, UART_TX_BUFFER_SIZE);
+	//DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 
 	static struct {
 		uint8_t error;
@@ -57,7 +61,7 @@
 	}
 
 	ISR(USART_UDRE_vect) {
-		if(cbuf_get_data_count(&uart0_tx_buf)){
+		if(cbuf_get_waiting(&uart0_tx_buf)){
 			uart0_putc_direct(cbuf_get(&uart0_tx_buf)); 
 		} else {
 			uart0_interrupt_dre_off(); 
@@ -66,7 +70,7 @@
 
 	size_t uart0_waiting(void){
 		uart0_interrupt_rx_off(); 
-		int wait = cbuf_get_data_count(&uart0_rx_buf);
+		int wait = cbuf_get_waiting(&uart0_rx_buf);
 		uart0_interrupt_rx_on();
 		return wait; 
 	}
@@ -109,6 +113,8 @@
 #endif
 
 int8_t 		uart_init(uint8_t dev_id, uint32_t baud){
+	cbuf_init(&uart0_tx_buf, _buffer_data[0], UART_TX_BUFFER_SIZE); 
+	cbuf_init(&uart0_rx_buf, _buffer_data[1], UART_RX_BUFFER_SIZE); 
 	switch(dev_id){
 		case 0: uart0_init_default(baud); break; 
 		default: return -1; 

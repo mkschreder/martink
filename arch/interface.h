@@ -255,6 +255,8 @@ struct i2c_interface {
 	int16_t 			(*stop)(i2c_dev_t self); 
 	
 	void	(*wait)(i2c_dev_t self, uint8_t addr); 
+	
+	uint8_t (*busy)(i2c_dev_t self); 
 };
 
 uint32_t i2c_start_write(i2c_dev_t dev,
@@ -266,6 +268,8 @@ uint32_t	i2c_start_read(i2c_dev_t dev,
 int16_t i2c_stop(i2c_dev_t dev);
 
 void i2c_wait(i2c_dev_t dev, uint8_t addr); 
+
+uint8_t i2c_busy(i2c_dev_t dev); 
 
 /**
  * Memory interface can be used for any storage medium

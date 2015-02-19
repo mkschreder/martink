@@ -102,3 +102,6 @@ void i2c_wait(i2c_dev_t dev, uint8_t addr){
 	(*dev)->wait(dev, addr); 
 }
 
+uint8_t i2c_busy(i2c_dev_t dev){
+	return (*dev)->busy(dev); 
+}

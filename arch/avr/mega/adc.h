@@ -156,4 +156,25 @@ extern uint8_t _adc_mode;
 		:(0)) \
 )
 
+
+uint8_t adc_busy(void);
+void adc_start_conversion(uint8_t channel, volatile uint16_t *value); 
+
+/*
+#include <util/list.h>
+#include <util/pipe.h>
+
+#define ADC_EV_CONV_COMPLETED 1
+
+struct adc_connection {
+	struct pipe pipe; 
+	int8_t (*on_event)(struct adc_connection *self, uint16_t ev); 
+	struct list_head list; 
+}; 
+
+int8_t adc_read_ev_conv_completed(struct adc_connection *self, 
+	timestamp_t *time, uint8_t *chan, uint16_t *value); 
+void adc_connect(struct adc_connection *con, uint8_t *rxbuf, uint8_t *txbuf, uint8_t size, int8_t (*on_event)(struct adc_connection *self, uint16_t ev));
+void adc_process_events(void); 
+*/
 #endif

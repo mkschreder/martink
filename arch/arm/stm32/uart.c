@@ -83,6 +83,7 @@ DECLARE_STATIC_CBUF(uart3_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 DECLARE_STATIC_CBUF(uart4_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 DECLARE_STATIC_CBUF(uart5_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 
+
 int8_t uart_init(uint8_t dev_id, uint32_t baud){
 	USART_InitTypeDef usartConfig;
 	

@@ -88,6 +88,11 @@ uint16_t mwii_read_pwm(mwii_in_pwm_channel_t chan);
 i2c_dev_t mwii_get_i2c_interface(void); 
 /// gets main usart interface
 serial_dev_t mwii_get_uart_interface(void); 
+/// reads receiver input
+void mwii_read_receiver(
+		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
+		uint16_t *rc_aux0, uint16_t *rc_aux1); 
+void mwii_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right); 
 
 //**********************
 // READING SENSOR DATA
@@ -102,6 +107,8 @@ void mwii_read_magnetic_field(float *mx, float *my, float *mz);
 float mwii_read_temperature_c(void); 
 /// reads pressure in pascal
 float mwii_read_pressure_pa(void); 
+/// reads all sensors
+void mwii_read_sensors(struct fc_data *data); 
 
 //************************
 // CONFIG 

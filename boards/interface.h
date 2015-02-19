@@ -96,6 +96,7 @@ struct fc_quad_interface {
 #define fc_read_temperature(self) (*self)->read_temperature(self)
 #define fc_read_battery_monitor(self) (*self)->read_battery_monitor(self)
 */
+/*
 #define fc_read_sensors(self, sensors) (*self)->read_sensors(self, sensors)
 #define fc_read_receiver(self, thr, yaw, pitch, roll, aux0, aux1) \
 	(*self)->read_receiver(self, thr, yaw, pitch, roll, aux0, aux1)
@@ -106,3 +107,4 @@ struct fc_quad_interface {
 #define fc_read_config(self, data, size) \
 	(*self)->read_config(self, data, size)
 #define fc_get_pc_link_interface(self) (*self)->get_pc_link_interface(self)
+*/

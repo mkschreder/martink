@@ -133,14 +133,14 @@ static void compute_rc_values(void){
 }
 
 
-static inline void mwii_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right){
-	pwm0_set(front);
-	pwm1_set(back);
-	pwm4_set(left);
-	pwm5_set(right); 
+void mwii_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right){
+	mwii_write_pwm(MWII_OUT_PWM0, front);
+	mwii_write_pwm(MWII_OUT_PWM1, back);
+	mwii_write_pwm(MWII_OUT_PWM2, left);
+	mwii_write_pwm(MWII_OUT_PWM3, right); 
 }
 
-
+/*
 static void mwii_calibrate_mpu6050(void){
 	// calibrate gyro offset
 	int16_t ax, ay, az, gx, gy, gz; 
@@ -169,37 +169,7 @@ static void mwii_calibrate_mpu6050(void){
 	mpu6050_setYGyroOffset(&_brd.mpu, -(int16_t)(ggy / iterations * 2) | 1); //20
 	mpu6050_setZGyroOffset(&_brd.mpu, -(int16_t)(ggz / iterations * 2) | 1); //-49
 	
-	// Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
-	// factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
-	// non-zero values. In addition, bit 0 of the lower byte must be preserved since it is used for temperature
-	// compensation calculations. Accelerometer bias registers expect bias input as 2048 LSB per g, so that
-	// the accelerometer biases calculated above must be divided by 8.
-	
-	// Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
-	// preserve temperature compensation bit when writing back to accelerometer bias registers
-	//bias_x = (int16_t)(bias_x - (aax / iterations / 16384.0 * 2048)) | 1; 
-	//bias_y = (int16_t)(bias_y - (aay / iterations / 16384.0 * 2048)) | 1; 
-	//bias_z = (int16_t)(bias_z - (aaz / iterations / 16384.0 * 2048)) | 1; 
-	
-	//mpu6050_setXAccOffset(&_brd.mpu, -(int16_t)(bias_x)); 
-	//mpu6050_setYAccOffset(&_brd.mpu, -(int16_t)(bias_y)); 
-	//mpu6050_setZAccOffset(&_brd.mpu, -(int16_t)(aaz)); 
-	
-	/*mpu6050_setXAccOffset(&_brd.mpu, 0x0100); 
-	mpu6050_setYAccOffset(&_brd.mpu, 0x0100); 
-	mpu6050_setZAccOffset(&_brd.mpu, 0x0100); */
-	
-	//mpu6050_setXGyroOffset(&_brd.mpu, -15 * 2); //14
-	//mpu6050_setYGyroOffset(&_brd.mpu, -20 * 2); //20
-	//mpu6050_setZGyroOffset(&_brd.mpu, 54 * 2); //-49
-	//mpu6050_setZAccOffset(&_brd.mpu, -20); // 15818
-	/*
-	mpu6050_getRawData(&_brd.mpu, &ax, &ay, &az, &gx, &gy, &gz); 
-	
-	mpu6050_setXGyroOffset(&_brd.mpu, gx); 
-	mpu6050_setYGyroOffset(&_brd.mpu, gy); 
-	mpu6050_setZGyroOffset(&_brd.mpu, gz); */
-}
+}*/
 
 static void _serial_fd_putc(int c, FILE *stream){
 	serial_dev_t dev = fdev_get_udata(stream); 
@@ -221,7 +191,7 @@ void mwii_init(void){
 	//spi_init(); 
 	twi_init(0); 
 	pwm_init(); 
-	adc0_init_default(); 
+	//adc0_init_default(); 
 	sei(); 
 	
 	// setup printf stuff (specific to avr-libc)
@@ -237,7 +207,7 @@ void mwii_init(void){
 	fdev_set_udata(stderr, uart_get_serial_interface(0)); 
 */
 	// first thing must enable interrupts
-	kdebug("BOOT\n");
+	//printf("BOOT\n");
 	
 	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
 	//gpio_set(GPIO_MWII_LED); 
@@ -289,7 +259,7 @@ void mwii_init(void){
 	
 	reset_rc();
 	
-	mwii_calibrate_mpu6050(); 
+	//mwii_calibrate_mpu6050(); 
 	// let the escs init as well
 	delay_us(500000L); 
 }
@@ -382,6 +352,8 @@ void mwii_calibrate_escs_on_reboot(void){
 void mwii_process_events(void){
 	compute_rc_values(); 
 	
+	mpu6050_thread(&_brd.mpu); 
+	
 	//TIMSK0 |= _BV(TOIE0); 
 	if(timestamp_expired(brd->rc_reset_timeout)){
 		reset_rc(); 
@@ -389,18 +361,12 @@ void mwii_process_events(void){
 	
 }
 
-static int8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
-	(void)(self); 
+void mwii_read_sensors(struct fc_data *data){
 	data->flags = 0xffff; // all
 	mpu6050_readRawAcc(&_brd.mpu, 
 		&data->raw_acc.x, 
 		&data->raw_acc.y, 
 		&data->raw_acc.z); 
-	mpu6050_readRawGyr(&_brd.mpu, 
-		&data->raw_gyr.x, 
-		&data->raw_gyr.y, 
-		&data->raw_gyr.z
-	); 
 	mpu6050_convertAcc(&_brd.mpu, 
 		data->raw_acc.x, 
 		data->raw_acc.y, 
@@ -409,7 +375,12 @@ static int8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 		&data->acc_g.y, 
 		&data->acc_g.z
 	); 
-	mpu6050_convertAcc(&_brd.mpu, 
+	mpu6050_readRawGyr(&_brd.mpu, 
+		&data->raw_gyr.x, 
+		&data->raw_gyr.y, 
+		&data->raw_gyr.z
+	); 
+	mpu6050_convertGyr(&_brd.mpu, 
 		data->raw_gyr.x, 
 		data->raw_gyr.y, 
 		data->raw_gyr.z, 
@@ -417,6 +388,7 @@ static int8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 		&data->gyr_deg.y,
 		&data->gyr_deg.z
 	); 
+	/*
 	hmc5883l_readRawMag(&_brd.hmc, 
 		&data->raw_mag.x, 
 		&data->raw_mag.y, 
@@ -436,10 +408,31 @@ static int8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 	data->sonar_altitude = (sonar > 0)?((float)sonar / 100.0):-1; 
 	data->temperature = bmp085_read_temperature(&brd->bmp); 
 	data->pressure = bmp085_read_pressure(&brd->bmp); 
-	data->vbat = (adc0_read_cached(2) / 65535.0);
-	return 0; 
+	*/
+	//data->vbat = (adc0_read_cached(2) / 65535.0);
 }
 
+void mwii_read_receiver(
+		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
+		uint16_t *rc_aux0, uint16_t *rc_aux1) {
+	*rc_thr = 		brd->rc_values[RC_THROTTLE]; 
+	*rc_pitch = 	brd->rc_values[RC_PITCH]; 
+	*rc_yaw = 		brd->rc_values[RC_YAW]; 
+	*rc_roll = 		brd->rc_values[RC_ROLL]; 
+	*rc_aux0 = 		brd->rc_values[RC_MODE]; 
+	*rc_aux1 = 		brd->rc_values[RC_MODE2];
+	
+	// prevent small changes when stick is not touched
+	if(abs(*rc_pitch - 1500) < 20) *rc_pitch = 1500; 
+	if(abs(*rc_roll - 1500) < 20) *rc_roll = 1500; 
+	if(abs(*rc_yaw - 1500) < 20) *rc_yaw = 1500;
+}
+
+//***********************
+// INTERFACE 
+//***********************
+
+/*
 static int8_t _mwii_write_motors(fc_board_t self,
 	uint16_t front, uint16_t back, uint16_t left, uint16_t right){
 	(void)(self); 
@@ -507,7 +500,7 @@ fc_board_t mwii_get_fc_quad_interface(void){
 	// cast, but only because we never actually use any private data in multiwii
 	return &ptr; 
 }
-
+*/
 /*
 static void _mwii_calibrate_escs(void){
 	// set all outputs to maximum

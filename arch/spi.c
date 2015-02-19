@@ -166,19 +166,4 @@ void initproc spi_init(void){
 		_spi[c].serial = i;
 	}
 	kdebug("\n");
-	/*
-	for(int c = 0; c < 4; c++){
-		_spi[c].id = c; 
-		_spi[c].serial = 0; 
-	}
-#ifdef CONFIG_HAVE_SPI0
-	spi0_init_default(); kdebug("spi0 "); 
-#endif
-#ifdef CONFIG_HAVE_SPI1
-	spi1_init_default(); kdebug("spi1 "); 
-#endif
-#ifdef CONFIG_HAVE_SPI2
-	spi2_init_default(); kdebug("spi2 "); 
-#endif
-*/
 }

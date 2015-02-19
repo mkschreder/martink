@@ -59,6 +59,11 @@ static void			_twi_wait(i2c_dev_t self, uint8_t addr){
 	twi_wait(dev->id, addr); 
 }
 
+static uint8_t			_twi_busy(i2c_dev_t self){
+	DEVICE_CAST(self, dev);
+	return twi_busy(dev->id); 
+}
+
 i2c_dev_t twi_get_interface(uint8_t id){
 	uint8_t count = sizeof(_twi) / sizeof(_twi[0]); 
 	if(id >= count) return 0; 
@@ -68,7 +73,8 @@ i2c_dev_t twi_get_interface(uint8_t id){
 		.start_write = 	_twi_write,
 		.start_read = 	_twi_read,
 		.stop = 		_twi_stop, 
-		.wait = _twi_wait
+		.wait = _twi_wait, 
+		.busy = _twi_busy 
 	};
 	_twi[id].interface = &_if; 
 	return &_twi[id].interface; 

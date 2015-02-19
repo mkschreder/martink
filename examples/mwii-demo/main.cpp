@@ -6,12 +6,93 @@ Example for the fst6 radio transmitter board
 #include <kernel.h>
 #include <boards/flight_control/multiwii.h>
 #include <tty/vt100.h>
+#include <util/list.h>
+#include <util/cbuf.h>
+#include <util/pipe.h>
 
-extern char _sdata; 
+#include <thread/pt.h>
+
+#define typeof __typeof__
+
+struct application {
+	struct pt thread; 
+	serial_dev_t uart; 
+	uint16_t adc; 
+	timestamp_t time; 
+}; 
+
+static struct application app; 
+/*
+int8_t _on_adc_event(struct adc_connection *con, uint16_t ev){
+	struct application *app = container_of(con, struct application, con_adc); 
+	switch(ev){
+		case ADC_EV_CONV_COMPLETED: {
+			timestamp_t time; 
+			uint8_t chan; 
+			uint16_t value; 
+			if(adc_read_ev_conv_completed(con, &time, &chan, &value) == 0){
+				app->adc[chan & 0x07] = value; 
+				return 0; 
+			}
+		} break; 
+	}
+	return -1; 
+}
+*/
+PT_THREAD(app_thread(struct application *app)){
+	PT_BEGIN(&app->thread); 
+	while(1){
+		uint16_t ch; 
+		PT_WAIT_WHILE(&app->thread, (ch = serial_getc(app->uart)) == SERIAL_NO_DATA); 
+		app->time = timestamp_now(); 
+		printf("Measuring adc.. \n"); 
+		adc_start_conversion(1, &app->adc); 
+		PT_WAIT_WHILE(&app->thread, adc_busy()); 
+		printf("Measured to %u in %lu us\n", app->adc, (uint32_t)timestamp_ticks_to_us((timestamp_now() - app->time))); 
+		float ax, ay, az; 
+		timestamp_t t = timestamp_now(); 
+		mwii_read_acceleration_g(&ax, &ay, &az); 
+		t = timestamp_ticks_to_us(timestamp_now() - t); 
+		printf("ACC: %d %d %d, time: %lu us\n", 
+			(int16_t)(ax * 1000), (int16_t)(ay * 1000), (int16_t)(az * 1000), (uint32_t)t);  
+		//app->time = timestamp_from_now_us(1000000); 
+		//PT_WAIT_UNTIL(&app->thread, timestamp_expired(app->time)); 
+	}
+	PT_END(&app->thread); 
+}
 
 int main(void){
 	mwii_init(); 
-
+	
+	PT_INIT(&app.thread); 
+	app.uart = mwii_get_uart_interface(); 
+	
+	gpio_configure(MWII_GPIO_A1, GP_INPUT | GP_PULLUP | GP_ANALOG); 
+	
+	while(1){
+		app_thread(&app); 
+		mwii_process_events(); 
+		/*
+		static timestamp_t t = 0; 
+		if(timestamp_expired(t)){
+			printf("ADC: "); 
+			for(int c = 0; c < 8; c++){
+				printf("%u ", app.adc[c]); 
+			}
+			printf("\n"); 
+			t = timestamp_from_now_us(1000000UL);  
+		}
+		adc_process_events(); */
+		/*struct adc_msg_value msg; 
+		//struct adc_msg_value in = {0, 3, 1234}; 
+		//adc_msg_value_pack(&ac, &in); 
+		if(adc_msg_value_parse(&ac, &msg) != -1){
+			printf("\nADC: %d %u ", msg.chan, msg.val); 
+		} else {
+			//printf("."); 
+		}*/
+	}
+	
 	// test config read/write (to eeprom)
 	const char str[] = "Hello World!"; 
 	uint8_t buf[13] = {0}; 

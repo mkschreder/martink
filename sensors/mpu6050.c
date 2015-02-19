@@ -91,6 +91,8 @@ static uint8_t buffer[14];
 #define MPU6050_GZGAIN 16.4
 #endif
 
+#include <thread/pt.h>
+
 static int8_t mpu6050_readBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t *data) {
 	i2c_start_write(self->i2c, self->addr, &regAddr, 1);
 	delay_us(10);
@@ -171,10 +173,10 @@ static void mpu6050_writeBits(struct mpu6050 *self, uint8_t regAddr, uint8_t bit
 }
 
 static void mpu6050_writeBit(struct mpu6050 *self, uint8_t regAddr, uint8_t bitNum, uint8_t data) {
-    uint8_t b;
-    mpu6050_readByte(self, regAddr, &b);
-    b = (data != 0) ? (b | (1 << bitNum)) : (b & ~(1 << bitNum));
-    mpu6050_writeByte(self, regAddr, b);
+	uint8_t b;
+	mpu6050_readByte(self, regAddr, &b);
+	b = (data != 0) ? (b | (1 << bitNum)) : (b & ~(1 << bitNum));
+	mpu6050_writeByte(self, regAddr, b);
 }
 
 int8_t mpu6050_getTCXGyroOffset(struct mpu6050 *self) {
@@ -303,6 +305,9 @@ void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr) {
 	self->i2c = i2c; 
 	self->addr = addr;
 	
+	PT_INIT(&self->thread); 
+	PT_INIT(&self->rbthread); 
+	
 	//allow mpu6050 chip clocks to start up
 	delay_us(100000L);
 
@@ -337,19 +342,19 @@ void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr) {
 }
 
 void mpu6050_readRawAcc(struct mpu6050 *self, int16_t* ax, int16_t* ay, int16_t* az){
-	mpu6050_readBytes(self, MPU6050_RA_ACCEL_XOUT_H, 6, (uint8_t *)buffer);
+	//mpu6050_readBytes(self, MPU6050_RA_ACCEL_XOUT_H, 6, (uint8_t *)buffer);
 
-	*ax = (((int16_t)buffer[0]) << 8) | buffer[1];
-	*ay = (((int16_t)buffer[2]) << 8) | buffer[3];
-	*az = (((int16_t)buffer[4]) << 8) | buffer[5];
+	*ax = self->raw_ax; //(((int16_t)buffer[0]) << 8) | buffer[1];
+	*ay = self->raw_ay; //(((int16_t)buffer[2]) << 8) | buffer[3];
+	*az = self->raw_az; //(((int16_t)buffer[4]) << 8) | buffer[5];
 }
 
 void mpu6050_readRawGyr(struct mpu6050 *self, int16_t* gx, int16_t* gy, int16_t* gz){
-	mpu6050_readBytes(self, MPU6050_RA_GYRO_XOUT_H, 6, (uint8_t *)buffer);
+	//mpu6050_readBytes(self, MPU6050_RA_GYRO_XOUT_H, 6, (uint8_t *)buffer);
 
-	*gx = (((int16_t)buffer[0]) << 8) | buffer[1];
-	*gy = (((int16_t)buffer[2]) << 8) | buffer[3];
-	*gz = (((int16_t)buffer[4]) << 8) | buffer[5];
+	*gx = self->raw_gx; //(((int16_t)buffer[0]) << 8) | buffer[1];
+	*gy = self->raw_gy; //(((int16_t)buffer[2]) << 8) | buffer[3];
+	*gz = self->raw_gz; //(((int16_t)buffer[4]) << 8) | buffer[5];
 }
 
 void mpu6050_convertAcc(struct mpu6050 *self, int16_t ax, int16_t ay, int16_t az, float *axg, float *ayg, float *azg){
@@ -364,5 +369,56 @@ void mpu6050_convertGyr(struct mpu6050 *self, int16_t gx, int16_t gy, int16_t gz
 	*gxd = (float)(gx-MPU6050_GXOFFSET)/MPU6050_GXGAIN;
 	*gyd = (float)(gy-MPU6050_GYOFFSET)/MPU6050_GYGAIN;
 	*gzd = (float)(gz-MPU6050_GZOFFSET)/MPU6050_GZGAIN;
+}
+
+static PT_THREAD(mpu6050_readThread(struct mpu6050 *self, uint8_t regAddr)){
+	PT_BEGIN(&self->rbthread); 
+	
+	self->buffer[0] = regAddr; 
+	
+	i2c_start_write(self->i2c, self->addr, self->buffer, 1);
+	PT_WAIT_WHILE(&self->rbthread, i2c_busy(self->i2c)); 
+	
+	i2c_start_read(self->i2c, self->addr, self->buffer, 6);
+	PT_WAIT_WHILE(&self->rbthread, i2c_busy(self->i2c)); 
+	
+	i2c_stop(self->i2c); 
+	PT_WAIT_WHILE(&self->rbthread, i2c_busy(self->i2c)); 
+	
+	PT_END(&self->rbthread); 
+}
+
+PT_THREAD(mpu6050_thread(struct mpu6050 *self)){
+	PT_BEGIN(&self->thread); 
+	
+	while(1){
+		self->time = timestamp_now(); 
+		
+		PT_SPAWN(&self->thread, &self->rbthread, mpu6050_readThread(self, MPU6050_RA_ACCEL_XOUT_H)); 
+		
+		{
+			uint8_t *buf = self->buffer; 
+			
+			self->raw_ax = (((int16_t)buf[0]) << 8) | buf[1];
+			self->raw_ay = (((int16_t)buf[2]) << 8) | buf[3];
+			self->raw_az = (((int16_t)buf[4]) << 8) | buf[5];
+		}
+		
+		PT_SPAWN(&self->thread, &self->rbthread, mpu6050_readThread(self, MPU6050_RA_GYRO_XOUT_H)); 
+		
+		{
+			uint8_t *buf = self->buffer; 
+			
+			self->raw_gx = (((int16_t)buf[0]) << 8) | buf[1];
+			self->raw_gy = (((int16_t)buf[2]) << 8) | buf[3];
+			self->raw_gz = (((int16_t)buf[4]) << 8) | buf[5];
+		}
+		
+		// limit to 10ms between requests
+		self->time = timestamp_from_now_us(10000 - timestamp_ticks_to_us(timestamp_now() - self->time)); 
+		PT_WAIT_UNTIL(&self->thread, timestamp_expired(self->time)); 
+	}
+	
+	PT_END(&self->thread); 
 }
 

@@ -25,7 +25,7 @@
 
 #include "pp_math.h"
 
-#define DECLARE_CBUF(name, elem_type, size) \
+#define DECLARE_SCBUF(name, elem_type, size) \
 struct {\
 	elem_type buffer[NEXT_POW2(size)];\
 	int32_t head;\
@@ -40,7 +40,7 @@ struct {\
 	.size_mask = (NEXT_POW2(size) - (1))\
 }; 
 
-#define DECLARE_STATIC_CBUF(name, elem_type, size) DECLARE_CBUF(name, elem_type, size)
+#define DECLARE_STATIC_SCBUF(name, elem_type, size) DECLARE_SCBUF(name, elem_type, size)
 
 /*
 #define DECLARE_STATIC_CBUF(name, elem_type, size) \
@@ -59,26 +59,26 @@ static struct {\
 };\
 */
 /// helper to get difference between head and tail counter
-#define _cbuf_hmt(name) ((name)->head - (name)->tail)
+#define _scbuf_hmt(name) ((name)->head - (name)->tail)
 
 /// evaluates to number of unread elements in buffer
-#define cbuf_get_data_count(name) (\
-	(_cbuf_hmt(name) < 0)?(_cbuf_hmt(name) + ((name)->total_size)):_cbuf_hmt(name)\
+#define scbuf_get_data_count(name) (\
+	(_scbuf_hmt(name) < 0)?(_scbuf_hmt(name) + ((name)->total_size)):_scbuf_hmt(name)\
 )
 
 /// checks if buffer is empty
-#define cbuf_is_empty(name) ((name)->head == (name)->tail)
+#define scbuf_is_empty(name) ((name)->head == (name)->tail)
 
 /// tests if the buffer is full
-#define cbuf_is_full(name) ((name)->head == (((name)->tail - 1) & (name)->size_mask))
+#define scbuf_is_full(name) ((name)->head == (((name)->tail - 1) & (name)->size_mask))
 
 /// reads next element from the buffer and updates pointers or -1 if no data
-#define cbuf_get(name) ((!cbuf_is_empty(name))?((\
+#define scbuf_get(name) ((!scbuf_is_empty(name))?((\
 	(name)->tail = ((name)->tail + 1) & (name)->size_mask \
 ), (name)->buffer[(name)->tail]):(-1))
 
 /// put a character into the buffer
 /// evaluates to 0 if success, -1 if buffer full
-#define cbuf_put(name, data) ((!cbuf_is_full(name))\
+#define scbuf_put(name, data) ((!cbuf_is_full(name))\
 	?((name)->head = ((name)->head + 1) & (name)->size_mask, (name)->buffer[(name)->head] = (data) & 0xff, 0)\
 	:(-1))

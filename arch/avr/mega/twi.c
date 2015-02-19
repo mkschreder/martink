@@ -55,14 +55,12 @@ Revision Info:  $Id: twi_master.c 117 2010-06-24 20:21:28Z pieterconradie $
 /// TWI State machine value when finished
 #define TWI_STATUS_DONE 0xff
 
-/* _____LOCAL VARIABLES______________________________________________________ */
 static volatile uint8_t twi_adr;
 static volatile uint8_t *twi_rd_data;
 static volatile const uint8_t *twi_wr_data; 
 static volatile uint8_t twi_data_counter;
 static volatile uint8_t twi_status;
 
-/* _____PRIVATE FUNCTIONS____________________________________________________ */
 /// TWI state machine interrupt handler
 ISR(TWI_vect)
 {
@@ -164,18 +162,6 @@ ISR(TWI_vect)
 	}
 }
 
-static uint8_t twi_busy(void){
-	// IF TWI Interrupt is enabled then the peripheral is busy
-	if(TWCR & _BV(TWIE))
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
-}
-
 /* _____FUNCTIONS_____________________________________________________ */
 int8_t twi_init(uint8_t dev_id)
 {
@@ -211,10 +197,7 @@ int8_t twi_start_write(uint8_t dev_id, uint8_t adr, const uint8_t *data, uint8_t
 	if(dev_id >= 1) return -1; 
 	
 	// Wait for previous transaction to finish
-	while(twi_busy())
-	{
-		;
-	}
+	while(twi_busy(dev_id)); 
 
 	// Copy address; clear R/~W bit in SLA+R/W address field
 	twi_adr = adr & ~I2C_READ;
@@ -233,10 +216,7 @@ int8_t twi_start_read(uint8_t dev_id, uint8_t adr, uint8_t *data, uint8_t bytes_
 	if(dev_id >= 1) return -1; 
 	
 	// Wait for previous transaction to finish
-	while(twi_busy())
-	{
-		;
-	}
+	while(twi_busy(dev_id)); 
 
 	// Copy address; set R/~W bit in SLA+R/W address field
 	twi_adr = adr | I2C_READ;
@@ -249,57 +229,29 @@ int8_t twi_start_read(uint8_t dev_id, uint8_t adr, uint8_t *data, uint8_t bytes_
 	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 	return 0; 
 }
-/*
-uint8_t twi0_busy(void){
+
+uint8_t twi_busy(uint8_t dev_id){
+	if(dev_id >= 1) return 1; 
 	// IF TWI Interrupt is enabled then the peripheral is busy
-	if(TWCR & _BV(TWIE))
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
+	return ((TWCR & _BV(TWIE)) != 0) || (TWCR & _BV(TWSTO)); 
 }
-
-uint8_t twi0_success(void)
-{
-	if(twi_status == TWI_STATUS_DONE)
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
-}
-
-uint8_t twi0_get_status(void)
-{
-	return twi_status;
-}*/
 
 int8_t twi_stop(uint8_t dev_id)
 {
 	if(dev_id >= 1) return -1; 
 	
 	// Wait for transaction to finish
-	while(twi_busy())
-	{
-		;
-	}
+	while(twi_busy(dev_id));
 
 	// Make sure transaction was succesful
 	if(twi_status != TWI_STATUS_DONE)
-	{
 		return 0;
-	}
 
 	// Initiate a STOP condition
 	TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(1<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
 
 	// Wait until STOP has finished
-	while(TWCR & _BV(TWSTO));
+	//while(TWCR & _BV(TWSTO));
 	
 	return twi_status == TWI_STATUS_DONE; 
 }

@@ -19,6 +19,7 @@ struct application {
 	serial_dev_t uart; 
 	uint16_t adc; 
 	timestamp_t time; 
+	struct pin_state state; 
 }; 
 
 static struct application app; 
@@ -46,9 +47,13 @@ PT_THREAD(app_thread(struct application *app)){
 		PT_WAIT_WHILE(&app->thread, (ch = serial_getc(app->uart)) == SERIAL_NO_DATA); 
 		app->time = timestamp_now(); 
 		printf("Measuring adc.. \n"); 
-		adc_start_conversion(1, &app->adc); 
+		adc_start_read(1, &app->adc); 
 		PT_WAIT_WHILE(&app->thread, adc_busy()); 
 		printf("Measured to %u in %lu us\n", app->adc, (uint32_t)timestamp_ticks_to_us((timestamp_now() - app->time))); 
+		printf("Reading N pulse..\n"); 
+		gpio_start_read(MWII_GPIO_D12, &app->state, GP_READ_PULSE_P); 
+		PT_WAIT_WHILE(&app->thread, gpio_pin_busy(MWII_GPIO_D12)); 
+		printf("Pulse length: %lu\n", timestamp_ticks_to_us((app->state.t_down - app->state.t_up))); 
 		float ax, ay, az; 
 		timestamp_t t = timestamp_now(); 
 		mwii_read_acceleration_g(&ax, &ay, &az); 
@@ -136,12 +141,12 @@ int main(void){
 			(int)(gx * 1000), (int)(gy * 1000), (int)(gz * 1000)); 
 		
 		// reading analog and digital pins
-		
+		/*
 		printf("A0: %5u, A1: %5u, A2: %5u\n", 
 			mwii_read_adc(MWII_GPIO_A0), 
 			mwii_read_adc(MWII_GPIO_A1), 
 			mwii_read_adc(MWII_GPIO_A2)); 
-		
+		*/
 		if(timestamp_expired(ts)){
 			led_state = ~led_state; 
 			if(led_state) mwii_led_on(); 

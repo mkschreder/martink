@@ -144,9 +144,9 @@ extern uint8_t _adc_mode;
 
 //#if defined(CONFIG_ADC_MODE_AUTOMATIC)
 
-	extern uint16_t _adc_values[8];
+	//extern uint16_t _adc_values[8];
 
-	#define adc0_read_cached(chan) (_adc_values[(chan) & 0x07])
+	//#define adc0_read_cached(chan) (_adc_values[(chan) & 0x07])
 //#endif
 
 #define adc0_set_mode(adc_mode) (\
@@ -158,7 +158,7 @@ extern uint8_t _adc_mode;
 
 
 uint8_t adc_busy(void);
-void adc_start_conversion(uint8_t channel, volatile uint16_t *value); 
+void adc_start_read(uint8_t channel, volatile uint16_t *value); 
 
 /*
 #include <util/list.h>

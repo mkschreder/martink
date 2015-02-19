@@ -128,7 +128,7 @@ void mwii_calibrate_escs_on_reboot(void);
 #define mwii_read_pin(mwii_pin) gpio_read(mwii_pin); 
 #define mwii_write_pin(mwii_pin, val) gpio_write(mwii_pin, val)
 #define mwii_configure_pin(mwii_pin, flags) gpio_configure(mwii_pin, flags)
-#define mwii_read_adc(mwii_pin) (uint16_t)adc0_read_cached(((mwii_pin - MWII_GPIO_A0) & 0x3))
+//#define mwii_read_adc(mwii_pin) (uint16_t)adc0_read_cached(((mwii_pin - MWII_GPIO_A0) & 0x3))
 
 //************************
 // PROCESSING FRAME EVENTS

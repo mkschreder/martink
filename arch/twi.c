@@ -53,15 +53,26 @@ static uint32_t	_twi_read(i2c_dev_t self, uint8_t adr, uint8_t *data, uint16_t m
 	if(twi_start_read(dev->id, adr, data, max_sz) != -1) return max_sz; 
 	return 0; 
 }
-
+/*
 static void			_twi_wait(i2c_dev_t self, uint8_t addr){
 	DEVICE_CAST(self, dev);
 	twi_wait(dev->id, addr); 
 }
+*/
 
 static uint8_t			_twi_busy(i2c_dev_t self){
 	DEVICE_CAST(self, dev);
 	return twi_busy(dev->id); 
+}
+
+static uint8_t			_twi_aquire(i2c_dev_t self){
+	DEVICE_CAST(self, dev);
+	return twi_aquire(dev->id); 
+}
+
+static void			_twi_release(i2c_dev_t self){
+	DEVICE_CAST(self, dev);
+	twi_release(dev->id); 
 }
 
 i2c_dev_t twi_get_interface(uint8_t id){
@@ -73,8 +84,9 @@ i2c_dev_t twi_get_interface(uint8_t id){
 		.start_write = 	_twi_write,
 		.start_read = 	_twi_read,
 		.stop = 		_twi_stop, 
-		.wait = _twi_wait, 
-		.busy = _twi_busy 
+		.busy = _twi_busy, 
+		.aquire = _twi_aquire, 
+		.release = _twi_release, 
 	};
 	_twi[id].interface = &_if; 
 	return &_twi[id].interface; 

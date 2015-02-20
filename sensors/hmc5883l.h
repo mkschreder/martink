@@ -34,10 +34,17 @@ struct hmc5883l {
 	i2c_dev_t i2c;
 	uint8_t addr;
 	float scale; 
+	uint8_t buffer[6]; 
+	struct pt uthread, ithread, bthread; 
+	timestamp_t time; 
+	uint16_t raw_mx, raw_my, raw_mz; 
+	uint8_t status; 
+	uint32_t sensor_id; 
 };
 
 //functions
 void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr);
+void hmc5883l_update(struct hmc5883l *self); 
 void hmc5883l_readRawMag(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, int16_t *mzraw);
 void hmc5883l_read_adjusted(struct hmc5883l *self, float *mx, float *my, float *mz);
 void hmc5883l_convertMag(struct hmc5883l *self, 

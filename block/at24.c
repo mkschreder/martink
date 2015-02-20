@@ -89,7 +89,7 @@ size_t at24_write(struct at24 *self, uint16_t WriteAddr, const uint8_t* pBuffer,
     if(NumOfPage == 0) 
     {
       at24_write_page(self, pBuffer, WriteAddr, NumOfSingle);
-      i2c_wait(self->i2c, EEPROM_ADDR);
+      //i2c_wait(self->i2c, EEPROM_ADDR);
     }
     /* If NumByteToWrite > I2C_PacketSize */
     else  
@@ -97,7 +97,7 @@ size_t at24_write(struct at24 *self, uint16_t WriteAddr, const uint8_t* pBuffer,
       while(NumOfPage--)
       {
         at24_write_page(self, pBuffer, WriteAddr, I2C_PacketSize); 
-				i2c_wait(self->i2c, EEPROM_ADDR);
+				//i2c_wait(self->i2c, EEPROM_ADDR);
         WriteAddr +=  I2C_PacketSize;
         pBuffer += I2C_PacketSize;
       }
@@ -105,7 +105,7 @@ size_t at24_write(struct at24 *self, uint16_t WriteAddr, const uint8_t* pBuffer,
       if(NumOfSingle!=0)
       {
         at24_write_page(self, pBuffer, WriteAddr, NumOfSingle);
-        i2c_wait(self->i2c, EEPROM_ADDR);
+        //i2c_wait(self->i2c, EEPROM_ADDR);
       }
     }
   }
@@ -116,7 +116,7 @@ size_t at24_write(struct at24 *self, uint16_t WriteAddr, const uint8_t* pBuffer,
     if(NumOfPage== 0) 
     {
       at24_write_page(self, pBuffer, WriteAddr, NumOfSingle);
-      i2c_wait(self->i2c, EEPROM_ADDR);
+      //i2c_wait(self->i2c, EEPROM_ADDR);
     }
     /* If NumByteToWrite > I2C_PacketSize */
     else
@@ -128,7 +128,7 @@ size_t at24_write(struct at24 *self, uint16_t WriteAddr, const uint8_t* pBuffer,
       if(count != 0)
       {  
         at24_write_page(self, pBuffer, WriteAddr, count);
-        i2c_wait(self->i2c, EEPROM_ADDR);
+        //i2c_wait(self->i2c, EEPROM_ADDR);
         WriteAddr += count;
         pBuffer += count;
       } 
@@ -136,14 +136,14 @@ size_t at24_write(struct at24 *self, uint16_t WriteAddr, const uint8_t* pBuffer,
       while(NumOfPage--)
       {
         at24_write_page(self, pBuffer, WriteAddr, I2C_PacketSize);
-        i2c_wait(self->i2c, EEPROM_ADDR);
+        //i2c_wait(self->i2c, EEPROM_ADDR);
         WriteAddr +=  I2C_PacketSize;
         pBuffer += I2C_PacketSize;  
       }
       if(NumOfSingle != 0)
       {
         at24_write_page(self, pBuffer, WriteAddr, NumOfSingle); 
-        i2c_wait(self->i2c, EEPROM_ADDR);
+        //i2c_wait(self->i2c, EEPROM_ADDR);
       }
     }
   }  

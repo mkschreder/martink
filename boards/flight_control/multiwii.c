@@ -79,9 +79,14 @@ enum {
 
 static const uint16_t rc_defaults[6] = {1000, 1500, 1500, 1500, 1500, 1500}; 
 
+struct rc_input {
+	struct pin_state ps; 
+	struct pt thread; 
+	timestamp_t last_activity; 
+};
+
 struct multiwii_board {
 	uint16_t 				rc_values[6]; 
-	timestamp_t 		rc_reset_timeout; 
 	pio_dev_t 			gpio0; 
 	i2c_dev_t 			twi0; 
 	struct bmp085 	bmp;
@@ -90,48 +95,33 @@ struct multiwii_board {
 	struct ssd1306 	ssd;
 	struct hcsr04 	hcsr; 
 	int16_t acc_bias_x, acc_bias_y, acc_bias_z; 
+	struct pt 			uthread; 
+	timestamp_t 		time; // time keeping
+	struct rc_input rc_inputs[4]; 
 	struct fc_quad_interface interface; 
 }; 
 
 static struct multiwii_board _brd; 
 static struct multiwii_board *brd = &_brd;
 
-static void reset_rc(void){
-	for(int c = 0; c < 6; c++){
-		brd->rc_values[c] = rc_defaults[c]; 
-	}
+#define COMPUTE_RC_CHAN(ch) {\
+	timestamp_t ticks = timestamp_ticks_to_us(brd->rc_inputs[ch].ps.t_down - brd->rc_inputs[ch].ps.t_up);\
+	if(abs(brd->rc_values[ch] - ticks) > 10 && ticks > RC_MIN && ticks < RC_MAX){\
+		brd->rc_values[ch] = constrain(ticks, 1000, 2000);\
+		brd->rc_inputs[ch].last_activity = timestamp_now(); \
+	}\
 }
 
-static void compute_rc_values(void){
-	timestamp_t t_up, t_down;
-	
-	#define COMPUTE_RC_CHAN(ch) {\
-		timestamp_t ticks = timestamp_ticks_to_us(t_down - t_up);\
-		if(abs(brd->rc_values[ch] - ticks) > 10 && ticks > RC_MIN && ticks < RC_MAX)\
-			brd->rc_values[ch] = constrain(ticks, 1000, 2000);\
+static PT_THREAD(rc_thread(uint8_t c)){
+	static const gpio_pin_t pins[] = {GPIO_RC0, GPIO_RC1, GPIO_RC2, GPIO_RC3}; 
+	PT_BEGIN(&brd->rc_inputs[c].thread); 
+	while(1){
+		gpio_start_read(pins[c], &brd->rc_inputs[c].ps, GP_READ_PULSE_P); 
+		PT_WAIT_WHILE(&brd->rc_inputs[c].thread, gpio_pin_busy(pins[c])); 
+		COMPUTE_RC_CHAN(c); 
 	}
-	uint8_t active = 0; 
-	if(gpio_get_status(GPIO_RC0, &t_up, &t_down) & GP_WENT_LOW){
-		active = 1; 
-		COMPUTE_RC_CHAN(0); 
-	}
-	if(gpio_get_status(GPIO_RC1, &t_up, &t_down) & GP_WENT_LOW){
-		active = 1; 
-		COMPUTE_RC_CHAN(1); 
-	}
-	if(gpio_get_status(GPIO_RC2, &t_up, &t_down) & GP_WENT_LOW){
-		active = 1; 
-		COMPUTE_RC_CHAN(2); 
-	}
-	if(gpio_get_status(GPIO_RC3, &t_up, &t_down) & GP_WENT_LOW){
-		active = 1; 
-		COMPUTE_RC_CHAN(3); 
-	}
-	if(active){
-		brd->rc_reset_timeout = timestamp_from_now_us(1000000);
-	}
+	PT_END(&brd->rc_inputs[c].thread); 
 }
-
 
 void mwii_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right){
 	mwii_write_pwm(MWII_OUT_PWM0, front);
@@ -193,6 +183,12 @@ void mwii_init(void){
 	pwm_init(); 
 	//adc0_init_default(); 
 	sei(); 
+	
+	PT_INIT(&brd->rc_inputs[0].thread); 
+	PT_INIT(&brd->rc_inputs[1].thread); 
+	PT_INIT(&brd->rc_inputs[2].thread); 
+	PT_INIT(&brd->rc_inputs[3].thread); 
+	PT_INIT(&brd->uthread); 
 	
 	// setup printf stuff (specific to avr-libc)
 	fdev_set_udata(&uart_fd, uart_get_serial_interface(0)); 
@@ -256,8 +252,6 @@ void mwii_init(void){
 	gpio_clear(GPIO_MWII_LED); 
 	
 	hcsr04_init(&brd->hcsr, brd->gpio0, GPIO_MWII_HCSR_TRIGGER, GPIO_MWII_HCSR_ECHO); 
-	
-	reset_rc();
 	
 	//mwii_calibrate_mpu6050(); 
 	// let the escs init as well
@@ -349,16 +343,32 @@ void mwii_calibrate_escs_on_reboot(void){
 	// TODO: save a flag and check it upon reboot
 }
 
-void mwii_process_events(void){
-	compute_rc_values(); 
+static PT_THREAD(_mwii_update_thread(void)){
+	struct pt *thr = &brd->uthread; 
+	PT_BEGIN(thr); 
 	
-	mpu6050_thread(&_brd.mpu); 
-	
-	//TIMSK0 |= _BV(TOIE0); 
-	if(timestamp_expired(brd->rc_reset_timeout)){
-		reset_rc(); 
+	while(1){
+		PT_WAIT_UNTIL(thr, timestamp_expired(brd->time)); 
+		
+		// reset rc inputs
+		for(int c = 0; c < 4; c++){
+			rc_thread(c); 
+			if(timestamp_expired(brd->rc_inputs[c].last_activity + timestamp_us_to_ticks(500000))){
+				brd->rc_values[c] = rc_defaults[c]; 
+			}
+		}
+		brd->time = timestamp_from_now_us(10000); 
 	}
 	
+	PT_END(thr); 
+}
+
+void mwii_process_events(void){
+	_mwii_update_thread(); 
+	
+	bmp085_update(&_brd.bmp); 
+	hmc5883l_update(&_brd.hmc); 
+	mpu6050_update(&_brd.mpu); 
 }
 
 void mwii_read_sensors(struct fc_data *data){
@@ -402,13 +412,13 @@ void mwii_read_sensors(struct fc_data *data){
 		&data->mag.y, 
 		&data->mag.z
 	); 
-	
+	*/
 	int16_t sonar = hcsr04_read_distance_in_cm(&brd->hcsr); 
 	data->atmospheric_altitude = bmp085_read_altitude(&brd->bmp); 
 	data->sonar_altitude = (sonar > 0)?((float)sonar / 100.0):-1; 
 	data->temperature = bmp085_read_temperature(&brd->bmp); 
 	data->pressure = bmp085_read_pressure(&brd->bmp); 
-	*/
+	
 	//data->vbat = (adc0_read_cached(2) / 65535.0);
 }
 

@@ -62,9 +62,9 @@ uint8_t	pio_configure_pin(pio_dev_t self, uint16_t pin_number, uint16_t flags){
 }
 
 /// used to get status of the pin. 
-uint8_t pio_get_pin_status(pio_dev_t self, uint16_t pin_number, timestamp_t *t_up, timestamp_t *t_down){
-	return (*self)->get_pin_status(self, pin_number, t_up, t_down);
-}
+//uint8_t pio_get_pin_status(pio_dev_t self, uint16_t pin_number, timestamp_t *t_up, timestamp_t *t_down){
+//	return (*self)->get_pin_status(self, pin_number, t_up, t_down);
+//}
 
 /// used to write byte or int to an io address. If you have pins PA0, PA1 .. PA7 and
 /// your registers are 8 bit long then writing to addr 0 should write all of PA pins
@@ -97,11 +97,85 @@ uint32_t	i2c_start_read(i2c_dev_t dev,
 int16_t i2c_stop(i2c_dev_t dev){
 	return (*dev)->stop(dev); 
 }
-
+/*
 void i2c_wait(i2c_dev_t dev, uint8_t addr){
 	(*dev)->wait(dev, addr); 
 }
-
+*/
 uint8_t i2c_busy(i2c_dev_t dev){
 	return (*dev)->busy(dev); 
+}
+
+uint8_t i2c_aquire(i2c_dev_t dev){
+	return (*dev)->aquire(dev); 
+}
+
+void i2c_release(i2c_dev_t dev){
+	(*dev)->release(dev); 
+}
+
+PT_THREAD(i2c_read_reg_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t bytes)){
+	PT_BEGIN(thr); 
+	
+	if(bytes < 1) PT_EXIT(thr); 
+	
+	buff[0] = reg;
+	
+	PT_WAIT_UNTIL(thr, i2c_aquire(i2c)); 
+	
+	i2c_start_write(i2c, addr, buff, 1);
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_start_read(i2c, addr, buff, bytes);
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_stop(i2c); 
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_release(i2c); 
+	
+	PT_END(thr); 
+}
+
+/// same as read_reg but with a stop (split transaction)
+PT_THREAD(i2c_read_reg_thread_sp(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t bytes)){
+	PT_BEGIN(thr); 
+	
+	if(bytes < 1) PT_EXIT(thr); 
+	
+	buff[0] = reg;
+	
+	PT_WAIT_UNTIL(thr, i2c_aquire(i2c)); 
+	
+	i2c_start_write(i2c, addr, buff, 1);
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_stop(i2c); 
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_start_read(i2c, addr, buff, bytes);
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_stop(i2c); 
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_release(i2c); 
+	
+	PT_END(thr); 
+}
+
+PT_THREAD(i2c_write_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t *buff, uint8_t bytes)){
+	PT_BEGIN(thr); 
+	
+	PT_WAIT_UNTIL(thr, i2c_aquire(i2c)); 
+	
+	i2c_start_write(i2c, addr, buff, bytes);
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_stop(i2c); 
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_release(i2c); 
+	
+	PT_END(thr); 
 }

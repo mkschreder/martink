@@ -31,12 +31,12 @@ const struct pin_decl gPinPorts[4] = {
 };
 
 volatile struct pin_state *_pin_states[GPIO_COUNT - GPIO_PB0] = {0}; 
-static volatile uint8_t _pins_enabled[4] = {0}; 
+//static volatile uint8_t _pins_enabled[4] = {0}; 
 
 uint8_t gpio_pin_busy(gpio_pin_t pin){
 	if(pin < GPIO_PB0 || pin > GPIO_PD7) return 0; 
 	pin = (pin - GPIO_PB0); 
-	return _pins_enabled[(pin >> 3) & 0x3] & (1 << (pin & 0x07)); 
+	return _pin_states[pin] != 0; //_pins_enabled[(pin >> 3) & 0x3] & (1 << (pin & 0x07)); 
 }
 
 int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t flags){
@@ -66,7 +66,7 @@ static void PCINT_vect(void){
 	uint8_t pin_id = 0; 
 	for(int reg = 0; reg < 3; reg++){
 		for(int bit = 0; bit < 8; bit++){
-			if(	_pin_states[pin_id] && (changed[reg] & _BV(bit)) ){
+			if(	_pin_states[pin_id] != 0 && (changed[reg] & _BV(bit)) ){
 				volatile struct pin_state *st = _pin_states[pin_id]; 
 				if(current[reg] & _BV(bit)){ // if pin went high
 					st->t_up = time; 

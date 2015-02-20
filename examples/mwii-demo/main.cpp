@@ -51,8 +51,8 @@ PT_THREAD(app_thread(struct application *app)){
 		PT_WAIT_WHILE(&app->thread, adc_busy()); 
 		printf("Measured to %u in %lu us\n", app->adc, (uint32_t)timestamp_ticks_to_us((timestamp_now() - app->time))); 
 		printf("Reading N pulse..\n"); 
-		gpio_start_read(MWII_GPIO_D12, &app->state, GP_READ_PULSE_P); 
-		PT_WAIT_WHILE(&app->thread, gpio_pin_busy(MWII_GPIO_D12)); 
+		gpio_start_read(MWII_GPIO_D9, &app->state, GP_READ_PULSE_P); 
+		PT_WAIT_WHILE(&app->thread, gpio_pin_busy(MWII_GPIO_D9)); 
 		printf("Pulse length: %lu\n", timestamp_ticks_to_us((app->state.t_down - app->state.t_up))); 
 		float ax, ay, az; 
 		timestamp_t t = timestamp_now(); 
@@ -60,6 +60,12 @@ PT_THREAD(app_thread(struct application *app)){
 		t = timestamp_ticks_to_us(timestamp_now() - t); 
 		printf("ACC: %d %d %d, time: %lu us\n", 
 			(int16_t)(ax * 1000), (int16_t)(ay * 1000), (int16_t)(az * 1000), (uint32_t)t);  
+		printf("TEMP: %d, PRES: %lu\n", (int16_t)(mwii_read_temperature_c() * 10), (long)mwii_read_pressure_pa()); 
+		float x, y, z; 
+		mwii_read_magnetic_field(&x, &y, &z); 
+		printf("MAG: %d %d %d\n", 
+			(int16_t)(x * 10), (int16_t)(y * 10), (int16_t)(z * 10));  
+		
 		//app->time = timestamp_from_now_us(1000000); 
 		//PT_WAIT_UNTIL(&app->thread, timestamp_expired(app->time)); 
 	}
@@ -73,10 +79,19 @@ int main(void){
 	app.uart = mwii_get_uart_interface(); 
 	
 	gpio_configure(MWII_GPIO_A1, GP_INPUT | GP_PULLUP | GP_ANALOG); 
+	gpio_configure(MWII_GPIO_D9, GP_INPUT | GP_PULLUP | GP_PCINT); 
 	
+	timestamp_t time = 0; 
+	uint32_t frames = 0; 
 	while(1){
 		app_thread(&app); 
 		mwii_process_events(); 
+		if(timestamp_expired(time)){
+			printf("FPS: %lu\n", frames); 
+			time = timestamp_from_now_us(1000000); 
+			frames = 0; 
+		}
+		frames++; 
 		/*
 		static timestamp_t t = 0; 
 		if(timestamp_expired(t)){

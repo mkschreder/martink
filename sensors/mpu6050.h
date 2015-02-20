@@ -37,14 +37,28 @@
 
 #include <thread/pt.h>
 
+enum {
+	MPU6050_REG_PWR_MGMT_1, 
+	MPU6050_REG_CONFIG,
+	MPU6050_REG_SMPLRT_DIV,
+	MPU6050_REG_GYRO_CONFIG,
+	MPU6050_REG_ACCEL_CONFIG,
+	MPU6050_REG_INT_PIN_CFG,
+	MPU6050_REG_USER_CTRL,
+	MPU6050_REG_COUNT
+}; 
+
 struct mpu6050{
 	i2c_dev_t i2c;
 	uint8_t addr;
+	// cached data
 	int16_t raw_ax, raw_ay, raw_az; 
 	int16_t raw_gx, raw_gy, raw_gz; 
-	struct pt thread, rbthread; 
-	uint8_t buffer[6]; 
-	timestamp_t time; 
+	// threads
+	struct pt uthread, rthread, wthread, ithread; 
+	uint8_t buffer[6]; // i2c buffer
+	timestamp_t time; // for time keeping
+	uint8_t state; // status 
 }; 
 
 //definitions
@@ -53,8 +67,8 @@ struct mpu6050{
 
 //functions
 void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr);
+void mpu6050_update(struct mpu6050 *self); 
 uint8_t mpu6050_probe(struct mpu6050 *self);
-PT_THREAD(mpu6050_thread(struct mpu6050 *self)); 
 
 //#if MPU6050_GETATTITUDE == 0
 void mpu6050_readRawAcc(struct mpu6050 *self, int16_t* ax, int16_t* ay, int16_t* az);

@@ -113,7 +113,7 @@ struct pin_state {
 	volatile uint8_t flags; 
 }; 
 
-extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0]; 
+//extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0]; 
 
 #define RIDX(pin) 	((pin > 0)?(((pin - 1) & 0xf8) >> 3):0)
 #define PIDX(pin) 	((pin > 0)?((pin - 1) & 0x07):0)
@@ -159,8 +159,8 @@ void gpio_enable_pcint(gpio_pin_t pin);
 )
 
 #if defined(CONFIG_GPIO_PIN_STATES)
-	extern uint8_t gpio_get_status(gpio_pin_t pin, 
-		timestamp_t *ch_up, timestamp_t *ch_down);
+	//extern uint8_t gpio_get_status(gpio_pin_t pin, 
+	//	timestamp_t *ch_up, timestamp_t *ch_down);
 #endif
 
 // attempt to gather entropy from floating gpio pin

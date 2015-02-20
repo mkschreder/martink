@@ -31,7 +31,7 @@
 #include <math.h>  //include libm
 #endif
 
-static uint8_t buffer[14];
+//static uint8_t buffer[14];
 
 //enable the getattitude functions
 //because we do not have a magnetometer, we have to start the chip always in the same position
@@ -91,8 +91,154 @@ static uint8_t buffer[14];
 #define MPU6050_GZGAIN 16.4
 #endif
 
+#define MPU6050_STATE_INITIALIZED (1 << 0)
+
 #include <thread/pt.h>
 
+static PT_THREAD(_mpu6050_init_thread(struct mpu6050 *self)){
+	struct pt *thr = &self->ithread; 
+	struct pt *wthr = &self->wthread; 
+	PT_BEGIN(thr); 
+	
+	// wait until the device is no longer initialized
+	// this will run the init sequence as soon as the device is no longer 
+	// initialized. 
+	PT_WAIT_UNTIL(thr, !(self->state & MPU6050_STATE_INITIALIZED)); 
+	
+	//allow mpu6050 chip clocks to start up
+	self->time = timestamp_from_now_us(100000L); 
+	PT_WAIT_UNTIL(thr, timestamp_expired(self->time)); 
+
+	//	reset the device 
+	self->buffer[0] = MPU6050_RA_PWR_MGMT_1; 
+	self->buffer[1] = MPU6050_PWR1_CLOCK_PLL_XGYRO;
+	PT_SPAWN(thr, wthr, i2c_write_thread(self->i2c, wthr, self->addr, self->buffer, 2)); 
+	
+	//wake up/reset delay needed
+	self->time = timestamp_from_now_us(10000L); 
+	PT_WAIT_UNTIL(thr, timestamp_expired(self->time)); 
+	
+	// set low pass filter bits 
+	self->buffer[0] = MPU6050_RA_CONFIG; 
+	self->buffer[1] = MPU6050_CFG_DLPF_BW_42; 
+	PT_SPAWN(thr, wthr, i2c_write_thread(self->i2c, wthr, self->addr, self->buffer, 2)); 
+	
+	// set sample rate divider for the gyro and accelerometer
+	self->buffer[0] = MPU6050_RA_SMPLRT_DIV; 
+	self->buffer[1] = 4; //1khz / (1 + 4) = 200Hz
+	PT_SPAWN(thr, wthr, i2c_write_thread(self->i2c, wthr, self->addr, self->buffer, 2)); 
+	
+	// set gyro full scale range to 2000 deg / sec
+	self->buffer[0] = MPU6050_RA_GYRO_CONFIG; 
+	self->buffer[1] = MPU6050_GYRO_CONFIG_FS_2000; 
+	PT_SPAWN(thr, wthr, i2c_write_thread(self->i2c, wthr, self->addr, self->buffer, 2)); 
+	
+	// set acc full scale to 2g 
+	self->buffer[0] = MPU6050_RA_ACCEL_CONFIG; 
+	self->buffer[1] = MPU6050_ACCEL_CONFIG_FS_2; 
+	PT_SPAWN(thr, wthr, i2c_write_thread(self->i2c, wthr, self->addr, self->buffer, 2)); 
+	
+	// enable i2c bypass
+	self->buffer[0] = MPU6050_RA_INT_PIN_CFG; 
+	self->buffer[1] = MPU6050_INTCFG_I2C_BYPASS_EN; 
+	PT_SPAWN(thr, wthr, i2c_write_thread(self->i2c, wthr, self->addr, self->buffer, 2)); 
+	
+	// set all bits in user register to zero 
+	self->buffer[0] = MPU6050_RA_USER_CTRL; 
+	self->buffer[1] = 0; 
+	PT_SPAWN(thr, wthr, i2c_write_thread(self->i2c, wthr, self->addr, self->buffer, 2)); 
+	
+	self->state |= MPU6050_STATE_INITIALIZED; 
+	
+	PT_END(thr); 
+}
+
+static PT_THREAD(_mpu6050_update_thread(struct mpu6050 *self)){
+	struct pt *rthr = &self->rthread; 
+	struct pt *thr = &self->uthread; 
+	uint8_t *buf = self->buffer; 
+			
+	PT_BEGIN(thr); 
+	
+	// wait until the init sequence has completed
+	PT_WAIT_UNTIL(thr, self->state & MPU6050_STATE_INITIALIZED); 
+	
+	// get the data from sensor at regular intervals
+	while(1){
+		self->time = timestamp_now(); 
+		
+		PT_SPAWN(thr, rthr, 
+			i2c_read_reg_thread(self->i2c, rthr, self->addr, MPU6050_RA_ACCEL_XOUT_H, self->buffer, 6)); 
+		self->raw_ax = (((int16_t)buf[0]) << 8) | buf[1];
+		self->raw_ay = (((int16_t)buf[2]) << 8) | buf[3];
+		self->raw_az = (((int16_t)buf[4]) << 8) | buf[5];
+		
+		PT_SPAWN(thr, rthr, 
+			i2c_read_reg_thread(self->i2c, rthr, self->addr, MPU6050_RA_GYRO_XOUT_H, self->buffer, 6)); 
+		self->raw_gx = (((int16_t)buf[0]) << 8) | buf[1];
+		self->raw_gy = (((int16_t)buf[2]) << 8) | buf[3];
+		self->raw_gz = (((int16_t)buf[4]) << 8) | buf[5];
+	
+		// limit to 10ms between requests
+		self->time = timestamp_from_now_us(10000 - timestamp_ticks_to_us(timestamp_now() - self->time)); 
+		PT_WAIT_UNTIL(thr, timestamp_expired(self->time)); 
+	}
+	
+	PT_END(thr); 
+}
+
+
+void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr) {
+	self->i2c = i2c; 
+	self->addr = addr;
+	self->state = 0; 
+	
+	PT_INIT(&self->uthread); // update
+	PT_INIT(&self->rthread); // read
+	PT_INIT(&self->wthread); // write
+	PT_INIT(&self->ithread); // init
+}
+
+void mpu6050_update(struct mpu6050 *self){
+	if(!(self->state & MPU6050_STATE_INITIALIZED))
+		_mpu6050_init_thread(self); 
+	else 
+		_mpu6050_update_thread(self); 
+}
+
+//********************
+// IMMEDIATE METHODS
+//********************
+
+
+void mpu6050_readRawAcc(struct mpu6050 *self, int16_t* ax, int16_t* ay, int16_t* az){
+	*ax = self->raw_ax; 
+	*ay = self->raw_ay; 
+	*az = self->raw_az; 
+}
+
+void mpu6050_readRawGyr(struct mpu6050 *self, int16_t* gx, int16_t* gy, int16_t* gz){
+	*gx = self->raw_gx; 
+	*gy = self->raw_gy; 
+	*gz = self->raw_gz; 
+}
+
+void mpu6050_convertAcc(struct mpu6050 *self, int16_t ax, int16_t ay, int16_t az, float *axg, float *ayg, float *azg){
+	(void)(self); 
+	*axg = (float)(ax-MPU6050_AXOFFSET)/MPU6050_AXGAIN;
+	*ayg = (float)(ay-MPU6050_AYOFFSET)/MPU6050_AYGAIN;
+	*azg = (float)(az-MPU6050_AZOFFSET)/MPU6050_AZGAIN;
+}
+
+void mpu6050_convertGyr(struct mpu6050 *self, int16_t gx, int16_t gy, int16_t gz, float *gxd, float *gyd, float *gzd){
+	(void)(self); 
+	*gxd = (float)(gx-MPU6050_GXOFFSET)/MPU6050_GXGAIN;
+	*gyd = (float)(gy-MPU6050_GYOFFSET)/MPU6050_GYGAIN;
+	*gzd = (float)(gz-MPU6050_GZOFFSET)/MPU6050_GZGAIN;
+}
+
+
+/*
 static int8_t mpu6050_readBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t *data) {
 	i2c_start_write(self->i2c, self->addr, &regAddr, 1);
 	delay_us(10);
@@ -101,16 +247,10 @@ static int8_t mpu6050_readBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t l
 	return length; 
 }
 
-/*
- * read 1 byte from chip register
- */
 static int8_t mpu6050_readByte(struct mpu6050 *self, uint8_t regAddr, uint8_t *data) {
     return mpu6050_readBytes(self, regAddr, 1, data);
 }
 
-/*
- * write bytes to chip register
- */
 static void mpu6050_writeBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t* data) {
 	uint8_t wr[16] = {regAddr};
 	length &= 0x0f; 
@@ -122,16 +262,10 @@ static void mpu6050_writeBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t le
 	}
 }
 
-/*
- * write 1 byte to chip register
- */
 static void mpu6050_writeByte(struct mpu6050 *self, uint8_t regAddr, uint8_t data) {
   return mpu6050_writeBytes(self, regAddr, 1, &data);
 }
 
-/*
- * read bits from chip register
- */
 static int8_t mpu6050_readBits(struct mpu6050 *self, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t *data) {
     // 01101001 read byte
     // 76543210 bit numbers
@@ -179,6 +313,13 @@ static void mpu6050_writeBit(struct mpu6050 *self, uint8_t regAddr, uint8_t bitN
 	mpu6050_writeByte(self, regAddr, b);
 }
 
+static PT_THREAD(mpu6050_writeBit(struct mpu6050 *self, uint8_t regAddr, uint8_t bitNum, uint8_t data)) {
+	uint8_t b;
+	mpu6050_readByte(self, regAddr, &b);
+	b = (data != 0) ? (b | (1 << bitNum)) : (b & ~(1 << bitNum));
+	mpu6050_writeByte(self, regAddr, b);
+}*/
+/*
 int8_t mpu6050_getTCXGyroOffset(struct mpu6050 *self) {
 	mpu6050_readBits(self, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, buffer);
     return buffer[0];
@@ -244,9 +385,9 @@ void mpu6050_setZGyroOffset(struct mpu6050 *self, int16_t offset) {
 	mpu6050_writeByte(self, MPU6050_RA_ZG_OFFS_USRH, buf[0]);
 	mpu6050_writeByte(self, MPU6050_RA_ZG_OFFS_USRL, buf[1]);
 }
-
+*/
 /*** ACCELEROMETER OFFSETS ***/
-
+/*
 int16_t mpu6050_getXAccOffset(struct mpu6050 *self) {
 	uint8_t buf[2]; 
 	mpu6050_readByte(self, MPU6050_RA_XA_OFFS_H, &buf[0]);
@@ -297,22 +438,27 @@ uint8_t mpu6050_probe(struct mpu6050 *self) {
 	else
 		return 0;
 }
+*/
 
 /*
  * initialize the accel and gyro
  */
+ /*
 void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr) {
 	self->i2c = i2c; 
 	self->addr = addr;
+	self->flags = 0; 
 	
-	PT_INIT(&self->thread); 
-	PT_INIT(&self->rbthread); 
+	PT_INIT(&self->uthread); // update
+	PT_INIT(&self->rthread); // read
+	PT_INIT(&self->wthread); // write
+	PT_INIT(&self->ithread); // init
 	
 	//allow mpu6050 chip clocks to start up
 	delay_us(100000L);
 
 	//set sleep disabled
-	mpu6050_setSleepDisabled(self);
+	mpu6050_writeBit(self, MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_SLEEP_BIT, 0);
 	
 	//wake up delay needed sleep disabled
 	delay_us(10000L);
@@ -339,86 +485,4 @@ void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr) {
 	#error "Do not enable timer 0 it is in use elsewhere!"
 	//MPU6050_TIMER0INIT
 	#endif
-}
-
-void mpu6050_readRawAcc(struct mpu6050 *self, int16_t* ax, int16_t* ay, int16_t* az){
-	//mpu6050_readBytes(self, MPU6050_RA_ACCEL_XOUT_H, 6, (uint8_t *)buffer);
-
-	*ax = self->raw_ax; //(((int16_t)buffer[0]) << 8) | buffer[1];
-	*ay = self->raw_ay; //(((int16_t)buffer[2]) << 8) | buffer[3];
-	*az = self->raw_az; //(((int16_t)buffer[4]) << 8) | buffer[5];
-}
-
-void mpu6050_readRawGyr(struct mpu6050 *self, int16_t* gx, int16_t* gy, int16_t* gz){
-	//mpu6050_readBytes(self, MPU6050_RA_GYRO_XOUT_H, 6, (uint8_t *)buffer);
-
-	*gx = self->raw_gx; //(((int16_t)buffer[0]) << 8) | buffer[1];
-	*gy = self->raw_gy; //(((int16_t)buffer[2]) << 8) | buffer[3];
-	*gz = self->raw_gz; //(((int16_t)buffer[4]) << 8) | buffer[5];
-}
-
-void mpu6050_convertAcc(struct mpu6050 *self, int16_t ax, int16_t ay, int16_t az, float *axg, float *ayg, float *azg){
-	(void)(self); 
-	*axg = (float)(ax-MPU6050_AXOFFSET)/MPU6050_AXGAIN;
-	*ayg = (float)(ay-MPU6050_AYOFFSET)/MPU6050_AYGAIN;
-	*azg = (float)(az-MPU6050_AZOFFSET)/MPU6050_AZGAIN;
-}
-
-void mpu6050_convertGyr(struct mpu6050 *self, int16_t gx, int16_t gy, int16_t gz, float *gxd, float *gyd, float *gzd){
-	(void)(self); 
-	*gxd = (float)(gx-MPU6050_GXOFFSET)/MPU6050_GXGAIN;
-	*gyd = (float)(gy-MPU6050_GYOFFSET)/MPU6050_GYGAIN;
-	*gzd = (float)(gz-MPU6050_GZOFFSET)/MPU6050_GZGAIN;
-}
-
-static PT_THREAD(mpu6050_readThread(struct mpu6050 *self, uint8_t regAddr)){
-	PT_BEGIN(&self->rbthread); 
-	
-	self->buffer[0] = regAddr; 
-	
-	i2c_start_write(self->i2c, self->addr, self->buffer, 1);
-	PT_WAIT_WHILE(&self->rbthread, i2c_busy(self->i2c)); 
-	
-	i2c_start_read(self->i2c, self->addr, self->buffer, 6);
-	PT_WAIT_WHILE(&self->rbthread, i2c_busy(self->i2c)); 
-	
-	i2c_stop(self->i2c); 
-	PT_WAIT_WHILE(&self->rbthread, i2c_busy(self->i2c)); 
-	
-	PT_END(&self->rbthread); 
-}
-
-PT_THREAD(mpu6050_thread(struct mpu6050 *self)){
-	PT_BEGIN(&self->thread); 
-	
-	while(1){
-		self->time = timestamp_now(); 
-		
-		PT_SPAWN(&self->thread, &self->rbthread, mpu6050_readThread(self, MPU6050_RA_ACCEL_XOUT_H)); 
-		
-		{
-			uint8_t *buf = self->buffer; 
-			
-			self->raw_ax = (((int16_t)buf[0]) << 8) | buf[1];
-			self->raw_ay = (((int16_t)buf[2]) << 8) | buf[3];
-			self->raw_az = (((int16_t)buf[4]) << 8) | buf[5];
-		}
-		
-		PT_SPAWN(&self->thread, &self->rbthread, mpu6050_readThread(self, MPU6050_RA_GYRO_XOUT_H)); 
-		
-		{
-			uint8_t *buf = self->buffer; 
-			
-			self->raw_gx = (((int16_t)buf[0]) << 8) | buf[1];
-			self->raw_gy = (((int16_t)buf[2]) << 8) | buf[3];
-			self->raw_gz = (((int16_t)buf[4]) << 8) | buf[5];
-		}
-		
-		// limit to 10ms between requests
-		self->time = timestamp_from_now_us(10000 - timestamp_ticks_to_us(timestamp_now() - self->time)); 
-		PT_WAIT_UNTIL(&self->thread, timestamp_expired(self->time)); 
-	}
-	
-	PT_END(&self->thread); 
-}
-
+}*/

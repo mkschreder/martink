@@ -24,6 +24,8 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+#include <thread/pt.h>
+
 #include "time.h"
 
 /**
@@ -196,7 +198,7 @@ struct pio_if {
 	/// useful for writing libraries that need to measure pulse intervals. The values
 	/// of t_up and t_down must be updated by the implementation as way of measuring when
 	/// the pin went high and when it goes low. Default value returned must be 0. 
-	uint8_t (*get_pin_status)(pio_dev_t self, uint16_t pin_number, timestamp_t *t_up, timestamp_t *t_down);
+	//uint8_t (*get_pin_status)(pio_dev_t self, uint16_t pin_number, timestamp_t *t_up, timestamp_t *t_down);
 	/// used to write byte or int to an io address. If you have pins PA0, PA1 .. PA7 and
 	/// your registers are 8 bit long then writing to addr 0 should write all of PA pins
 	/// at the same time. For implementations with larger registers, more bits may be
@@ -221,7 +223,7 @@ uint8_t pio_read_pin(pio_dev_t self, uint16_t pin_number);
 uint8_t	pio_configure_pin(pio_dev_t self, uint16_t pin_number, uint16_t flags);
 
 /// used to get status of the pin. 
-uint8_t pio_get_pin_status(pio_dev_t self, uint16_t pin_number, timestamp_t *t_up, timestamp_t *t_down);
+//uint8_t pio_get_pin_status(pio_dev_t self, uint16_t pin_number, timestamp_t *t_up, timestamp_t *t_down);
 
 /// used to write byte or int to an io address. If you have pins PA0, PA1 .. PA7 and
 /// your registers are 8 bit long then writing to addr 0 should write all of PA pins
@@ -254,9 +256,11 @@ struct i2c_interface {
 	/// returns -1 on fail and 1 on success
 	int16_t 			(*stop)(i2c_dev_t self); 
 	
-	void	(*wait)(i2c_dev_t self, uint8_t addr); 
+	//void	(*wait)(i2c_dev_t self, uint8_t addr); 
 	
 	uint8_t (*busy)(i2c_dev_t self); 
+	uint8_t (*aquire)(i2c_dev_t self); 
+	void 		(*release)(i2c_dev_t self); 
 };
 
 uint32_t i2c_start_write(i2c_dev_t dev,
@@ -267,9 +271,17 @@ uint32_t	i2c_start_read(i2c_dev_t dev,
 
 int16_t i2c_stop(i2c_dev_t dev);
 
-void i2c_wait(i2c_dev_t dev, uint8_t addr); 
+//void i2c_wait(i2c_dev_t dev, uint8_t addr); 
 
 uint8_t i2c_busy(i2c_dev_t dev); 
+
+uint8_t i2c_aquire(i2c_dev_t dev); 
+
+void i2c_release(i2c_dev_t dev); 
+
+PT_THREAD(i2c_read_reg_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t bytes)); 
+PT_THREAD(i2c_read_reg_thread_sp(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t bytes)); 
+PT_THREAD(i2c_write_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t *buff, uint8_t bytes)); 
 
 /**
  * Memory interface can be used for any storage medium

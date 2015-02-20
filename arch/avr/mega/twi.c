@@ -163,6 +163,20 @@ ISR(TWI_vect)
 }
 
 /* _____FUNCTIONS_____________________________________________________ */
+
+static uint8_t _lock = 0; 
+
+uint8_t twi_aquire(uint8_t dev_id){
+	if(dev_id >= 1 || _lock) return 0; 
+	_lock = 1; 
+	return 1; 
+}
+
+void twi_release(uint8_t dev_id){
+	(void)dev_id; 
+	_lock = 0; 
+}
+
 int8_t twi_init(uint8_t dev_id)
 {
 	// only one twi interface for now
@@ -256,12 +270,13 @@ int8_t twi_stop(uint8_t dev_id)
 	return twi_status == TWI_STATUS_DONE; 
 }
 
+/*
 void twi_wait(uint8_t dev_id, uint8_t addr){
 	// not implemented
 	(void)(dev_id); 
 	(void)(addr); 
 }
-
+*/
 /*
 void twi0_slave_init(uint8_t addr){
 	TWAR = addr; 

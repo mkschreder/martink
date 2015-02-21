@@ -282,6 +282,8 @@ void i2c_release(i2c_dev_t dev);
 PT_THREAD(i2c_read_reg_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t bytes)); 
 PT_THREAD(i2c_read_reg_thread_sp(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t bytes)); 
 PT_THREAD(i2c_write_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t *buff, uint8_t bytes)); 
+/// runs a write of wr_bytes followed by a read of rd_bytes
+PT_THREAD(i2c_write_read_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t *buff, uint8_t wr_bytes, uint16_t rd_bytes)); 
 
 /**
  * Memory interface can be used for any storage medium

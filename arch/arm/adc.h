@@ -1,7 +1,7 @@
 #pragma once
 
 // TODO: BIG todo
-
+/*
 #define ADC_REF_AREF (0)
 #define ADC_REF_AVCC_CAP_AREF (0)
 #define ADC_REF_INTERNAL_2_56V (0)
@@ -51,3 +51,4 @@
 
 #define ADC_MODE_MANUAL (0)
 #define ADC_MODE_AUTOMATIC (1)
+*/

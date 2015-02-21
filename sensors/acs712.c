@@ -30,12 +30,42 @@
 #include <arch/soc.h>
 
 #include "acs712.h"
+#include <thread/pt.h>
 
-float acs712_read_current(uint8_t adc_chan,
-	float sensitivity, float vcc_volt) {
-	(void)(adc_chan); 
-	uint16_t adc_value = adc0_read_immediate_ref(adc_chan, ADC_REF_AVCC_CAP_AREF);
-	float volt = ((float)(adc_value) / (float)(65535)) * vcc_volt;
+void acs712_init(struct acs712 *self, uint8_t adc_chan, uint16_t read_interval_us){
+	self->adc_chan = adc_chan; 
+	self->interval = read_interval_us; 
+	self->raw_value = 0; 
+	self->time = timestamp_now(); 
+	PT_INIT(&self->uthread); 
+}
+
+static PT_THREAD(_acs712_update_thread(struct acs712 *self)){
+	struct pt *thr = &self->uthread; 
+	PT_BEGIN(thr); 
+	
+	while(1){
+		PT_WAIT_UNTIL(thr, self->interval != 0 && timestamp_expired(self->time)); 
+		
+		PT_WAIT_UNTIL(thr, adc_aquire(self->adc_chan)); 
+		
+		adc_start_read(self->adc_chan, &self->raw_value); 
+		
+		PT_WAIT_WHILE(thr, adc_busy()); 
+		
+		self->time = timestamp_from_now_us(self->interval); 
+	}
+	PT_END(thr); 
+}
+
+void acs712_update(struct acs712 *self){
+	_acs712_update_thread(self); 
+}
+
+float acs712_read_current(struct acs712 *self, float sensitivity, float vcc_volt) {
+	if(vcc_volt == 0 || sensitivity == 0) return 0; 
+	//uint16_t adc_value = adc0_read_immediate_ref(adc_chan, ADC_REF_AVCC_CAP_AREF);
+	float volt = ((float)(self->raw_value) / (float)(65535)) * vcc_volt;
 	return (volt - (vcc_volt / 2)) / sensitivity; 
 }
 

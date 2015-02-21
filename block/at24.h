@@ -16,6 +16,7 @@ struct at24 {
 	struct at24_op op; 
 	struct pt thread; 
 	struct pt bthread; 
+	struct pt wthread; 
 	uint8_t status; 
 };
 
@@ -33,3 +34,11 @@ int8_t at24_start_read(struct at24 *self, uint16_t addr, uint8_t *buf, uint16_t 
 uint8_t at24_busy(struct at24 *self); 
 /// main eeprom tick routine
 void at24_update(struct at24 *self); 
+
+// blocking methods
+
+/// waits until eeprom is ready and then waits until write is completed
+uint16_t at24_blocking_write(struct at24 *self, uint16_t addr, const uint8_t *buf, uint16_t count); 
+/// waits until eeprom is ready and then waits until read is completed
+uint16_t at24_blocking_read(struct at24 *self, uint16_t addr, uint8_t *buf, uint16_t count); 
+

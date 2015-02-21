@@ -156,7 +156,8 @@ extern uint8_t _adc_mode;
 		:(0)) \
 )
 
-
+uint8_t adc_aquire(uint8_t chan); 
+void adc_release(void); 
 uint8_t adc_busy(void);
 void adc_start_read(uint8_t channel, volatile uint16_t *value); 
 

@@ -33,5 +33,14 @@
 //setup sensitivity
 #define ACS712_SENSITIVITY ACS712_SENSITIVITY30
 
-float acs712_read_current(uint8_t adc_chan,
-	float sensitivity, float vcc_volt);
+struct acs712 {
+	uint8_t adc_chan; 
+	uint16_t interval; 
+	timestamp_t time; 
+	struct pt uthread; 
+	uint16_t raw_value; 
+}; 
+
+void acs712_init(struct acs712 *self, uint8_t adc_chan, uint16_t read_interval_us);
+void acs712_update(struct acs712 *self);
+float acs712_read_current(struct acs712 *self, float sensitivity, float vcc_volt);

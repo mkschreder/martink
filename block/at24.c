@@ -58,11 +58,14 @@ void at24_init(struct at24 *self, i2c_dev_t i2c)
 	self->i2c = i2c; 
 	PT_INIT(&self->thread); 
 	PT_INIT(&self->bthread); 
+	PT_INIT(&self->wthread); 
+	self->status = 0; 
+	self->op = (struct at24_op){0}; 
 }
 
 int8_t at24_start_write(struct at24 *self, uint16_t eeaddr, const uint8_t* data, uint16_t count){
 	if(at24_busy(self)) return -1; 
-	self->status |= AT24_STATUS_WRITE; 
+	self->status |= (AT24_STATUS_BUSY | AT24_STATUS_WRITE); 
 	self->status &= ~(AT24_STATUS_READ); 
 	self->op.addr = eeaddr; 
 	self->op.wr_data = data; 
@@ -78,7 +81,7 @@ int8_t at24_start_write(struct at24 *self, uint16_t eeaddr, const uint8_t* data,
 
 int8_t at24_start_read(struct at24 *self, uint16_t eeaddr, uint8_t* data, uint16_t count){
 	if(at24_busy(self)) return -1; 
-	self->status |= AT24_STATUS_READ; 
+	self->status |= (AT24_STATUS_BUSY | AT24_STATUS_READ); 
 	self->status &= ~(AT24_STATUS_WRITE); 
 	self->op.addr = eeaddr; 
 	self->op.rd_data = data; 
@@ -91,11 +94,11 @@ int8_t at24_start_read(struct at24 *self, uint16_t eeaddr, uint8_t* data, uint16
 }
 
 uint8_t at24_busy(struct at24 *self){
-	return (self->status & AT24_STATUS_BUSY) != 0; 
+	return (self->status & (AT24_STATUS_READ | AT24_STATUS_WRITE)) != 0; 
 }
 
 uint8_t at24_aquire(struct at24 *self){
-	if(at24_busy(self)) return 0; 
+	if(self->status & AT24_STATUS_BUSY) return 0; 
 	self->status |= AT24_STATUS_BUSY; 
 	return 1; 
 }
@@ -107,46 +110,56 @@ void at24_release(struct at24 *self){
 	// reset flags
 	self->status &= ~(AT24_STATUS_READ | AT24_STATUS_WRITE | AT24_STATUS_BUSY); 
 }
-
-// main io thread that shuffles data between the queued operation and the device
-static PT_THREAD(_at24_data_thread(struct pt *thr, struct at24 *self)){
-	uint8_t packet_size = (sizeof(self->op.buffer) - 2); 
+/*
+static PT_THREAD(_at24_write_thread(struct pt *thr, struct at24 *self)){
+	const uint8_t packet_size = (sizeof(self->op.buffer) - 2); 
 	
 	PT_BEGIN(thr); 
 	
-	PT_WAIT_UNTIL(thr, self->status & AT24_STATUS_BUSY); 
+	while(1){
+		self->op.len = (self->op.size > packet_size)?packet_size:self->op.size; 
+		self->op.size -= self->op.len; 
+		memcpy(self->op.buffer + 2, self->op.wr_data, self->op.len); 
+		
+		PT_SPAWN(thr, &self->bthread, 
+			i2c_write_thread(self->i2c, &self->bthread, EEPROM_ADDR, self->op.buffer, self->op.len)); 
+		
+		self->op.wr_data += self->op.len; 
+		
+		if(self->op.size == 0) PT_EXIT(thr); 
+	}
+	
+	PT_END(thr); 
+}
+*/
+// main io thread that shuffles data between the queued operation and the device
+static PT_THREAD(_at24_data_thread(struct pt *thr, struct at24 *self)){
+	
+	PT_BEGIN(thr); 
 	
 	while(1) {
-		if(self->status & AT24_STATUS_WRITE){
+		PT_WAIT_UNTIL(thr, self->status & AT24_STATUS_BUSY); 
+		
+		PT_WAIT_UNTIL(thr, self->op.rd_data != 0 && self->status & AT24_STATUS_READ); 
+		self->op.rd_data[0] = self->op.addr >> 8; 
+		self->op.rd_data[1] = self->op.addr; 
+		
+		PT_SPAWN(thr, &self->bthread, 
+			i2c_write_read_thread(self->i2c, &self->bthread, EEPROM_ADDR, self->op.rd_data, 2, self->op.size));
+		/*
+		if(self->op.wr_data && self->status & AT24_STATUS_WRITE){
 			self->op.buffer[0] = self->op.addr >> 8; 
 			self->op.buffer[1] = self->op.addr; 
-			self->op.len = (self->op.size > packet_size)?packet_size:self->op.size; 
-			self->op.size -= self->op.len; 
-			memcpy(self->op.buffer + 2, self->op.wr_data, self->op.len); 
-			self->op.wr_data += self->op.len; 
 			
-			PT_SPAWN(thr, &self->bthread, 
-				i2c_write_thread(self->i2c, &self->bthread, EEPROM_ADDR, self->op.buffer, self->op.len)); 
-			
-			// are we done?
-			if(self->op.size == 0){
-				self->status &= ~(AT24_STATUS_WRITE | AT24_STATUS_BUSY); 
-				
-				PT_RESTART(thr); 
-			}
-		} else if(self->status & AT24_STATUS_READ && self->op.size > 2){
+			PT_SPAWN(thr, &self->wthread, _at24_write_thread(&self->wthread, self)); 
+		} else if(self->op.rd_data && self->status & AT24_STATUS_READ && self->op.size > 2){
 			self->op.rd_data[0] = self->op.addr >> 8; 
 			self->op.rd_data[1] = self->op.addr; 
 			
 			PT_SPAWN(thr, &self->bthread, 
 				i2c_write_read_thread(self->i2c, &self->bthread, EEPROM_ADDR, self->op.rd_data, 2, self->op.size)); 
-			
-			self->status &= ~(AT24_STATUS_WRITE | AT24_STATUS_BUSY); 
-			
-			PT_RESTART(thr); 
-		} else {
-			PT_YIELD(thr); 
-		}
+		} */
+		self->status = 0; 
 	}
 	
 	PT_END(thr); 
@@ -154,6 +167,28 @@ static PT_THREAD(_at24_data_thread(struct pt *thr, struct at24 *self)){
 
 void at24_update(struct at24 *self){
 	_at24_data_thread(&self->thread, self); 
+}
+
+
+/// waits until eeprom is ready and then waits until write is completed
+uint16_t at24_blocking_write(struct at24 *self, uint16_t addr, const uint8_t *buf, uint16_t count){
+	(void)self; (void)addr; (void)buf; (void)count; 
+	// WRONG
+	while(!at24_aquire(self)) at24_update(self); 
+	at24_start_write(self, addr, buf, count); 
+	//while(at24_busy(self)) at24_update(self); 
+	//at24_release(self); 
+	return count; 
+}
+
+/// waits until eeprom is ready and then waits until read is completed
+uint16_t at24_blocking_read(struct at24 *self, uint16_t addr, uint8_t *buf, uint16_t count){
+	(void)self; (void)addr; (void)buf; (void)count; 
+	while(!at24_aquire(self)) at24_update(self); 
+	at24_start_read(self, addr, buf, count); 
+	//while(at24_busy(self)) at24_update(self); 
+	//at24_release(self); 
+	return count;
 }
 
 /*

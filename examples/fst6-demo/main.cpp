@@ -11,6 +11,63 @@ static int _key_state[32] = {0};
 
 extern char _sdata; 
 
+#define DEMO_STATUS_RD_CONFIG (1 << 0)
+#define DEMO_STATUS_WR_CONFIG (1 << 1)
+
+static uint8_t config[16] = {0}; 
+static uint8_t status = 0; 
+
+static timestamp_t time = 0; 
+
+PT_THREAD(_main_thread(struct pt *thr)){
+	PT_BEGIN(thr); 
+	
+	while(1){
+		PT_WAIT_UNTIL(thr, status & (DEMO_STATUS_WR_CONFIG | DEMO_STATUS_RD_CONFIG)); 
+		if(status & DEMO_STATUS_WR_CONFIG){
+			printf("Writing config... "); 
+			fst6_write_config(config, sizeof(config)); 
+			time = timestamp_from_now_us(1000000); 
+			PT_WAIT_UNTIL(thr, timestamp_expired(time)); 
+			printf("Done!\n"); 
+			status &= ~DEMO_STATUS_WR_CONFIG; 
+		} 
+		if(status & DEMO_STATUS_RD_CONFIG){
+			printf("Reading config... "); 
+			fst6_read_config(config, sizeof(config)); 
+			time = timestamp_from_now_us(1000000); 
+			PT_WAIT_UNTIL(thr, timestamp_expired(time)); 
+			printf("Done!\n"); 
+			printf(": %s\n", config); 
+			status &= ~DEMO_STATUS_RD_CONFIG; 
+		}
+	}
+	
+	PT_END(thr); 
+}
+
+PT_THREAD(_test_thread(struct pt *thr)){
+	PT_BEGIN(thr); 
+	
+	printf("now writing config...\n"); 
+	status |= DEMO_STATUS_WR_CONFIG; 
+	memcpy(config, "Blah blah", 9); 
+	PT_WAIT_UNTIL(thr, !(status & DEMO_STATUS_WR_CONFIG)); 
+	
+	//status |= DEMO_STATUS_RD_CONFIG; 
+	//PT_WAIT_UNTIL(thr, !(status & DEMO_STATUS_RD_CONFIG)); 
+	
+	printf("now reading back..\n"); 
+	memset(config, 0, 15); 
+	status |= DEMO_STATUS_RD_CONFIG; 
+	PT_WAIT_UNTIL(thr, !(status & DEMO_STATUS_RD_CONFIG)); 
+	printf("Data: %s\n", config);
+	
+	PT_WAIT_WHILE(thr, 1); 
+	
+	PT_END(thr); 
+}
+
 int main(void){
 	fst6_init(); 
 	
@@ -18,6 +75,7 @@ int main(void){
 	
 	serial_dev_t screen = fst6_get_screen_serial_interface(); 
 	
+	/*
 	// test config read/write (to eeprom)
 	const char str[] = "Hello World!"; 
 	uint8_t buf[13] = {0}; 
@@ -26,8 +84,16 @@ int main(void){
 	printf("Reading string from config: "); 
 	fst6_read_config(buf, sizeof(str)); 
 	printf("%s\n", buf); 
+	*/
+	
+	struct pt thr_test, thr_main; 
+	PT_INIT(&thr_test); 
+	PT_INIT(&thr_main); 
 	
 	while(1){
+		_main_thread(&thr_main); 
+		_test_thread(&thr_test); 
+		
 		serial_printf(screen, "\x1b[2J\x1b[1;1H"); 
 		serial_printf(screen, "FlySky FS-T6 %dMhz\n", (SystemCoreClock / 1000000UL)); 
 		serial_printf(screen, " LibK example program\n"); 

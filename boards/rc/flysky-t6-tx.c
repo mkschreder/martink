@@ -25,6 +25,14 @@
 
 #define FST6_PWM_SPEAKER PWM_CH11
 
+#define FST6_STATUS_WR_CONFIG (1 << 0)
+#define FST6_STATUS_RD_CONFIG (1 << 1)
+
+struct fst6_config {
+	uint8_t *data; 
+	uint16_t size; 
+}; 
+
 struct fst6 {
 	struct ks0713 disp;
 	struct vt100 vt; 
@@ -34,6 +42,8 @@ struct fst6 {
 	struct pt eethread; 
 	uint32_t keys; 
 	uint16_t ppm_buffer[7]; 
+	
+	uint8_t  status; 
 }; 
 
 static void _fst6_write_ks0713(struct ks0713 *self, uint16_t *data, size_t size){
@@ -92,11 +102,11 @@ fst6_key_mask_t fst6_read_keys(void){
 
 uint16_t fst6_read_stick(fst6_stick_t id){
 	if(id > FST6_STICKS_COUNT) return 0; 
-	return adc_read(id); 
+	return 0; //adc_read(id); 
 }
 
 uint16_t fst6_read_battery_voltage(void){
-	return adc_read(FST6_ADC_BATTERY); 
+	return 0; //adc_read(FST6_ADC_BATTERY); 
 }
 
 void fst6_play_tone(uint32_t freq, uint32_t duration_ms){
@@ -203,15 +213,22 @@ void fst6_init(void){
 	//ppm_configure(PWM_CH14, 0, 0, ppm, 6); 
 	ppm_configure(PWM_CH14, _board.ppm_buffer, 7, 400); 
 }
-
+/*
 static PT_THREAD(_fst6_eeprom_thread(struct pt *thr)){
 	PT_BEGIN(thr); 
 	
+	if(_board.status & FST6_STATUS_WR_CONFIG){
+		
+	} else if(_board.status & FST6_STATUS_RD_CONFIG){
+		
+	}
+	
 	PT_END(thr); 
-}
+}*/
 
 void fst6_process_events(void){
-	_fst6_eeprom_thread(&_board.eethread); 
+	at24_update(&_board.eeprom); 
+	
 	// limit screen updates to 50fps
 	if(timestamp_expired(_board.time_to_render)){
 		ks0713_commit(&_board.disp); 
@@ -226,14 +243,14 @@ void fst6_process_events(void){
 int8_t fst6_write_config(const uint8_t *data, uint16_t size){
 	(void)(data); 
 	(void)(size); 
-	//at24_write(&_board.eeprom, 0, data, size); 
+	at24_start_write(&_board.eeprom, 0, data, size); 
 	return 0; 
 }
 
 int8_t fst6_read_config(uint8_t *data, uint16_t size){
 	(void)(data); 
 	(void)(size); 
-	//at24_read(&_board.eeprom, 0, data, size); 
+	at24_start_read(&_board.eeprom, 0, data, size); 
 	return 0; 
 }
 

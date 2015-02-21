@@ -33,6 +33,15 @@
 
 static volatile uint16_t *_adc_data = 0; 
 
+uint8_t adc_aquire(uint8_t chan){
+	if(chan > 8 || _adc_data) return 0; 
+	return 1; 
+}
+
+void adc_release(void){
+	// in this case, do nothing
+}
+
 uint8_t adc_busy(void){
 	return adc0_conversion_in_progress(); 
 }

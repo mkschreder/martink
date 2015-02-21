@@ -92,9 +92,24 @@ void adc_init(void){
 }
 
 // fast adc read from the dma buffer
-uint16_t adc_read(uint8_t channel)
+int8_t adc_start_read(uint8_t channel, uint16_t *result)
 {
-	if(channel > 8) return 0; 
-	return (uint16_t)((_adc_values[channel]+_adc_values[channel+8]
+	if(channel > 8) return -1; 
+	*result = (uint16_t)((_adc_values[channel]+_adc_values[channel+8]
 					+_adc_values[channel+16]+_adc_values[channel+24])/4); 
+	return 0; 
+}
+
+uint8_t adc_aquire(uint8_t chan){
+	(void)chan; 
+	// always allow because adc is running in background
+	return 1; 
+}
+
+void adc_release(uint8_t chan){
+	(void)chan; 
+}
+
+uint8_t adc_busy(void){
+	return 0; 
 }

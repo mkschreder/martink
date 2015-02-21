@@ -14,10 +14,10 @@
 	You should have received a copy of the GNU General Public License
 	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
-	Author: Martin K. Schröder
+	Author: Martin K. Schröder (threaded, async)
 	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
-
+	
 	Special thanks to:
 	* Davide Gironi, original implementation
 */
@@ -27,6 +27,7 @@
 #include <arch/soc.h>
 
 #include "adxl345.h"
+#include <thread/pt.h>
 
 
 //note: we use only 10 bit resolution
@@ -89,47 +90,61 @@
 #include <math.h>
 #include <string.h>
 
-#if ADXL345_LOWPASSENABLED == 1
-static float axold = 0;
-static float ayold = 0;
-static float azold = 0;
-static uint8_t firstread = 1;
-#endif
+#include <thread/pt.h>
 
-/*
- * initialize the accellerometer
- */
+#define ADXL345_STATUS_INITIALIZED (1 << 0)
+
+#define ADXL345_UPDATE_INTERVAL 10000 // 10ms
+
+static PT_THREAD(_adxl345_thread(struct adxl345 *self)){
+	struct pt *thr = &self->thread; 
+	struct pt *bthr = &self->bthread; 
+	PT_BEGIN(thr); 
+	
+	self->status = 0; 
+	
+	// initialize the device
+	self->buffer[0] = 0x31; self->buffer[1] = ADXL345_RANGE | (ADXL345_FULLRANGE<<3);
+	PT_SPAWN(thr, bthr, i2c_write_thread(self->i2c, bthr, self->addr, self->buffer, 2));
+	self->buffer[0] = 0x2D; self->buffer[1] = 0x00; // disable
+	PT_SPAWN(thr, bthr, i2c_write_thread(self->i2c, bthr, self->addr, self->buffer, 2));
+	self->buffer[0] = 0x2D; self->buffer[1] = 0x16; // standby
+	PT_SPAWN(thr, bthr, i2c_write_thread(self->i2c, bthr, self->addr, self->buffer, 2));
+	self->buffer[0] = 0x2D; self->buffer[1] = 0x08; // enable
+	PT_SPAWN(thr, bthr, i2c_write_thread(self->i2c, bthr, self->addr, self->buffer, 2));
+	self->buffer[0] = 0x2E; self->buffer[1] = 0x80; // data_ready on int2
+	PT_SPAWN(thr, bthr, i2c_write_thread(self->i2c, bthr, self->addr, self->buffer, 2));
+	
+	self->status |= ADXL345_STATUS_INITIALIZED; 
+	
+	while(1) {
+		PT_WAIT_UNTIL(thr, timestamp_expired(self->time)); 
+		
+		self->buffer[0] = 0x32; // read register
+		PT_SPAWN(thr, bthr, i2c_write_read_thread(self->i2c, bthr, self->addr, self->buffer, 1, 6)); 
+		
+		self->raw_ax = (uint16_t)self->buffer[0] | ((uint16_t)self->buffer[1] << 8);
+		self->raw_ay = (uint16_t)self->buffer[2] | ((uint16_t)self->buffer[3] << 8);
+		self->raw_az = (uint16_t)self->buffer[4] | ((uint16_t)self->buffer[5] << 8);
+	
+		self->time = timestamp_from_now_us(ADXL345_UPDATE_INTERVAL); 
+	}
+	
+	PT_END(thr); 
+}
+
 void adxl345_init(struct adxl345 *self, i2c_dev_t i2c, uint8_t addr) {
 	self->i2c = i2c;
 	self->addr = (addr)?addr:ADXL345_ADDR; 
-	uint8_t data[2];
-	data[0] = 0x31; data[1] = ADXL345_RANGE | (ADXL345_FULLRANGE<<3);
-	i2c_start_write(i2c, self->addr, data, 2);
-	data[0] = 0x2D; data[1] = 0x00; // disable
-	i2c_start_write(i2c, self->addr, data, 2);
-	data[0] = 0x2D; data[1] = 0x16; // standby
-	i2c_start_write(i2c, self->addr, data, 2);
-	data[0] = 0x2D; data[1] = 0x08; // enable
-	i2c_start_write(i2c, self->addr, data, 2);
-	data[0] = 0x2E; data[1] = 0x80; // data_ready on int2
-	i2c_start_write(i2c, self->addr, data, 2);
-	i2c_stop(i2c); 
+	PT_INIT(&self->thread); 
+	PT_INIT(&self->bthread); 
+}
+
+void adxl345_update(struct adxl345 *self){
+	_adxl345_thread(self); 
 }
 
 /*
- * write the calibration offset
- */
-/*static void adxl345_write_offset(struct adxl345 *self, int8_t offsetx, int8_t offsety, int8_t offsetz) {
-	uint8_t data[2];
-	data[0] = 0x1E; data[1] = offsetx; 
-	i2c_start_write(self->i2c, self->addr, data, 2);
-	data[0] = 0x1F; data[1] = offsety; 
-	i2c_start_write(self->i2c, self->addr, data, 2);
-	data[0] = 0x20; data[1] = offsetz;
-	i2c_start_write(self->i2c, self->addr, data, 2);
-	i2c_stop(self->i2c); 
-}*/
-
 static uint8_t _adxl345_read_register(struct adxl345 *self, uint8_t reg) {
 	uint8_t value; 
 	i2c_start_write(self->i2c, self->addr, &reg, 1);
@@ -146,53 +161,25 @@ static int8_t adxl345_wait_for_data_ready(struct adxl345 *self) {
 	}
 	return 0; 
 }
-
+*/
 int8_t adxl345_read_raw(struct adxl345 *self, int16_t *axraw, int16_t *ayraw, int16_t *azraw){
-	if(adxl345_wait_for_data_ready(self) == -1) return -1;
-
-	//read axis data
-	*axraw = _adxl345_read_register(self, 0x32);
-	*axraw += _adxl345_read_register(self, 0x33) << 8;
-	*ayraw = _adxl345_read_register(self, 0x34);
-	*ayraw += _adxl345_read_register(self, 0x35) << 8;
-	*azraw = _adxl345_read_register(self, 0x36);
-	*azraw += _adxl345_read_register(self, 0x37) << 8;
-
+	*axraw = self->raw_ax; 
+	*ayraw = self->raw_ay; 
+	*azraw = self->raw_az; 
 	return 0; 
 }
 
 int8_t adxl345_read_adjusted(struct adxl345 *self, float *ax, float *ay, float *az) {
-	int16_t axraw = 0;
-	int16_t ayraw = 0;
-	int16_t azraw = 0;
-
-	if(adxl345_read_raw(self, &axraw, &ayraw, &azraw) == -1)
-		return -1;
-	
 	//axisg = mx + b
 	//m is the scaling factor (g/counts), x is the sensor output (counts), and b is the count offset.
 	#if ADXL345_CALIBRATED == 1
-	*ax = (axraw/(float)ADXL345_CALRANGEVALX) + (float)ADXL345_CALOFFSETX;
-	*zy = (ayraw/(float)ADXL345_CALRANGEVALY) + (float)ADXL345_CALOFFSETY;
-	*az = (azraw/(float)ADXL345_CALRANGEVALZ) + (float)ADXL345_CALOFFSETZ;
+	*ax = (self->raw_ax/(float)ADXL345_CALRANGEVALX) + (float)ADXL345_CALOFFSETX;
+	*zy = (self->raw_ay/(float)ADXL345_CALRANGEVALY) + (float)ADXL345_CALOFFSETY;
+	*az = (self->raw_az/(float)ADXL345_CALRANGEVALZ) + (float)ADXL345_CALOFFSETZ;
 	#else
-	*ax = (axraw/(float)ADXL345_RANGEVAL);
-	*ay = (ayraw/(float)ADXL345_RANGEVAL);
-	*az = (azraw/(float)ADXL345_RANGEVAL);
-	#endif
-
-	//this is a simple low pass filter
-	#if ADXL345_LOWPASSENABLED == 1
-	if(!firstread)
-		*ax = (0.75)*(axold) + (0.25)*(*ax);
-	axold = *ax;
-	if(!firstread)
-		*ay = (0.75)*(ayold) + (0.25)*(*ay);
-	ayold = *ay;
-	if(!firstread)
-		*az = (0.75)*(azold) + (0.25)*(*az);
-	azold = *az;
-	firstread = 0;
+	*ax = (self->raw_ax/(float)ADXL345_RANGEVAL);
+	*ay = (self->raw_ay/(float)ADXL345_RANGEVAL);
+	*az = (self->raw_az/(float)ADXL345_RANGEVAL);
 	#endif
 
 	return 0; 

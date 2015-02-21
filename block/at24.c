@@ -65,7 +65,7 @@ int8_t at24_start_write(struct at24 *self, uint16_t eeaddr, const uint8_t* data,
 	self->status |= AT24_STATUS_WRITE; 
 	self->status &= ~(AT24_STATUS_READ); 
 	self->op.addr = eeaddr; 
-	self->op.data = data; 
+	self->op.wr_data = data; 
 	self->op.size = count; 
 	return 0; 
 	/*
@@ -81,7 +81,7 @@ int8_t at24_start_read(struct at24 *self, uint16_t eeaddr, uint8_t* data, uint16
 	self->status |= AT24_STATUS_READ; 
 	self->status &= ~(AT24_STATUS_WRITE); 
 	self->op.addr = eeaddr; 
-	self->op.data = data; 
+	self->op.rd_data = data; 
 	self->op.size = count;
   return 0; 
 	/*uint8_t mbuf[2] = {(uint8_t)(eeaddr >> 8), (uint8_t)eeaddr}; 
@@ -103,12 +103,13 @@ uint8_t at24_aquire(struct at24 *self){
 void at24_release(struct at24 *self){
 	// TODO: correct way to abort a transaction in progress? 
 	if(at24_busy(self)) i2c_stop(self->i2c); 
-	self->op = {0}; 
+	self->op = (struct at24_op){0}; 
 	// reset flags
 	self->status &= ~(AT24_STATUS_READ | AT24_STATUS_WRITE | AT24_STATUS_BUSY); 
 }
 
-PT_THREAD(_at24_data_thread(struct pt *thr, struct at24 *self)){
+// main io thread that shuffles data between the queued operation and the device
+static PT_THREAD(_at24_data_thread(struct pt *thr, struct at24 *self)){
 	uint8_t packet_size = (sizeof(self->op.buffer) - 2); 
 	
 	PT_BEGIN(thr); 
@@ -121,8 +122,8 @@ PT_THREAD(_at24_data_thread(struct pt *thr, struct at24 *self)){
 			self->op.buffer[1] = self->op.addr; 
 			self->op.len = (self->op.size > packet_size)?packet_size:self->op.size; 
 			self->op.size -= self->op.len; 
-			memcpy(self->op.buffer + 2, self->op.data, self->op.len); 
-			self->op.data += self->op.len; 
+			memcpy(self->op.buffer + 2, self->op.wr_data, self->op.len); 
+			self->op.wr_data += self->op.len; 
 			
 			PT_SPAWN(thr, &self->bthread, 
 				i2c_write_thread(self->i2c, &self->bthread, EEPROM_ADDR, self->op.buffer, self->op.len)); 
@@ -134,11 +135,11 @@ PT_THREAD(_at24_data_thread(struct pt *thr, struct at24 *self)){
 				PT_RESTART(thr); 
 			}
 		} else if(self->status & AT24_STATUS_READ && self->op.size > 2){
-			self->op.data[0] = self->op.addr >> 8; 
-			self->op.data[1] = self->op.addr; 
+			self->op.rd_data[0] = self->op.addr >> 8; 
+			self->op.rd_data[1] = self->op.addr; 
 			
 			PT_SPAWN(thr, &self->bthread, 
-				i2c_write_read_thread(self->i2c, &self->bthread, EEPROM_ADDR, self->op.data, 2, self->op.size)); 
+				i2c_write_read_thread(self->i2c, &self->bthread, EEPROM_ADDR, self->op.rd_data, 2, self->op.size)); 
 			
 			self->status &= ~(AT24_STATUS_WRITE | AT24_STATUS_BUSY); 
 			

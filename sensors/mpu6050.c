@@ -149,7 +149,7 @@ static PT_THREAD(_mpu6050_init_thread(struct mpu6050 *self)){
 	PT_SPAWN(thr, wthr, i2c_write_thread(self->i2c, wthr, self->addr, self->buffer, 2)); 
 	
 	self->state |= MPU6050_STATE_INITIALIZED; 
-	
+
 	PT_END(thr); 
 }
 

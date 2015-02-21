@@ -1,32 +1,12 @@
 #include <arch/soc.h>
 #include "twi.h"
 
-/*
-#define EEPROM_PAGE_SIZE 32
-#define EEPROM_PAGE_MASK 0xFFE0
-
-#define I2C_PINS	(1 << 6 | 1 << 7)
 #define I2C_SPEED 100000UL
 
-#define EEPROM_ADDR 0xA0
-
-typedef enum _state {
-	STATE_IDLE,
-	STATE_START,
-	STATE_ADDRESSED1,
-	STATE_ADDRESSED2,
-	STATE_RESTART,
-	STATE_TRANSFER_START,
-	STATE_TRANSFERRING,
-	STATE_COMPLETING,
-	STATE_COMPLETE,
-	STATE_ERROR
-} STATE;
-
-#define PAGE_ALIGN 1
-*/
-
-#define I2C_SPEED 100000UL
+// specifies operation is in progress
+#define TWI_STATUS_BUSY (1 << 0)
+// specifies that device is currently in use
+#define TWI_STATUS_INUSE (1 << 1)
 
 struct twi_device {
 	I2C_TypeDef *dev; 
@@ -35,16 +15,6 @@ struct twi_device {
 	int rcc_id; 
 	int apb_id; 
 	int pins; 
-	/*
-	DMA_InitTypeDef dma;
-	uint8_t read_write; 
-	uint16_t addr; 
-} _twi_dev[] = {
-	{
-		.dma = {0}, 
-		.read_write = 1, 
-		.addr = 0
-	}*/
 }; 
 
 static const struct twi_device _devices[] = {
@@ -66,6 +36,12 @@ static const struct twi_device _devices[] = {
 	}
 }; 
 
+struct twi_device_data {
+	uint8_t status; 
+}; 
+
+static struct twi_device_data _data[sizeof(_devices) / sizeof(struct twi_device)]; 
+
 #define WAIT(expr) do {} while(expr) //{uint32_t timeout = 10; while((expr) && timeout--) delay_ms(1);}
 
 static I2C_InitTypeDef  I2C_InitStructure; 
@@ -75,6 +51,8 @@ int8_t twi_init(uint8_t dev_id){
 	if(dev_id >= count) return -1; 
 	const struct twi_device *conf = &_devices[dev_id]; 
 
+  _data[dev_id].status = 0; 
+  
 	RCC_APB2PeriphClockCmd ( conf->rcc_gpio, ENABLE); 
 	RCC_APB1PeriphClockCmd(conf->rcc_id, ENABLE);
 	
@@ -109,13 +87,18 @@ void twi_deinit(uint8_t dev_id){
 	if(dev_id >= count) return; 
 	const struct twi_device *conf = &_devices[dev_id]; 
 	I2C_DeInit(conf->dev); 
+	
+  _data[dev_id].status = 0; 
 }
 
 int8_t twi_start_write(uint8_t dev_id, uint8_t adr, const uint8_t *data, uint8_t bytes_to_send){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
 	if(dev_id >= count) return -1; 
 	const struct twi_device *conf = &_devices[dev_id]; 
-
+	if(_data[dev_id].status & TWI_STATUS_BUSY) return -1; 
+	
+  _data[dev_id].status |= TWI_STATUS_BUSY; 
+  
 	/* While the bus is busy */
 	WAIT(I2C_GetFlagStatus(conf->dev, I2C_FLAG_BUSY));
 	/* Send START condition */
@@ -140,6 +123,9 @@ int8_t twi_start_write(uint8_t dev_id, uint8_t adr, const uint8_t *data, uint8_t
 		/* Test on EV8 and clear it */
 		WAIT(!I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 	}
+	
+  _data[dev_id].status &= ~(TWI_STATUS_BUSY); 
+  
 	return 0; 
 }
 
@@ -147,7 +133,10 @@ int8_t twi_start_read(uint8_t dev_id, uint8_t adr, uint8_t *data, uint8_t bytes_
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
 	if(dev_id >= count) return -1; 
 	I2C_TypeDef *dev = _devices[dev_id].dev; 
+	if(_data[dev_id].status & TWI_STATUS_BUSY) return -1; 
 	
+  _data[dev_id].status |= TWI_STATUS_BUSY; 
+  
 	/* Send STRAT condition a second time */  
 	I2C_GenerateSTART(dev, ENABLE);
 
@@ -202,6 +191,8 @@ int8_t twi_start_read(uint8_t dev_id, uint8_t adr, uint8_t *data, uint8_t bytes_
 	/* Enable Acknowledgement to be ready for another reception */
 	I2C_AcknowledgeConfig(dev, ENABLE);
 	
+	_data[dev_id].status &= ~(TWI_STATUS_BUSY); 
+	
 	return 0; 
 }
 
@@ -211,11 +202,33 @@ int8_t twi_stop(uint8_t dev_id){
 	I2C_TypeDef *dev = _devices[dev_id].dev; 
 
 	I2C_GenerateSTOP(dev, ENABLE);
-	//I2C_Cmd(I2C1, DISABLE);
+	
+	_data[dev_id].status &= ~(TWI_STATUS_BUSY); 
 	
   return 0; 
 }
 
+uint8_t twi_busy(uint8_t dev_id){
+	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
+	if(dev_id >= count) return -1; 
+	return _data[dev_id].status & TWI_STATUS_BUSY; 
+}
+
+uint8_t twi_aquire(uint8_t dev_id){
+	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
+	if(dev_id >= count) return 0; 
+	if(_data[dev_id].status & TWI_STATUS_INUSE) return 0;
+	_data[dev_id].status |= TWI_STATUS_INUSE; 
+	return 1; 
+}
+
+void twi_release(uint8_t dev_id){
+	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
+	if(dev_id >= count) return; 
+	_data[dev_id].status &= ~(TWI_STATUS_BUSY | TWI_STATUS_INUSE); 
+}
+
+/*
 void twi_wait(uint8_t dev_id, uint8_t addr){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
 	if(dev_id >= count) return; 
@@ -225,19 +238,14 @@ void twi_wait(uint8_t dev_id, uint8_t addr){
 
 	do
 	{
-		/* Send START condition */
 		I2C_GenerateSTART(dev, ENABLE);
-		/* Read I2C1 SR1 register */
 		SR1_Tmp = I2C_ReadRegister(dev, I2C_Register_SR1); 
-		/* Send EEPROM address for write */
 		I2C_Send7bitAddress(dev, addr, I2C_Direction_Transmitter);
 	}while(!(I2C_ReadRegister(dev, I2C_Register_SR1) & 0x0002));
 
 	(void)(SR1_Tmp); 
 
-	/* Clear AF flag */
 	I2C_ClearFlag(dev, I2C_FLAG_AF);
 
-	/* STOP condition */    
 	I2C_GenerateSTOP(dev, ENABLE);  
-}
+}*/

@@ -27,7 +27,7 @@
 
 #include <arch/soc.h>
 
-#include <static_cbuf.h>
+#include <util/cbuf.h>
 
 #include "uart.h"
 
@@ -76,13 +76,16 @@ static const struct uart_device _devices[] = {
 	}
 }; 
 
+static struct cbuf rx_buffers[sizeof(_devices)/sizeof(struct uart_device)]; 
+static uint8_t rx_data[sizeof(_devices)/sizeof(struct uart_device)][UART_RX_BUFFER_SIZE]; 
+/*
 DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 DECLARE_STATIC_CBUF(uart1_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 DECLARE_STATIC_CBUF(uart2_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 DECLARE_STATIC_CBUF(uart3_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 DECLARE_STATIC_CBUF(uart4_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 DECLARE_STATIC_CBUF(uart5_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-
+*/
 
 int8_t uart_init(uint8_t dev_id, uint32_t baud){
 	USART_InitTypeDef usartConfig;
@@ -93,6 +96,8 @@ int8_t uart_init(uint8_t dev_id, uint32_t baud){
 	
 	const struct uart_device *conf = &_devices[dev_id]; 
 	USART_TypeDef *dev = _devices[dev_id].dev; 
+	
+	cbuf_init(&rx_buffers[dev_id], rx_data[dev_id], UART_RX_BUFFER_SIZE); 
 	
 	USART_DeInit(dev); 
 	
@@ -177,34 +182,15 @@ int8_t		uart_set_baudrate(uint8_t dev_id, uint32_t baud){
 uint16_t uart_getc(uint8_t dev_id){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
 	if(dev_id >= count) return SERIAL_NO_DATA; 
-	
-	USART_TypeDef *dev = _devices[dev_id].dev; 
+	//USART_TypeDef *dev = _devices[dev_id].dev; 
 
 	uint16_t ret = SERIAL_NO_DATA; 
-	USART_ITConfig(dev, USART_IT_RXNE, DISABLE);
+	//USART_ITConfig(dev, USART_IT_RXNE, DISABLE);
 	
-	// TODO: can probably be done better, but for now cbuf works this way..
-	switch(dev_id){
-		case 0: 
-			if(!cbuf_is_empty(&uart0_rx_buf)) { ret = cbuf_get(&uart0_rx_buf); }
-			break;
-		case 1: 
-			if(!cbuf_is_empty(&uart1_rx_buf)) { ret = cbuf_get(&uart1_rx_buf); }
-			break;
-		case 2: 
-			if(!cbuf_is_empty(&uart2_rx_buf)) { ret = cbuf_get(&uart2_rx_buf); }
-			break;
-		case 3: 
-			if(!cbuf_is_empty(&uart3_rx_buf)) { ret = cbuf_get(&uart3_rx_buf); }
-			break;
-		case 4: 
-			if(!cbuf_is_empty(&uart4_rx_buf)) { ret = cbuf_get(&uart4_rx_buf); }
-			break;
-		case 5: 
-			if(!cbuf_is_empty(&uart5_rx_buf)) { ret = cbuf_get(&uart5_rx_buf); }
-			break; 
-	}
-	USART_ITConfig(dev, USART_IT_RXNE, ENABLE);
+	// no need for critical section because cbuffer is threadsafe
+	if(!cbuf_is_empty(&rx_buffers[dev_id])) { ret = cbuf_get(&rx_buffers[dev_id]); }
+	
+	//USART_ITConfig(dev, USART_IT_RXNE, ENABLE);
 	return ret; 
 }
 
@@ -224,8 +210,8 @@ void USART1_IRQHandler(void)
 {
 	if(USART1->SR & USART_FLAG_RXNE){
 		char ch = USART_ReceiveData(USART1);
-		if(!cbuf_is_full(&uart0_rx_buf)){ 
-			cbuf_put(&uart0_rx_buf, ch); 
+		if(!cbuf_is_full(&rx_buffers[0])){ 
+			cbuf_put(&rx_buffers[0], ch); 
 		} 
 	}
 }
@@ -236,8 +222,8 @@ void USART2_IRQHandler(void)
 {
 	if(USART2->SR & USART_FLAG_RXNE){
 		char ch = USART_ReceiveData(USART2);
-		if(!cbuf_is_full(&uart1_rx_buf)){ 
-			cbuf_put(&uart1_rx_buf, ch); 
+		if(!cbuf_is_full(&rx_buffers[1])){ 
+			cbuf_put(&rx_buffers[1], ch); 
 		} 
 	}
 }
@@ -248,8 +234,8 @@ void USART3_IRQHandler(void)
 {
 	if(USART3->SR & USART_FLAG_RXNE){
 		char ch = USART_ReceiveData(USART3);
-		if(!cbuf_is_full(&uart2_rx_buf)){ 
-			cbuf_put(&uart2_rx_buf, ch); 
+		if(!cbuf_is_full(&rx_buffers[2])){ 
+			cbuf_put(&rx_buffers[2], ch); 
 		} 
 	}
 }
@@ -258,18 +244,5 @@ uint16_t uart_waiting(uint8_t dev_id){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
 	if(dev_id >= count) return -1; 
 	
-	USART_TypeDef *dev = _devices[dev_id].dev; 
-	size_t cn = 0; 
-	
-	USART_ITConfig(dev, USART_IT_RXNE, DISABLE);
-	switch(dev_id){
-		case 0: cn = cbuf_get_data_count(&uart0_rx_buf); break; 
-		case 1: cn = cbuf_get_data_count(&uart1_rx_buf); break; 
-		case 2: cn = cbuf_get_data_count(&uart2_rx_buf); break; 
-		case 3: cn = cbuf_get_data_count(&uart3_rx_buf); break; 
-		case 4: cn = cbuf_get_data_count(&uart4_rx_buf); break; 
-		case 5: cn = cbuf_get_data_count(&uart5_rx_buf); break; 
-	}
-	USART_ITConfig(dev, USART_IT_RXNE, ENABLE);
-	return cn; 
+	return cbuf_get_waiting(&rx_buffers[dev_id]); 
 }

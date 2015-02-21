@@ -31,6 +31,7 @@ struct fst6 {
 	struct at24 eeprom; 
 	timestamp_t time_to_render; 
 	timestamp_t pwm_end_time; 
+	struct pt eethread; 
 	uint32_t keys; 
 	uint16_t ppm_buffer[7]; 
 }; 
@@ -122,6 +123,7 @@ void fst6_init(void){
 	//time_init(); 
 	_board.pwm_end_time = 0; 
 	_board.time_to_render = timestamp_now(); 
+	PT_INIT(&_board.eethread); 
 	
 	timestamp_init(); 
 	gpio_init(); 
@@ -202,7 +204,14 @@ void fst6_init(void){
 	ppm_configure(PWM_CH14, _board.ppm_buffer, 7, 400); 
 }
 
+static PT_THREAD(_fst6_eeprom_thread(struct pt *thr)){
+	PT_BEGIN(thr); 
+	
+	PT_END(thr); 
+}
+
 void fst6_process_events(void){
+	_fst6_eeprom_thread(&_board.eethread); 
 	// limit screen updates to 50fps
 	if(timestamp_expired(_board.time_to_render)){
 		ks0713_commit(&_board.disp); 
@@ -217,14 +226,14 @@ void fst6_process_events(void){
 int8_t fst6_write_config(const uint8_t *data, uint16_t size){
 	(void)(data); 
 	(void)(size); 
-	at24_write(&_board.eeprom, 0, data, size); 
+	//at24_write(&_board.eeprom, 0, data, size); 
 	return 0; 
 }
 
 int8_t fst6_read_config(uint8_t *data, uint16_t size){
 	(void)(data); 
 	(void)(size); 
-	at24_read(&_board.eeprom, 0, data, size); 
+	//at24_read(&_board.eeprom, 0, data, size); 
 	return 0; 
 }
 

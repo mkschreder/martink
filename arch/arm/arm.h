@@ -31,14 +31,9 @@
 #include "sam3/sam.h"
 #include "at91sam3xe.h"
 #endif
-/*
-#include "uart.h"
-#include "twi.h"
-#include "spi.h"
-#include "gpio.h"
-#include "time.h"
-#include "adc.h"
-*/
+
+
+#include "atomic.h"
 #include "memory.h"
 
 typedef char * uint_farptr_t; 

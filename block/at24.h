@@ -3,9 +3,10 @@
 #define AT24_PACKET_SIZE 10
 
 struct at24_op {
-	uint8_t *data; 
+	const uint8_t *wr_data; 
+	uint8_t *rd_data; 
 	uint16_t size; // total length
-	uint16_t addr; 
+	uint16_t addr; // eeprom address
 	uint8_t len; // current op length
 	uint8_t buffer[AT24_PACKET_SIZE]; // i2c buffer
 }; 

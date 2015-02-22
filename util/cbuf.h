@@ -9,6 +9,7 @@ struct cbuf {
 	uint8_t *buffer; 
 	int16_t size; 
 	int16_t head, tail; 
+	uint32_t lock; 
 }; 
 
 #ifdef __cplusplus
@@ -23,6 +24,7 @@ int8_t cbuf_is_empty(struct cbuf *self);
 int8_t cbuf_is_full(struct cbuf *self); 
 uint16_t cbuf_get(struct cbuf *self); 
 int8_t cbuf_put(struct cbuf *self, uint8_t data);
+int8_t cbuf_put_isr(struct cbuf *self, uint8_t data);
 uint16_t cbuf_getn(struct cbuf *self, uint8_t *data, uint16_t size); 
 uint16_t cbuf_putn(struct cbuf *self, const uint8_t *data, uint16_t size); 
 uint8_t cbuf_peek(struct cbuf *self, uint16_t pos);

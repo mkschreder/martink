@@ -27,6 +27,7 @@
 
 #define FST6_STATUS_WR_CONFIG (1 << 0)
 #define FST6_STATUS_RD_CONFIG (1 << 1)
+#define FST6_STATUS_BEEP (1 << 2)
 
 struct fst6_config {
 	uint8_t *data; 
@@ -226,18 +227,38 @@ static PT_THREAD(_fst6_eeprom_thread(struct pt *thr)){
 	PT_END(thr); 
 }*/
 
-void fst6_process_events(void){
-	at24_update(&_board.eeprom); 
+LIBK_THREAD(_speaker_silent){
+	static timestamp_t time = 0; 
+	PT_BEGIN(pt); 
 	
-	// limit screen updates to 50fps
-	if(timestamp_expired(_board.time_to_render)){
+	while(1){
+		PT_WAIT_UNTIL(pt, _board.status & FST6_STATUS_BEEP); 
+		// do the beep 
+		time = timestamp_from_now_us(200000); 
+		PT_WAIT_UNTIL(pt, timestamp_expired(time)); 
+	}
+	
+	PT_END(pt); 
+}
+
+LIBK_THREAD(_fst6_ks0713_commit){
+	static timestamp_t time = 0; 
+	PT_BEGIN(pt); 
+	while(1){
+		PT_WAIT_UNTIL(pt, timestamp_expired(time)); 
 		ks0713_commit(&_board.disp); 
-		_board.time_to_render = timestamp_from_now_us(20000); 
+		time = timestamp_from_now_us(20000); 
 	}
-	
-	if(timestamp_expired(_board.pwm_end_time)){
-		pwm_write(FST6_PWM_SPEAKER, 0); 
+	PT_END(pt); 
+}
+
+LIBK_THREAD(_fst6_update){
+	PT_BEGIN(pt); 
+	while(1){
+		at24_update(&_board.eeprom); 
+		PT_YIELD(pt); 
 	}
+	PT_END(pt); 
 }
 
 int8_t fst6_write_config(const uint8_t *data, uint16_t size){

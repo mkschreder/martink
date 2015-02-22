@@ -32,7 +32,7 @@ struct uart_device {
 	struct serial_if *serial; 
 }; 
 
-struct uart_device _uart[UART_COUNT]; 
+struct uart_device _uart[5]; 
 
 #define GET_DEV(s, dev) \
 	struct uart_device *dev = container_of((s), struct uart_device, serial)

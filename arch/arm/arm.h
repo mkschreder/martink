@@ -21,8 +21,6 @@
 
 #pragma once
 
-#define sei() {}
-
 #ifdef CONFIG_STM32
 #include "stm32/stm32.h"
 #endif

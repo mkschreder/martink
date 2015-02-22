@@ -52,35 +52,6 @@
 
 #include <setjmp.h>
 
-LIST_HEAD(_running); 
-LIST_HEAD(_idle); 
-
-void libk_create_thread(struct libk_thread *self, char (*func)(struct pt *)){
-	PT_INIT(&self->thread); 
-	self->proc = func; 
-	list_add_tail(&self->list, &_running); 
-}
-
-void libk_schedule(void){
-	struct list_head *ptr, *n; 
-	list_for_each_safe(ptr, n, &_running){
-		struct libk_thread *thr = container_of(ptr, struct libk_thread, list); 
-		thr->proc(&thr->thread); 
-	}
-}
-
-LIBK_THREAD(_main_thread){
-	static timestamp_t time; 
-	
-	PT_BEGIN(pt); 
-	while(1){
-		PT_WAIT_UNTIL(pt, timestamp_expired(time)); 
-		printf("Main thread!\n"); 
-		time = timestamp_from_now_us(1000000); 
-	}
-	PT_END(pt); 
-}
-
 extern int __cxa_guard_acquire(__guard *g);
 extern void __cxa_guard_release (__guard *g); 
 extern void __cxa_guard_abort (__guard *g); 

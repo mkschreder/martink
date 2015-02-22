@@ -2,14 +2,16 @@
 #include "stm32.h"
 #include "time.h"
 
-static volatile long long _ticks = 0; 
+static volatile uint32_t _ticks = 0; 
+static long _clk_per_us = 1; 
 
-#define SYSTICK_DIV 10000UL
-#define SYSTICK_INTERVAL (1000000UL / SYSTICK_DIV)
+#define SYSTICK_DIV 1000UL
+
+//#define SYSTICK_INTERVAL 1000UL //(1000000UL / SYSTICK_DIV)
 
 void SysTick_Handler(void); 
 void SysTick_Handler(void){
-	_ticks ++; 
+	++_ticks; 
 }
     
 void tsc_init(void)
@@ -17,7 +19,9 @@ void tsc_init(void)
 	RCC_ClocksTypeDef RCC_Clocks;
 
   RCC_GetClocksFreq(&RCC_Clocks);
-  SysTick_Config(RCC_Clocks.SYSCLK_Frequency / SYSTICK_DIV); 
+  _clk_per_us = RCC_Clocks.SYSCLK_Frequency / 1000000UL; 
+  SysTick_Config(_clk_per_us * SYSTICK_DIV); 
+  
 	//SysTick_Config (SystemCoreClock / 1000000UL); 
 	
 	//set systick interrupt priority
@@ -28,7 +32,11 @@ void tsc_init(void)
 
 timestamp_t tsc_read(void)
 {
-	return _ticks * SYSTICK_INTERVAL; 
+	timestamp_t ret; 
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+		ret = _ticks * SYSTICK_DIV + (SysTick->VAL / _clk_per_us); 
+	}
+	return ret; 
 }
 /*
 uint32_t millis(void)

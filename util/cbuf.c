@@ -55,11 +55,16 @@ uint16_t cbuf_get(struct cbuf *self){
 }
 
 int8_t cbuf_put(struct cbuf *self, uint8_t data){
-	if(cbuf_is_full(self)) return -1; 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-		self->head = (self->head + 1) & (self->size - 1); 
-		self->buffer[self->head] = data; 
+		return cbuf_put_isr(self, data); 
 	}
+	return -1; 
+}
+
+int8_t cbuf_put_isr(struct cbuf *self, uint8_t data){
+	if(((self)->head == (((self)->tail - 1) & ((self)->size - 1)))) return -1; 
+	self->head = (self->head + 1) & (self->size - 1); 
+	self->buffer[self->head] = data; 
 	return 0; 
 }
 

@@ -109,6 +109,13 @@ void cc3d_init(void);
 /// process events must be called every frame
 void cc3d_process_events(void);
 
+void cc3d_read_receiver(
+		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
+		uint16_t *rc_aux0, uint16_t *rc_aux1); 
+void cc3d_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right); 
+/// reads all sensors
+void cc3d_read_sensors(struct fc_data *data); 
+
 //*************************
 // CONFIG
 //*************************

@@ -30,7 +30,7 @@ extern "C" {
 #include <string.h>
 #include <arch/soc.h>
 #include "util.h"
-#include <list.h>
+#include <util/list.h>
 
 #ifdef __cplusplus
 }
@@ -46,21 +46,5 @@ extern "C" void __cxa_pure_virtual(void);
 #else 
 	typedef int __guard; 
 #endif
-
-struct libk_thread {
-	struct list_head list; 
-	char (*proc)(struct pt *self); 
-	struct pt pt; 
-}; 
-
-void libk_create_thread(struct libk_thread *self); 
-void libk_schedule(void); 
-
-#define LIBK_THREAD(c, func) static struct libk_thread __thread##c##; \
-	static PT_THREAD(func(struct pt *)); \
-	__attribute__((constructor)) void __init__thread##c##(void){ libk_create_thread(&__thread##c##, func); } \
-	static PT_THREAD(func(struct pt *pt))
-	
-#define LIBK_THREAD(func) _LIBK_THREAD(__COUNTER__, func)
 
 //#include "wiinunchuck.h"

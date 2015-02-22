@@ -68,6 +68,7 @@ extern "C" {
 
 #include "interface.h"
 #include "static_cbuf.h"
+#include <util/list.h>
 
 #include "time.h"
 #include "uart.h"
@@ -96,6 +97,31 @@ extern "C" {
 /// the implementation needs to be implemented separately because of 
 /// differences in libc. Look in arch/syscalls.c
 uint16_t serial_printf(serial_dev_t port, const char *fmt, ...);
+
+
+struct libk_thread {
+	struct list_head list; 
+	char (*proc)(struct pt *self); 
+	struct pt thread; 
+	// debug
+	long unsigned int time; 
+	long unsigned int framecount, timecount; 
+	const char *name; 
+}; 
+
+void libk_create_thread(struct libk_thread *self, char (*proc)(struct pt *self), const char *name); 
+void libk_schedule(void); 
+void libk_run(void); 
+uint32_t libk_get_fps(void); 
+void libk_print_info(void); 
+
+#define __LIBK_THREAD(c, func) static struct libk_thread __thread##c##__; \
+	static PT_THREAD(func(struct pt *)); \
+	__attribute__((constructor)) static void __init__thread##c##__(void){ libk_create_thread(&__thread##c##__, func, #func); } \
+	static PT_THREAD(func(struct pt *pt))
+
+#define _LIBK_THREAD(c, func) __LIBK_THREAD(c, func)
+#define LIBK_THREAD(func) _LIBK_THREAD(__COUNTER__, func)
 
 #ifdef __cplusplus
 }

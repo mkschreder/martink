@@ -182,15 +182,15 @@ int8_t		uart_set_baudrate(uint8_t dev_id, uint32_t baud){
 uint16_t uart_getc(uint8_t dev_id){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
 	if(dev_id >= count) return SERIAL_NO_DATA; 
-	//USART_TypeDef *dev = _devices[dev_id].dev; 
+	USART_TypeDef *dev = _devices[dev_id].dev; 
 
 	uint16_t ret = SERIAL_NO_DATA; 
-	//USART_ITConfig(dev, USART_IT_RXNE, DISABLE);
+	USART_ITConfig(dev, USART_IT_RXNE, DISABLE);
 	
 	// no need for critical section because cbuffer is threadsafe
-	if(!cbuf_is_empty(&rx_buffers[dev_id])) { ret = cbuf_get(&rx_buffers[dev_id]); }
+	if(cbuf_get_waiting(&rx_buffers[dev_id]) > 0) { ret = cbuf_get(&rx_buffers[dev_id]); }
 	
-	//USART_ITConfig(dev, USART_IT_RXNE, ENABLE);
+	USART_ITConfig(dev, USART_IT_RXNE, ENABLE);
 	return ret; 
 }
 
@@ -208,11 +208,10 @@ int8_t uart_putc(uint8_t dev_id, uint8_t ch){
 void USART1_IRQHandler(void);
 void USART1_IRQHandler(void)
 {
-	if(USART1->SR & USART_FLAG_RXNE){
-		char ch = USART_ReceiveData(USART1);
-		if(!cbuf_is_full(&rx_buffers[0])){ 
-			cbuf_put(&rx_buffers[0], ch); 
-		} 
+	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET){
+		USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+		unsigned char ch = USART_ReceiveData(USART1) & 0xff;
+		cbuf_put_isr(&rx_buffers[0], ch); 
 	}
 }
 
@@ -220,23 +219,20 @@ void USART1_IRQHandler(void)
 void USART2_IRQHandler(void);
 void USART2_IRQHandler(void)
 {
-	if(USART2->SR & USART_FLAG_RXNE){
-		char ch = USART_ReceiveData(USART2);
-		if(!cbuf_is_full(&rx_buffers[1])){ 
-			cbuf_put(&rx_buffers[1], ch); 
-		} 
+	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET){
+		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
+		unsigned char ch = USART_ReceiveData(USART2);
+		cbuf_put_isr(&rx_buffers[1], ch); 
 	}
 }
-
 
 void USART3_IRQHandler(void);
 void USART3_IRQHandler(void)
 {
-	if(USART3->SR & USART_FLAG_RXNE){
-		char ch = USART_ReceiveData(USART3);
-		if(!cbuf_is_full(&rx_buffers[2])){ 
-			cbuf_put(&rx_buffers[2], ch); 
-		} 
+	if(USART_GetITStatus(USART3, USART_IT_RXNE) != RESET){
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		unsigned char ch = USART_ReceiveData(USART3);
+		cbuf_put_isr(&rx_buffers[2], ch); 
 	}
 }
 

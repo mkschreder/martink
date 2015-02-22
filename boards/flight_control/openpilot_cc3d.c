@@ -183,7 +183,7 @@ void cc3d_read_angular_velocity_dps(float *gyrx, float *gyry, float *gyrz){
 	mpu6000_convertGyr(&cc3d.mpu, x, y, z, gyrx, gyry, gyrz); 
 } 
 
-static int8_t cc3d_read_sensors(struct fc_data *data){
+void cc3d_read_sensors(struct fc_data *data){
 	data->flags = HAVE_ACC | HAVE_GYR; 
 	memset(data, 0, sizeof(struct fc_data)); 
 	
@@ -213,7 +213,6 @@ static int8_t cc3d_read_sensors(struct fc_data *data){
 		&data->gyr_deg.y,
 		&data->gyr_deg.z
 	); 
-	return 0; 
 }
 
 int8_t cc3d_write_config(const uint8_t *data, uint16_t size){
@@ -297,13 +296,32 @@ int8_t cc3d_read_config(uint8_t *data, uint16_t size){
 	return 0; */
 }
 
+void cc3d_read_receiver(
+		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
+		uint16_t *rc_aux0, uint16_t *rc_aux1){
+	(void)rc_aux0; 
+	(void)rc_aux1; 
+	*rc_thr = cc3d_read_pwm(CC3D_IN_PWM1); 
+	*rc_yaw = cc3d_read_pwm(CC3D_IN_PWM2); 
+	*rc_pitch = cc3d_read_pwm(CC3D_IN_PWM3); 
+	*rc_roll = cc3d_read_pwm(CC3D_IN_PWM4); 
+}
+
+void cc3d_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right){
+	cc3d_write_pwm(CC3D_OUT_PWM1, front); 
+	cc3d_write_pwm(CC3D_OUT_PWM2, back); 
+	cc3d_write_pwm(CC3D_OUT_PWM3, left); 
+	cc3d_write_pwm(CC3D_OUT_PWM4, right); 
+}
+
 void cc3d_process_events(void){
 	
 }
 
 static int8_t _cc3d_read_sensors(fc_board_t self, struct fc_data *data){
 	(void)(self); 
-	return cc3d_read_sensors(data); 
+	cc3d_read_sensors(data); 
+	return 0; 
 }
 
 static int8_t _cc3d_write_motors(fc_board_t self,

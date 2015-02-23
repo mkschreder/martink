@@ -60,6 +60,14 @@ void libk_create_thread(struct libk_thread *self, char (*func)(struct pt *), con
 	list_add_tail(&self->list, &_running); 
 }
 
+void libk_delete_thread(struct libk_thread *self){
+	PT_INIT(&self->thread); 
+	self->proc = 0; 
+	self->name = 0; 
+	self->time = 0; 
+	list_del_init(&self->list); 
+}
+
 void libk_schedule(void){
 	struct list_head *ptr, *n; 
 	static timestamp_t timeout = 0; 

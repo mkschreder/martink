@@ -8,7 +8,8 @@ COMMON_FLAGS := -MD -ffunction-sections -fdata-sections -Wall -Werror -Os
 CFLAGS := -Wall -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wshadow -Wcast-align -Wchar-subscripts -Winline \
--Wnested-externs -Wredundant-decls 
+-Wnested-externs -Wredundant-decls -Wmissing-field-initializers -Wextra \
+-Wformat=2 -Wno-format-nonliteral -Wpointer-arith -Wno-missing-braces -Wpedantic
 CXXFLAGS := -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wcast-align -Wchar-subscripts -Wredundant-decls
@@ -106,7 +107,7 @@ ifdef BUILD
 else
 		echo "Please specify BUILD you want to save to!"
 endif
-	
+
 build: config fixdirs fixdep check $(obj-y)
 	rm -f $(APPNAME)
 	ar rs $(APPNAME) $(obj-y) 
@@ -127,8 +128,10 @@ $(BUILD_DIR)/%.o: %.cpp .config
 
 $(BUILD_DIR)/%.o: %.c .config 
 	mkdir -p `dirname $@`
-	$(CC) -c $(CFLAGS) $< -o $@
-
+	#splint -unrecogcomments -predboolint -exportlocal -noeffect -fcnuse +matchanyintegral -boolops +boolint -D__GNUC__ -DBUILD_arm_stm32f103 -DSTM32F10X_MD -Iarch/arm/stm32/CMSIS -I./ -I./include $<
+	scan-build -enable-checker alpha.core.BoolAssignment -enable-checker alpha.core.CastToStruct -enable-checker alpha.core.IdenticalExpr -enable-checker alpha.core.PointerArithm -enable-checker alpha.core.PointerSub -enable-checker alpha.core.SizeofPtr -enable-checker alpha.core.TestAfterDivZero -enable-checker alpha.security.ArrayBoundV2 -enable-checker alpha.security.ReturnPtrRange -enable-checker security.FloatLoopCounter -enable-checker security.insecureAPI.strcpy --use-cc=$(CC) $(CC) -c $(CFLAGS) $< -o $@
+	#$(CC) -c $(CFLAGS) $< -o $@
+	
 $(BUILD_DIR)/%.o: %.S .config 
 	mkdir -p `dirname $@`
 	$(AS) -c  $< -o $@

@@ -21,6 +21,8 @@
 	* Martin K. Schröder - maintenance since Oct 2014
 */
 
+#include <kernel.h>
+
 #ifdef TSL235
 
 #include <stdio.h>

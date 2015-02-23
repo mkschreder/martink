@@ -157,13 +157,13 @@ void initproc spi_init(void){
 	}
 	
 	int count = sizeof(_spi) / sizeof(struct spi_dev);
-	kdebug("SPI: starting interfaces: ");
+	//kdebug("SPI: starting interfaces: ");
 	
 	for(c = 0; c < count; c++){
 		if(spi_init_device(c) == -1) continue; 
-		kdebug("%d ", c); 
+		//kdebug("%d ", c); 
 		_spi[c].id = c; 
 		_spi[c].serial = i;
 	}
-	kdebug("\n");
+	//kdebug("\n");
 }

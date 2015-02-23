@@ -44,9 +44,21 @@ void cc3d_init(void){
 	time_init(); 
 	timestamp_init(); 
 	gpio_init(); 
-	
-	cc3d_led_off(); 
 	gpio_configure(GPIO_PB3, GP_OUTPUT); 
+	
+	pwm_configure(CC3D_OUT_PWM1, MINCOMMAND, 4000); 
+	pwm_configure(CC3D_OUT_PWM2, MINCOMMAND, 4000); 
+	pwm_configure(CC3D_OUT_PWM3, MINCOMMAND, 4000); 
+	pwm_configure(CC3D_OUT_PWM4, MINCOMMAND, 4000); 
+	pwm_configure(CC3D_OUT_PWM5, MINCOMMAND, 4000); 
+	pwm_configure(CC3D_OUT_PWM6, MINCOMMAND, 4000); 
+	
+	pwm_configure_capture(CC3D_IN_PWM1, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM2, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM3, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM4, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM5, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM6, 1000); 
 	
 	cc3d_led_on(); 
 	uart_init(CC3D_MAINPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE); 
@@ -60,7 +72,6 @@ void cc3d_init(void){
 	delay_ms(500); 
 	uart_set_baudrate(CC3D_FLEXIPORT_UART_ID, 38400); */
 	
-	cc3d_led_off(); 
 	/*while(1){
 		serial_printf(uart_get_serial_interface(0), "Running!\n"); 
 		serial_printf(sp, "Hello World!\n"); 
@@ -69,6 +80,7 @@ void cc3d_init(void){
 	//twi_init(); 
 	spi_init(); 
 	
+	/*
 	cc3d_led_on(); 
 	delay_ms(500); 
 	cc3d_led_off(); 
@@ -76,6 +88,7 @@ void cc3d_init(void){
 	cc3d_led_on(); 
 	delay_ms(500); 
 	cc3d_led_off(); 
+	*/
 	
 	//i2c_dev_t i2c = twi_get_interface(0); 
 	cc3d.uart0 = uart_get_serial_interface(0); 
@@ -97,20 +110,7 @@ void cc3d_init(void){
 	
 	//printf("Flash. ID: %x, Type: %x, Size: %x\n", cc3d.flash.props.id, cc3d.flash.props.type, cc3d.flash.props.size); 
 	
-	pwm_configure(CC3D_OUT_PWM1, 950, 4000); 
-	pwm_configure(CC3D_OUT_PWM2, 950, 4000); 
-	pwm_configure(CC3D_OUT_PWM3, 950, 4000); 
-	pwm_configure(CC3D_OUT_PWM4, 950, 4000); 
-	pwm_configure(CC3D_OUT_PWM5, 950, 4000); 
-	pwm_configure(CC3D_OUT_PWM6, 950, 4000); 
-	
-	pwm_configure_capture(CC3D_IN_PWM1, 1000); 
-	pwm_configure_capture(CC3D_IN_PWM2, 1000); 
-	pwm_configure_capture(CC3D_IN_PWM3, 1000); 
-	pwm_configure_capture(CC3D_IN_PWM4, 1000); 
-	pwm_configure_capture(CC3D_IN_PWM5, 1000); 
-	pwm_configure_capture(CC3D_IN_PWM6, 1000); 
-	
+	cc3d_led_off(); 
 }
 
 

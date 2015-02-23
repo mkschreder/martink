@@ -42,7 +42,7 @@ extern "C" {
 
 // these should be moved somewhere. This is the way to do configurable
 // c interfaces using macros. It is used by all generic interface headers. 
-
+/*
 // used for generating references to static methods
 #define PFNAME2(P, F) __##P##_##F##__
 #define PFNAME(P, F) PFNAME2(P, F)
@@ -53,6 +53,7 @@ extern "C" {
 
 // used for declaring driver functions
 #define PFDECL(P, F, args...) PFCALL(P, F, args )
+*/
 
 #define initproc //__attribute__((constructor))
 
@@ -110,6 +111,7 @@ struct libk_thread {
 }; 
 
 void libk_create_thread(struct libk_thread *self, char (*proc)(struct pt *self), const char *name); 
+void libk_delete_thread(struct libk_thread *self); 
 void libk_schedule(void); 
 void libk_run(void); 
 uint32_t libk_get_fps(void); 

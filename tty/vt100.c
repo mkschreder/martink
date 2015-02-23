@@ -74,8 +74,7 @@ static void _vt100_reset(struct vt100 *self){
   self->scroll_value = 0; 
   self->scroll_start_row = 0;
   self->scroll_end_row = self->screen_height; // outside of screen = whole screen scrollable
-  self->flags.cursor_wrap = 1;
-  self->flags.origin_mode = 0;
+  self->flags = VT100_FLAG_CURSOR_WRAP; 
   
   /*
   ili9340_setFrontColor(self->front_color);
@@ -190,7 +189,7 @@ static void _vt100_move(struct vt100 *term, int16_t right_left, int16_t bottom_t
 	int16_t new_x = right_left + term->cursor_x;
 	int16_t width = term->screen_width; //(term->screen_width / VT100_CHAR_WIDTH); 
 	if(new_x >= width){
-		if(term->flags.cursor_wrap){
+		if(term->flags & VT100_FLAG_CURSOR_WRAP){
 			bottom_top += new_x / width;
 			term->cursor_x = new_x % width;
 		} else {
@@ -336,7 +335,7 @@ STATE(_st_esc_sq_bracket, term, ev, arg){
 						// cursor stops at respective margins
 						term->cursor_x = (term->narg >= 1)?(term->args[1]-1):0; 
 						term->cursor_y = (term->narg == 2)?(term->args[0]-1):0;
-						if(term->flags.origin_mode) {
+						if(term->flags & VT100_FLAG_ORIGIN_MODE) {
 							term->cursor_y += term->scroll_start_row;
 							if(term->cursor_y >= term->scroll_end_row){
 								term->cursor_y = term->scroll_end_row - 1;
@@ -568,13 +567,13 @@ STATE(_st_esc_question, term, ev, arg){
 							case 6: {
 								// h = cursor relative to scroll region
 								// l = cursor independent of scroll region
-								term->flags.origin_mode = (arg == 'h')?1:0; 
+								term->flags |= (arg == 'h')?VT100_FLAG_ORIGIN_MODE:0; 
 								break;
 							}
 							case 7: {
 								// h = new line after last column
 								// l = cursor stays at the end of line
-								term->flags.cursor_wrap = (arg == 'h')?1:0; 
+								term->flags |= (arg == 'h')?VT100_FLAG_CURSOR_WRAP:0; 
 								break;
 							}
 							case 8: {

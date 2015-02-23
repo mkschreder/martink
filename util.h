@@ -55,7 +55,7 @@ static inline float constrain_f(float x, float a, float b){
 })
 */
 
-#define container_of(ptr, type, member) ({                      \
+#define container_of(ptr, type, member) __extension__ ({                      \
         __typeof__( ((type *)0)->member ) *__mptr = (ptr);    \
         (type *)(void*)( (char *)__mptr - offsetof(type,member) );})
 
@@ -65,14 +65,14 @@ static inline float constrain_f(float x, float a, float b){
 #define wrap_180(x) (x < -180 ? x+360 : (x > 180 ? x - 360: x))
 
 #ifdef CONFIG_HAVE_UART
-	#define kprintf(a, ...) uart0_printf(a, ##__VA_ARGS__) 
+	#define kprintf(...) uart0_printf(__VA_ARGS__) 
 	
 	#ifdef CONFIG_DEBUG
-		#define kdebug(a, ...) {} //uart0_printf(a, ##__VA_ARGS__) 
+		#define kdebug(...) {} //uart0_printf(a, ##__VA_ARGS__) 
 	#else
-		#define kdebug(a, ...) {} //uart0_printf(a, ##__VA_ARGS__) 
+		#define kdebug(...) {} //uart0_printf(a, ##__VA_ARGS__) 
 	#endif
 #else 
-	#define kprintf(a, ...) {}
-	#define kdebug(a, ...) {}
+	#define kprintf(...) {}
+	#define kdebug(...) {}
 #endif

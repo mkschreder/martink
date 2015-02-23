@@ -214,13 +214,13 @@ void wiinunchuck_update(struct wiinunchuck *self) {
 	self->joyY = buff[1];
 
 	//get button
-	self->buttonZ = !(buff[5] & 0b00000001);
-	self->buttonC = !((buff[5] & 0b00000010) >> 1);
+	self->buttonZ = !(buff[5] & (1 << 0));
+	self->buttonC = !((buff[5] & (1 << 1)) >> 1);
 
 	//get angle
-	self->angleX = (buff[2] << 2) + ((buff[5] & (0b00000011 << (1*2)) >> (1*2)));
-	self->angleY = (buff[3] << 2) + ((buff[5] & (0b00000011 << (2*2)) >> (2*2)));
-	self->angleZ = (buff[4] << 2) + ((buff[5] & (0b00000011 << (3*2)) >> (3*2)));
+	self->angleX = (buff[2] << 2) + ((buff[5] & (3 << (1*2)) >> (1*2)));
+	self->angleY = (buff[3] << 2) + ((buff[5] & (3 << (2*2)) >> (2*2)));
+	self->angleZ = (buff[4] << 2) + ((buff[5] & (3 << (3*2)) >> (3*2)));
 
 	//filter angle
 	#if WIINUNCHUCK_ANGLEFILTER == 1

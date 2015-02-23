@@ -39,7 +39,7 @@ struct uart_device _uart[5];
 	
 static uint16_t _uart_putc(serial_dev_t self, uint8_t ch){
 	GET_DEV(self, dev);
-	uart_putc(dev->id, ch); 
+	(void)uart_putc(dev->id, ch); 
 	return SERIAL_NO_DATA; 
 }
 
@@ -50,10 +50,12 @@ static uint16_t _uart_getc(serial_dev_t self) {
 
 static size_t _uart_putn(serial_dev_t self, const uint8_t *data, size_t sz){
 	size_t size = sz;
+	GET_DEV(self, dev);
+	
 	while(sz--){
-		_uart_putc(self, *data++); 
+		if(uart_putc(dev->id, *data++) == -1) break; 
 	}
-	return size; 
+	return size - sz; 
 }
 
 static size_t _uart_getn(serial_dev_t self, uint8_t *data, size_t sz){
@@ -87,12 +89,13 @@ static int16_t _uart_end(serial_dev_t self){
 	return 0; 
 }
 
-serial_dev_t uart_get_serial_interface(uint8_t dev_id){
-	uint8_t count = sizeof(_uart) / sizeof(_uart[0]); 
-	if(dev_id >= count) return 0; 
+serial_dev_t /*@null@*/ uart_get_serial_interface(uint8_t dev_id){
+	static const uint8_t count = sizeof(_uart) / sizeof(_uart[0]); 
 	
 	static struct serial_if _if;
 	static struct serial_if *i = 0; 
+	
+	if(dev_id >= count) return 0; 
 	if(!i){
 		_if = (struct serial_if) {
 			.put = _uart_putc,

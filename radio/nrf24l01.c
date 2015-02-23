@@ -259,7 +259,7 @@ uint8_t nrf24l01_readready(struct nrf24l01 *nrf, uint8_t* pipe) {
     if(ret) {
 			//get the pipe number
 			if(pipe)
-				*pipe = (status >> NRF24L01_REG_RX_P_NO) & 0b111;
+				*pipe = (status >> NRF24L01_REG_RX_P_NO) & 0x7;
     }
     return ret;
 }

@@ -32,18 +32,12 @@ extern "C" {
 
 #define VT100_MAX_COMMAND_ARGS 4
 
+#define VT100_FLAG_CURSOR_WRAP (1 << 0)
+#define VT100_FLAG_SCROLL_MODE (1 << 1)
+#define VT100_FLAG_ORIGIN_MODE (1 << 2)
 
 struct vt100 {
-	union flags {
-		uint8_t val;
-		struct {
-			// 0 = cursor remains on last column when it gets there
-			// 1 = lines wrap after last column to next line
-			uint8_t cursor_wrap : 1; 
-			uint8_t scroll_mode : 1;
-			uint8_t origin_mode : 1; 
-		}; 
-	} flags;
+	uint8_t flags;
 
 	tty_dev_t display;
 	

@@ -51,6 +51,7 @@ LIST_HEAD(_running);
 LIST_HEAD(_idle); 
 static uint32_t _fps = 0; 
 static uint32_t _bfps = 0; 
+static struct pt *_current_thread = 0; 
 
 void libk_create_thread(struct libk_thread *self, char (*func)(struct pt *), const char *name){
 	PT_INIT(&self->thread); 
@@ -66,6 +67,13 @@ void libk_delete_thread(struct libk_thread *self){
 	self->name = 0; 
 	self->time = 0; 
 	list_del_init(&self->list); 
+}
+
+void libk_schedule_thread(struct pt *thread, void (*proc)(void *arg), void *arg){
+	struct pt *pt = _current_thread; 
+	_current_thread = thread; 
+	proc(arg); 
+	_current_thread = pt; 
 }
 
 void libk_schedule(void){

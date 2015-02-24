@@ -92,3 +92,119 @@ i2c_dev_t twi_get_interface(uint8_t id){
 	return &_twi[id].interface; 
 }
 
+
+uint32_t i2c_start_write(i2c_dev_t dev,
+	uint8_t address, const uint8_t *data, uint16_t max_sz){
+	return (*dev)->start_write(dev, address, data, max_sz);
+}
+
+uint32_t	i2c_start_read(i2c_dev_t dev,
+	uint8_t address, uint8_t *data, uint16_t max_sz){
+	return (*dev)->start_read(dev, address, data, max_sz);
+}
+
+int16_t i2c_stop(i2c_dev_t dev){
+	return (*dev)->stop(dev); 
+}
+/*
+void i2c_wait(i2c_dev_t dev, uint8_t addr){
+	(*dev)->wait(dev, addr); 
+}
+*/
+uint8_t i2c_busy(i2c_dev_t dev){
+	return (*dev)->busy(dev); 
+}
+
+uint8_t i2c_aquire(i2c_dev_t dev){
+	return (*dev)->aquire(dev); 
+}
+
+void i2c_release(i2c_dev_t dev){
+	(*dev)->release(dev); 
+}
+
+PT_THREAD(i2c_read_reg_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t bytes)){
+	PT_BEGIN(thr); 
+	
+	if(bytes < 1) PT_EXIT(thr); 
+	
+	buff[0] = reg;
+	
+	PT_WAIT_UNTIL(thr, i2c_aquire(i2c)); 
+	
+	i2c_start_write(i2c, addr, buff, 1);
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_start_read(i2c, addr, buff, bytes);
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_stop(i2c); 
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_release(i2c); 
+	
+	PT_END(thr); 
+}
+
+PT_THREAD(i2c_write_read_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t *buff, uint8_t wr_bytes, uint16_t rd_bytes)){
+	PT_BEGIN(thr); 
+	
+	PT_WAIT_UNTIL(thr, i2c_aquire(i2c)); 
+	
+	i2c_start_write(i2c, addr, buff, wr_bytes);
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_start_read(i2c, addr, buff, rd_bytes);
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_stop(i2c); 
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_release(i2c); 
+	
+	PT_END(thr); 
+}
+
+/// same as read_reg but with a stop (split transaction)
+PT_THREAD(i2c_read_reg_thread_sp(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t bytes)){
+	PT_BEGIN(thr); 
+	
+	if(bytes < 1) PT_EXIT(thr); 
+	
+	buff[0] = reg;
+	
+	PT_WAIT_UNTIL(thr, i2c_aquire(i2c)); 
+	
+	i2c_start_write(i2c, addr, buff, 1);
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_stop(i2c); 
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_start_read(i2c, addr, buff, bytes);
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_stop(i2c); 
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_release(i2c); 
+	
+	PT_END(thr); 
+}
+
+PT_THREAD(i2c_write_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t *buff, uint8_t bytes)){
+	PT_BEGIN(thr); 
+	
+	PT_WAIT_UNTIL(thr, i2c_aquire(i2c)); 
+	
+	i2c_start_write(i2c, addr, buff, bytes);
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_stop(i2c); 
+	PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
+	
+	i2c_release(i2c); 
+	
+	PT_END(thr); 
+}
+

@@ -27,6 +27,8 @@ struct mpu6000{
 	serial_dev_t port;
 	pio_dev_t 	gpio; 
 	gpio_pin_t 	cs_pin; 
+	int16_t gofs_x, gofs_y, gofs_z; 
+	int16_t aofs_x, aofs_y, aofs_z; 
 }; 
 
 void mpu6000_init(struct mpu6000 *self, serial_dev_t port, pio_dev_t gpio, gpio_pin_t cs_pin);
@@ -36,6 +38,8 @@ void mpu6000_readRawAcc(struct mpu6000 *self, int16_t* ax, int16_t* ay, int16_t*
 void mpu6000_readRawGyr(struct mpu6000 *self, int16_t* gx, int16_t* gy, int16_t* gz);
 void mpu6000_convertAcc(struct mpu6000 *self, int16_t ax, int16_t ay, int16_t az, float *axg, float *ayg, float *azg);
 void mpu6000_convertGyr(struct mpu6000 *self, int16_t gx, int16_t gy, int16_t gz, float *gxd, float *gyd, float *gyz);
+void mpu6000_calibrate(struct mpu6000 *self); 
+
 /*
 void mpu6000_getRawData(struct mpu6000 *self, int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz);
 void mpu6000_convertData(struct mpu6000 *self, 

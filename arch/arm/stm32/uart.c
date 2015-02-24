@@ -31,7 +31,8 @@
 
 #include "uart.h"
 
-#define UART_RX_BUFFER_SIZE 64
+#define UART_RX_BUFFER_SIZE 256
+#define UART_TX_BUFFER_SIZE 256
 
 struct uart_device {
 	USART_TypeDef *dev; 
@@ -78,6 +79,8 @@ static const struct uart_device _devices[] = {
 
 static struct cbuf rx_buffers[sizeof(_devices)/sizeof(struct uart_device)]; 
 static uint8_t rx_data[sizeof(_devices)/sizeof(struct uart_device)][UART_RX_BUFFER_SIZE]; 
+static struct cbuf tx_buffers[sizeof(_devices)/sizeof(struct uart_device)]; 
+static uint8_t tx_data[sizeof(_devices)/sizeof(struct uart_device)][UART_TX_BUFFER_SIZE]; 
 /*
 DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 DECLARE_STATIC_CBUF(uart1_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
@@ -98,6 +101,7 @@ int8_t uart_init(uint8_t dev_id, uint32_t baud){
 	USART_TypeDef *dev = _devices[dev_id].dev; 
 	
 	cbuf_init(&rx_buffers[dev_id], rx_data[dev_id], UART_RX_BUFFER_SIZE); 
+	cbuf_init(&tx_buffers[dev_id], tx_data[dev_id], UART_TX_BUFFER_SIZE); 
 	
 	USART_DeInit(dev); 
 	
@@ -145,6 +149,7 @@ int8_t uart_init(uint8_t dev_id, uint32_t baud){
   NVIC_Init(&NVIC_InitStructure);
   
 	USART_ITConfig(dev, USART_IT_RXNE, ENABLE);
+	USART_ITConfig(dev, USART_IT_TXE, ENABLE);
 	
 	return 0; 
 }
@@ -200,40 +205,74 @@ int8_t uart_putc(uint8_t dev_id, uint8_t ch){
 	
 	USART_TypeDef *dev = _devices[dev_id].dev; 
 	
-	while(!(dev->SR & USART_SR_TXE));
-	dev->DR = ch;  
+	// ok so the policy is currently to block and wait
+	while(cbuf_is_full(&tx_buffers[dev_id])); 
+	
+	USART_ITConfig(dev, USART_IT_TXE, DISABLE);
+	cbuf_put(&tx_buffers[dev_id], ch);
+	USART_ITConfig(dev, USART_IT_TXE, ENABLE);
+	
+	//while(!(dev->SR & USART_SR_TXE));
+	//dev->DR = ch;  
 	return 0; 
+}
+
+static void USART_Handler(USART_TypeDef *dev, struct cbuf *rx_buf, struct cbuf *tx_buf){
+	if(USART_GetITStatus(dev, USART_IT_RXNE) != RESET){
+		USART_ClearITPendingBit(dev, USART_IT_RXNE);
+		unsigned char ch = USART_ReceiveData(dev) & 0xff;
+		cbuf_put_isr(rx_buf, ch); 
+	}
+	if(USART_GetITStatus(dev, USART_IT_TXE) != RESET){
+		USART_ClearITPendingBit(dev, USART_IT_TXE);
+		if(!cbuf_is_empty(tx_buf))
+			USART_SendData(dev, cbuf_get(tx_buf)); 
+		else
+			USART_ITConfig(dev, USART_IT_TXE, DISABLE);
+	}
 }
 
 void USART1_IRQHandler(void);
 void USART1_IRQHandler(void)
 {
+	USART_Handler(USART1, &rx_buffers[0], &tx_buffers[0]); 
+	/*
 	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET){
 		USART_ClearITPendingBit(USART1, USART_IT_RXNE);
 		unsigned char ch = USART_ReceiveData(USART1) & 0xff;
 		cbuf_put_isr(&rx_buffers[0], ch); 
 	}
+	if(USART_GetITStatus(USART1, USART_IT_TXE) != RESET){
+		USART_ClearITPendingBit(USART1, USART_IT_TXE);
+		if(!cbuf_is_empty(&tx_buffers[0]))
+			UART1->DR = cbuf_get(&tx_buffers[0]); 
+		else
+			USART_ITConfig(dev, USART_IT_TXE, DISABLE);
+	}*/
 }
 
 
 void USART2_IRQHandler(void);
 void USART2_IRQHandler(void)
 {
+	USART_Handler(USART2, &rx_buffers[1], &tx_buffers[1]); 
+	/*
 	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET){
 		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
 		unsigned char ch = USART_ReceiveData(USART2);
 		cbuf_put_isr(&rx_buffers[1], ch); 
-	}
+	}*/
 }
 
 void USART3_IRQHandler(void);
 void USART3_IRQHandler(void)
-{
-	if(USART_GetITStatus(USART3, USART_IT_RXNE) != RESET){
+{	
+	USART_Handler(USART3, &rx_buffers[2], &tx_buffers[2]); 
+	/*if(USART_GetITStatus(USART3, USART_IT_RXNE) != RESET){
 		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
 		unsigned char ch = USART_ReceiveData(USART3);
 		cbuf_put_isr(&rx_buffers[2], ch); 
-	}
+	}*/
 }
 
 uint16_t uart_waiting(uint8_t dev_id){

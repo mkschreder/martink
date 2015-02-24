@@ -81,6 +81,7 @@ static struct cbuf rx_buffers[sizeof(_devices)/sizeof(struct uart_device)];
 static uint8_t rx_data[sizeof(_devices)/sizeof(struct uart_device)][UART_RX_BUFFER_SIZE]; 
 static struct cbuf tx_buffers[sizeof(_devices)/sizeof(struct uart_device)]; 
 static uint8_t tx_data[sizeof(_devices)/sizeof(struct uart_device)][UART_TX_BUFFER_SIZE]; 
+
 /*
 DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 DECLARE_STATIC_CBUF(uart1_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);

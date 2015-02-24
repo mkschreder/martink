@@ -76,13 +76,20 @@ void libk_schedule_thread(struct pt *thread, void (*proc)(void *arg), void *arg)
 	_current_thread = pt; 
 }
 
+struct pt *libk_current_thread(void){
+	return _current_thread; 
+}
+
 void libk_schedule(void){
 	struct list_head *ptr, *n; 
 	static timestamp_t timeout = 0; 
 	list_for_each_safe(ptr, n, &_running){
 		struct libk_thread *thr = container_of(ptr, struct libk_thread, list); 
 		timestamp_t time = timestamp_now(); 
+		struct pt *_backup = _current_thread; 
+		_current_thread = &thr->thread; 
 		thr->proc(&thr->thread); 
+		_current_thread = _backup; 
 		timestamp_t tnow = timestamp_now(); 
 		if(tnow > time)
 			thr->timecount += tnow - time;

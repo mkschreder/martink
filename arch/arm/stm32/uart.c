@@ -33,6 +33,7 @@
 
 #define UART_RX_BUFFER_SIZE 256
 #define UART_TX_BUFFER_SIZE 256
+#define DEV_COUNT sizeof(_devices)/sizeof(struct uart_device)
 
 struct uart_device {
 	USART_TypeDef *dev; 
@@ -77,10 +78,10 @@ static const struct uart_device _devices[] = {
 	}
 }; 
 
-static struct cbuf rx_buffers[sizeof(_devices)/sizeof(struct uart_device)]; 
-static uint8_t rx_data[sizeof(_devices)/sizeof(struct uart_device)][UART_RX_BUFFER_SIZE]; 
-static struct cbuf tx_buffers[sizeof(_devices)/sizeof(struct uart_device)]; 
-static uint8_t tx_data[sizeof(_devices)/sizeof(struct uart_device)][UART_TX_BUFFER_SIZE]; 
+static struct cbuf rx_buffers[DEV_COUNT]; 
+static uint8_t rx_data[DEV_COUNT][UART_RX_BUFFER_SIZE]; 
+static struct cbuf tx_buffers[DEV_COUNT]; 
+static uint8_t tx_data[DEV_COUNT][UART_TX_BUFFER_SIZE]; 
 
 /*
 DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);

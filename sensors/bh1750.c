@@ -35,6 +35,9 @@
 //define active resolution mode
 #define BH1750_MODE BH1750_MODEH
 
+#pragma message("Not compiling bh driver")
+
+#if 0 
 void bh1750_init(struct bh1750 *self, i2c_dev_t i2c, uint8_t addr) {
 	self->i2c = i2c;
 	self->addr = addr;
@@ -50,3 +53,4 @@ uint16_t bh1750_read_intensity_lux(struct bh1750 *self) {
 	i2c_stop(self->i2c);
 	return ret / 1.2f; 
 }
+#endif

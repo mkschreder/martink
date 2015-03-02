@@ -102,7 +102,7 @@ uint16_t serial_printf(serial_dev_t port, const char *fmt, ...);
 
 struct libk_thread {
 	struct list_head list; 
-	char (*proc)(struct pt *self); 
+	char (*proc)(struct libk_thread *kthread, struct pt *self); 
 	struct pt thread; 
 	// debug
 	long unsigned int time; 
@@ -110,7 +110,7 @@ struct libk_thread {
 	const char *name; 
 }; 
 
-void libk_create_thread(struct libk_thread *self, char (*proc)(struct pt *self), const char *name); 
+void libk_create_thread(struct libk_thread *self, char (*proc)(struct libk_thread *kthread, struct pt *self), const char *name); 
 void libk_delete_thread(struct libk_thread *self); 
 void libk_schedule(void); 
 void libk_schedule_thread(struct pt *thread, void (*proc)(void *arg), void *arg); 
@@ -120,9 +120,9 @@ uint32_t libk_get_fps(void);
 void libk_print_info(void); 
 
 #define __LIBK_THREAD(c, func) static struct libk_thread __thread##c##__; \
-	static PT_THREAD(func(struct pt *)); \
+	static PT_THREAD(func(struct libk_thread __attribute__((unused)) *thr, struct pt *)); \
 	__attribute__((constructor)) static void __init__thread##c##__(void){ libk_create_thread(&__thread##c##__, func, #func); } \
-	static PT_THREAD(func(struct pt *pt))
+	static PT_THREAD(func(struct libk_thread __attribute__((unused)) *kthread, struct pt *pt))
 
 #define _LIBK_THREAD(c, func) __LIBK_THREAD(c, func)
 #define LIBK_THREAD(func) _LIBK_THREAD(__COUNTER__, func)

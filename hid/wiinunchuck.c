@@ -42,7 +42,9 @@ Please refer to LICENSE file for licensing information.
 #define wiinunchuck_decode(x) (x ^ 0x17) + 0x17;
 #endif
 
+#pragma message("Skipping wiinunchuck driver")
 
+#if 0 
 /*
  * get joypad X
  */
@@ -253,6 +255,6 @@ void wiinunchuck_init(struct wiinunchuck *self, i2c_dev_t i2c) {
 	wiinunchuck_update(self);
 }
 
-
+#endif
 
 

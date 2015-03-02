@@ -147,12 +147,12 @@ void cc3d_write_pwm(cc3d_output_pwm_id_t ch, uint16_t data){
 void cc3d_configure_flexiport(cc3d_flexi_port_mode_t mode){
 	switch(mode){
 		case CC3D_FLEXIPORT_UART: 
-			twi_deinit(CC3D_FLEXIPORT_I2C_ID); 
+			i2cdev_deinit(CC3D_FLEXIPORT_I2C_ID); 
 			uart_init(CC3D_FLEXIPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE); 
 			break; 
 		case CC3D_FLEXIPORT_I2C: 
 			uart_deinit(CC3D_FLEXIPORT_UART_ID); 
-			twi_init(CC3D_FLEXIPORT_UART_ID); 
+			i2cdev_init(CC3D_FLEXIPORT_UART_ID); 
 			break; 
 	};
 }

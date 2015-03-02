@@ -23,6 +23,7 @@
 
 #include <inttypes.h>
 #include <stddef.h>
+#include <sys/types.h>
 
 #include <thread/pt.h>
 
@@ -243,14 +244,15 @@ uint8_t pio_read_word(pio_dev_t self, uint16_t addr, uint32_t *output);
 struct i2c_interface;
 typedef struct i2c_interface **i2c_dev_t;
 
+
 /**
  * I2C device interface used for reading and writing i2c devices.
  */
 struct i2c_interface {
-	uint32_t			(*start_write)(i2c_dev_t self,
+	uint32_t			(*write)(i2c_dev_t self,
 		uint8_t address, const uint8_t *data, uint16_t max_sz);
 
-	uint32_t			(*start_read)(i2c_dev_t self,
+	uint32_t			(*read)(i2c_dev_t self,
 		uint8_t address, uint8_t *data, uint16_t max_sz);
 
 	/// returns -1 on fail and 1 on success
@@ -258,32 +260,27 @@ struct i2c_interface {
 	
 	//void	(*wait)(i2c_dev_t self, uint8_t addr); 
 	
-	uint8_t (*busy)(i2c_dev_t self); 
-	uint8_t (*aquire)(i2c_dev_t self); 
-	void 		(*release)(i2c_dev_t self); 
+	uint8_t (*status)(i2c_dev_t self, uint16_t flags); 
+	uint8_t (*open)(i2c_dev_t self); 
+	void 		(*close)(i2c_dev_t self); 
 };
 
-uint32_t i2c_start_write(i2c_dev_t dev,
+uint32_t i2c_write(i2c_dev_t dev,
 	uint8_t address, const uint8_t *data, uint16_t max_sz);
 
-uint32_t	i2c_start_read(i2c_dev_t dev,
+uint32_t	i2c_read(i2c_dev_t dev,
 	uint8_t address, uint8_t *data, uint16_t max_sz);
 
 int16_t i2c_stop(i2c_dev_t dev);
 
 //void i2c_wait(i2c_dev_t dev, uint8_t addr); 
 
-uint8_t i2c_busy(i2c_dev_t dev); 
+uint8_t i2c_status(i2c_dev_t dev, uint16_t status); 
 
-uint8_t i2c_aquire(i2c_dev_t dev); 
+uint8_t i2c_open(i2c_dev_t dev); 
 
-void i2c_release(i2c_dev_t dev); 
+void i2c_close(i2c_dev_t dev); 
 
-PT_THREAD(i2c_read_reg_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t bytes)); 
-PT_THREAD(i2c_read_reg_thread_sp(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t bytes)); 
-PT_THREAD(i2c_write_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t *buff, uint8_t bytes)); 
-/// runs a write of wr_bytes followed by a read of rd_bytes
-PT_THREAD(i2c_write_read_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t *buff, uint8_t wr_bytes, uint16_t rd_bytes)); 
 
 /**
  * Memory interface can be used for any storage medium
@@ -309,6 +306,37 @@ struct memory_if {
 
 #define mem_write(mem, addr, data, size) (*mem)->write(mem, addr, data, size)
 #define mem_read(mem, addr, data, size) (*mem)->read(mem, addr, data, size)
+
+struct block_device; 
+typedef struct block_device **block_dev_t; 
+
+typedef uint16_t page_address_t; 
+
+typedef enum {
+	BLKDEV_BUSY = (1 << 0)
+} blkdev_status_t; 
+
+struct block_device_geometry {
+	uint16_t page_size; 
+	uint16_t pages; 
+	uint16_t sectors; 
+}; 
+
+struct block_device {
+	uint8_t (*open)(block_dev_t self); 
+	int8_t 	(*close)(block_dev_t self); 
+	ssize_t (*writepage)(block_dev_t self, page_address_t page, const uint8_t *data, ssize_t data_size); 
+	ssize_t (*readpage)(block_dev_t self, page_address_t page, uint8_t *data, ssize_t data_size); 
+	int8_t 	(*get_geometry)(block_dev_t self, struct block_device_geometry *geom); 
+	uint8_t (*get_status)(block_dev_t self, blkdev_status_t flags); 
+}; 
+
+#define blk_open(dev) (*dev)->open(dev)
+#define blk_close(dev) (*dev)->close(dev)
+#define blk_writepage(dev, page, data, size) (*dev)->writepage(dev, page, data, size)
+#define blk_readpage(dev, page, data, size) (*dev)->readpage(dev, page, data, size)
+#define blk_get_geometry(dev, geom) (*dev)->get_geometry(dev, geom)
+#define blk_get_status(dev, flags) (*dev)->get_status(dev, flags)
 
 /**
  * PWM interface is for controlling pwm hardware. Usually it would be built in, timer

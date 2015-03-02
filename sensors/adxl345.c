@@ -96,6 +96,9 @@
 
 #define ADXL345_UPDATE_INTERVAL 10000 // 10ms
 
+#pragma message("Not compiling adxl driver")
+
+#if 0
 static PT_THREAD(_adxl345_thread(struct adxl345 *self)){
 	struct pt *thr = &self->thread; 
 	struct pt *bthr = &self->bthread; 
@@ -185,3 +188,4 @@ int8_t adxl345_read_adjusted(struct adxl345 *self, float *ax, float *ay, float *
 	return 0; 
 }
 
+#endif

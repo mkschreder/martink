@@ -88,6 +88,8 @@
 
 #define HMC5883L_STATUS_READY 1
 
+#pragma message("skipping hmc5883 driver")
+#if 0
 static PT_THREAD(_hmc5883l_init_thread(struct pt *thr, struct hmc5883l *self)){
 	struct pt *bthr = &self->bthread; 
 	
@@ -241,3 +243,4 @@ void hmc5883l_read_adjusted(struct hmc5883l *self, float *mx, float *my, float *
 	#endif
 }
 */
+#endif

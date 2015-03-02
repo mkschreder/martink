@@ -65,6 +65,9 @@
 
 #define BMP085_STATUS_READY 1
 
+#pragma message("skipping bmp085 driver")
+
+#if 0
 static long bmp085_getrawtemperature(struct bmp085 *self) {
 	long x1,x2;
 
@@ -213,3 +216,5 @@ void bmp085_update(struct bmp085 *self){
 	else
 		_bmp085_update_thread(&self->uthread, self); 
 }
+
+#endif

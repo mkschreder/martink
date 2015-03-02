@@ -55,9 +55,11 @@ struct mpu6050{
 	int16_t raw_ax, raw_ay, raw_az; 
 	int16_t raw_gx, raw_gy, raw_gz; 
 	// threads
-	struct pt uthread, rthread, wthread, ithread; 
+	struct libk_thread uthread, ithread; 
+	//struct pt uthread, rthread, wthread, ithread; 
 	uint8_t buffer[6]; // i2c buffer
 	timestamp_t time; // for time keeping
+	uint16_t counter, read_count; 
 	uint8_t state; // status 
 }; 
 
@@ -67,7 +69,8 @@ struct mpu6050{
 
 //functions
 void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr);
-void mpu6050_update(struct mpu6050 *self); 
+void mpu6050_deinit(struct mpu6050 *self); 
+//void mpu6050_update(struct mpu6050 *self); 
 uint8_t mpu6050_probe(struct mpu6050 *self);
 
 //#if MPU6050_GETATTITUDE == 0

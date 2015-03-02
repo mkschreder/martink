@@ -40,7 +40,6 @@ struct fst6 {
 	struct at24 eeprom; 
 	timestamp_t time_to_render; 
 	timestamp_t pwm_end_time; 
-	struct pt eethread; 
 	uint32_t keys; 
 	uint16_t ppm_buffer[7]; 
 	
@@ -134,11 +133,12 @@ void fst6_init(void){
 	//time_init(); 
 	_board.pwm_end_time = 0; 
 	_board.time_to_render = timestamp_now(); 
-	PT_INIT(&_board.eethread); 
 	
 	timestamp_init(); 
 	gpio_init(); 
 	uart_init(0, 38400); 
+	
+	printf("FST6 Init\n"); 
 	
 	GPIO_InitTypeDef gpioInit;
 	
@@ -175,19 +175,25 @@ void fst6_init(void){
 	gpio_configure(GPIO_PA5, GP_INPUT | GP_ANALOG); 
 	gpio_configure(GPIO_PA6, GP_INPUT | GP_ANALOG); 
 	
+	printf("FST6: starting adc\n"); 
 	adc_init(); 
 	
-	twi_init(0); 
+	printf("FST6: starting i2c\n"); 
+	i2cdev_init(0); 
 	
 	//delay_ms(1000); 
 	
+	printf("FST6: starting eeprom\n"); 
 	at24_init(&_board.eeprom, twi_get_interface(0)); 
 	
+	printf("FST6: starting display\n"); 
 	ks0713_init(&_board.disp, _fst6_write_ks0713); 
-	tty_dev_t tty = ks0713_get_tty_interface(&_board.disp); 
 	
+	printf("FST6: starting terminal\n"); 
+	tty_dev_t tty = ks0713_get_tty_interface(&_board.disp); 
 	vt100_init(&_board.vt, tty); 
 	
+	printf("FST6: starting ppm\n"); 
 	for(int c = 0; c < 7; c++) _board.ppm_buffer[c] = 1000; 
 	/*
 	uint8_t buf[10]; 
@@ -252,27 +258,22 @@ LIBK_THREAD(_fst6_ks0713_commit){
 	PT_END(pt); 
 }
 
-LIBK_THREAD(_fst6_update){
-	PT_BEGIN(pt); 
-	while(1){
-		at24_update(&_board.eeprom); 
-		PT_YIELD(pt); 
-	}
-	PT_END(pt); 
-}
-
 int8_t fst6_write_config(const uint8_t *data, uint16_t size){
 	(void)(data); 
 	(void)(size); 
-	at24_start_write(&_board.eeprom, 0, data, size); 
+	//at24_start_write(&_board.eeprom, 0, data, size); 
 	return 0; 
 }
 
 int8_t fst6_read_config(uint8_t *data, uint16_t size){
 	(void)(data); 
 	(void)(size); 
-	at24_start_read(&_board.eeprom, 0, data, size); 
+	//at24_start_read(&_board.eeprom, 0, data, size); 
 	return 0; 
+}
+
+block_dev_t fst6_get_storage_device(void){
+	return at24_get_block_device_interface(&_board.eeprom); 
 }
 
 serial_dev_t fst6_get_screen_serial_interface(void){

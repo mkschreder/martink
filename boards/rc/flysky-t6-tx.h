@@ -43,6 +43,7 @@ void fst6_play_tone(uint32_t frequency, uint32_t duration_ms);
 void fst6_write_ppm(uint16_t ch1, uint16_t ch2, uint16_t ch3, 
 	uint16_t ch4, uint16_t ch5, uint16_t ch6); 
 void fst6_process_events(void); 
+block_dev_t fst6_get_storage_device(void); 
 int8_t fst6_write_config(const uint8_t *data, uint16_t size);
 int8_t fst6_read_config(uint8_t *data, uint16_t size); 
 serial_dev_t fst6_get_screen_serial_interface(void); 

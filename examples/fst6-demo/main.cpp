@@ -17,29 +17,100 @@ extern char _sdata;
 static uint8_t config[16] = {0}; 
 static uint8_t status = 0; 
 
-static timestamp_t time = 0; 
+typedef enum {
+	IO_WRITE, 
+	IO_READ
+} io_direction_t; 
+
+struct block_transfer {
+	uint8_t completed; 
+	ssize_t address; 
+	ssize_t transfered; 
+	ssize_t size; 
+	uint8_t *buffer; 
+	io_direction_t dir; 
+	block_dev_t dev; 
+}; 
+
+struct application {
+	struct libk_thread main_thread; 
+	struct block_transfer tr; 
+	block_dev_t eeprom; 
+}; 
+
+void blk_transfer_init(struct block_transfer *tr, 
+	block_dev_t dev, uint32_t address, uint8_t *buffer, uint32_t size, io_direction_t dir){
+	tr->completed = 0; 
+	tr->address = address; 
+	tr->transfered = 0; 
+	tr->size = size; 
+	tr->buffer = buffer; 
+	tr->dir = dir; 
+	tr->dev = dev; 
+}
+
+uint8_t blk_transfer_completed(struct block_transfer *tr){
+	if(tr->completed == 1) {
+		 return 1; 
+	} else if(tr->transfered < tr->size){
+		ssize_t transfered = 0; 
+	
+		if(tr->dir == IO_WRITE)
+			transfered = blk_writepage(tr->dev, tr->address + tr->transfered, tr->buffer + tr->transfered, tr->size - tr->transfered); 
+		else
+			transfered = blk_readpage(tr->dev, tr->address + tr->transfered, tr->buffer + tr->transfered, tr->size - tr->transfered); 
+			
+		if(transfered > 0) {
+			printf("Transfered %d bytes of %d\n", transfered, tr->size); 
+			tr->transfered += transfered; 
+		}
+	} else if(tr->transfered == tr->size && !blk_get_status(tr->dev, BLKDEV_BUSY)){
+		tr->completed = 1; 
+		return 1; 
+	}
+	
+	return 0; 
+}
+
+static struct application app; 
 
 LIBK_THREAD(_main_thread){
 	PT_BEGIN(pt); 
 	
 	while(1){
 		PT_WAIT_UNTIL(pt, status & (DEMO_STATUS_WR_CONFIG | DEMO_STATUS_RD_CONFIG)); 
+		
 		if(status & DEMO_STATUS_WR_CONFIG){
 			printf("Writing config... \n"); 
-			fst6_write_config(config, sizeof(config)); 
-			time = timestamp_from_now_us(1000000); 
-			PT_WAIT_UNTIL(pt, timestamp_expired(time)); 
-			printf("Done!\n"); 
+			
+			strncpy((char*)config, "Hello World!", 16); 
+			
+			PT_WAIT_UNTIL(pt, blk_open(app.eeprom)); 
+			
+			blk_transfer_init(&app.tr, app.eeprom, 32, config, sizeof(config), IO_WRITE); 
+			PT_WAIT_UNTIL(pt, blk_transfer_completed(&app.tr)); 
+			
+			blk_close(app.eeprom); 
+			
+			printf("Config written successfully\n"); 
 			status &= ~DEMO_STATUS_WR_CONFIG; 
 		} 
 		if(status & DEMO_STATUS_RD_CONFIG){
 			printf("Reading config... \n"); 
-			fst6_read_config(config, sizeof(config)); 
-			time = timestamp_from_now_us(1000000); 
-			PT_WAIT_UNTIL(pt, timestamp_expired(time)); 
+			
+			memset(config, 0, sizeof(config)); 
+			
+			PT_WAIT_UNTIL(pt, blk_open(app.eeprom)); 
+			
+			blk_transfer_init(&app.tr, app.eeprom, 32, config, sizeof(config), IO_READ); 
+			PT_WAIT_UNTIL(pt, blk_transfer_completed(&app.tr)); 
+			
 			printf("Done!\n"); 
 			printf(": %s\n", config); 
-			status &= ~DEMO_STATUS_RD_CONFIG; 
+			
+			blk_close(app.eeprom); 
+			
+			status &= ~DEMO_STATUS_RD_CONFIG;
 		}
 	}
 	
@@ -132,6 +203,8 @@ int main(void){
 	
 	printf("SystemCoreClock: %d\n", (int)SystemCoreClock); 
 	
+	app.eeprom = fst6_get_storage_device(); 
+	
 	status = DEMO_STATUS_WR_CONFIG | DEMO_STATUS_RD_CONFIG; 
 	/*
 	// test config read/write (to eeprom)
@@ -143,6 +216,8 @@ int main(void){
 	fst6_read_config(buf, sizeof(str)); 
 	printf("%s\n", buf); 
 	*/
+	
+	printf("Running libk loop\n"); 
 	
 	libk_run(); 
 }

@@ -15,7 +15,7 @@ Example for the fst6 radio transmitter board
 #define typeof __typeof__
 
 struct application {
-	struct pt thread; 
+	struct libk_thread thread; 
 	serial_dev_t uart; 
 	uint16_t adc; 
 	timestamp_t time; 
@@ -40,19 +40,20 @@ int8_t _on_adc_event(struct adc_connection *con, uint16_t ev){
 	return -1; 
 }
 */
-PT_THREAD(app_thread(struct application *app)){
-	PT_BEGIN(&app->thread); 
+PT_THREAD(app_thread(struct libk_thread *kthread, struct pt *pt)){
+	struct application *app = container_of(kthread, struct application, thread); 
+	PT_BEGIN(pt); 
 	while(1){
 		uint16_t ch; 
-		PT_WAIT_WHILE(&app->thread, (ch = serial_getc(app->uart)) == SERIAL_NO_DATA); 
+		PT_WAIT_WHILE(pt, (ch = serial_getc(app->uart)) == SERIAL_NO_DATA); 
 		app->time = timestamp_now(); 
 		printf("Measuring adc.. \n"); 
 		adc_start_read(1, &app->adc); 
-		PT_WAIT_WHILE(&app->thread, adc_busy()); 
+		PT_WAIT_WHILE(pt, adc_busy()); 
 		printf("Measured to %u in %lu us\n", app->adc, (uint32_t)timestamp_ticks_to_us((timestamp_now() - app->time))); 
 		printf("Reading N pulse..\n"); 
 		gpio_start_read(MWII_GPIO_D9, &app->state, GP_READ_PULSE_P); 
-		PT_WAIT_WHILE(&app->thread, gpio_pin_busy(MWII_GPIO_D9)); 
+		PT_WAIT_WHILE(pt, gpio_pin_busy(MWII_GPIO_D9)); 
 		printf("Pulse length: %lu\n", timestamp_ticks_to_us((app->state.t_down - app->state.t_up))); 
 		float ax, ay, az; 
 		timestamp_t t = timestamp_now(); 
@@ -67,15 +68,16 @@ PT_THREAD(app_thread(struct application *app)){
 			(int16_t)(x * 10), (int16_t)(y * 10), (int16_t)(z * 10));  
 		
 		//app->time = timestamp_from_now_us(1000000); 
-		//PT_WAIT_UNTIL(&app->thread, timestamp_expired(app->time)); 
+		//PT_WAIT_UNTIL(pt, timestamp_expired(app->time)); 
 	}
-	PT_END(&app->thread); 
+	PT_END(pt); 
 }
 
 int main(void){
 	mwii_init(); 
 	
-	PT_INIT(&app.thread); 
+	libk_create_thread(&app.thread, app_thread, "app_thread"); 
+	
 	app.uart = mwii_get_uart_interface(); 
 	
 	gpio_configure(MWII_GPIO_A1, GP_INPUT | GP_PULLUP | GP_ANALOG); 

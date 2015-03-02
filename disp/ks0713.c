@@ -109,13 +109,14 @@ void ks0713_init(struct ks0713 *self, void (*putn)(struct ks0713 *self, uint16_t
 	// set the pins high
 	self->port_state = KS0713_PIN_MASK; 
 	self->port_state |= KS0713_BACKLIGHT; 
-	self->port_state &= (KS0713_RD | KS0713_WR); 
+	self->port_state &= ~(KS0713_RD | KS0713_WR); 
 	
 	self->putn(self, &self->port_state, 1); 
 	
 	self->port_state &= ~KS0713_RES; 
 	self->putn(self, &self->port_state, 1); 
 	delay_us(5); 
+	
 	// now pull reset high
 	self->port_state |= KS0713_RES; 
 	self->putn(self, &self->port_state, 1); 
@@ -135,7 +136,7 @@ void ks0713_init(struct ks0713 *self, void (*putn)(struct ks0713 *self, uint16_t
 	ks0713_send_command(self, self->contrast); 					// Set reference voltage register
 	ks0713_send_command(self, KS0713_DISP_ON_OFF | 0x01); 	// Turn on LCD panel (DON = 1)
 
-	memset(self->lcd_buffer, 0, sizeof(self->lcd_buffer)); 
+	memset(self->lcd_buffer, 0, sizeof(self->lcd_buffer) / sizeof(self->lcd_buffer[0])); 
 	
 	ks0713_commit(self);
 	ks0713_set_backlight(self, 1);
@@ -216,7 +217,9 @@ void ks0713_set_contrast(struct ks0713 *self, uint8_t val)
 	ks0713_send_command(self, self->contrast); 						// Set reference voltage register
 }
 
+#define CONFIG_SAVE_MEMORY
 #ifdef CONFIG_SAVE_MEMORY
+	#pragma message("Compiling KS0713 in memory save mode!")
 	// do not use large command buffer if we have to save memory
 	// instead send each word by itself (3ms on 24mhz stm32)
 	void ks0713_commit(struct ks0713 *self)
@@ -328,13 +331,13 @@ void ks0713_set_contrast(struct ks0713 *self, uint8_t val)
 #endif // save memory
 
 /**
-  * @brief  Set / Clean a specific pixel.
-  * @note	Top left is (0,0)
-  * @param  x: horizontal pixel location
-  * @param  y: vertical pixel location
-  * @param  operation: 0 - off, 1 - on, 2 - xor
-  * @retval None
-  */
+* @brief  Set / Clean a specific pixel.
+* @note	Top left is (0,0)
+* @param  x: horizontal pixel location
+* @param  y: vertical pixel location
+* @param  operation: 0 - off, 1 - on, 2 - xor
+* @retval None
+*/
 void ks0713_write_pixel(struct ks0713 *self, uint8_t x, uint8_t y, ks0713_pixel_op_t op)
 {
 	if(x > KS0713_WIDTH || y > KS0713_HEIGHT) return; 

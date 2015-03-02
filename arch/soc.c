@@ -53,7 +53,7 @@ static uint32_t _fps = 0;
 static uint32_t _bfps = 0; 
 static struct pt *_current_thread = 0; 
 
-void libk_create_thread(struct libk_thread *self, char (*func)(struct pt *), const char *name){
+void libk_create_thread(struct libk_thread *self, char (*func)(struct libk_thread *kthr, struct pt *), const char *name){
 	PT_INIT(&self->thread); 
 	self->proc = func; 
 	self->name = name; 
@@ -88,7 +88,7 @@ void libk_schedule(void){
 		timestamp_t time = timestamp_now(); 
 		struct pt *_backup = _current_thread; 
 		_current_thread = &thr->thread; 
-		thr->proc(&thr->thread); 
+		thr->proc(thr, &thr->thread); 
 		_current_thread = _backup; 
 		timestamp_t tnow = timestamp_now(); 
 		if(tnow > time)

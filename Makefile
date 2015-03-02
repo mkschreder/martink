@@ -129,8 +129,8 @@ $(BUILD_DIR)/%.o: %.cpp .config
 $(BUILD_DIR)/%.o: %.c .config 
 	mkdir -p `dirname $@`
 	#splint -unrecogcomments -predboolint -exportlocal -noeffect -fcnuse +matchanyintegral -boolops +boolint -D__GNUC__ -DBUILD_arm_stm32f103 -DSTM32F10X_MD -Iarch/arm/stm32/CMSIS -I./ -I./include $<
-	scan-build -enable-checker alpha.core.BoolAssignment -enable-checker alpha.core.CastToStruct -enable-checker alpha.core.IdenticalExpr -enable-checker alpha.core.PointerArithm -enable-checker alpha.core.PointerSub -enable-checker alpha.core.SizeofPtr -enable-checker alpha.core.TestAfterDivZero -enable-checker alpha.security.ArrayBoundV2 -enable-checker alpha.security.ReturnPtrRange -enable-checker security.FloatLoopCounter -enable-checker security.insecureAPI.strcpy --use-cc=$(CC) $(CC) -c $(CFLAGS) $< -o $@
-	#$(CC) -c $(CFLAGS) $< -o $@
+	#scan-build -enable-checker alpha.core.BoolAssignment -enable-checker alpha.core.CastToStruct -enable-checker alpha.core.IdenticalExpr -enable-checker alpha.core.PointerArithm -enable-checker alpha.core.PointerSub -enable-checker alpha.core.SizeofPtr -enable-checker alpha.core.TestAfterDivZero -enable-checker alpha.security.ArrayBoundV2 -enable-checker alpha.security.ReturnPtrRange -enable-checker security.FloatLoopCounter -enable-checker security.insecureAPI.strcpy --use-cc=$(CC) $(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(CFLAGS) $< -o $@
 	
 $(BUILD_DIR)/%.o: %.S .config 
 	mkdir -p `dirname $@`

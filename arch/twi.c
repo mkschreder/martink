@@ -39,19 +39,17 @@ static struct twi_device _twi[4] = {
 
 static int16_t 			_twi_stop(i2c_dev_t self){
 	DEVICE_CAST(self, dev);
-	return twi_stop(dev->id); 
+	return i2cdev_stop(dev->id); 
 }
 
 static uint32_t	_twi_write(i2c_dev_t self, uint8_t adr, const uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
-	if(twi_start_write(dev->id, adr, data, max_sz) != -1) return max_sz; 
-	return 0; 
+	return i2cdev_write(dev->id, adr, data, max_sz); 
 }
 
 static uint32_t	_twi_read(i2c_dev_t self, uint8_t adr, uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
-	if(twi_start_read(dev->id, adr, data, max_sz) != -1) return max_sz; 
-	return 0; 
+	return i2cdev_read(dev->id, adr, data, max_sz); 
 }
 /*
 static void			_twi_wait(i2c_dev_t self, uint8_t addr){
@@ -60,19 +58,19 @@ static void			_twi_wait(i2c_dev_t self, uint8_t addr){
 }
 */
 
-static uint8_t			_twi_busy(i2c_dev_t self){
+static uint8_t			_twi_status(i2c_dev_t self, uint16_t status){
 	DEVICE_CAST(self, dev);
-	return twi_busy(dev->id); 
+	return i2cdev_status(dev->id, status); 
 }
 
-static uint8_t			_twi_aquire(i2c_dev_t self){
+static uint8_t			_twi_open(i2c_dev_t self){
 	DEVICE_CAST(self, dev);
-	return twi_aquire(dev->id); 
+	return i2cdev_open(dev->id); 
 }
 
-static void			_twi_release(i2c_dev_t self){
+static void			_twi_close(i2c_dev_t self){
 	DEVICE_CAST(self, dev);
-	twi_release(dev->id); 
+	i2cdev_close(dev->id); 
 }
 
 i2c_dev_t twi_get_interface(uint8_t id){
@@ -81,26 +79,24 @@ i2c_dev_t twi_get_interface(uint8_t id){
 	
 	static struct i2c_interface _if;
 	_if = (struct i2c_interface) {
-		.start_write = 	_twi_write,
-		.start_read = 	_twi_read,
+		.write = 	_twi_write,
+		.read = 	_twi_read,
 		.stop = 		_twi_stop, 
-		.busy = _twi_busy, 
-		.aquire = _twi_aquire, 
-		.release = _twi_release, 
+		.status = _twi_status, 
+		.open = _twi_open, 
+		.close = _twi_close, 
 	};
 	_twi[id].interface = &_if; 
 	return &_twi[id].interface; 
 }
 
 
-uint32_t i2c_start_write(i2c_dev_t dev,
-	uint8_t address, const uint8_t *data, uint16_t max_sz){
-	return (*dev)->start_write(dev, address, data, max_sz);
+uint32_t i2c_write(i2c_dev_t dev, uint8_t address, const uint8_t *data, uint16_t max_sz){
+	return (*dev)->write(dev, address, data, max_sz);
 }
 
-uint32_t	i2c_start_read(i2c_dev_t dev,
-	uint8_t address, uint8_t *data, uint16_t max_sz){
-	return (*dev)->start_read(dev, address, data, max_sz);
+uint32_t	i2c_read(i2c_dev_t dev, uint8_t address, uint8_t *data, uint16_t max_sz){
+	return (*dev)->read(dev, address, data, max_sz);
 }
 
 int16_t i2c_stop(i2c_dev_t dev){
@@ -111,18 +107,31 @@ void i2c_wait(i2c_dev_t dev, uint8_t addr){
 	(*dev)->wait(dev, addr); 
 }
 */
-uint8_t i2c_busy(i2c_dev_t dev){
-	return (*dev)->busy(dev); 
+uint8_t i2c_status(i2c_dev_t dev, uint16_t flags){
+	return (*dev)->status(dev, flags); 
 }
 
-uint8_t i2c_aquire(i2c_dev_t dev){
-	return (*dev)->aquire(dev); 
+uint8_t i2c_open(i2c_dev_t dev){
+	return (*dev)->open(dev); 
 }
 
-void i2c_release(i2c_dev_t dev){
-	(*dev)->release(dev); 
+void i2c_close(i2c_dev_t dev){
+	(*dev)->close(dev); 
 }
 
+/*
+int8_t i2c_read_async(i2c_dev_t i2c, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t wr_bytes, uint8_t bytes){
+	
+}
+
+int8_t i2c_read_async_sp(i2c_dev_t i2c, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t wr_bytes, uint8_t bytes){
+	
+}
+
+int8_t i2c_write_async(i2c_dev_t i2c, uint8_t addr, uint8_t *buff, uint8_t bytes){
+	
+}*/
+/*
 PT_THREAD(i2c_read_reg_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t bytes)){
 	PT_BEGIN(thr); 
 	
@@ -208,3 +217,4 @@ PT_THREAD(i2c_write_thread(i2c_dev_t i2c, struct pt *thr, uint8_t addr, uint8_t 
 	PT_END(thr); 
 }
 
+*/

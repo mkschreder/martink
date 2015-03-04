@@ -447,9 +447,10 @@ static void _ks0713_put(tty_dev_t self, uint8_t ch, color_t fg, color_t bg){
 	uint16_t x = dev->cursor_x * KS0713_CHAR_WIDTH; 
 	uint16_t y = dev->cursor_y * KS0713_CHAR_HEIGHT; 
 	for(unsigned j = 0; j < 5; j++){
-		dev->lcd_buffer[x + j + (y/8)*KS0713_WIDTH] = glyph[j];
+		uint8_t bits = (fg != 0)?glyph[j]:~glyph[j]; 
+		dev->lcd_buffer[x + j + (y/8)*KS0713_WIDTH] = bits; 
 	}
-	dev->lcd_buffer[x + 6 + (y/8)*KS0713_WIDTH + 1] = 0; 
+	dev->lcd_buffer[x + 5 + (y/8)*KS0713_WIDTH] = (fg != 0)?0x00:0xff; 
 }
 
 static void _ks0713_move_cursor(tty_dev_t self, uint16_t x, uint16_t y){

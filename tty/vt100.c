@@ -187,7 +187,15 @@ static void _vt100_scroll(struct vt100 *t, int16_t lines){
 static void _vt100_move(struct vt100 *term, int16_t right_left, int16_t bottom_top){
 	// calculate how many lines we need to move down or up if x movement goes outside screen
 	int16_t new_x = right_left + term->cursor_x;
+	int16_t new_y = bottom_top + term->cursor_y; 
 	int16_t width = term->screen_width; //(term->screen_width / VT100_CHAR_WIDTH); 
+	
+	if(!(term->flags & VT100_FLAG_CURSOR_WRAP)){
+		term->cursor_x = (new_x > term->screen_width)?(term->screen_width):new_x; 
+		term->cursor_y = (new_y > term->screen_height)?term->screen_height:new_y; 
+		return; 
+	}
+	// TODO: simplify this
 	if(new_x >= width){
 		if(term->flags & VT100_FLAG_CURSOR_WRAP){
 			bottom_top += new_x / width;
@@ -203,7 +211,6 @@ static void _vt100_move(struct vt100 *term, int16_t right_left, int16_t bottom_t
 	}
 
 	if(bottom_top){
-		uint16_t new_y = term->cursor_y + bottom_top;
 		uint16_t to_scroll = 0;
 		// bottom margin 39 marks last line as static on 40 line display
 		// therefore, we would scroll when new cursor has moved to line 39
@@ -226,6 +233,7 @@ static void _vt100_move(struct vt100 *term, int16_t right_left, int16_t bottom_t
 			// otherwise we move as normal inside the screen
 			term->cursor_y = new_y;
 		}
+		
 		_vt100_scroll(term, to_scroll);
 	}
 }
@@ -301,6 +309,7 @@ STATE(_st_esc_sq_bracket, term, ev, arg){
 			} else if(arg == ';'){ // arg separator. 
 				// skip. And also stay in the command state
 			} else { // otherwise we execute the command and go back to idle
+				//printf("%c: %d args\n", arg, term->narg); 
 				switch(arg){
 					case 'A': {// move cursor up (cursor stops at top margin)
 						unsigned n = (term->narg > 0)?term->args[0]:1;
@@ -470,6 +479,8 @@ STATE(_st_esc_sq_bracket, term, ev, arg){
 								term->back_color = colors[n-40]; 
 							}
 						}
+						//printf("Set color: %x %x\n", term->front_color, term->back_color); 
+						
 						term->state = _st_idle; 
 						break;
 					}

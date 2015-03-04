@@ -39,9 +39,12 @@ uint16_t serial_printf(serial_dev_t port, const char *fmt, ...){
 	char buffer[64]; 
 	uint16_t n; 
 	va_list vl; 
+	if(!port) return 0; 
+	
 	va_start(vl, fmt);
 	n = vsnprintf(buffer, sizeof(buffer), fmt, vl); 
 	va_end(vl);
+	
 	serial_putn(port, (uint8_t*)buffer, n); 
 	return n; 
 }

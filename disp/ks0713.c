@@ -93,6 +93,61 @@ static void ks0713_send_command(struct ks0713 *self, uint8_t cmd)
 	GPIO_Write(GPIOC, gpio);*/
 }
 
+static PT_THREAD(_ks0713_commit_thread_lomem(struct libk_thread *kthread, struct pt *pt)){
+	struct ks0713 *self = container_of(kthread, struct ks0713, thread); 
+	
+	PT_BEGIN(pt); 
+	
+	while(1){
+		for (self->tr.row = 0; self->tr.row < KS0713_HEIGHT / 8; ++self->tr.row){
+			uint16_t word = self->port_state; 
+			
+			word &= ~(KS0713_CS1 | KS0713_WR | KS0713_DATA | KS0713_A0);
+			word |= (KS0713_RD | (uint16_t)(KS0713_SET_PAGE_ADDR | self->tr.row));
+			self->putn(self, &word, 1); 
+			
+			word |= KS0713_CS1;
+			word &= ~KS0713_RD;
+			self->putn(self, &word, 1); 
+				
+			word &= ~(KS0713_CS1 | KS0713_WR | KS0713_DATA | KS0713_A0);
+			word |= (KS0713_RD | (uint16_t)(KS0713_SET_COL_ADDR_LSB | 0x04));
+			self->putn(self, &word, 1); 
+				
+			word |= KS0713_CS1;
+			word &= ~KS0713_RD;
+			self->putn(self, &word, 1); 
+				
+			word &= ~(KS0713_CS1 | KS0713_WR | KS0713_DATA | KS0713_A0);
+			word |= (KS0713_RD | (uint16_t)(KS0713_SET_COL_ADDR_MSB | 0x00));
+			self->putn(self, &word, 1); 
+			
+			word |= KS0713_CS1;
+			word &= ~KS0713_RD;
+			self->putn(self, &word, 1); 
+				
+			word &= ~(KS0713_WR | KS0713_DATA ); 
+			word |= KS0713_A0; 
+			
+			uint8_t *data = self->lcd_buffer + (KS0713_WIDTH * self->tr.row); 
+			data += (KS0713_WIDTH-1);
+			
+			for (uint16_t i=0; i<KS0713_WIDTH; ++i)
+			{
+				word &= ~(KS0713_CS1 | KS0713_DATA);
+				word |= (KS0713_RD | (uint16_t)(*data--));
+				self->putn(self, &word, 1); 
+			
+				word |= KS0713_CS1;
+				word &= ~KS0713_RD;
+				self->putn(self, &word, 1); 
+			}
+			// yield after each row transfer
+			PT_YIELD(pt);
+		}
+	}
+	PT_END(pt); 
+}
 
 /**
   * @brief  Initialise the lcd panel.
@@ -105,6 +160,8 @@ void ks0713_init(struct ks0713 *self, void (*putn)(struct ks0713 *self, uint16_t
 	self->putn = putn; 
 	self->contrast = 0x28; 
 	self->cursor_x = self->cursor_y = 0; 
+	
+	libk_create_thread(&self->thread, _ks0713_commit_thread_lomem, "ks0713_lomem"); 
 	
 	// set the pins high
 	self->port_state = KS0713_PIN_MASK; 
@@ -138,7 +195,6 @@ void ks0713_init(struct ks0713 *self, void (*putn)(struct ks0713 *self, uint16_t
 
 	memset(self->lcd_buffer, 0, sizeof(self->lcd_buffer) / sizeof(self->lcd_buffer[0])); 
 	
-	ks0713_commit(self);
 	ks0713_set_backlight(self, 1);
 	
 	/*GPIO_InitTypeDef gpioInit;
@@ -217,6 +273,7 @@ void ks0713_set_contrast(struct ks0713 *self, uint8_t val)
 	ks0713_send_command(self, self->contrast); 						// Set reference voltage register
 }
 
+/*
 #define CONFIG_SAVE_MEMORY
 #ifdef CONFIG_SAVE_MEMORY
 	#pragma message("Compiling KS0713 in memory save mode!")
@@ -329,7 +386,7 @@ void ks0713_set_contrast(struct ks0713 *self, uint8_t val)
 		self->putn(self, cmd_buffer, cmd_buf_size); 
 	}
 #endif // save memory
-
+*/
 /**
 * @brief  Set / Clean a specific pixel.
 * @note	Top left is (0,0)

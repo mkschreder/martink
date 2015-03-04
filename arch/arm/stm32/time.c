@@ -19,8 +19,8 @@ void tsc_init(void)
 	RCC_ClocksTypeDef RCC_Clocks;
 
   RCC_GetClocksFreq(&RCC_Clocks);
+  SysTick_Config(RCC_Clocks.SYSCLK_Frequency / 1000UL); 
   _clk_per_us = RCC_Clocks.SYSCLK_Frequency / 1000000UL; 
-  SysTick_Config(_clk_per_us * SYSTICK_DIV); 
   
 	//SysTick_Config (SystemCoreClock / 1000000UL); 
 	
@@ -34,7 +34,7 @@ timestamp_t tsc_read(void)
 {
 	timestamp_t ret; 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-		ret = _ticks * SYSTICK_DIV + (SysTick->VAL / _clk_per_us); 
+		ret = _ticks * 1000 + 1000 - (SysTick->VAL / _clk_per_us); 
 	}
 	return ret; 
 }

@@ -37,6 +37,10 @@
 
 #define KS0713_COMMAND_BUFFER_SIZE (KS0713_WIDTH / 8 * 2)
 
+struct ks0713_thread_data {
+	unsigned int row; 
+}; 
+
 struct ks0713 {
 	uint16_t port_state; 
 	uint8_t contrast;
@@ -44,6 +48,9 @@ struct ks0713 {
 	uint16_t cursor_x, cursor_y; 
 	
 	void (*putn)(struct ks0713 *self, uint16_t *data, size_t size); 
+	
+	struct libk_thread thread; 
+	struct ks0713_thread_data tr; 
 	
 	struct tty_device *tty; 
 }; 

@@ -31,8 +31,8 @@
 
 #include "uart.h"
 
-#define UART_RX_BUFFER_SIZE 256
-#define UART_TX_BUFFER_SIZE 256
+#define UART_RX_BUFFER_SIZE 64
+#define UART_TX_BUFFER_SIZE 128
 #define DEV_COUNT sizeof(_devices)/sizeof(struct uart_device)
 
 struct uart_device {

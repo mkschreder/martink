@@ -102,11 +102,15 @@ fst6_key_mask_t fst6_read_keys(void){
 
 uint16_t fst6_read_stick(fst6_stick_t id){
 	if(id > FST6_STICKS_COUNT) return 0; 
-	return 0; //adc_read(id); 
+	uint16_t val; 
+	adc_start_read(id, &val); 
+	return val; 
 }
 
 uint16_t fst6_read_battery_voltage(void){
-	return 0; //adc_read(FST6_ADC_BATTERY); 
+	uint16_t val; 
+	adc_start_read(FST6_ADC_BATTERY, &val); 
+	return val; 
 }
 
 void fst6_play_tone(uint32_t freq, uint32_t duration_ms){
@@ -246,7 +250,7 @@ LIBK_THREAD(_speaker_silent){
 	
 	PT_END(pt); 
 }
-
+/*
 LIBK_THREAD(_fst6_ks0713_commit){
 	static timestamp_t time = 0; 
 	PT_BEGIN(pt); 
@@ -257,7 +261,8 @@ LIBK_THREAD(_fst6_ks0713_commit){
 	}
 	PT_END(pt); 
 }
-
+*/
+/*
 int8_t fst6_write_config(const uint8_t *data, uint16_t size){
 	(void)(data); 
 	(void)(size); 
@@ -271,7 +276,7 @@ int8_t fst6_read_config(uint8_t *data, uint16_t size){
 	//at24_start_read(&_board.eeprom, 0, data, size); 
 	return 0; 
 }
-
+*/
 block_dev_t fst6_get_storage_device(void){
 	return at24_get_block_device_interface(&_board.eeprom); 
 }

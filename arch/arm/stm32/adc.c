@@ -97,7 +97,7 @@ int8_t adc_start_read(uint8_t channel, uint16_t *result)
 	if(channel > 8) return -1; 
 	*result = (uint16_t)((_adc_values[channel]+_adc_values[channel+8]
 					+_adc_values[channel+16]+_adc_values[channel+24])/4); 
-	return 0; 
+	return 1; 
 }
 
 uint8_t adc_aquire(uint8_t chan){

@@ -14,5 +14,5 @@ include rfid/Makefile
 include sensors/Makefile
 include tty/Makefile
 include util/Makefile
-
+include lib/Makefile
 include examples/Makefile

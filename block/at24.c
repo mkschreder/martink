@@ -24,7 +24,8 @@
 
 #define AT24_BITMASK(x) (BIT(x) - 1)
 
-#define AT24_DEBUG(...) do {} while(0) //printf(__VA_ARGS__)
+//#define AT24_DEBUG(...) /*do {} while(0) */ printf(__VA_ARGS__)
+#define AT24_DEBUG(...) do {} while(0)
 
 /* create non-zero magic value for given eeprom parameters */
 #define AT24_DEVICE_MAGIC(_len, _flags) 		\
@@ -53,7 +54,7 @@ static const struct i2c_device_id at24_ids[] = {
 
 #define I2C_PacketSize           8
 
-#define AT24_READ_TIMEOUT_US 100000UL
+#define AT24_READ_TIMEOUT_US 1000000UL
 
 /*
 static PT_THREAD(_at24_write_thread(struct pt *thr, struct at24 *self)){
@@ -93,8 +94,10 @@ static PT_THREAD(_at24_thread(struct libk_thread *kthread, struct pt *pt)){
 			//wait for the i2c device to be ready
 			PT_WAIT_UNTIL(pt, i2c_open(self->i2c)); 
 			
+			AT24_DEBUG("AT24: writing address\n"); 
+			
 			i2c_write(self->i2c, EEPROM_ADDR, self->op.buffer, AT24_ADDRESS_SIZE); 
-			PT_WAIT_UNTIL(pt, i2c_status(self->i2c, I2CDEV_TX_DONE)); 
+			PT_WAIT_UNTIL(pt, i2c_status(self->i2c, I2CDEV_READY)); 
 			
 			AT24_DEBUG("AT24: reading %d bytes\n", self->op.size); 
 			
@@ -127,20 +130,23 @@ static PT_THREAD(_at24_thread(struct libk_thread *kthread, struct pt *pt)){
 		} else if(self->status & AT24_FLAG_WRITE){
 			PT_WAIT_UNTIL(pt, i2c_open(self->i2c));
 			
+			AT24_DEBUG("AT24: writing %d bytes\n", self->op.size); 
 			self->op.result = 0; 
 			while(self->op.result < self->op.size){
 				ssize_t ret = i2c_write(self->i2c, EEPROM_ADDR, self->op.buffer + self->op.result, self->op.size - self->op.result); 
 				if(ret > 0){
 					self->op.result += ret; 
 				}
-				AT24_DEBUG("AT24: waiting for i2c completion\n"); 
-				PT_WAIT_UNTIL(pt, i2c_status(self->i2c, I2CDEV_TX_DONE)); 
+				PT_YIELD(pt); 
 			}
-			AT24_DEBUG("AT24: closing i2c\n"); 
+			
+			PT_WAIT_UNTIL(pt, i2c_status(self->i2c, I2CDEV_READY)); 
+			AT24_DEBUG("AT24: write done. closing i2c\n"); 
+			
 			i2c_close(self->i2c);
 			PT_WAIT_WHILE(pt, i2c_status(self->i2c, I2CDEV_BUSY)); 
 			
-			AT24_DEBUG("AT24: write completed\n"); 
+			AT24_DEBUG("AT24: i2c closed\n"); 
 			self->status &= ~(AT24_FLAG_WRITE | AT24_FLAG_BUSY); 
 		} 
 		PT_YIELD(pt);  

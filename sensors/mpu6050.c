@@ -97,6 +97,8 @@
 
 #include <thread/pt.h>
 
+#pragma message("Mpu6050 not compiled!")
+#if 0 
 static PT_THREAD(_mpu6050_init_thread(struct libk_thread *kthread, struct pt *pt)){
 	struct mpu6050 *self = container_of(kthread, struct mpu6050, ithread); 
 	//struct pt *thr = &self->ithread; 
@@ -591,3 +593,4 @@ void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr) {
 	//MPU6050_TIMER0INIT
 	#endif
 }*/
+#endif

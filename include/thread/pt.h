@@ -153,7 +153,7 @@ struct pt {
       (pt)->status = PT_WAITING; return PT_WAITING;			\
     }						\
   } while(0)
-
+#define BLOCKING_WAIT_UNTIL(cond) do {} while(!(cond))
 /**
  * Block and wait while condition is true.
  *
@@ -166,6 +166,7 @@ struct pt {
  * \hideinitializer
  */
 #define PT_WAIT_WHILE(pt, cond)  PT_WAIT_UNTIL((pt), !(cond))
+#define BLOCKING_WAIT_WHILE(cond) BLOCKING_WAIT_UNTIL(!(cond))
 
 /** @} */
 

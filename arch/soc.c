@@ -46,7 +46,6 @@ uint16_t serial_printf(serial_dev_t port, const char *fmt, ...){
 	return n; 
 }
 
-
 LIST_HEAD(_running); 
 LIST_HEAD(_idle); 
 static uint32_t _fps = 0; 
@@ -124,7 +123,7 @@ void libk_print_info(void){
 	list_for_each_safe(ptr, n, &_running){
 		struct libk_thread *thr = container_of(ptr, struct libk_thread, list); 
 		long unsigned int time = thr->time; 
-		printf("%16s: %4lu\n", thr->name, time / 10000); 
+		printf("%-16s: %4lu0000us\n", thr->name, time / 10000); 
 		count++; 
 		ustotal += thr->time; 
 	}

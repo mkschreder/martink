@@ -39,7 +39,7 @@
 m2_t m2_global_object;
 
 
-/*
+
 void m2_Init(m2_rom_void_p element, m2_es_fnptr es, m2_eh_fnptr eh, m2_gfx_fnptr gh)
 {
   m2_InitM2(&m2_global_object, element, es, eh, gh);
@@ -50,6 +50,11 @@ void m2_CheckKey(void)
   m2_CheckKeyM2(&m2_global_object);
 }
 
+/*
+  return:
+    0: nothing happend
+    1:	event has been processed
+*/
 uint8_t m2_HandleKey(void)
 {
   return m2_HandleKeyM2(&m2_global_object);  
@@ -125,4 +130,4 @@ m2_rom_void_p m2_GetRoot(void)
 void m2_Clear(void)
 {
   m2_ClearM2(&m2_global_object);
-}*/
+}

@@ -6,6 +6,7 @@ include block/Makefile
 include fs/Makefile
 include crypto/Makefile
 include disp/Makefile
+include gui/Makefile
 include hid/Makefile
 include io/Makefile
 include net/Makefile

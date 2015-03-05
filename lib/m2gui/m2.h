@@ -139,34 +139,34 @@ typedef uint8_t (*m2_eh_fnptr)(m2_p ep, uint8_t msg, uint8_t arg1, uint8_t arg2)
 typedef uint8_t (*m2_es_fnptr)(m2_p ep, uint8_t msg);
 
 /* graphics handler (callback procedure) */
-typedef uint8_t (*m2_gfx_fnptr)(m2_p ep, m2_gfx_arg_p arg);
+typedef uint8_t (*m2_gfx_fnptr)(m2_gfx_arg_p arg);
 
 /* element callback procedure, returned by m2_rom_get_el_fnptr() */
-typedef uint8_t (*m2_el_fnptr)(m2_p ep, m2_el_fnarg_p fn_arg);
+typedef uint8_t (*m2_el_fnptr)(m2_el_fnarg_p fn_arg);
 
 /* button, elinfo callback procedure */
-typedef void (*m2_button_fnptr)(m2_p ep, m2_el_fnarg_p fnarg);
+typedef void (*m2_button_fnptr)(m2_el_fnarg_p fnarg);
 
 /* labelfn procedure */
-typedef const char *(*m2_labelfn_fnptr)(m2_p ep, m2_rom_void_p element);
+typedef const char *(*m2_labelfn_fnptr)(m2_rom_void_p element);
 
 /* root change callback procedure */
-typedef void (*m2_root_change_fnptr)(m2_p ep, m2_rom_void_p new_root, m2_rom_void_p old_root, uint8_t change_value);
+typedef void (*m2_root_change_fnptr)(m2_rom_void_p new_root, m2_rom_void_p old_root, uint8_t change_value);
 
 
 
 /* u8fn procedure */
-typedef uint8_t (*m2_u8fn_fnptr)(m2_p ep, m2_rom_void_p element, uint8_t msg, uint8_t val);
+typedef uint8_t (*m2_u8fn_fnptr)(m2_rom_void_p element, uint8_t msg, uint8_t val);
 #define M2_U8_MSG_GET_VALUE 0
 #define M2_U8_MSG_SET_VALUE 1
 
 /* s8fn procedure */
-typedef int8_t (*m2_s8fn_fnptr)(m2_p ep, m2_rom_void_p element, uint8_t msg, int8_t val);
+typedef int8_t (*m2_s8fn_fnptr)(m2_rom_void_p element, uint8_t msg, int8_t val);
 #define M2_S8_MSG_GET_VALUE 0
 #define M2_S8_MSG_SET_VALUE 1
 
 /* u32fn procedure */
-typedef uint32_t (*m2_u32fn_fnptr)(m2_p ep, m2_rom_void_p element, uint8_t msg, uint32_t val);
+typedef uint32_t (*m2_u32fn_fnptr)(m2_rom_void_p element, uint8_t msg, uint32_t val);
 #define M2_U32_MSG_GET_VALUE 0
 #define M2_U32_MSG_SET_VALUE 1
 
@@ -195,7 +195,7 @@ void m2_SetGraphicsHandlerM2(m2_p m2, m2_gfx_fnptr gh);
 
 
 /* simplified interface */
-/*
+
 extern m2_t m2_global_object;
 void m2_Init(m2_rom_void_p element, m2_es_fnptr es, m2_eh_fnptr eh, m2_gfx_fnptr gh);
 void m2_CheckKey(void);
@@ -215,12 +215,9 @@ m2_rom_void_p m2_GetRoot(void);
 void m2_Clear(void);
 void m2_SetGraphicsHandler(m2_gfx_fnptr gh);
 
-
 void m2_MessageFn(const char *text, const char *button, m2_button_fnptr fn);
 void m2_MessageB2Fn(const char *text, const char *button1, m2_button_fnptr fn1, const char *button2, m2_button_fnptr fn2);
-*/
-void m2_SetKey(uint8_t key);
-uint8_t m2_GetKey(void);   
+
 
 extern uint8_t m2_is_frame_draw_at_end;									/* m2draw.c */
 extern m2_el_fnfmt_t m2_null_element M2_SECTION_PROGMEM;					/* m2null.c */
@@ -439,7 +436,13 @@ struct _m2_el_fnarg
   void *data;  				/* depends on message */
   m2_nav_p nav;			/* reference to navigation object */
 };
-#define M2_EL_FN_DEF(name) uint8_t name(m2_p ep, m2_el_fnarg_p fn_arg)
+#define M2_EL_FN_DEF(name) uint8_t name(m2_el_fnarg_p fn_arg)
+
+
+
+
+
+
 
 /*==============================================================*/
 uint8_t m2_rom_low_level_get_byte(m2_rom_void_p ptr) M2_NOINLINE;									/* m2rom.c */

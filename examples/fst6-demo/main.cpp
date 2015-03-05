@@ -6,7 +6,7 @@ Example for the fst6 radio transmitter board
 #include <kernel.h>
 #include <boards/rc/flysky-t6-tx.h>
 #include <tty/vt100.h>
-#include <tty/m2_tty.h>
+#include <gui/m2_fb.h>
 
 static int _key_state[32] = {0}; 
 
@@ -2481,6 +2481,7 @@ void generic_root_change_cb(m2_rom_void_p new_root, m2_rom_void_p old_root, uint
 }
 
 serial_dev_t screen = 0; 
+static struct m2_fb m2fb; 
 
 LIBK_THREAD(_demo_thread){
 	//serial_dev_t screen = fst6_get_screen_serial_interface(); 
@@ -2501,30 +2502,30 @@ LIBK_THREAD(_demo_thread){
 				switch(c){
 					case 8: 
 						if(pressed & (1 << 14))
-							m2_put_key(M2_KEY_DATA_UP); 
+							m2_fb_put_key(&m2fb, M2_KEY_DATA_UP); 
 						else
-							m2_put_key(M2_KEY_SELECT); 
+							m2_fb_put_key(&m2fb, M2_KEY_SELECT); 
 						break; 
 					case 9: 
 						if(pressed & (1 << 14))
-							m2_put_key(M2_KEY_DATA_DOWN); 
+							m2_fb_put_key(&m2fb, M2_KEY_DATA_DOWN); 
 						else
-							m2_put_key(M2_KEY_EXIT); 
+							m2_fb_put_key(&m2fb, M2_KEY_EXIT); 
 						break; 
 					case 16: 
 						if(pressed & (1 << 14)){
 							if(pressed & (1 << 15)) {
-								m2_put_key(M2_KEY_DATA_UP); 
+								m2_fb_put_key(&m2fb, M2_KEY_DATA_UP); 
 							}
 							else {
-								m2_put_key(M2_KEY_DATA_DOWN); 
+								m2_fb_put_key(&m2fb, M2_KEY_DATA_DOWN); 
 							}
 						} else {
 							if(pressed & (1 << 15)) {
-								m2_put_key(M2_KEY_NEXT); 
+								m2_fb_put_key(&m2fb, M2_KEY_NEXT); 
 							}
 							else {
-								m2_put_key(M2_KEY_PREV); 
+								m2_fb_put_key(&m2fb, M2_KEY_PREV); 
 							}
 						}
 						break; 
@@ -2637,7 +2638,10 @@ int main(void){
 	screen = fst6_get_screen_serial_interface(); 
 	static fbuf_dev_t framebuffer = fst6_get_screen_framebuffer_interface(); 
 	
-	m2_fb_init(framebuffer, &top_el_tlsm);
+	m2_fb_init(&m2fb, framebuffer, &top_el_tlsm);
+	
+	timestamp_delay_us(200000); 
+	
 	//m2_tty_init(screen, &top_el_tlsm); 
 	
 	for(int c = 0; c < 6; c++){
@@ -2645,8 +2649,6 @@ int main(void){
 		channel_info.range[c][1] = 1500; 
 	}
 	
-	//m2_Init(&m2_root, m2_es_custom, m2_eh_4bs, m2_gh_tty);
-
 	status = DEMO_STATUS_WR_CONFIG | DEMO_STATUS_RD_CONFIG; 
 	/*
 	// test config read/write (to eeprom)

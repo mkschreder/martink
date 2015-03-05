@@ -33,7 +33,7 @@ static uint8_t *m2_el_hide_get_val_ptr(m2_el_fnarg_p fn_arg)
   return (uint8_t *)m2_rom_get_ram_ptr(fn_arg->element, offsetof(m2_el_hide_t, val));
 }
 
-uint8_t m2_el_hide_fn(m2_el_fnarg_p fn_arg)
+uint8_t m2_el_hide_fn(m2_p ep, m2_el_fnarg_p fn_arg)
 {
   uint8_t val;
   val = *m2_el_hide_get_val_ptr(fn_arg);

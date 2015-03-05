@@ -1,7 +1,8 @@
 build-fst6-demo: build
 	$(CXX) $(CXXFLAGS) -fno-exceptions -fno-rtti -c examples/fst6-demo/main.cpp -o examples/fst6-demo/main.o
+	$(CXX) $(CXXFLAGS) -fno-exceptions -fno-rtti -c examples/fst6-demo/gui.cpp -o examples/fst6-demo/gui.o
 	$(LD) -L$(srctree) $(LDFLAGS) -o examples/fst6-demo/fst6-demo -Wl,--start-group \
-		 examples/fst6-demo/main.o -lk-$(BUILD) -lc -lm -lgcc \
+		 examples/fst6-demo/main.o examples/fst6-demo/gui.o -lk-$(BUILD) -lc -lm -lgcc \
 	-Wl,--end-group 
 	
 install-fst6-demo:

@@ -284,3 +284,7 @@ block_dev_t fst6_get_storage_device(void){
 serial_dev_t fst6_get_screen_serial_interface(void){
 	return vt100_get_serial_interface(&_board.vt); 
 }
+
+fbuf_dev_t fst6_get_screen_framebuffer_interface(void){
+	return ks0713_get_framebuffer_interface(&_board.disp); 
+}

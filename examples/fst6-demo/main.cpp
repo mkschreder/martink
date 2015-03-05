@@ -2342,7 +2342,7 @@ void fn_sm_btn_back(m2_el_fnarg_p fnarg) {
 }
 
 const char *el_sm_strlist_cb(uint8_t idx, uint8_t msg) {
-	uint8_t select = msg == M2_STRLIST_MSG_SELECT
+	uint8_t select = msg == M2_STRLIST_MSG_SELECT; 
 	switch(idx){
 		case 0: 
 			if(select) {
@@ -2369,7 +2369,7 @@ M2_LIST(list_sm_btns) = {&el_sm_btn_back, &el_sm_btn_space};
 M2_HLIST(el_sm_btns, "W64x0y0", list_sm_btns); 
 
 M2_STRLIST(el_sm_strlist, "y1l6W56t1", &el_sm_first, &el_sm_cnt, el_sm_strlist_cb);
-M2_VSB(el_sm_vsb, "x20y1l6W4r1t1", &el_sm_first, &el_sm_cnt);
+M2_VSB(el_sm_vsb, "x64y14l6W4r1t1", &el_sm_first, &el_sm_cnt);
 M2_LIST(list_sm_strlist) = { &el_sm_title, &el_sm_strlist, &el_sm_vsb, &el_sm_btns };
 M2_XYLIST(el_sm_list, NULL, list_sm_strlist);
 M2_ALIGN(top_el_sm, "-1|2W64H64", &el_sm_list); 
@@ -2392,8 +2392,8 @@ void fn_mm_btn_info(m2_el_fnarg_p fnarg) {
   (void)fnarg; 
   m2_SetRoot(&top_el_im);
 }
-M2_LABEL(el_mm_title_label, "-1", "\x1b[30;47m======= FS-T6 =======\x1b[m");
-M2_ALIGN(el_mm_title, "x0y8-1|2W64H64", &el_mm_title_label); 
+M2_LABEL(el_mm_title_label, "-1", "======= FS-T6 =======");
+M2_ALIGN(el_mm_title, "x0y56-1|2W64H64", &el_mm_title_label); 
 
 M2_BUTTON(el_mm_btn_settings, "w10f4", "settings", fn_mm_btn_settings);
 M2_BUTTON(el_mm_btn_info, "w10f4", "about", fn_mm_btn_info);
@@ -2446,7 +2446,7 @@ M2_LABEL(el_mm_swcd_label, NULL, "C/D");
 M2_LIST(el_mm_swcd_list) = {&el_mm_swcd_label, &el_mm_swcd_strlist}; 
 M2_HLIST(el_mm_swcd, NULL, el_mm_swcd_list);
 
-M2_LABEL(el_mm_chi_list_label, "-1", "\x1b[30;47m sticks \x1b[m"); 
+M2_LABEL(el_mm_chi_list_label, "-1", " sticks "); 
 M2_LIST(el_mm_chi_list) = {
 		&el_mm_chi_list_label, 
 		&el_mm_ch1, 
@@ -2454,8 +2454,7 @@ M2_LIST(el_mm_chi_list) = {
 		&el_mm_ch3, 
 		&el_mm_ch4
 }; 
-M2_VLIST(el_mm_chi, "x0y1l5w15", el_mm_chi_list); 
-
+M2_VLIST(el_mm_chi, "x0y14l5w15", el_mm_chi_list); 
 
 M2_LABEL(el_mm_swi_list_label, "-1", "\x1b[30;47m  aux   \x1b[m"); 
 M2_LIST(el_mm_swi_list) = {
@@ -2465,7 +2464,7 @@ M2_LIST(el_mm_swi_list) = {
 		&el_mm_swab, 
 		&el_mm_swcd
 }; 
-M2_VLIST(el_mm_swi, "x10y1l5w15", el_mm_swi_list); 
+M2_VLIST(el_mm_swi, "x64y14l5w15", el_mm_swi_list); 
 
 // place the title and the buttons and other controls into a vertical list
 M2_LIST(list_mm_dialog) = {&el_mm_title, &el_mm_chi, &el_mm_swi, &el_mm_btns}; 
@@ -2636,8 +2635,10 @@ int main(void){
 	
 	app.eeprom = fst6_get_storage_device(); 
 	screen = fst6_get_screen_serial_interface(); 
+	static fbuf_dev_t framebuffer = fst6_get_screen_framebuffer_interface(); 
 	
-	m2_tty_init(screen, &top_el_tlsm); 
+	m2_fb_init(framebuffer, &top_el_tlsm);
+	//m2_tty_init(screen, &top_el_tlsm); 
 	
 	for(int c = 0; c < 6; c++){
 		channel_info.range[c][0] = 1500; 

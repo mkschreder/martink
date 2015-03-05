@@ -53,6 +53,7 @@ struct ks0713 {
 	struct ks0713_thread_data tr; 
 	
 	struct tty_device *tty; 
+	struct fbuf_device *fbuf; 
 }; 
 
 typedef enum {
@@ -75,5 +76,6 @@ void ks0713_draw_line(struct ks0713 *self, int8_t x1, int8_t y1, int8_t x2, int8
 void ks0713_draw_rect(struct ks0713 *self, int8_t x1, int8_t y1, int8_t x2, int8_t y2, ks0713_pixel_op_t op);
 
 tty_dev_t ks0713_get_tty_interface(struct ks0713 *self); 
+fbuf_dev_t ks0713_get_framebuffer_interface(struct ks0713 *self); 
 
 #endif // _LCD_H

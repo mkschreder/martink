@@ -63,12 +63,12 @@ M2_EL_FN_DEF(m2_el_tsk_fn)
       uint8_t key_code = m2_el_tsk_get_key(fn_arg);
       if ( key_code > 0 )
       {
-	m2_SetKey(key_code);		/* use global m2 object */
+				m2_SetKey( key_code);		/* use global m2 object */
       }
       return 1;
     }
   }
-  return m2_el_label_fn(fn_arg);
+  return m2_el_label_fn(ep, fn_arg);
 }
 
 M2_EL_FN_DEF(m2_el_tskp_fn)

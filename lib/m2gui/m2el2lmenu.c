@@ -385,8 +385,8 @@ static M2_EL_FN_DEF(m2_el_2lmenu_line_fn)
 	      while( cnt > 0 )
 	      {
 		cnt--;
-		m2_HandleKey();				/* first, handle the existing keys */
-		m2_SetKey(M2_KEY_PREV);		/* put new key into queue, leave last added key in the queue */
+		m2_HandleKeyM2(ep);				/* first, handle the existing keys */
+		m2_SetKeyM2(M2_KEY_PREV);		/* put new key into queue, leave last added key in the queue */
 	      }
 	    }
 	    else
@@ -398,7 +398,7 @@ static M2_EL_FN_DEF(m2_el_2lmenu_line_fn)
 	}
 	else
 	{
-	  m2_SetRoot(m2_2lmenu_get_element(defidx));
+	  m2_SetRootM2(ep, m2_2lmenu_get_element(defidx));
 	}
       }
       return 1;

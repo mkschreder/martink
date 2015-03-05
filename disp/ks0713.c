@@ -482,6 +482,39 @@ tty_dev_t ks0713_get_tty_interface(struct ks0713 *self){
 	return &self->tty; 
 }
 
+static void _ks0713_fb_get_size(fbuf_dev_t self, uint16_t *w, uint16_t *h){
+	//struct ks0713 *dev = container_of(self, struct tty_device, tty); 
+	(void)(self); 
+	*w = KS0713_WIDTH; 
+	*h = KS0713_HEIGHT; 
+}
+
+static void _ks0713_set_pixel(fbuf_dev_t self, uint16_t x, uint16_t y, uint16_t color){
+	struct ks0713 *dev = container_of(self, struct ks0713, fbuf); 
+	if(x >= KS0713_WIDTH || y >= KS0713_HEIGHT) return; 
+	if(color)
+		dev->lcd_buffer[x + (y/8)*KS0713_WIDTH] |= (1 << (y & 0x7)); 
+	else 
+		dev->lcd_buffer[x + (y/8)*KS0713_WIDTH] &= ~(1 << (y & 0x7)); 
+}
+
+static void _ks0713_fb_clear(fbuf_dev_t self){
+	struct ks0713 *dev = container_of(self, struct ks0713, fbuf); 
+	ks0713_clear(dev); 
+}
+
+fbuf_dev_t ks0713_get_framebuffer_interface(struct ks0713 *self){
+	static struct fbuf_device _if; 
+	_if = (struct fbuf_device) {
+		.get_size = _ks0713_fb_get_size, 
+		.set_pixel = _ks0713_set_pixel, 
+		.clear = _ks0713_fb_clear
+	}; 
+	self->fbuf = &_if; 
+	return &self->fbuf; 
+}
+
+/*
 void ks0713_draw_line(struct ks0713 *self, int8_t x0, int8_t y0, int8_t x1, int8_t y1, ks0713_pixel_op_t op)
 {
 	int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
@@ -512,7 +545,7 @@ void ks0713_draw_rect(struct ks0713 *self, int8_t x1, int8_t y1, int8_t x2, int8
 			//if ((flags & RECT_FILL) || y == y1 || y == y2 || x == x1 || x == x2)
 			if (y == y1 || y == y2 || x == x1 || x == x2)
 			{
-				/*
+				
 				if (flags & RECT_ROUNDED)
 				{
 					if (!( (x == x1 && y == y1) ||
@@ -524,9 +557,10 @@ void ks0713_draw_rect(struct ks0713 *self, int8_t x1, int8_t y1, int8_t x2, int8
 					}
 
 				}
-				else*/
+				else
 					ks0713_write_pixel(self, x, y, op);
 			}
 		}
 	}
 }
+*/

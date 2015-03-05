@@ -80,3 +80,11 @@ obj-y += lib/m2gui/m2gfxutl.o
 obj-y += lib/m2gui/m2navnext.o    
 obj-y += lib/m2gui/m2qk.o       
 obj-y += lib/m2gui/mas_sim.o
+
+obj-y += lib/m2gui/u8glib/m2ghu8gbf.o
+obj-y += lib/m2gui/u8glib/m2ghu8gbfs.o
+obj-y += lib/m2gui/u8glib/m2ghu8gcffs.o
+obj-y += lib/m2gui/u8glib/m2ghu8gfb.o
+obj-y += lib/m2gui/u8glib/m2ghu8gffs.o
+obj-y += lib/m2gui/u8glib/m2ghu8gicon.o
+obj-y += lib/m2gui/u8glib/m2ghu8gutl.o

@@ -4,6 +4,8 @@
 extern "C" {
 #endif
 
+#include <disp/interface.h>
+
 typedef enum {
 	FST6_KEY_NONE, 
 	FST6_KEY_CH1P = (1 << 0), 
@@ -47,6 +49,7 @@ block_dev_t fst6_get_storage_device(void);
 int8_t fst6_write_config(const uint8_t *data, uint16_t size);
 int8_t fst6_read_config(uint8_t *data, uint16_t size); 
 serial_dev_t fst6_get_screen_serial_interface(void); 
+fbuf_dev_t fst6_get_screen_framebuffer_interface(void); 
 
 #ifdef __cplusplus
 }

@@ -40,19 +40,40 @@ typedef struct {
 
 #define RGBA(r, g, b, a) (fb_color_t){r, g, b, a}
 
+/*
 typedef void		(*fb_fill)(fb_color_t color, size_t count); 
 typedef void 		(*fb_set_region)(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1); 
 typedef size_t 	(*fb_write)(const uint8_t *data, size_t sz, fb_pixel_type_t type_of_supplied_data); 
 typedef size_t 	(*fb_read)(uint8_t *data, size_t sz, fb_pixel_type_t encode_in_format); 
 typedef void		(*fb_get_size)(uint16_t *width, uint16_t *height); 
+*/
 
-struct fb_device {
+typedef struct fbuf_device **fbuf_dev_t; 
+
+struct fbuf_device {
+	void (*get_size)(fbuf_dev_t dev, uint16_t *width, uint16_t *height);
+	void (*set_pixel)(fbuf_dev_t dev, uint16_t x, uint16_t y, uint16_t color); 
+	void (*clear)(fbuf_dev_t dev); 
+	/*
 	fb_fill				fill; 
 	fb_set_region set_region; 
 	fb_write 			write; 
 	fb_read				read; 
-	fb_get_size		get_size; 
+	fb_get_size		get_size; */
 }; 
+
+#define fbuf_get_size(dev, w, h) (*dev)->get_size(dev, w, h); 
+#define fbuf_set_pixel(dev, x, y, color) (*dev)->set_pixel(dev, x, y, color)
+#define fbuf_clear(dev) (*dev)->clear(dev)
+
+/*
+static inline void fbuf_get_size(fbuf_dev_t dev, uint16_t *width, uint16_t *height){
+	(*dev)->get_size(dev, width, height); 
+}
+
+static inline void fbuf_set_pixel(fbuf_dev_t dev, uint16_t x, uint16_t y, uint16_t color){
+	(*dev)->set_pixel(dev, x, y, color); 
+}*/
 
 typedef struct tty_device **tty_dev_t;
 typedef uint16_t color_t;

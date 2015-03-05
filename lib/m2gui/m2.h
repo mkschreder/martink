@@ -175,24 +175,6 @@ typedef uint32_t (*m2_u32fn_fnptr)(m2_rom_void_p element, uint8_t msg, uint32_t 
 /* m2tklib Toplevel API */
 
 
-/* object interface */
-void m2_SetHomeM2(m2_p m2, m2_rom_void_p element) M2_NOINLINE;	/* m2obj.c */
-void m2_SetHome2M2(m2_p m2, m2_rom_void_p element) M2_NOINLINE;	/* m2obj.c */
-void m2_SetRootChangeCallbackM2(m2_p m2, m2_root_change_fnptr cb) M2_NOINLINE;	/* m2obj.c */
-void m2_InitM2(m2_p m2, m2_rom_void_p element, m2_es_fnptr es, m2_eh_fnptr eh, m2_gfx_fnptr gh) M2_NOINLINE;	/* m2obj.c */
-void m2_SetEventSourceArgsM2(m2_p m2, uint8_t arg1, uint8_t arg2) M2_NOINLINE;						/* m2draw.c */
-void m2_CheckKeyM2(m2_p m2) M2_NOINLINE;
-uint8_t m2_HandleKeyM2(m2_p m2) M2_NOINLINE;													/* m2obj.c */
-void m2_DrawM2(m2_p m2) M2_NOINLINE;													/* m2draw.c */
-m2_rom_void_p m2_FindByXYM2(m2_p ep, uint8_t x, uint8_t y, uint8_t is_change_focus, uint8_t is_send_select);	/* m2draw.c */
-void m2_SetFontM2(m2_p m2, uint8_t font_idx, const void *font_ptr) M2_NOINLINE;					/* m2obj.c */
-void m2_SetEventSourceHandlerM2(m2_p m2, m2_es_fnptr es) M2_NOINLINE;						/* m2obj.c */
-void m2_SetRootM2(m2_p m2, m2_rom_void_p element, uint8_t next_cnt, uint8_t change_value) M2_NOINLINE;								/* m2obj.c */
-m2_rom_void_p m2_GetRootM2(m2_p m2) M2_NOINLINE;										/* m2obj.c */
-void m2_ClearM2(m2_p m2);
-void m2_SetGraphicsHandlerM2(m2_p m2, m2_gfx_fnptr gh);
-
-
 
 /* simplified interface */
 

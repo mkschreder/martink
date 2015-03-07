@@ -75,8 +75,13 @@ struct channel_config {
 	int16_t offset; 
 }; 
 
+struct stick_config {
+	int16_t offset; 
+}; 
+
 struct config {
 	struct channel_config channels[6]; 
+	struct stick_config sticks[4]; 
 	uint16_t checksum; 
 }; 
 
@@ -89,6 +94,12 @@ const struct config default_config = {
 		{.source = 4, .min = 1000, .max = 2000, .rate = 100, .exponent = 0, .flags = 0, .offset = 0},
 		{.source = 5, .min = 1000, .max = 2000, .rate = 100, .exponent = 0, .flags = 0, .offset = 0}
 	}, 
+	.sticks = {
+		{.offset = 0},
+		{.offset = 0},
+		{.offset = 0},
+		{.offset = 0}
+	},
 	.checksum = 0
 }; 
 
@@ -127,6 +138,9 @@ struct application {
 	struct block_transfer tr; 
 	block_dev_t eeprom; 
 	struct config conf; 
+	uint16_t saved_config_checksum; 
+	uint16_t prev_config_checksum; 
+	timestamp_t save_config_timeout; 
 	uint8_t status; 
 }; 
 
@@ -151,12 +165,12 @@ LIBK_THREAD(config_thread){
 			
 			PT_WAIT_UNTIL(pt, blk_open(app.eeprom)); 
 			
-			static uint16_t j = 0; 
-			for(j = 0; j < (sizeof(struct config) / geom.page_size); j++){
-				printf("CONF: write page #%d\n", j); 
-				blk_transfer_init(&app.tr, app.eeprom, (j * geom.page_size), ((uint8_t*)&app.conf) + (j * geom.page_size), geom.page_size, IO_WRITE); 
-				PT_WAIT_UNTIL(pt, blk_transfer_completed(&app.tr)); 
-			}
+			config_update_checksum(&app.conf); 
+			
+			app.saved_config_checksum = app.conf.checksum; 
+			
+			blk_transfer_init(&app.tr, app.eeprom, 0, ((uint8_t*)&app.conf), sizeof(struct config), IO_WRITE); 
+			PT_WAIT_UNTIL(pt, blk_transfer_completed(&app.tr)); 
 			
 			blk_close(app.eeprom); 
 			
@@ -168,14 +182,15 @@ LIBK_THREAD(config_thread){
 			
 			PT_WAIT_UNTIL(pt, blk_open(app.eeprom)); 
 			
-			static uint16_t j = 0; 
-			for(j = 0; j < (sizeof(struct config) / geom.page_size); j++){
-				printf("CONF: read page #%d\n", j); 
-				blk_transfer_init(&app.tr, app.eeprom, (j * geom.page_size), ((uint8_t*)&app.conf) + (j * geom.page_size), geom.page_size, IO_READ); 
-				PT_WAIT_UNTIL(pt, blk_transfer_completed(&app.tr)); 
-			}
+			blk_transfer_init(&app.tr, app.eeprom, 0, ((uint8_t*)&app.conf), sizeof(struct config), IO_READ); 
+			PT_WAIT_UNTIL(pt, blk_transfer_completed(&app.tr)); 
 			
 			printf("CONF: loaded\n"); 
+			
+			// set the saved checksum to the newly loaded config
+			app.saved_config_checksum = app.conf.checksum; 
+			
+			//config_update_checksum(&app.conf); 
 			
 			blk_close(app.eeprom); 
 			
@@ -223,6 +238,8 @@ LIBK_THREAD(output_thread){
 				case 4: 
 				case 5: {
 					raw = fst6_read_stick((fst6_stick_t)cc->source); 
+					if(cc->source < 4)
+						raw += app.conf.sticks[cc->source].offset; 
 				} break; 
 				case 6: 
 					raw = (fst6_key_down(FST6_KEY_SWA))?1000:2000; break; 
@@ -254,6 +271,7 @@ LIBK_THREAD(main_thread){
 	//serial_dev_t screen = fst6_get_screen_serial_interface(); 
 	//fst6_key_mask_t keys = fst6_read_keys(); 
 	int16_t key = 0; 
+	static const int OFFSET_STEP = 5; 
 	
 	PT_BEGIN(pt); 
 	
@@ -261,7 +279,10 @@ LIBK_THREAD(main_thread){
 	app.status |= DEMO_STATUS_RD_CONFIG; 
 	PT_WAIT_WHILE(pt, app.status & DEMO_STATUS_RD_CONFIG); 
 	if(!config_valid(&app.conf)){
-		printf("CONF: invalid checksum %x, expected %x\n", app.conf.checksum, config_calc_checksum(&app.conf)); 
+		printf("CONF: invalid checksum %x, expected %x\n", app.conf.checksum, config_calc_checksum(&app.conf));
+		for(uint16_t c = 0; c < sizeof(struct config); c++){
+			printf("%x ", ((uint8_t*)&app.conf)[c]); 
+		} printf("\n"); 
 		memcpy(&app.conf, &default_config, sizeof(struct config)); 
 		config_update_checksum(&app.conf); 
 		app.status |= DEMO_STATUS_WR_CONFIG; 
@@ -269,6 +290,29 @@ LIBK_THREAD(main_thread){
 	}
 	
 	while(1){
+		// check if it is time to save the config
+		config_update_checksum(&app.conf); 
+		
+		// if the checksum has changed then we set a timeout 
+		if(app.conf.checksum != app.prev_config_checksum){
+			app.save_config_timeout = timestamp_from_now_us(5000000); 
+			app.prev_config_checksum = app.conf.checksum; 
+		} 
+		// if the checksum is not the same as the saved checksum and 
+		// the timeout expired then the config is saved. 
+		// this means that we only save the config if it is 5 seconds old and 
+		// is different from the one already in the eeprom
+		if(app.conf.checksum != app.saved_config_checksum &&
+			timestamp_expired(app.save_config_timeout)){
+			app.status |= DEMO_STATUS_WR_CONFIG; 
+		}
+		
+		// read switches
+		gui->sw[0] = fst6_key_down(FST6_KEY_SWA); 
+		gui->sw[1] = fst6_key_down(FST6_KEY_SWB); 
+		gui->sw[2] = fst6_key_down(FST6_KEY_SWC); 
+		gui->sw[3] = fst6_key_down(FST6_KEY_SWD); 
+		
 		while((key = fst6_read_key()) > 0){
 			if(!(FST6_KEY_FLAG_UP & key)){
 				switch(key & FST6_KEY_MASK){
@@ -287,7 +331,31 @@ LIBK_THREAD(main_thread){
 					case FST6_KEY_ROTB: 
 						m2_fb_put_key(M2_KEY_PREV); 
 						break; 
-					case FST6_KEY_SWA: 
+					case FST6_KEY_CH1P: 
+						app.conf.sticks[0].offset += OFFSET_STEP; 
+						break; 
+					case FST6_KEY_CH1M: 
+						app.conf.sticks[0].offset-= OFFSET_STEP; 
+						break; 
+					case FST6_KEY_CH2P: 
+						app.conf.sticks[1].offset+= OFFSET_STEP; 
+						break; 
+					case FST6_KEY_CH2M: 
+						app.conf.sticks[1].offset-= OFFSET_STEP; 
+						break; 
+					case FST6_KEY_CH3P: 
+						app.conf.sticks[2].offset+= OFFSET_STEP; 
+						break; 
+					case FST6_KEY_CH3M: 
+						app.conf.sticks[2].offset-= OFFSET_STEP; 
+						break; 
+					case FST6_KEY_CH4P: 
+						app.conf.sticks[3].offset+= OFFSET_STEP; 
+						break; 
+					case FST6_KEY_CH4M: 
+						app.conf.sticks[3].offset-= OFFSET_STEP; 
+						break; 
+					/*case FST6_KEY_SWA: 
 						gui->sw[0] = 0; 
 						break; 
 					case FST6_KEY_SWB: 
@@ -298,12 +366,12 @@ LIBK_THREAD(main_thread){
 						break; 
 					case FST6_KEY_SWD: 
 						gui->sw[3] = 0; 
-						break; 
+						break; */
 				}
 				printf("KEY: %d\n", key & FST6_KEY_MASK); 
 			} else {
 				printf("DOW: %d\n", key & FST6_KEY_MASK); 
-				switch(key & FST6_KEY_MASK){
+				/*switch(key & FST6_KEY_MASK){
 					case FST6_KEY_SWA: 
 						gui->sw[0] = 1; 
 						break; 
@@ -316,7 +384,7 @@ LIBK_THREAD(main_thread){
 					case FST6_KEY_SWD: 
 						gui->sw[3] = 1; 
 						break; 
-				}
+				}*/
 			}
 		}
 		/*

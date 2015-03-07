@@ -455,8 +455,8 @@ M2_ALIGN(el_sm_title, "x0y53-1W64", &el_sm_title_label);
 	}
 	
 	M2_BUTTON(el_sm_chsm_btn, "", " >>> ", fn_sm_chsm_btn); 
-// ===============
-// MIXING
+	// ===============
+	// MIXING
 	M2_LABEL(el_sm_mixsm_label, "", "Mixing"); 
 	
 	void fn_sm_mixsm_btn(m2_el_fnarg_p fnarg) {
@@ -465,8 +465,8 @@ M2_ALIGN(el_sm_title, "x0y53-1W64", &el_sm_title_label);
 	}
 	
 	M2_BUTTON(el_sm_mixsm_btn, "", " >>> ", fn_sm_mixsm_btn); 
-// ===============
-// CALIBRATION
+	// ===============
+	// CALIBRATION
 	M2_LABEL(el_sm_cal_label, "", "Calibrate"); 
 	
 	void fn_sm_cal_btn(m2_el_fnarg_p fnarg) {
@@ -475,8 +475,8 @@ M2_ALIGN(el_sm_title, "x0y53-1W64", &el_sm_title_label);
 	}
 	
 	M2_BUTTON(el_sm_cal_btn, "", " >>> ", fn_sm_cal_btn); 
-// ===============
-// BOTTOM LINE
+	// ===============
+	// BOTTOM LINE
 	void fn_sm_btn_back(m2_el_fnarg_p fnarg) {
 		(void)fnarg; 
 		m2_SetRoot(&top_el_tlsm);
@@ -558,6 +558,20 @@ void fn_mm_btn_m6(m2_el_fnarg_p fnarg) {
 
 //M2_LABEL(el_mm_title_label, "", "======= FS-T6 =======");
 //M2_ALIGN(el_mm_title, "x0y56-1|2W64", &el_mm_title_label); 
+/*
+const char *fn_mm_mode_list(uint8_t idx, uint8_t msg) {
+	uint8_t select = msg == M2_STRLIST_MSG_SELECT; 
+	static const char *titles[] = {"m1", "m2", "m3", "m4", "m5", "m6"}; 
+	if(idx >= 6) return " "; 
+	if(select){
+		strcpy(model.profile.name, titles[idx]); 
+	}
+	return titles[idx]; 
+}
+static uint8_t el_mm_mode_list_count = 6; 
+
+M2_STRLIST(el_mm_mode_list, "a0", &model.mode, &el_mm_mode_list_count, fn_mm_mode_list); 
+*/
 
 // the top model buttons
 M2_BUTTON(el_mm_btn_m1, "", " m1 ", fn_mm_btn_m1); 
@@ -635,17 +649,6 @@ void fn_mm_btn_ch6(m2_el_fnarg_p fnarg) {
 M2_BUTTON(el_mm_ch6_label, "", "CH6", fn_mm_btn_ch6); 
 M2_U32NUM(el_mm_ch6_value, "a0r1c4", &model.out[5].value); 
 
-M2_LABEL(el_mm_swab_label, NULL, "A/B");
-M2_LABEL(el_mm_swcd_label, NULL, "C/D");
-GUI_SWITCH(el_mm_swa_value, "w4h4", &model.sw[0]); 
-GUI_SWITCH(el_mm_swb_value, "w4h4", &model.sw[1]); 
-GUI_SWITCH(el_mm_swc_value, "w4h4", &model.sw[2]); 
-GUI_SWITCH(el_mm_swd_value, "w4h4", &model.sw[3]); 
-M2_LIST(list_mm_sw) = {
-	&el_mm_swab_label, &el_mm_swa_value, &el_mm_swb_value, 
-	&el_mm_swcd_label, &el_mm_swc_value, &el_mm_swd_value
-}; 
-M2_GRIDLIST(el_mm_sw, "c3w30", list_mm_sw); 
 /*
 const char *fn_mm_chan_source(uint8_t idx){
 	switch(idx){
@@ -678,15 +681,29 @@ M2_LIST(list_mm_chi) = {
 		&el_mm_ch5_label, &el_mm_ch5_value, 
 		&el_mm_ch6_label, &el_mm_ch6_value,
 }; 
-M2_GRIDLIST(el_mm_chi_list, "a0x8y16c3W56", list_mm_chi); 
+M2_GRIDLIST(el_mm_chi_list, "a0x8y16c2W25", list_mm_chi); 
 M2_ALIGN(el_mm_chi, "x8y16-0|0W64", &el_mm_chi_list); 
 
-M2_LABEL(el_mm_swi_list_label, "-1", "  aux "); 
-M2_LIST(el_mm_swi_list) = {
-		&el_mm_swi_list_label, 
-		&el_mm_sw
-}; 
-M2_GRIDLIST(el_mm_swi, "x8y40l5w15c6", el_mm_swi_list); 
+// MIX SELECITON DIALOG
+	M2_LABEL(el_mm_swab_label, NULL, "A/B");
+	M2_LABEL(el_mm_swcd_label, NULL, "C/D");
+	GUI_SWITCH(el_mm_swa_value, "w4h4", &model.sw[0]); 
+	GUI_SWITCH(el_mm_swb_value, "w4h4", &model.sw[1]); 
+	GUI_SWITCH(el_mm_swc_value, "w4h4", &model.sw[2]); 
+	GUI_SWITCH(el_mm_swd_value, "w4h4", &model.sw[3]); 
+	M2_LIST(list_mm_sw) = {
+		&el_mm_swab_label, &el_mm_swa_value, &el_mm_swb_value, 
+		&el_mm_swcd_label, &el_mm_swc_value, &el_mm_swd_value
+	}; 
+	M2_GRIDLIST(el_mm_sw, "c3w30", list_mm_sw); 
+
+	M2_LABEL(el_mm_swi_list_label, "-1", "  aux "); 
+	M2_LIST(el_mm_swi_list) = {
+			&el_mm_swi_list_label, 
+			&el_mm_sw
+	}; 
+	M2_VLIST(el_mm_mixes, "x80y16w15", el_mm_swi_list); 
+// ================
 
 //M2_BOX(el_main_box, "w128h64x0y0"); 
 
@@ -713,6 +730,7 @@ M2_LIST(list_mm_dialog) = {
 		&el_mm_btns,
 		&el_mm_frame,
 		&el_mm_chi, 
+		&el_mm_mixes
 		//&el_mm_swi
 }; 
 M2_XYLIST(el_mm_dialog, "", list_mm_dialog); 

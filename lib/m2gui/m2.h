@@ -494,6 +494,8 @@ typedef const char *(*m2_strlist_cb_fnptr)(uint8_t idx, uint8_t msg);
 /* M2_LIST(rgb_list) = { &red_el, &green_el, &blue_el }; */
 
 #define M2_LIST(list) M2_EL_CONST void * M2_EL_CONST list[] M2_SECTION_PROGMEM 
+#define M2_LIST_RAM(list) void * list[] 
+#define M2_EXTERN_LIST_RAM(list) void **list
 
 /*==============================================================*/
 /* elements */

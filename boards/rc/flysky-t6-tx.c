@@ -2,24 +2,13 @@
 #include <disp/ks0713.h>
 #include <tty/vt100.h>
 #include <block/at24.h>
+#include <hid/keymatrix.h>
+#include <hid/fst6_keys.h>
 
 #include "flysky-t6-tx.h"
 
 #define KS0713_BACKLIGHT_PIN GPIO_PD2
 
-#define KEYS_COL1 GPIO_PB8
-#define KEYS_COL2 GPIO_PB9
-#define KEYS_COL3 GPIO_PB10
-#define KEYS_COL4 GPIO_PB11
-#define KEYS_ROW1 GPIO_PB12
-#define KEYS_ROW2 GPIO_PB13
-#define KEYS_ROW3 GPIO_PB14
-#define KEYS_ROTA GPIO_PC14
-#define KEYS_ROTB GPIO_PC15
-#define KEYS_SWA GPIO_PB0
-#define KEYS_SWB GPIO_PB1
-#define KEYS_SWC GPIO_PB5
-#define KEYS_SWD GPIO_PC13
 
 #define FST6_ADC_BATTERY 6
 
@@ -38,9 +27,9 @@ struct fst6 {
 	struct ks0713 disp;
 	struct vt100 vt; 
 	struct at24 eeprom; 
+	struct fst6_keys keyb; 
 	timestamp_t time_to_render; 
 	timestamp_t pwm_end_time; 
-	uint32_t keys; 
 	uint16_t ppm_buffer[7]; 
 	
 	uint8_t  status; 
@@ -59,45 +48,12 @@ static void _fst6_write_ks0713(struct ks0713 *self, uint16_t *data, size_t size)
 
 static struct fst6 _board; 
 
-fst6_key_mask_t fst6_read_keys(void){
-	fst6_key_mask_t keys = 0; 
-	
-	gpio_set(KEYS_COL1); 
-	gpio_set(KEYS_COL2); 
-	gpio_set(KEYS_COL3); 
-	gpio_set(KEYS_COL4); 
-	keys = 0; 
-	gpio_clear(KEYS_COL1); 
-	//delay_us(5); 
-	if(!gpio_read_pin(KEYS_ROW1)) keys |= FST6_KEY_CH1P; 
-	if(!gpio_read_pin(KEYS_ROW2)) keys |= FST6_KEY_CH3P; 
-	gpio_set(KEYS_COL1); 
-	gpio_clear(KEYS_COL2); 
-	//delay_us(5); 
-	if(!gpio_read_pin(KEYS_ROW1)) keys |= FST6_KEY_CH1M; 
-	if(!gpio_read_pin(KEYS_ROW2)) keys |= FST6_KEY_CH3M; 
-	if(!gpio_read_pin(KEYS_ROW3)) keys |= FST6_KEY_SELECT; 
-	gpio_set(KEYS_COL2); 
-	gpio_clear(KEYS_COL3); 
-	//delay_us(5); 
-	if(!gpio_read_pin(KEYS_ROW1)) keys |= FST6_KEY_CH2P; 
-	if(!gpio_read_pin(KEYS_ROW2)) keys |= FST6_KEY_CH4P; 
-	if(!gpio_read_pin(KEYS_ROW3)) keys |= FST6_KEY_OK; 
-	gpio_set(KEYS_COL3); 
-	gpio_clear(KEYS_COL4); 
-	//delay_us(5); 
-	if(!gpio_read_pin(KEYS_ROW1)) keys |= FST6_KEY_CH2M; 
-	if(!gpio_read_pin(KEYS_ROW2)) keys |= FST6_KEY_CH4M; 
-	if(!gpio_read_pin(KEYS_ROW3)) keys |= FST6_KEY_CANCEL; 
-	gpio_set(KEYS_COL4);
-	if(!gpio_read_pin(KEYS_ROTA)) keys |= FST6_KEY_ROTA; 
-	if(!gpio_read_pin(KEYS_ROTB)) keys |= FST6_KEY_ROTB; 
-	if(!gpio_read_pin(KEYS_SWA)) keys |= FST6_KEY_SWA; 
-	if(!gpio_read_pin(KEYS_SWB)) keys |= FST6_KEY_SWB; 
-	if(!gpio_read_pin(KEYS_SWC)) keys |= FST6_KEY_SWC; 
-	if(!gpio_read_pin(KEYS_SWD)) keys |= FST6_KEY_SWD; 
-	
-	return keys; 
+int16_t fst6_read_key(void){
+	return fst6_keys_get(&_board.keyb); 
+}
+
+uint8_t fst6_key_down(fst6_key_code_t key){
+	return fst6_keys_key_down(&_board.keyb, key); 
 }
 
 uint16_t fst6_read_stick(fst6_stick_t id){
@@ -155,21 +111,7 @@ void fst6_init(void){
 	gpio_configure(KS0713_BACKLIGHT_PIN, GP_OUTPUT | GP_PUSH_PULL); 
 	gpio_set(KS0713_BACKLIGHT_PIN); 
 	
-	// configure pins for keys
-	gpio_configure(KEYS_COL1, GP_OUTPUT); 
-	gpio_configure(KEYS_COL2, GP_OUTPUT); 
-	gpio_configure(KEYS_COL3, GP_OUTPUT); 
-	gpio_configure(KEYS_COL4, GP_OUTPUT); 
-	
-	gpio_configure(KEYS_ROW1, GP_INPUT | GP_PULLUP); 
-	gpio_configure(KEYS_ROW2, GP_INPUT | GP_PULLUP); 
-	gpio_configure(KEYS_ROW3, GP_INPUT | GP_PULLUP); 
-	gpio_configure(KEYS_ROTA, GP_INPUT | GP_PULLUP); 
-	gpio_configure(KEYS_ROTB, GP_INPUT | GP_PULLUP); 
-	gpio_configure(KEYS_SWA, GP_INPUT | GP_PULLUP); 
-	gpio_configure(KEYS_SWB, GP_INPUT | GP_PULLUP); 
-	gpio_configure(KEYS_SWC, GP_INPUT | GP_PULLUP); 
-	gpio_configure(KEYS_SWD, GP_INPUT | GP_PULLUP); 
+	fst6_keys_init(&_board.keyb); 
 	
 	gpio_configure(GPIO_PA0, GP_INPUT | GP_ANALOG); 
 	gpio_configure(GPIO_PA1, GP_INPUT | GP_ANALOG); 

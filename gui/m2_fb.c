@@ -65,18 +65,16 @@ static void _m2_fb_set_pixel8(struct m2_fb *self, u8g_dev_arg_pixel_t *arg_pixel
 	} while( pixel != 0  );
 }
 
-
-static uint8_t _m2_gh_u8g_fn(m2_gfx_arg_p  arg)
+uint8_t _m2_gh_u8g_fn(m2_gfx_arg_p  arg); 
+uint8_t _m2_gh_u8g_fn(m2_gfx_arg_p  arg)
 {
 	switch(arg->msg) {
 		case M2_GFX_MSG_DRAW_NORMAL_NO_FOCUS:
+			m2_u8g_dev_variables.m2_u8g_current_text_color = m2_u8g_dev_variables.m2_u8g_fg_text_color;
 			if ( (arg->font & 4) != 0 )
 			{
-				m2_u8g_draw_frame(arg->x, arg->y, arg->w, arg->h + 1);
+				m2_u8g_draw_frame(arg->x, arg->y, arg->w + 1, arg->h + 1);
 			}
-			//m2_u8g_draw_frame(arg->x, arg->y, arg->w, arg->h);
-			
-			m2_u8g_dev_variables.m2_u8g_current_text_color = m2_u8g_dev_variables.m2_u8g_fg_text_color;
 			if ( m2_u8g_dev_variables.m2_gh_u8g_invert_at_depth < m2_u8g_dev_variables.m2_gh_u8g_current_depth )
 			{
 				m2_u8g_dev_variables.m2_u8g_current_text_color = m2_u8g_dev_variables.m2_u8g_bg_text_color;
@@ -86,8 +84,8 @@ static uint8_t _m2_gh_u8g_fn(m2_gfx_arg_p  arg)
 			break;
 		case M2_GFX_MSG_DRAW_NORMAL_FOCUS:
 			m2_u8g_dev_variables.m2_u8g_current_text_color = m2_u8g_dev_variables.m2_u8g_bg_text_color;
-			m2_u8g_draw_box(arg->x, arg->y, arg->w, arg->h + 1);
-			m2_u8g_draw_frame(arg->x, arg->y, arg->w, arg->h + 1);
+			m2_u8g_draw_box(arg->x, arg->y, arg->w + 1, arg->h + 1);
+			m2_u8g_draw_frame(arg->x, arg->y, arg->w + 1, arg->h + 1);
 			
 			/* in all cases, the text below needs to be inverted */
 			m2_u8g_dev_variables.m2_gh_u8g_invert_at_depth = m2_u8g_dev_variables.m2_gh_u8g_current_depth;
@@ -95,7 +93,7 @@ static uint8_t _m2_gh_u8g_fn(m2_gfx_arg_p  arg)
 			break;
 		case M2_GFX_MSG_DRAW_SMALL_FOCUS:
 			m2_u8g_dev_variables.m2_u8g_current_text_color = m2_u8g_dev_variables.m2_u8g_bg_text_color;
-			m2_u8g_draw_box(arg->x, arg->y, arg->w, arg->h);
+			m2_u8g_draw_frame(arg->x, arg->y, arg->w, arg->h);
 			break;
 		case M2_GFX_MSG_DRAW_GO_UP:
 			/* does not work because of missing xor...
@@ -189,10 +187,10 @@ void m2_fb_init(fbuf_dev_t _fb, m2_rom_void_p element){
 
 	u8g_Init(&self->u8g, &u8g_dev_libk_framebuffer); 
   
-	m2_Init(element, _m2_fb_es, m2_eh_6bs, _m2_gh_u8g_fn);
+	m2_Init(element, _m2_fb_es, m2_eh_6bs, m2_gh_u8g_bfs);
 	
 	m2_SetU8g(&self->u8g, m2_u8g_box_icon);
-	m2_SetFont(0, (const void *)u8g_font_5x7);
+	m2_SetFont(0, (const void *)u8g_font_u8glib_4);
 	
 	cbuf_init(&self->key_buffer, self->key_buffer_data, sizeof(self->key_buffer_data)); 
 	

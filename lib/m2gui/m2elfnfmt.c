@@ -92,12 +92,14 @@ M2_EL_FN_DEF(m2_el_fnfmt_fn)
     	m2_pos_p b = (m2_pos_p)(fn_arg->data);
     	uint8_t w = m2_fn_get_width(fn_arg->element);
     	uint8_t h = m2_fn_get_height(fn_arg->element);
-	    if ( fn_arg->arg < 2 )
-	      m2_gfx_normal_no_focus(b->x, b->y, w, h, font);      
-	    else if ( fn_arg->arg == 2 )
-	      m2_gfx_normal_focus(b->x, b->y, w, h, font);
-	    else if ( fn_arg->arg == 3 )
+    	
+			if ( fn_arg->arg < 2 )
+				m2_gfx_normal_no_focus(b->x, b->y, w, h, font);      
+			else if ( fn_arg->arg == 2 )
+				m2_gfx_normal_focus(b->x, b->y, w, h, font);
+			else if ( fn_arg->arg == 3 )
 	      m2_gfx_normal_data_entry(b->x, b->y, w, h, font);
+	    
     }
     return 1;
   }

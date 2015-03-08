@@ -476,8 +476,8 @@ M2_ALIGN(el_sm_title, "x0y53-1W64", &el_sm_title_label);
 			&el_chsm_gridlist, 
 			&el_chsm_btns
 		}; 
-		M2_XYLIST(el_chsm_list, "x0y0", list_chsm); 
-		M2_ALIGN(top_el_chsm, "W64H64", &el_chsm_list); 
+		M2_XYLIST(el_chsm_list, "", list_chsm); 
+		M2_ALIGN(top_el_chsm, "x0y0-0|0W64H64", &el_chsm_list); 
 		// ===============
 		
 	M2_LABEL(el_sm_chsm_label, "", "Channels"); 
@@ -717,6 +717,77 @@ M2_LIST(list_mm_chi) = {
 M2_GRIDLIST(el_mm_chi_list, "a0x8y16c2W25", list_mm_chi); 
 M2_ALIGN(el_mm_chi, "x8y16-0|0W64", &el_mm_chi_list); 
 
+// MIX SETTINGS DIALOG
+M2_LABEL(el_chsm_reverse_label, "", "Reverse"); 
+
+const char *fn_chsm_reverse_select(uint8_t idx){
+	switch(idx){
+		case 0: return "no"; 
+		case 1: return "yes"; 
+	}
+	return " "; 
+}
+
+M2_COMBO(el_chsm_reverse, NULL, &model.channel.reverse, 2, fn_chsm_reverse_select);
+// =================
+
+const char *fn_mixsm_combo(uint8_t idx){
+	switch(idx){
+		case 0: return "OUT1"; 
+		case 1: return "OUT2"; 
+		case 2: return "OUT3"; 
+		case 3: return "OUT4"; 
+		case 4: return "OUT5"; 
+		case 5: return "OUT6"; 
+	}
+	return " "; 
+}
+
+M2_LABEL(el_mixsm_master_label, "", "Master"); 
+M2_COMBO(el_mixsm_master, NULL, &model.mix.master_channel, 6, fn_mixsm_combo);
+M2_LABEL(el_mixsm_slave_label, "", "Slave"); 
+M2_COMBO(el_mixsm_slave, NULL, &model.mix.slave_channel, 6, fn_mixsm_combo);
+
+M2_LABEL(el_mixsm_pos_label, "", "Pos. Mix"); 
+M2_U8NUM(el_mixsm_pos, "c4", 0, 100, &model.mix.pos_mix); 
+M2_LABEL(el_mixsm_neg_label, "", "Neg. Mix"); 
+M2_U8NUM(el_mixsm_neg, "c4", 0, 100, &model.mix.neg_mix); 
+M2_LABEL(el_mixsm_offset_label, "", "Offset"); 
+M2_U8NUM(el_mixsm_offset, "c4", 0, 100, &model.mix.offset);
+
+void fn_mixsm_btn_back(m2_el_fnarg_p fnarg) {
+	(void)fnarg; 
+	//model.channel.request_save = 1; 
+	m2_SetRoot(&top_el_tlsm);
+}
+
+M2_BUTTON(el_mixsm_back_btn, "x1y1f4-1w44", " <<< ", fn_mixsm_btn_back);
+//M2_LIST(list_chsm_btns) = {&el_chsm_btn_back, &el_chsm_btn_space, &el_chsm_btn_save}; 
+//M2_HLIST(el_chsm_btns, "x0y0", list_chsm_btns); 
+
+// =================
+M2_LIST(list_chsm_gridlist) = {
+	&el_mixsm_master_label, &el_mixsm_master,
+	&el_mixsm_slave_label, &el_mixsm_slave, 
+	&el_mixsm_pos_label, &el_mixsm_pos, 
+	&el_mixsm_neg_label, &el_mixsm_neg,  
+	&el_mixsm_offset_label, &el_mixsm_offset
+}; 
+M2_GRIDLIST(el_mixsm_gridlist, "x10y11c2", list_mixsm_gridlist); 
+
+// ===============
+M2_LIST(list_mixsm) = {
+	//&el_mm_channel_values, 
+	//&el_mm_frame, 
+	//&el_chsm_top_btns, 
+	&el_mixsm_gridlist, 
+	&el_mixsm_back_btn
+}; 
+M2_XYLIST(el_mixsm_list, "", list_chsm); 
+M2_ALIGN(top_el_mix_settings, "x0y0-0|0W64H64", &el_chsm_list); 
+
+// ==================
+
 // MIX SELECITON PART
 	M2_LABEL(el_mm_fst6_label_text, "f1", "KT-6");
 	M2_ALIGN(el_mm_fst6_label, "-1|0W64h7", &el_mm_fst6_label_text); 
@@ -732,9 +803,9 @@ M2_ALIGN(el_mm_chi, "x8y16-0|0W64", &el_mm_chi_list);
 	M2_GRIDLIST(el_mm_sw_gridlist, "c4", list_mm_sw); 
 	M2_ALIGN(el_mm_sw_list, "-1|0W64h9", &el_mm_sw_gridlist); 
 	
-	M2_BUTTON(el_mm_calibrate_btn, "f4", "calib", NULL); 
+	M2_BUTTON(el_mm_calibrate_btn, "f4w32", "calib", NULL); 
 	M2_ALIGN(el_mm_calibrate, "-1|0W64h9", &el_mm_calibrate_btn); 
-	M2_BUTTON(el_mm_reset_btn, "f4", "reset", NULL); 
+	M2_BUTTON(el_mm_reset_btn, "f4w32", "reset", NULL); 
 	M2_ALIGN(el_mm_reset, "-1|0W64h9", &el_mm_reset_btn); 
 	
 	M2_LIST(list_mm_middle) = {
@@ -745,32 +816,30 @@ M2_ALIGN(el_mm_chi, "x8y16-0|0W64", &el_mm_chi_list);
 		&el_mm_fst6_space, 
 		&el_mm_reset
 	}; 
-	M2_VLIST(el_mm_sw, "x0y12", list_mm_middle); 
-	
-	//M2_ALIGN(el_mm_sw, "-1|2x0y12W64h42", &el_mm_middle); 
+	M2_VLIST(el_mm_sw_vlist, "", list_mm_middle); 
+	M2_ALIGN(el_mm_center, "-1|2x0y12W64h42", &el_mm_sw_vlist); 
 	
 	#define MULTI_SELECT_CNT 3
 	const char *multi_select_strings[MULTI_SELECT_CNT] = { "mix 1", "mix 2", "mix 3" };
-	uint8_t multi_select_status[MULTI_SELECT_CNT] = { 0, 0, 0};
-
+	
 	uint8_t el_muse_first = 0;
 	uint8_t el_muse_cnt = MULTI_SELECT_CNT;
 
 	const char *el_muse_strlist_cb(uint8_t idx, uint8_t msg) {
 		const char *s = "";
 		if ( msg == M2_STRLIST_MSG_SELECT ) {
-			if ( multi_select_status[idx] == 0 ) {
-				multi_select_status[idx] = 1;
+			if ( model.mix_enabled[idx] == 0 ) {
+				model.mix_enabled[idx] = 1;
 			}
 			else {
-				multi_select_status[idx] = 0;
+				model.mix_enabled[idx].on = 0;
 			}
 		}
 		if ( msg == M2_STRLIST_MSG_GET_STR ) {
 			s = multi_select_strings[idx];
 		}
 		if ( msg == M2_STRLIST_MSG_GET_EXTENDED_STR ) {
-			if ( multi_select_status[idx] == 0 ) {
+			if ( model.mix_enabled[idx] == 0 ) {
 				s = " ";
 			}
 			else {
@@ -779,11 +848,29 @@ M2_ALIGN(el_mm_chi, "x8y16-0|0W64", &el_mm_chi_list);
 		}
 		return s;  
 	}
-
+	
+	void fn_mix_1_btn(m2_el_fnarg_p fnarg) { 
+		(void)fnarg; 
+		model.mix.id = 0; 
+		model.mix.request_load = 1; 
+		m2_SetRoot(&top_el_mix_settings); 
+	}
+	void fn_mix_2_btn(m2_el_fnarg_p fnarg) { 
+		(void)fnarg;  
+		model.mix.id = 0; 
+		model.mix.request_load = 1; 
+		m2_SetRoot(&top_el_mix_settings); 
+	}
+	void fn_mix_3_btn(m2_el_fnarg_p fnarg) { 
+		(void)fnarg;  
+		model.mix.id = 0; 
+		model.mix.request_load = 1; 
+		m2_SetRoot(&top_el_mix_settings); 
+	}
 	M2_STRLIST(el_muse_strlist, "l3E2W10", &el_muse_first, &el_muse_cnt, el_muse_strlist_cb);
-	M2_BUTTON(el_mix_1_btn, "", " >>> ", NULL); 
-	M2_BUTTON(el_mix_2_btn, "", " >>> ", NULL); 
-	M2_BUTTON(el_mix_3_btn, "", " >>> ", NULL); 
+	M2_BUTTON(el_mix_1_btn, "", " >>> ", fn_mix_1_btn); 
+	M2_BUTTON(el_mix_2_btn, "", " >>> ", fn_mix_2_btn); 
+	M2_BUTTON(el_mix_3_btn, "", " >>> ", fn_mix_3_btn); 
 	M2_LIST(list_mm_mix_btns) = {
 		&el_mix_1_btn, &el_mix_2_btn, &el_mix_3_btn
 	}; 
@@ -793,7 +880,7 @@ M2_ALIGN(el_mm_chi, "x8y16-0|0W64", &el_mm_chi_list);
 		&el_muse_strlist, 
 		&el_mm_mix_btns
 	}; 
-	M2_HLIST(el_mm_mix_list, "", list_mm_mix); 
+	M2_HLIST(el_mm_mix_list, "a0", list_mm_mix); 
 	
 	const char *fn_mm_armed(uint8_t idx){
 		switch(idx){
@@ -803,14 +890,16 @@ M2_ALIGN(el_mm_chi, "x8y16-0|0W64", &el_mm_chi_list);
 		return " "; 
 	}
 
-	M2_COMBO(el_mm_armed, NULL, &model.armed, 2, fn_mm_armed);
+	M2_COMBO(el_mm_armed_combo, NULL, &model.armed, 2, fn_mm_armed);
+	M2_ALIGN(el_mm_armed, "-1|1W64h9", &el_mm_armed_combo); 
 	
 	// right hand side controls
 	M2_LIST(list_mm_right_panel) = {
-		&el_mm_mix_list,
-		&el_mm_armed
+		&el_mm_armed,
+		&el_mm_mix_list
 	}; 
-	M2_VLIST(el_mm_mixes, "x81y16", list_mm_right_panel); 
+	M2_VLIST(el_mm_mixes_list, "", list_mm_right_panel); 
+	M2_ALIGN(el_mm_mixes, "-0|0x81y16W64H64", &el_mm_mixes_list); 
 	
 	//M2_ALIGN(el_mm_mixes, "-0|1x81y0W64H64", &el_mm_right_panel); 
 	/*
@@ -847,12 +936,12 @@ GUI_FRAME(el_mm_frame, "x0y0");
 // place the title and the buttons and other controls into a vertical list
 M2_LIST(list_mm_dialog) = {
 		&el_mm_top_btns, 
-		&el_mm_channel_values, 
+		&el_mm_chi, 
+		&el_mm_center, 
+		&el_mm_mixes,
 		&el_mm_btns,
 		&el_mm_frame,
-		&el_mm_chi, 
-		&el_mm_sw, 
-		&el_mm_mixes
+		&el_mm_channel_values, 
 		//&el_mm_swi
 }; 
 M2_XYLIST(el_mm_dialog, "", list_mm_dialog); 

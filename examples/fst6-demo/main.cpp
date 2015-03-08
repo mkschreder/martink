@@ -75,6 +75,15 @@ struct channel_config {
 	int16_t offset; 
 }; 
 
+struct mix_config {
+	uint8_t enabled; 
+	uint8_t master_channel; 
+	uint8_t slave_channel; 
+	uint8_t pos_mix; 
+	uint8_t neg_mix; 
+	uint8_t offset; 
+}; 
+
 struct stick_config {
 	int16_t offset; 
 }; 
@@ -82,6 +91,7 @@ struct stick_config {
 struct config {
 	struct channel_config channels[6]; 
 	struct stick_config sticks[4]; 
+	struct mix_config mixes[3]; 
 	uint16_t checksum; 
 }; 
 
@@ -100,6 +110,11 @@ const struct config default_config = {
 		{.offset = 0},
 		{.offset = 0}
 	},
+	.mixes {
+		{.enabled = 0, .master_channel = 0, .slave_channel = 1, .pos_mix = 50, .neg_mix = 50, .offset = 0}, 
+		{.enabled = 0, .master_channel = 0, .slave_channel = 1, .pos_mix = 50, .neg_mix = 50, .offset = 0}, 
+		{.enabled = 0, .master_channel = 0, .slave_channel = 1, .pos_mix = 50, .neg_mix = 50, .offset = 0}
+	}, 
 	.checksum = 0
 }; 
 
@@ -266,15 +281,30 @@ LIBK_THREAD(output_thread){
 					raw = 1500; 
 			}
 			outputs[c] = cc->offset + map(raw, cc->min, cc->max, 1000, 2000); 
-			gui->out[c].value = outputs[c]; 
+			// update currently edited gui channel
 			if(gui->channel.id == c){
 				gui->channel.input = raw; 
 				gui->channel.output = outputs[c]; 
 			}
 		}
-		// do mixing here
-		// ..
 		
+		// do mixing here
+		for(int c = 0; c < 3; c++){
+			uint8_t master_id = app.conf.mixes[c].master_channel; 
+			uint8_t slave_id = app.conf.mixes[c].slave_channel; 
+			if(app.conf.mixes[c].enabled && master_id < 6 && slave_id < 6 && master_id != slave_id){
+				int32_t val = outputs[master_id] - 1500; 
+				if(val > 0)
+					outputs[slave_id] = constrain(outputs[slave_id] + (app.conf.mixes[c].pos_mix * val) / 100 + app.conf.mixes[c].offset * 5, 1000, 2000); 
+				else
+					outputs[slave_id] = constrain(outputs[slave_id] + (app.conf.mixes[c].neg_mix * val) / 100 - app.conf.mixes[c].offset * 5, 1000, 2000); 
+			}
+		}
+		
+		// update gui outputs
+		for(int c = 0; c < 6; c++){
+			gui->out[c].value = outputs[c]; 
+		}
 		// write outputs
 		fst6_write_ppm(outputs[0], outputs[1], outputs[2], outputs[3], outputs[4], outputs[5]); 
 			
@@ -355,6 +385,34 @@ LIBK_THREAD(main_thread){
 			ch->min = gui->channel.min; 
 			ch->max = gui->channel.max; 
 			ch->offset = constrain((int16_t)gui->channel.offset, 1000, 2000) - 1500; 
+		}
+		
+		if(gui->mix.request_load){
+			uint8_t id = (gui->mix.id < 3)?gui->mix.id:0; 
+			struct mix_config *m = &app.conf.mixes[id]; 
+			gui->mix.master_channel = m->master_channel; 
+			gui->mix.slave_channel = m->slave_channel; 
+			gui->mix.pos_mix = m->pos_mix; 
+			gui->mix.neg_mix = m->neg_mix; 
+			gui->mix.offset = m->offset; 
+			gui->mix.request_load = 0; 
+		} else {
+			uint8_t id = (gui->mix.id < 3)?gui->mix.id:0; 
+			struct mix_config *m = &app.conf.mixes[id]; 
+			m->master_channel = gui->mix.master_channel; 
+			m->slave_channel = gui->mix.slave_channel; 
+			m->pos_mix = gui->mix.pos_mix; 
+			m->neg_mix = gui->mix.neg_mix; 
+			m->offset = gui->mix.offset; 
+		}
+		
+		// enable any mixes
+		for(int c = 0; c < 3; c++){
+			if(gui->mix_enabled[c]){
+				app.conf.mixes[c].enabled = 1; 
+			} else {
+				app.conf.mixes[c].enabled = 0; 
+			}
 		}
 		
 		while((key = fst6_read_key()) > 0){

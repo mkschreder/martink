@@ -179,6 +179,10 @@ static uint8_t gui_el_switch_get_value(m2_el_fnarg_p fn_arg)
 M2_EL_FN_DEF(m2_el_switch_fn)
 {
 	//uint8_t font;
+	uint8_t font;
+
+	font = m2_el_fmfmt_get_font(fn_arg);
+	
 	uint16_t h = m2_el_fmfmt_opt_get_val_zero_default( fn_arg, 'h' ); 
 	uint16_t w = m2_el_fmfmt_opt_get_val_zero_default( fn_arg, 'w' ); 
 	
@@ -190,28 +194,30 @@ M2_EL_FN_DEF(m2_el_switch_fn)
 		case M2_EL_MSG_IS_READ_ONLY:
 			return 1;
 		case M2_EL_MSG_GET_HEIGHT:
-			return w; 
+			return m2_gfx_add_readonly_border_height(m2_el_fmfmt_opt_get_val_zero_default( fn_arg, 'b' ), font, m2_align_get_max_height(fn_arg, m2_gfx_get_char_height(font)));
 		case M2_EL_MSG_GET_WIDTH:
-			return h; 
+			return m2_gfx_add_readonly_border_width(m2_el_fmfmt_opt_get_val_zero_default( fn_arg, 'b' ), font, m2_align_get_max_width(fn_arg, m2_gfx_get_text_width(font,m2_el_str_get_str(fn_arg))));
 		case M2_EL_MSG_SHOW: {
 			m2_pos_p b = (m2_pos_p)(fn_arg->data);
 			uint8_t on = gui_el_switch_get_value(fn_arg); 
 			
-			m2_gfx_hline(b->x, b->y + h, w + 1); // top
-			m2_gfx_hline(b->x, b->y + 1, w + 1); // bottom
-			m2_gfx_vline(b->x, b->y + h, h - 1); // left
+			m2_gfx_hline(b->x + 1, b->y + h, w); // top
+			m2_gfx_hline(b->x + 1, b->y + 1, w); // bottom
+			m2_gfx_vline(b->x + 1, b->y + h, h - 1); // left
 			m2_gfx_vline(b->x + w, b->y + h, h - 1); // right
 			
 			if(on)
-				m2_gfx_box(b->x, b->y + (h / 2) + 1, w, h / 2);
+				m2_gfx_box(b->x + 1, b->y + (h / 2) + 1, w, h / 2);
 			else
-				m2_gfx_box(b->x, b->y + 1, w, h / 2);
+				m2_gfx_box(b->x + 1, b->y + 1, w, h / 2);
 		} return 1;    
 	}
 	return m2_el_fnfmt_fn(fn_arg);
 }
 #define GUI_SWITCH(el,fmt, val) M2_EL_CONST m2_el_switch_t el M2_SECTION_PROGMEM = { { m2_el_switch_fn, (fmt) } , (val)}
 #define GUI_EXTERN_SWITCH(el) extern M2_EL_CONST m2_el_switch_t el
+
+static uint32_t chmin = 1000, chmax = 2000, chcenter = 1500; 
 
 //===================
 // DIALOG FRAME
@@ -379,6 +385,7 @@ M2_ALIGN(el_sm_title, "x0y53-1W64", &el_sm_title_label);
 // CHANNELS 
 		
 		// LABELS
+			
 			// REVERSE CHANNEL
 			M2_LABEL(el_chsm_reverse_label, "", "Reverse"); 
 
@@ -392,7 +399,28 @@ M2_ALIGN(el_sm_title, "x0y53-1W64", &el_sm_title_label);
 
 			M2_COMBO(el_chsm_reverse, NULL, &model.channel.reverse, 2, fn_chsm_reverse_select);
 			// =================
-			// RATE + EXPONENT
+			
+			const char *fn_chsm_source(uint8_t idx){
+				switch(idx){
+					case 0: return "R stick H"; 
+					case 1: return "R stick V"; 
+					case 2: return "L stick V"; 
+					case 3: return "L stick H"; 
+					case 4: return "VRA"; 
+					case 5: return "VRB"; 
+					case 6: return "SWA"; 
+					case 7: return "SWB"; 
+					case 8: return "SWC"; 
+					case 9: return "SWD"; 
+				}
+				return " "; 
+			}
+
+			M2_LABEL(el_chsm_source_label, "", "Source"); 
+			M2_COMBO(el_chsm_source, NULL, &model.channel.source, 10, fn_chsm_source);
+
+			M2_LABEL(el_chsm_raw_label, "", "Raw"); 
+			M2_U32NUM(el_chsm_raw, "c4", &model.channel.input); 
 			M2_LABEL(el_chsm_rate_label, "", "Rate"); 
 			M2_U8NUM(el_chsm_rate, "c3", 0, 100, &model.channel.rate);
 			M2_LABEL(el_chsm_exp_label, "", "Exponent"); 
@@ -402,14 +430,16 @@ M2_ALIGN(el_sm_title, "x0y53-1W64", &el_sm_title_label);
 			M2_LABEL(el_chsm_max_label, "", "Max"); 
 			M2_U32NUM(el_chsm_max, "c4", &model.channel.max);
 			M2_LABEL(el_chsm_offset_label, "", "Offset"); 
-			M2_S8NUM(el_chsm_offset, "c3", -100, 100, &model.channel.offset);
-			
+			M2_U32NUM(el_chsm_offset, "c4", &model.channel.offset);
+			M2_LABEL(el_chsm_out_label, "", "OUT"); 
+			M2_U32NUM(el_chsm_out, "c4", &model.channel.output); 
 			// =================
 			// BOTTOM LINE
 			M2_EXTERN_ALIGN(top_el_sm); 
 			void fn_chsm_btn_back(m2_el_fnarg_p fnarg) {
 				(void)fnarg; 
-				m2_SetRoot(&top_el_sm);
+				//model.channel.request_save = 1; 
+				m2_SetRoot(&top_el_tlsm);
 			}
 			void fn_chsm_btn_save(m2_el_fnarg_p fnarg) {
 				(void)fnarg; 
@@ -417,28 +447,32 @@ M2_ALIGN(el_sm_title, "x0y53-1W64", &el_sm_title_label);
 				//m2_SetRoot(&top_el_sm);
 			}
 			
-			M2_BUTTON(el_chsm_btn_back, "-1w44", " <<< ", fn_chsm_btn_back);
-			M2_SPACE(el_chsm_btn_space, "w40h1");
-			M2_BUTTON(el_chsm_btn_save, "-1w44", "     save ", fn_chsm_btn_save); 
-			M2_LIST(list_chsm_btns) = {&el_chsm_btn_back, &el_chsm_btn_space, &el_chsm_btn_save}; 
-			M2_HLIST(el_chsm_btns, "x0y0", list_chsm_btns); 
+			M2_BUTTON(el_chsm_btns, "x1y1f4-1w44", " <<< ", fn_chsm_btn_back);
+			//M2_LIST(list_chsm_btns) = {&el_chsm_btn_back, &el_chsm_btn_space, &el_chsm_btn_save}; 
+			//M2_HLIST(el_chsm_btns, "x0y0", list_chsm_btns); 
 			
 			// =================
 			M2_LIST(list_chsm_gridlist) = {
+				&el_chsm_source_label, &el_chsm_source,
+				&el_chsm_raw_label, &el_chsm_raw, 
 				&el_chsm_reverse_label, &el_chsm_reverse, 
 				&el_chsm_rate_label, &el_chsm_rate,  
 				&el_chsm_exp_label, &el_chsm_exp, 
 				&el_chsm_min_label, &el_chsm_min, 
 				&el_chsm_max_label, &el_chsm_max, 
-				&el_chsm_offset_label, &el_chsm_offset
+				&el_chsm_offset_label, &el_chsm_offset, 
+				&el_chsm_out_label, &el_chsm_out
 			}; 
-			M2_GRIDLIST(el_chsm_gridlist, "x5y13c2", list_chsm_gridlist); 
-			
+			M2_GRIDLIST(el_chsm_gridlist, "x10y11c2", list_chsm_gridlist); 
+		
+		GUI_CHANNEL(el_chsm_out_indicator, "x2y11w4h50", &chmin, &chmax, &chcenter, &model.channel.output); 
+
 		// ===============
 		M2_LIST(list_chsm) = {
 			//&el_mm_channel_values, 
 			//&el_mm_frame, 
 			//&el_chsm_top_btns, 
+			&el_chsm_out_indicator, 
 			&el_chsm_gridlist, 
 			&el_chsm_btns
 		}; 
@@ -585,68 +619,67 @@ M2_HLIST(el_mm_top_btns_hlist, "a0", list_mm_top_btns);
 M2_ALIGN(el_mm_top_btns, "-1|2w126h62x1y1", &el_mm_top_btns_hlist); 
 
 M2_BUTTON(el_mm_btn_settings, "-1w30f4", "  about ", fn_mm_btn_info);
-M2_BUTTON(el_mm_btn_info, "-1w30f4", "  conf ", fn_mm_btn_settings);
+M2_BUTTON(el_mm_btn_info, "-1w30f4", "  setup ", fn_mm_btn_settings);
 M2_LABEL(el_mm_btn_space_label, "", model.profile.name);
-M2_ALIGN(el_mm_btn_space, "-1w55h6W64", &el_mm_btn_space_label); 
+M2_ALIGN(el_mm_btn_space, "-1|0w55h6W64", &el_mm_btn_space_label); 
 M2_LIST(list_mm_btns) = {&el_mm_btn_settings, &el_mm_btn_space, &el_mm_btn_info}; 
 M2_HLIST(el_mm_btns_hlist, "", list_mm_btns); 
 M2_ALIGN(el_mm_btns, "-1|W64x0y0", &el_mm_btns_hlist); 
 
+static void fn_chsm_go(int ch){
+	model.channel.id = ch; 
+	model.channel.request_load = 1; 
+	m2_SetRoot(&top_el_chsm); 
+}
 
 // the channel info control
 void fn_mm_btn_ch1(m2_el_fnarg_p fnarg) { 
 	(void)fnarg; 
-	//fn_chsm_load_channel(0); 
-	m2_SetRoot(&top_el_chsm); 
+	fn_chsm_go(0); 
 }
 
-M2_BUTTON(el_mm_ch1_label, "", "CH1", fn_mm_btn_ch1); 
+M2_BUTTON(el_mm_ch1_label, "", "OUT1", fn_mm_btn_ch1); 
 M2_U32NUM(el_mm_ch1_value, "a0r1c4", &model.out[0].value); 
 
 void fn_mm_btn_ch2(m2_el_fnarg_p fnarg) { 
 	(void)fnarg; 
-	//fn_chsm_load_channel(1); 
-	m2_SetRoot(&top_el_chsm); 
+	fn_chsm_go(1); 
 }
 
-M2_BUTTON(el_mm_ch2_label, "", "CH2", fn_mm_btn_ch2); 
+M2_BUTTON(el_mm_ch2_label, "", "OUT2", fn_mm_btn_ch2); 
 M2_U32NUM(el_mm_ch2_value, "a0r1c4", &model.out[1].value); 
 
 
 void fn_mm_btn_ch3(m2_el_fnarg_p fnarg) { 
 	(void)fnarg; 
-	//fn_chsm_load_channel(2); 
-	m2_SetRoot(&top_el_chsm); 
+	fn_chsm_go(2); 
 }
 
-M2_BUTTON(el_mm_ch3_label, "", "CH3", fn_mm_btn_ch3); 
+M2_BUTTON(el_mm_ch3_label, "", "OUT3", fn_mm_btn_ch3); 
 M2_U32NUM(el_mm_ch3_value, "a0r1c4", &model.out[2].value); 
 
 void fn_mm_btn_ch4(m2_el_fnarg_p fnarg) { 
 	(void)fnarg; 
-	//fn_chsm_load_channel(3); 
-	m2_SetRoot(&top_el_chsm); 
+	fn_chsm_go(3); 
 }
 
-M2_BUTTON(el_mm_ch4_label, "", "CH4", fn_mm_btn_ch4); 
+M2_BUTTON(el_mm_ch4_label, "", "OUT4", fn_mm_btn_ch4); 
 M2_U32NUM(el_mm_ch4_value, "a0r1c4", &model.out[3].value);
  
 void fn_mm_btn_ch5(m2_el_fnarg_p fnarg) { 
 	(void)fnarg; 
-	//fn_chsm_load_channel(4); 
-	m2_SetRoot(&top_el_chsm); 
+	fn_chsm_go(4); 
 }
 
-M2_BUTTON(el_mm_ch5_label, "", "CH5", fn_mm_btn_ch5); 
+M2_BUTTON(el_mm_ch5_label, "", "OUT5", fn_mm_btn_ch5); 
 M2_U32NUM(el_mm_ch5_value, "a0r1c4", &model.out[4].value); 
 
 void fn_mm_btn_ch6(m2_el_fnarg_p fnarg) { 
 	(void)fnarg; 
-	//fn_chsm_load_channel(5); 
-	m2_SetRoot(&top_el_chsm); 
+	fn_chsm_go(5); 
 }
 
-M2_BUTTON(el_mm_ch6_label, "", "CH6", fn_mm_btn_ch6); 
+M2_BUTTON(el_mm_ch6_label, "", "OUT6", fn_mm_btn_ch6); 
 M2_U32NUM(el_mm_ch6_value, "a0r1c4", &model.out[5].value); 
 
 /*
@@ -684,40 +717,128 @@ M2_LIST(list_mm_chi) = {
 M2_GRIDLIST(el_mm_chi_list, "a0x8y16c2W25", list_mm_chi); 
 M2_ALIGN(el_mm_chi, "x8y16-0|0W64", &el_mm_chi_list); 
 
-// MIX SELECITON DIALOG
-	M2_LABEL(el_mm_swab_label, NULL, "A/B");
-	M2_LABEL(el_mm_swcd_label, NULL, "C/D");
-	GUI_SWITCH(el_mm_swa_value, "w4h4", &model.sw[0]); 
-	GUI_SWITCH(el_mm_swb_value, "w4h4", &model.sw[1]); 
-	GUI_SWITCH(el_mm_swc_value, "w4h4", &model.sw[2]); 
-	GUI_SWITCH(el_mm_swd_value, "w4h4", &model.sw[3]); 
+// MIX SELECITON PART
+	M2_LABEL(el_mm_fst6_label_text, "f1", "KT-6");
+	M2_ALIGN(el_mm_fst6_label, "-1|0W64h7", &el_mm_fst6_label_text); 
+	M2_SPACE(el_mm_fst6_space, "w1h1");
+	
+	GUI_SWITCH(el_mm_swa_value, "w4h6b1", &model.sw[0]); 
+	GUI_SWITCH(el_mm_swb_value, "w4h6b1", &model.sw[1]); 
+	GUI_SWITCH(el_mm_swc_value, "w4h6b1", &model.sw[2]); 
+	GUI_SWITCH(el_mm_swd_value, "w4h6b1", &model.sw[3]); 
 	M2_LIST(list_mm_sw) = {
-		&el_mm_swab_label, &el_mm_swa_value, &el_mm_swb_value, 
-		&el_mm_swcd_label, &el_mm_swc_value, &el_mm_swd_value
+		&el_mm_swd_value, &el_mm_swb_value, &el_mm_swa_value, &el_mm_swc_value
 	}; 
-	M2_GRIDLIST(el_mm_sw, "c3w30", list_mm_sw); 
+	M2_GRIDLIST(el_mm_sw_gridlist, "c4", list_mm_sw); 
+	M2_ALIGN(el_mm_sw_list, "-1|0W64h9", &el_mm_sw_gridlist); 
+	
+	M2_BUTTON(el_mm_calibrate_btn, "f4", "calib", NULL); 
+	M2_ALIGN(el_mm_calibrate, "-1|0W64h9", &el_mm_calibrate_btn); 
+	M2_BUTTON(el_mm_reset_btn, "f4", "reset", NULL); 
+	M2_ALIGN(el_mm_reset, "-1|0W64h9", &el_mm_reset_btn); 
+	
+	M2_LIST(list_mm_middle) = {
+		&el_mm_fst6_label, 
+		&el_mm_fst6_space,
+		&el_mm_sw_list, 
+		&el_mm_calibrate, 
+		&el_mm_fst6_space, 
+		&el_mm_reset
+	}; 
+	M2_VLIST(el_mm_sw, "x0y12", list_mm_middle); 
+	
+	//M2_ALIGN(el_mm_sw, "-1|2x0y12W64h42", &el_mm_middle); 
+	
+	#define MULTI_SELECT_CNT 3
+	const char *multi_select_strings[MULTI_SELECT_CNT] = { "mix 1", "mix 2", "mix 3" };
+	uint8_t multi_select_status[MULTI_SELECT_CNT] = { 0, 0, 0};
 
+	uint8_t el_muse_first = 0;
+	uint8_t el_muse_cnt = MULTI_SELECT_CNT;
+
+	const char *el_muse_strlist_cb(uint8_t idx, uint8_t msg) {
+		const char *s = "";
+		if ( msg == M2_STRLIST_MSG_SELECT ) {
+			if ( multi_select_status[idx] == 0 ) {
+				multi_select_status[idx] = 1;
+			}
+			else {
+				multi_select_status[idx] = 0;
+			}
+		}
+		if ( msg == M2_STRLIST_MSG_GET_STR ) {
+			s = multi_select_strings[idx];
+		}
+		if ( msg == M2_STRLIST_MSG_GET_EXTENDED_STR ) {
+			if ( multi_select_status[idx] == 0 ) {
+				s = " ";
+			}
+			else {
+				s = "*";
+			}
+		}
+		return s;  
+	}
+
+	M2_STRLIST(el_muse_strlist, "l3E2W10", &el_muse_first, &el_muse_cnt, el_muse_strlist_cb);
+	M2_BUTTON(el_mix_1_btn, "", " >>> ", NULL); 
+	M2_BUTTON(el_mix_2_btn, "", " >>> ", NULL); 
+	M2_BUTTON(el_mix_3_btn, "", " >>> ", NULL); 
+	M2_LIST(list_mm_mix_btns) = {
+		&el_mix_1_btn, &el_mix_2_btn, &el_mix_3_btn
+	}; 
+	M2_VLIST(el_mm_mix_btns, "", list_mm_mix_btns); 
+	
+	M2_LIST(list_mm_mix) = {
+		&el_muse_strlist, 
+		&el_mm_mix_btns
+	}; 
+	M2_HLIST(el_mm_mix_list, "", list_mm_mix); 
+	
+	const char *fn_mm_armed(uint8_t idx){
+		switch(idx){
+			case 0: return "ARMED"; 
+			case 1: return "OFF"; 
+		}
+		return " "; 
+	}
+
+	M2_COMBO(el_mm_armed, NULL, &model.armed, 2, fn_mm_armed);
+	
+	// right hand side controls
+	M2_LIST(list_mm_right_panel) = {
+		&el_mm_mix_list,
+		&el_mm_armed
+	}; 
+	M2_VLIST(el_mm_mixes, "x81y16", list_mm_right_panel); 
+	
+	//M2_ALIGN(el_mm_mixes, "-0|1x81y0W64H64", &el_mm_right_panel); 
+	/*
 	M2_LABEL(el_mm_swi_list_label, "-1", "  aux "); 
 	M2_LIST(el_mm_swi_list) = {
 			&el_mm_swi_list_label, 
-			&el_mm_sw
+			&el_mm_sw,
+			&el_mm_mix_list
 	}; 
-	M2_VLIST(el_mm_mixes, "x80y16w15", el_mm_swi_list); 
+	
+	M2_VLIST(el_mm_mixes, "x60y16w15", el_mm_swi_list); */
 // ================
 
 //M2_BOX(el_main_box, "w128h64x0y0"); 
 
-static uint32_t chmin = 1000, chmax = 2000, chcenter = 1500; 
 
 // horizontal left
-GUI_CHANNEL(el_mm_ch3_sl, "x2y14w2h40", &chmin, &chmax, &chcenter, &model.out[2].value); 
-GUI_CHANNEL(el_mm_ch4_sl, "x6y12w40h2", &chmin, &chmax, &chcenter, &model.out[3].value); 
+GUI_CHANNEL(el_mm_ch3_sl, "x2y14w2h40", &chmin, &chmax, &chcenter, &model.inputs[2].value); 
+GUI_CHANNEL(el_mm_ch4_sl, "x6y12w40h2", &chmin, &chmax, &chcenter, &model.inputs[3].value); 
 
-GUI_CHANNEL(el_mm_ch2_sl, "x123y14w2h40", &chmin, &chmax, &chcenter, &model.out[1].value); 
-GUI_CHANNEL(el_mm_ch1_sl, "x81y12w40h2", &chmin, &chmax, &chcenter, &model.out[0].value); 
+GUI_CHANNEL(el_mm_ch2_sl, "x123y14w2h40", &chmin, &chmax, &chcenter, &model.inputs[1].value); 
+GUI_CHANNEL(el_mm_ch1_sl, "x81y12w40h2", &chmin, &chmax, &chcenter, &model.inputs[0].value); 
+
+GUI_CHANNEL(el_mm_ch5_sl, "x77y14w2h40", &chmin, &chmax, &chcenter, &model.inputs[4].value); 
+GUI_CHANNEL(el_mm_ch6_sl, "x48y14w2h40", &chmin, &chmax, &chcenter, &model.inputs[5].value); 
 
 M2_LIST(list_mm_channel_values) = {
-	&el_mm_ch1_sl, &el_mm_ch2_sl, &el_mm_ch3_sl, &el_mm_ch4_sl,
+	&el_mm_ch1_sl, &el_mm_ch2_sl, &el_mm_ch3_sl, &el_mm_ch4_sl, &el_mm_ch5_sl, &el_mm_ch6_sl
 }; 
 M2_XYLIST(el_mm_channel_values, "W64H64", list_mm_channel_values); 
 
@@ -730,6 +851,7 @@ M2_LIST(list_mm_dialog) = {
 		&el_mm_btns,
 		&el_mm_frame,
 		&el_mm_chi, 
+		&el_mm_sw, 
 		&el_mm_mixes
 		//&el_mm_swi
 }; 

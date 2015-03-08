@@ -63,7 +63,7 @@ uint8_t blk_transfer_completed(struct block_transfer *tr){
 	return 0; 
 }
 
-#define CHANNEL_FLAG_REVERESED (1 << 0)
+#define CHANNEL_FLAG_REVERSED (1 << 0)
 
 struct channel_config {
 	uint8_t source; 
@@ -189,6 +189,7 @@ LIBK_THREAD(config_thread){
 			
 			// set the saved checksum to the newly loaded config
 			app.saved_config_checksum = app.conf.checksum; 
+			gui->channel.request_load = 1; 
 			
 			//config_update_checksum(&app.conf); 
 			
@@ -227,6 +228,14 @@ LIBK_THREAD(output_thread){
 	while(1){
 		// read raw values for each channel
 		uint16_t outputs[6]; 
+		uint16_t inputs[6]; 
+		
+		// read all of the input values and update gui inputs indicators
+		for(int c = 0; c < 6; c++){
+			inputs[c] = map(fst6_read_stick((fst6_stick_t)c), 0, 4096, 0, 1000); 
+			gui->inputs[c].value = 1000 + inputs[c]; 
+		}
+		
 		for(int c = 0; c < 6; c++) {
 			uint16_t raw = 0; 
 			struct channel_config *cc = &app.conf.channels[c]; 
@@ -237,7 +246,11 @@ LIBK_THREAD(output_thread){
 				case 3: 
 				case 4: 
 				case 5: {
-					raw = fst6_read_stick((fst6_stick_t)cc->source); 
+					if(cc->flags & CHANNEL_FLAG_REVERSED){
+						raw = 2000 - inputs[cc->source]; 
+					} else {
+						raw = 1000 + inputs[cc->source]; 
+					}
 					if(cc->source < 4)
 						raw += app.conf.sticks[cc->source].offset; 
 				} break; 
@@ -250,10 +263,14 @@ LIBK_THREAD(output_thread){
 				case 9: 
 					raw = (fst6_key_down(FST6_KEY_SWD))?1000:2000; break; 
 				default: 
-					raw = 1000; 
+					raw = 1500; 
 			}
-			outputs[c] = cc->offset + map(1000 + (raw >> 2), cc->min, cc->max, 1000, 2000); 
+			outputs[c] = cc->offset + map(raw, cc->min, cc->max, 1000, 2000); 
 			gui->out[c].value = outputs[c]; 
+			if(gui->channel.id == c){
+				gui->channel.input = raw; 
+				gui->channel.output = outputs[c]; 
+			}
 		}
 		// do mixing here
 		// ..
@@ -313,6 +330,33 @@ LIBK_THREAD(main_thread){
 		gui->sw[2] = fst6_key_down(FST6_KEY_SWC); 
 		gui->sw[3] = fst6_key_down(FST6_KEY_SWD); 
 		
+		// sync the gui
+		if(gui->channel.request_load){
+			uint8_t id = (gui->channel.id < 6)?gui->channel.id:0; 
+			struct channel_config *ch = &app.conf.channels[id]; 
+			gui->channel.source = ch->source; 
+			gui->channel.reverse = (ch->flags & CHANNEL_FLAG_REVERSED)?1:0; 
+			gui->channel.rate = ch->rate; 
+			gui->channel.exponent = ch->exponent; 
+			gui->channel.min = ch->min; 
+			gui->channel.max = ch->max; 
+			gui->channel.offset = 1500 + ch->offset; 
+			gui->channel.request_load = 0; 
+		} else {
+			uint8_t id = (gui->channel.id < 6)?gui->channel.id:0; 
+			struct channel_config *ch = &app.conf.channels[id]; 
+			ch->source = gui->channel.source % 10; 
+			if(gui->channel.reverse)
+				ch->flags |= CHANNEL_FLAG_REVERSED;
+			else
+				ch->flags &= ~CHANNEL_FLAG_REVERSED; 
+			ch->rate = constrain((int8_t)gui->channel.rate, 0, 100); 
+			ch->exponent = constrain((int8_t)gui->channel.exponent, 0, 100); 
+			ch->min = gui->channel.min; 
+			ch->max = gui->channel.max; 
+			ch->offset = constrain((int16_t)gui->channel.offset, 1000, 2000) - 1500; 
+		}
+		
 		while((key = fst6_read_key()) > 0){
 			if(!(FST6_KEY_FLAG_UP & key)){
 				switch(key & FST6_KEY_MASK){
@@ -355,18 +399,6 @@ LIBK_THREAD(main_thread){
 					case FST6_KEY_CH4M: 
 						app.conf.sticks[3].offset-= OFFSET_STEP; 
 						break; 
-					/*case FST6_KEY_SWA: 
-						gui->sw[0] = 0; 
-						break; 
-					case FST6_KEY_SWB: 
-						gui->sw[1] = 0; 
-						break; 
-					case FST6_KEY_SWC: 
-						gui->sw[2] = 0; 
-						break; 
-					case FST6_KEY_SWD: 
-						gui->sw[3] = 0; 
-						break; */
 				}
 				printf("KEY: %d\n", key & FST6_KEY_MASK); 
 			} else {

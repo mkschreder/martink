@@ -5,6 +5,7 @@ obj-y += arch/spi.o
 obj-y += arch/twi.o
 obj-y += arch/soc.o
 obj-y += arch/pwm.o
+obj-y += arch/i2cblk.o
 
 docs-y += arch/README.md
 

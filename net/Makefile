@@ -9,3 +9,5 @@ INCLUDES += -Iinclude/ipv4/
 obj-$(CONFIG_ENC28J60) += net/enc28j60.o 
 #obj-$(CONFIG_RFNET) += rfnet.o 
 #obj-$(CONFIG_TCPIP) += tcpip.o 
+
+docs-y += net/README.md

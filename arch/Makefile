@@ -6,6 +6,8 @@ obj-y += arch/twi.o
 obj-y += arch/soc.o
 obj-y += arch/pwm.o
 
+docs-y += arch/README.md
+
 ifeq ($(CONFIG_AVR), y)
 	include $(srctree)/arch/avr/Makefile
 endif

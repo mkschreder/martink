@@ -17,3 +17,5 @@ obj-y += arch/arm/arm.o
 obj-y += arch/arm/memory.o
 obj-y += arch/arm/syscalls.o
 obj-y += arch/arm/atomic.o
+
+docs-y += arch/arm/README.md

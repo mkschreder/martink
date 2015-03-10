@@ -120,7 +120,11 @@ buildall:
 	make -C . BUILD=arm-stm32f100mdvl build-fst6-demo
 	make -C . BUILD=arm-stm32f103 build-cc3d-demo
 	make -C . BUILD=avr-atmega328p build-mwii-demo
-
+	make -C . docs 
+	
+docs: 
+	cat README-intro.md $(docs-y) > README.md
+	pandoc -V geometry:margin=1in --toc README.md -o Reference-Manual.pdf
 	
 $(BUILD_DIR)/%.o: %.cpp .config 
 	mkdir -p `dirname $@`

@@ -1,4 +1,6 @@
 
+docs-y += examples/README.md
+
 include examples/hello_world/Makefile
 include examples/fst6-demo/Makefile
 include examples/fst6-gui/Makefile

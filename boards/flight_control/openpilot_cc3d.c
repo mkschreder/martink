@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include <kernel.h>
+#include <kernel/dev/parallel.h>
 #include <sensors/mpu6000.h>
 #include <block/serial_flash.h>
 #include <fs/cfs/cfs.h>
@@ -14,11 +15,14 @@
 #define CC3D_FLEXIPORT_I2C_ID 1
 #define CC3D_DEFAULT_UART_BAUDRATE 38400
 
+#define CC3D_UART_BUFFER_SIZE 128
+
 static struct cc3d {
 	struct serial_flash flash; 
 	struct mpu6000 mpu; 
 	serial_dev_t spi0, spi1; 
-	serial_dev_t uart0; 
+	serial_dev_t uart0;
+	uint8_t uart_buffers[2][2][CC3D_UART_BUFFER_SIZE];  
 } cc3d; 
 
 	
@@ -61,8 +65,14 @@ void cc3d_init(void){
 	pwm_configure_capture(CC3D_IN_PWM6, 1000); 
 	
 	cc3d_led_on(); 
-	uart_init(CC3D_MAINPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE); 
-	uart_init(CC3D_FLEXIPORT_UART_ID, 57600); 
+	uart_init(CC3D_MAINPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE, 
+		cc3d.uart_buffers[0][0], CC3D_UART_BUFFER_SIZE, 
+		cc3d.uart_buffers[0][1], CC3D_UART_BUFFER_SIZE
+	); 
+	uart_init(CC3D_FLEXIPORT_UART_ID, 57600, 
+		cc3d.uart_buffers[1][0], CC3D_UART_BUFFER_SIZE, 
+		cc3d.uart_buffers[1][1], CC3D_UART_BUFFER_SIZE
+	); 
 	/*serial_dev_t sp = uart_get_serial_interface(CC3D_FLEXIPORT_UART_ID); 
 	serial_printf(sp, "AT"); 
 	delay_ms(500); 

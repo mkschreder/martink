@@ -39,6 +39,9 @@ extern "C" {
 */
 
 #include <inttypes.h>
+#include <stdint.h>
+#include <kernel/dev/serial.h>
+#include <kernel/dev/i2c.h>
 #include "../interface.h"
 
 typedef enum {

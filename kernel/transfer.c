@@ -26,7 +26,7 @@ uint8_t blk_transfer_completed(struct block_transfer *tr){
 			transfered = blk_readpage(tr->dev, tr->address + tr->transfered, tr->buffer + tr->transfered, tr->size - tr->transfered); 
 			
 		if(transfered > 0) {
-			printf("Transfered %d bytes of %d\n", transfered, tr->size); 
+			printf("Transfered %d bytes of %d\n", (int)transfered, (int)tr->size); 
 			tr->transfered += transfered; 
 		}
 	} else if(tr->transfered == tr->size && !blk_get_status(tr->dev, BLKDEV_BUSY)){

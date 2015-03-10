@@ -14,6 +14,7 @@
  */
 #pragma once
 
+
 struct serial_if;
 typedef struct serial_if **serial_dev_t;
 

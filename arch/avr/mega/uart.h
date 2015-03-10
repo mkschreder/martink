@@ -30,6 +30,8 @@ extern "C" {
 #error "This library requires AVR-GCC 3.4 or later, update to newer AVR-GCC compiler !"
 #endif
 
+#include <kernel/dev/serial.h>
+
 #define UART0_STATUS   UCSR0A
 #define UART0_CONTROL  UCSR0B
 #define UART0_DATA     UDR0
@@ -103,7 +105,7 @@ extern "C" {
 #define uart0_clock_polarity_tx_raising() (SETBIT(UCSR0C, UCPOL0))
 
 //TODO this does not compile with -Werror=unused-but-set-variable
-#define uart0_flush_receive_buffer() {\
+#define uart0_flush_receive_buffer(void) {\
   unsigned char uart0_flush_receive_buffer_dummy; \
   while (BITSET(UCSR0A, RXC0)) uart0_flush_receive_buffer_dummy = UDR0; \
 }
@@ -122,37 +124,37 @@ extern "C" {
 #define uart0_transmit_complete() (BITSET(UCSR0A, TXC0))
 #define uart0_data_register_empty() (BITSET(UCSR0A, UDRE0))
 
-#define uart0_wait_for_receive_complete()      ({loop_until_bit_is_set(UCSR0A, RXC0);})
-#define uart0_wait_for_transmit_complete()     ({loop_until_bit_is_set(UCSR0A, TXC0);})
-#define uart0_wait_for_empty_transmit_buffer() ({loop_until_bit_is_set(UCSR0A, UDRE0);})
+#define uart0_wait_for_receive_complete()      loop_until_bit_is_set(UCSR0A, RXC0)
+#define uart0_wait_for_transmit_complete()     loop_until_bit_is_set(UCSR0A, TXC0)
+#define uart0_wait_for_empty_transmit_buffer() loop_until_bit_is_set(UCSR0A, UDRE0)
 
 #define uart0_frame_error() (UCSR0A |= _BV(FE0))
 #define uart0_data_overrun() (UCSR0A |= _BV(DOR0))
 #define uart0_parity_error() (UCSR0A |= _BV(UPE0))
 
-#define uart0_init_default(baudrate) ({ \
-  uart0_set_baudrate_raw(BAUD_PRESCALE_ASYNC(baudrate)); \
-  uart0_mode_async(); \
-  uart0_character_size8(); \
-  uart0_parity_off(); \
-  uart0_stop_1bit(); \
-  uart0_receiver_enable(); \
-  uart0_transmitter_enable(); \
-  uart0_interrupt_rx_on(); \
-})
+static inline void uart0_init_default(uint32_t baudrate) { 
+  uart0_set_baudrate_raw(BAUD_PRESCALE_ASYNC(baudrate)); 
+  uart0_mode_async(); 
+  uart0_character_size8(); 
+  uart0_parity_off(); 
+  uart0_stop_1bit(); 
+  uart0_receiver_enable(); 
+  uart0_transmitter_enable(); 
+  uart0_interrupt_rx_on(); 
+}
 
-#define uart0_putc_direct(ch) ({\
-	uart0_wait_for_empty_transmit_buffer();\
-	UDR0 = ch;\
-})
+static inline void uart0_putc_direct(uint8_t ch){
+	uart0_wait_for_empty_transmit_buffer();
+	UDR0 = ch;
+}
 
-#define uart0_getc_direct() (\
-	uart0_wait_for_receive_complete(),\
-	((uart0_frame_error())?UART_FRAME_ERROR:\
-	((uart0_data_overrun())?UART_OVERRUN_ERROR:\
-	((uart0_parity_error())?UART_PARITY_ERROR:\
-	UDR0)))\
-)
+static inline uint8_t uart0_getc_direct(void) {
+	uart0_wait_for_receive_complete(); 
+	return ((uart0_frame_error())?SERIAL_FRAME_ERROR:
+	((uart0_data_overrun())?SERIAL_OVERRUN_ERROR:
+	((uart0_parity_error())?SERIAL_PARITY_ERROR:
+	UDR0))); 
+}
 
 #if defined(CONFIG_BUFFERED_UART)
 	extern size_t 		uart0_waiting(void); 
@@ -166,7 +168,7 @@ extern "C" {
 	#define uart0_putc(data) uart0_putc_direct(data) 
 #endif
 
-int8_t 		uart_init(uint8_t dev_id, uint32_t baud);
+int8_t 		uart_init(uint8_t dev_id, uint32_t baud, uint8_t *tx_buffer, uint8_t tx_size, uint8_t *rx_buffer, uint8_t rx_size);
 uint16_t 	uart_getc(uint8_t dev_id); 
 int8_t 		uart_putc(uint8_t dev_id, uint8_t ch);
 uint16_t 	uart_waiting(uint8_t dev_id);

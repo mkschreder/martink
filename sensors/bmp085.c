@@ -65,9 +65,6 @@
 
 #define BMP085_STATUS_READY 1
 
-#pragma message("skipping bmp085 driver")
-
-#if 0
 static long bmp085_getrawtemperature(struct bmp085 *self) {
 	long x1,x2;
 
@@ -121,6 +118,9 @@ static PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)){
 	struct bmp085 *self = container_of(kthread, struct bmp085, thread); 
 	
 	PT_BEGIN(thr); 
+	
+	blk_transfer_init(&self->transfer, self->dev, I2C_REG_TO_BLOCK_ADDR(self->addr, BMP085_REGAC1), self->buf, 2, IO_READ); 
+	PT_WAIT_UNTIL(thr, blk_transfer_completed(&self->transfer)); 
 	
 	PT_SPAWN(thr, bthr, i2c_read_reg_thread(self->i2c, bthr, self->addr, BMP085_REGAC1, self->buf, 2)); 
 	self->regac1 = ((int)buff[0] <<8 | ((int)buff[1]));
@@ -198,4 +198,3 @@ void bmp085_init(struct bmp085 *self, i2c_dev_t i2c, uint8_t addr) {
 	libk_create_thread(&self->thread, _bmp085_thread, "bmp085"); 
 }
 
-#endif

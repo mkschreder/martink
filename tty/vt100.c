@@ -190,9 +190,12 @@ static void _vt100_move(struct vt100 *term, int16_t right_left, int16_t bottom_t
 	int16_t new_y = bottom_top + term->cursor_y; 
 	int16_t width = term->screen_width; //(term->screen_width / VT100_CHAR_WIDTH); 
 	
+	if(new_x < 0) new_x = 0; 
+	if(new_y < 0) new_y = 0; 
+	
 	if(!(term->flags & VT100_FLAG_CURSOR_WRAP)){
-		term->cursor_x = (new_x > term->screen_width)?(term->screen_width):new_x; 
-		term->cursor_y = (new_y > term->screen_height)?term->screen_height:new_y; 
+		term->cursor_x = ((uint16_t)new_x > term->screen_width)?(term->screen_width):(uint16_t)new_x; 
+		term->cursor_y = ((uint16_t)new_y > term->screen_height)?term->screen_height:(uint16_t)new_y; 
 		return; 
 	}
 	// TODO: simplify this
@@ -216,7 +219,7 @@ static void _vt100_move(struct vt100 *term, int16_t right_left, int16_t bottom_t
 		// therefore, we would scroll when new cursor has moved to line 39
 		// (or we could use new_y > VT100_HEIGHT here
 		// NOTE: new_y >= term->scroll_end_row ## to_scroll = (new_y - term->scroll_end_row) +1
-		if(new_y >= term->scroll_end_row){
+		if((uint16_t)new_y >= term->scroll_end_row){
 			//scroll = new_y / VT100_HEIGHT;
 			//term->cursor_y = VT100_HEIGHT;
 			to_scroll = (new_y - term->scroll_end_row) + 1; 
@@ -224,7 +227,7 @@ static void _vt100_move(struct vt100 *term, int16_t right_left, int16_t bottom_t
 			term->cursor_y = term->scroll_end_row - 1; //new_y - to_scroll; 
 			//scroll = new_y - term->bottom_margin; 
 			//term->cursor_y = term->bottom_margin; 
-		} else if(new_y < term->scroll_start_row){
+		} else if((uint16_t)new_y < term->scroll_start_row){
 			to_scroll = (new_y - term->scroll_start_row); 
 			term->cursor_y = term->scroll_start_row; //new_y - to_scroll; 
 			//scroll = new_y / (term->bottom_margin - term->top_margin) - 1;

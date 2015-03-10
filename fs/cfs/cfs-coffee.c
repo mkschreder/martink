@@ -1161,7 +1161,7 @@ cfs_write(int fd, const void *buf, unsigned size)
   int i;
   struct log_param lp;
   cfs_offset_t bytes_left;
-  const char dummy[1] = { 0xff };
+  const uint8_t dummy[1] = { 0xff };
 #endif
 
   if(!(FD_VALID(fd) && FD_WRITABLE(fd))) {

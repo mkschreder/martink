@@ -6,11 +6,11 @@ Example for the fst6 radio transmitter board
 #include <kernel.h>
 #include <boards/flight_control/multiwii.h>
 #include <tty/vt100.h>
-#include <util/list.h>
-#include <util/cbuf.h>
-#include <util/pipe.h>
+#include <kernel/list.h>
+#include <kernel/cbuf.h>
+//#include <kernel/pipe.h>
 
-#include <thread/pt.h>
+#include <kernel/thread.h>
 
 #define typeof __typeof__
 
@@ -40,7 +40,7 @@ int8_t _on_adc_event(struct adc_connection *con, uint16_t ev){
 	return -1; 
 }
 */
-PT_THREAD(app_thread(struct libk_thread *kthread, struct pt *pt)){
+LIBK_THREAD(app_thread){
 	struct application *app = container_of(kthread, struct application, thread); 
 	PT_BEGIN(pt); 
 	while(1){
@@ -76,16 +76,13 @@ PT_THREAD(app_thread(struct libk_thread *kthread, struct pt *pt)){
 int main(void){
 	mwii_init(); 
 	
-	libk_create_thread(&app.thread, app_thread, "app_thread"); 
-	
 	app.uart = mwii_get_uart_interface(); 
 	
 	gpio_configure(MWII_GPIO_A1, GP_INPUT | GP_PULLUP | GP_ANALOG); 
 	gpio_configure(MWII_GPIO_D9, GP_INPUT | GP_PULLUP | GP_PCINT); 
 	
-	timestamp_t time = 0; 
-	uint32_t frames = 0; 
-	while(1){
+	libk_run(); 
+	/*while(1){
 		app_thread(&app); 
 		mwii_process_events(); 
 		if(timestamp_expired(time)){
@@ -94,25 +91,7 @@ int main(void){
 			frames = 0; 
 		}
 		frames++; 
-		/*
-		static timestamp_t t = 0; 
-		if(timestamp_expired(t)){
-			printf("ADC: "); 
-			for(int c = 0; c < 8; c++){
-				printf("%u ", app.adc[c]); 
-			}
-			printf("\n"); 
-			t = timestamp_from_now_us(1000000UL);  
-		}
-		adc_process_events(); */
-		/*struct adc_msg_value msg; 
-		//struct adc_msg_value in = {0, 3, 1234}; 
-		//adc_msg_value_pack(&ac, &in); 
-		if(adc_msg_value_parse(&ac, &msg) != -1){
-			printf("\nADC: %d %u ", msg.chan, msg.val); 
-		} else {
-			//printf("."); 
-		}*/
+		
 	}
 	
 	// test config read/write (to eeprom)
@@ -158,12 +137,12 @@ int main(void){
 			(int)(gx * 1000), (int)(gy * 1000), (int)(gz * 1000)); 
 		
 		// reading analog and digital pins
-		/*
+		
 		printf("A0: %5u, A1: %5u, A2: %5u\n", 
 			mwii_read_adc(MWII_GPIO_A0), 
 			mwii_read_adc(MWII_GPIO_A1), 
 			mwii_read_adc(MWII_GPIO_A2)); 
-		*/
+		
 		if(timestamp_expired(ts)){
 			led_state = ~led_state; 
 			if(led_state) mwii_led_on(); 
@@ -171,4 +150,5 @@ int main(void){
 			ts = timestamp_from_now_us(500000); 
 		}
 	}
+	*/
 }

@@ -128,7 +128,7 @@ static uint8_t _m2_tty_gh(m2_gfx_arg_p  arg){
 				y = m2_utl_sb_get_slider_position(arg->h, h, arg->total, arg->visible, arg->top);
 				
 				//printf("Scroll: x: %d y: %d w: %d h: %d sh: %d sy: %d\n", arg->x, arg->y, arg->w, arg->h, h, y); 
-				for(int c = 0; c < h; c++)
+				for(uint16_t c = 0; c < h; c++)
 					_m2_tty_draw_string(self, arg->x, arg->y + arg->h - y - 1 - c, "#");
 				//m2_u8g_draw_box(arg->x+1, arg->y+arg->h-1-h-y, arg->w-2, h);
 			}

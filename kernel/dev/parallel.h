@@ -1,4 +1,4 @@
- 
+#pragma once
 
 struct pio_if;
 typedef struct pio_if **pio_dev_t;

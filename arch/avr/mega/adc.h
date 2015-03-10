@@ -103,11 +103,11 @@
 #define ADC_CH_GND (15)
 #define ADC_CH_BITS (0x0f)
 
-#define adc0_set_channel(adc_chan) ({\
-	adc0_disable(); \
-	ADMUX = (ADMUX & ~ADC_CH_BITS) | ((adc_chan) & ADC_CH_BITS); \
-	adc0_enable(); \
-})
+static inline void adc0_set_channel(uint8_t adc_chan) {
+	adc0_disable(); 
+	ADMUX = (ADMUX & ~ADC_CH_BITS) | ((adc_chan) & ADC_CH_BITS); 
+	adc0_enable(); 
+}
 
 #define adc0_get_channel() (ADMUX & 0x07)
 

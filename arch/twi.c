@@ -23,68 +23,69 @@
 
 #include "twi.h"
 
-#define DEVICE_CAST(from, to) struct twi_device *to = container_of(from, struct twi_device, interface);  
+#define DEVICE_CAST(from, to) struct i2c_device *to = container_of(from, struct i2c_device, interface);  
 
-struct twi_device {
-	uint8_t id;
-	struct i2c_interface *interface; 
+struct i2c_device {
+	uint8_t port_id;
+	uint8_t addr; 
+	struct block_if *interface; 
 };
 
-static struct twi_device _twi[4] = {
+static struct i2c_device _twi[4] = {
 	{.id = 0, .interface = 0},
 	{.id = 1, .interface = 0},
 	{.id = 2, .interface = 0},
 	{.id = 3, .interface = 0}
 }; 
 
-static int16_t 			_twi_stop(i2c_dev_t self){
+static int16_t 			_i2c_stop(i2c_dev_t self){
 	DEVICE_CAST(self, dev);
 	return i2cdev_stop(dev->id); 
 }
 
-static uint32_t	_twi_write(i2c_dev_t self, uint8_t adr, const uint8_t *data, uint16_t max_sz){
+static uint32_t	_i2c_write(i2c_dev_t self, uint8_t adr, const uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
-	return i2cdev_write(dev->id, adr, data, max_sz); 
+	return i2cdev_write(dev->id, dev->adr, data, max_sz); 
 }
 
-static uint32_t	_twi_read(i2c_dev_t self, uint8_t adr, uint8_t *data, uint16_t max_sz){
+static uint32_t	_i2c_read(i2c_dev_t self, uint8_t adr, uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
 	return i2cdev_read(dev->id, adr, data, max_sz); 
 }
 /*
-static void			_twi_wait(i2c_dev_t self, uint8_t addr){
+static void			_i2c_wait(i2c_dev_t self, uint8_t addr){
 	DEVICE_CAST(self, dev);
-	twi_wait(dev->id, addr); 
+	i2c_wait(dev->id, addr); 
 }
 */
 
-static uint8_t			_twi_status(i2c_dev_t self, uint16_t status){
+static uint8_t			_i2c_status(i2c_dev_t self, uint16_t status){
 	DEVICE_CAST(self, dev);
 	return i2cdev_status(dev->id, status); 
 }
 
-static uint8_t			_twi_open(i2c_dev_t self){
+static uint8_t			_i2c_open(i2c_dev_t self){
 	DEVICE_CAST(self, dev);
 	return i2cdev_open(dev->id); 
 }
 
-static void			_twi_close(i2c_dev_t self){
+static void			_i2c_close(i2c_dev_t self){
 	DEVICE_CAST(self, dev);
 	i2cdev_close(dev->id); 
 }
 
-i2c_dev_t twi_get_interface(uint8_t id){
+i2c_dev_t i2c_get_interface(uint8_t id){
 	uint8_t count = sizeof(_twi) / sizeof(_twi[0]); 
 	if(id >= count) return 0; 
 	
 	static struct i2c_interface _if;
 	_if = (struct i2c_interface) {
-		.write = 	_twi_write,
-		.read = 	_twi_read,
-		.stop = 		_twi_stop, 
-		.status = _twi_status, 
-		.open = _twi_open, 
-		.close = _twi_close, 
+		.write = 	_i2c_write,
+		.read = 	_i2c_read,
+		.stop = 		_i2c_stop, 
+		.status = _i2c_status, 
+		.open = _i2c_open, 
+		.close = _i2c_close, 
 	};
 	_twi[id].interface = &_if; 
 	return &_twi[id].interface; 

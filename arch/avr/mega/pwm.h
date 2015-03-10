@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "../../../util.h"
+#include <kernel/util.h>
 
 ///TODO: make it set prescaler values based on F_CPU
 

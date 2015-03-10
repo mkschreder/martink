@@ -21,6 +21,8 @@
 
 #pragma once
 
+#include <sys/types.h> // for ssize_t
+
 #ifdef CONFIG_STM32
 #include "stm32/stm32.h"
 #endif

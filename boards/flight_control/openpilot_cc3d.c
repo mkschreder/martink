@@ -158,7 +158,10 @@ void cc3d_configure_flexiport(cc3d_flexi_port_mode_t mode){
 	switch(mode){
 		case CC3D_FLEXIPORT_UART: 
 			i2cdev_deinit(CC3D_FLEXIPORT_I2C_ID); 
-			uart_init(CC3D_FLEXIPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE); 
+			uart_init(CC3D_FLEXIPORT_UART_ID, 57600, 
+				cc3d.uart_buffers[1][0], CC3D_UART_BUFFER_SIZE, 
+				cc3d.uart_buffers[1][1], CC3D_UART_BUFFER_SIZE
+			); 
 			break; 
 		case CC3D_FLEXIPORT_I2C: 
 			uart_deinit(CC3D_FLEXIPORT_UART_ID); 

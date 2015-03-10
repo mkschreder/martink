@@ -1,5 +1,20 @@
 #pragma once
 
+typedef enum {
+	I2CDEV_BUSY = (1 << 0), 
+	I2CDEV_LOCKED = (1 << 1), 
+	I2CDEV_READ = (1 << 2), 
+	I2CDEV_WRITE = (1 << 3), 
+	I2CDEV_READY = (1 << 4), 
+	I2CDEV_START = (1 << 5), 
+	I2CDEV_STOP = (1 << 6)
+	//I2CDEV_TX_DONE = (1 << 5), 
+	//I2CDEV_RX_NOT_EMPTY = (1 << 6)
+} i2cdev_status_t; 
+
+// combines i2c device address and block address into a block device address. 
+#define I2C_REG_ADDRESS(dev_addr, reg_addr) ((((uint32_t)reg_addr << 8) | (uint8_t)dev_addr) << 8)
+
 struct i2c_interface;
 typedef struct i2c_interface **i2c_dev_t;
 

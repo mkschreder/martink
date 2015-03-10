@@ -19,10 +19,8 @@
 	Github: https://github.com/mkschreder
 */
 
-#include "multiwii.h"
-
 #include <arch/soc.h>
-#include "../util.h"
+#include <kernel/util.h>
 
 #include <sensors/hmc5883l.h>
 #include <sensors/bmp085.h>
@@ -36,6 +34,8 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+
+#include "multiwii.h"
 
 /*
 #define FRONT_PIN PD3
@@ -95,7 +95,6 @@ struct multiwii_board {
 	struct ssd1306 	ssd;
 	struct hcsr04 	hcsr; 
 	int16_t acc_bias_x, acc_bias_y, acc_bias_z; 
-	struct pt 			uthread; 
 	timestamp_t 		time; // time keeping
 	struct rc_input rc_inputs[4]; 
 	struct fc_quad_interface interface; 
@@ -172,28 +171,32 @@ static int _serial_fd_getc(FILE *stream){
 }
 
 static FILE uart_fd = FDEV_SETUP_STREAM(_serial_fd_putc, _serial_fd_getc, _FDEV_SETUP_RW);
+static uint8_t uart_buffer[2][64]; 
 
 void mwii_init(void){
 	//soc_init(); 
 	time_init(); 
-	uart_init(0, 38400); 
+	uart_init(0, 38400, uart_buffer[0], 64, uart_buffer[1], 64); 
+	
+	// setup printf stuff (specific to avr-libc)
+	fdev_set_udata(&uart_fd, uart_get_serial_interface(0)); 
+	stdout = &uart_fd; 
+	stderr = &uart_fd;
+	
 	gpio_init();
 	//spi_init(); 
-	twi_init(0); 
+	i2cdev_init(0); 
 	pwm_init(); 
 	//adc0_init_default(); 
 	sei(); 
-	
+	/*
 	PT_INIT(&brd->rc_inputs[0].thread); 
 	PT_INIT(&brd->rc_inputs[1].thread); 
 	PT_INIT(&brd->rc_inputs[2].thread); 
 	PT_INIT(&brd->rc_inputs[3].thread); 
 	PT_INIT(&brd->uthread); 
-	
-	// setup printf stuff (specific to avr-libc)
-	fdev_set_udata(&uart_fd, uart_get_serial_interface(0)); 
-	stdout = &uart_fd; 
-	stderr = &uart_fd; 
+	*/
+	 
 	
 	/*
 	// setup stdout and stderr (avr-libc specific) 
@@ -325,13 +328,17 @@ float mwii_read_pressure_pa(void){
 
 
 void mwii_write_config(const uint8_t *data, uint8_t size){
-	memory_dev_t ee = eeprom_get_memory_interface(); 
-	mem_write(ee, 0, data, size); 
+	(void)data; 
+	(void)size; 
+	//memory_dev_t ee = eeprom_get_memory_interface(); 
+	//mem_write(ee, 0, data, size); 
 }
 
 void mwii_read_config(uint8_t *data, uint8_t size){
-	memory_dev_t ee = eeprom_get_memory_interface(); 
-	mem_read(ee, 0, data, size); 
+	(void)data; 
+	(void)size; 
+	//memory_dev_t ee = eeprom_get_memory_interface(); 
+	//mem_read(ee, 0, data, size); 
 }
 
 //************************
@@ -343,12 +350,12 @@ void mwii_calibrate_escs_on_reboot(void){
 	// TODO: save a flag and check it upon reboot
 }
 
-static PT_THREAD(_mwii_update_thread(void)){
-	struct pt *thr = &brd->uthread; 
-	PT_BEGIN(thr); 
+LIBK_THREAD(mwii){
+	
+	PT_BEGIN(pt); 
 	
 	while(1){
-		PT_WAIT_UNTIL(thr, timestamp_expired(brd->time)); 
+		PT_WAIT_UNTIL(pt, timestamp_expired(brd->time)); 
 		
 		// reset rc inputs
 		for(int c = 0; c < 4; c++){
@@ -360,16 +367,17 @@ static PT_THREAD(_mwii_update_thread(void)){
 		brd->time = timestamp_from_now_us(10000); 
 	}
 	
-	PT_END(thr); 
+	PT_END(pt); 
 }
 
+/*
 void mwii_process_events(void){
 	_mwii_update_thread(); 
 	
 	bmp085_update(&_brd.bmp); 
 	hmc5883l_update(&_brd.hmc); 
 	mpu6050_update(&_brd.mpu); 
-}
+}*/
 
 void mwii_read_sensors(struct fc_data *data){
 	data->flags = 0xffff; // all

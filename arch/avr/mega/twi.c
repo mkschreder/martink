@@ -166,18 +166,24 @@ ISR(TWI_vect)
 
 static uint8_t _lock = 0; 
 
-uint8_t twi_aquire(uint8_t dev_id){
+
+static uint8_t _i2c_busy(uint8_t dev_id){
+	if(dev_id >= 1) return 1; 
+	return (((TWCR & _BV(TWIE)) != 0) || (TWCR & _BV(TWSTO)))?1:0;
+}
+
+uint8_t i2cdev_open(uint8_t dev_id){
 	if(dev_id >= 1 || _lock) return 0; 
 	_lock = 1; 
 	return 1; 
 }
 
-void twi_release(uint8_t dev_id){
+void i2cdev_close(uint8_t dev_id){
 	(void)dev_id; 
 	_lock = 0; 
 }
 
-int8_t twi_init(uint8_t dev_id)
+int8_t i2cdev_init(uint8_t dev_id)
 {
 	// only one twi interface for now
 	if(dev_id >= 1) return -1; 
@@ -201,17 +207,17 @@ int8_t twi_init(uint8_t dev_id)
 	return 0; 
 }
 
-void twi_deinit(uint8_t dev_id){
+void i2cdev_deinit(uint8_t dev_id){
 	(void)(dev_id); 
 	// TODO
 }
 
-int8_t twi_start_write(uint8_t dev_id, uint8_t adr, const uint8_t *data, uint8_t bytes_to_send)
+int8_t i2cdev_write(uint8_t dev_id, uint8_t adr, const uint8_t *data, uint8_t bytes_to_send)
 {
 	if(dev_id >= 1) return -1; 
 	
 	// Wait for previous transaction to finish
-	while(twi_busy(dev_id)); 
+	while(_i2c_busy(dev_id)); 
 
 	// Copy address; clear R/~W bit in SLA+R/W address field
 	twi_adr = adr & ~I2C_READ;
@@ -225,12 +231,12 @@ int8_t twi_start_write(uint8_t dev_id, uint8_t adr, const uint8_t *data, uint8_t
 	return 0; 
 }
 
-int8_t twi_start_read(uint8_t dev_id, uint8_t adr, uint8_t *data, uint8_t bytes_to_receive)
+int8_t i2cdev_read(uint8_t dev_id, uint8_t adr, uint8_t *data, uint8_t bytes_to_receive)
 {
 	if(dev_id >= 1) return -1; 
 	
 	// Wait for previous transaction to finish
-	while(twi_busy(dev_id)); 
+	while(_i2c_busy(dev_id)); 
 
 	// Copy address; set R/~W bit in SLA+R/W address field
 	twi_adr = adr | I2C_READ;
@@ -244,18 +250,20 @@ int8_t twi_start_read(uint8_t dev_id, uint8_t adr, uint8_t *data, uint8_t bytes_
 	return 0; 
 }
 
-uint8_t twi_busy(uint8_t dev_id){
+uint8_t i2cdev_status(uint8_t dev_id, uint16_t flags){
 	if(dev_id >= 1) return 1; 
+	uint8_t ret = 0; 
 	// IF TWI Interrupt is enabled then the peripheral is busy
-	return ((TWCR & _BV(TWIE)) != 0) || (TWCR & _BV(TWSTO)); 
+	if(flags & I2CDEV_BUSY) ret |= (((TWCR & _BV(TWIE)) != 0) || (TWCR & _BV(TWSTO)))?1:0; 
+	return ret; 
 }
 
-int8_t twi_stop(uint8_t dev_id)
+int8_t i2cdev_stop(uint8_t dev_id)
 {
 	if(dev_id >= 1) return -1; 
 	
 	// Wait for transaction to finish
-	while(twi_busy(dev_id));
+	while(_i2c_busy(dev_id));
 
 	// Make sure transaction was succesful
 	if(twi_status != TWI_STATUS_DONE)

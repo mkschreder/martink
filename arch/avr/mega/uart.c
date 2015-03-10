@@ -20,101 +20,88 @@
 */
 
 #include <arch/soc.h>
-#include <util/cbuf.h>
+#include <kernel/cbuf.h>
+//#if defined(CONFIG_BUFFERED_UART)
 
-#if defined(CONFIG_BUFFERED_UART)
-	/** Size of the circular receive buffer, must be power of 2 */
-	#ifndef CONFIG_UART0_TX_BUF_SIZE
-	#define CONFIG_UART0_TX_BUF_SIZE 32
-	#endif
-	/** Size of the circular transmit buffer, must be power of 2 */
-	#ifndef CONFIG_UART0_RX_BUF_SIZE
-	#define CONFIG_UART0_RX_BUF_SIZE 32
-	#endif
+static struct cbuf uart0_tx_buf, uart0_rx_buf; 
 
-	#define UART_TX_BUFFER_SIZE CONFIG_UART0_TX_BUF_SIZE
-	#define UART_RX_BUFFER_SIZE CONFIG_UART0_RX_BUF_SIZE
+//DECLARE_STATIC_CBUF(uart0_tx_buf, uint8_t, UART_TX_BUFFER_SIZE);
+//DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 
-	static uint8_t _buffer_data[2][UART_TX_BUFFER_SIZE]; 
-	static struct cbuf uart0_tx_buf, uart0_rx_buf; 
-	
-	//DECLARE_STATIC_CBUF(uart0_tx_buf, uint8_t, UART_TX_BUFFER_SIZE);
-	//DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
+static struct {
+	uint8_t error;
+} uart0;
 
-	static struct {
-		uint8_t error;
-	} uart0;
+ISR(USART_RX_vect) { 
+	uint8_t err = ( UART0_STATUS & (_BV(FE0)|_BV(DOR0))); 
+	uint8_t data = UDR0; 
+	if(cbuf_is_full(&uart0_rx_buf)){ 
+		err = SERIAL_BUFFER_FULL >> 8; 
+	} else { 
+		cbuf_put(&uart0_rx_buf, data); 
+	} 
+	uart0.error = err; 
+}
 
-	ISR(USART_RX_vect) { 
-		uint8_t err = ( UART0_STATUS & (_BV(FE0)|_BV(DOR0))); 
-		uint8_t data = UDR0; 
-		if(cbuf_is_full(&uart0_rx_buf)){ 
-			err = SERIAL_BUFFER_FULL >> 8; 
-		} else { 
-			cbuf_put(&uart0_rx_buf, data); 
-		} 
-		uart0.error = err; 
+ISR(USART_TX_vect) {
+
+}
+
+ISR(USART_UDRE_vect) {
+	if(cbuf_get_waiting(&uart0_tx_buf)){
+		uart0_putc_direct(cbuf_get(&uart0_tx_buf)); 
+	} else {
+		uart0_interrupt_dre_off(); 
 	}
+}
 
-	ISR(USART_TX_vect) {
+size_t uart0_waiting(void){
+	uart0_interrupt_rx_off(); 
+	int wait = cbuf_get_waiting(&uart0_rx_buf);
+	uart0_interrupt_rx_on();
+	return wait; 
+}
 
+void uart0_flush(void){
+	uint16_t timeout = 2000; 
+	while(timeout--){
+		uart0_interrupt_dre_off(); 
+		int empty = cbuf_is_empty(&uart0_tx_buf);
+		uart0_interrupt_dre_on();
+		if(empty) break; 
+		_delay_us(1); 
 	}
+}
 
-	ISR(USART_UDRE_vect) {
-		if(cbuf_get_waiting(&uart0_tx_buf)){
-			uart0_putc_direct(cbuf_get(&uart0_tx_buf)); 
-		} else {
-			uart0_interrupt_dre_off(); 
-		}
-	}
-
-	size_t uart0_waiting(void){
-		uart0_interrupt_rx_off(); 
-		int wait = cbuf_get_waiting(&uart0_rx_buf);
-		uart0_interrupt_rx_on();
-		return wait; 
-	}
-
-	void uart0_flush(void){
-		uint16_t timeout = 2000; 
-		while(timeout--){
-			uart0_interrupt_dre_off(); 
-			int empty = cbuf_is_empty(&uart0_tx_buf);
-			uart0_interrupt_dre_on();
-			if(empty) break; 
-			_delay_us(1); 
-		}
-	}
-
-	uint16_t uart0_getc(void){
-		uart0_interrupt_rx_off(); 
-		if(cbuf_is_empty(&uart0_rx_buf)) {
-			uart0_interrupt_rx_on(); 
-			return SERIAL_NO_DATA;
-		}
-		uint8_t data = cbuf_get(&uart0_rx_buf);
+uint16_t uart0_getc(void){
+	uart0_interrupt_rx_off(); 
+	if(cbuf_is_empty(&uart0_rx_buf)) {
 		uart0_interrupt_rx_on(); 
-		return data;
+		return SERIAL_NO_DATA;
 	}
+	uint8_t data = cbuf_get(&uart0_rx_buf);
+	uart0_interrupt_rx_on(); 
+	return data;
+}
 
-	uint16_t uart0_putc(uint8_t data){
-		// the strategy when the buffer is full is to wait for a time and then discard
-		// although it could be: discard always, or wait forever
-		int timeout = 2000;
-		do {
-			uart0_interrupt_dre_off();
-			int ret = cbuf_put(&uart0_tx_buf, data);
-			uart0_interrupt_dre_on();
-			if(ret == -1) _delay_us(1);
-			else return 0; 
-		} while(timeout--);
-		return SERIAL_BUFFER_FULL; 
-	}
-#endif
+uint16_t uart0_putc(uint8_t data){
+	// the strategy when the buffer is full is to wait for a time and then discard
+	// although it could be: discard always, or wait forever
+	int timeout = 2000;
+	do {
+		uart0_interrupt_dre_off();
+		int ret = cbuf_put(&uart0_tx_buf, data);
+		uart0_interrupt_dre_on();
+		if(ret == -1) _delay_us(1);
+		else return 0; 
+	} while(timeout--);
+	return SERIAL_BUFFER_FULL; 
+}
+//#endif
 
-int8_t 		uart_init(uint8_t dev_id, uint32_t baud){
-	cbuf_init(&uart0_tx_buf, _buffer_data[0], UART_TX_BUFFER_SIZE); 
-	cbuf_init(&uart0_rx_buf, _buffer_data[1], UART_RX_BUFFER_SIZE); 
+int8_t 		uart_init(uint8_t dev_id, uint32_t baud, uint8_t *tx_buffer, uint8_t tx_size, uint8_t *rx_buffer, uint8_t rx_size){
+	cbuf_init(&uart0_tx_buf, tx_buffer, tx_size); 
+	cbuf_init(&uart0_rx_buf, rx_buffer, rx_size); 
 	switch(dev_id){
 		case 0: uart0_init_default(baud); break; 
 		default: return -1; 

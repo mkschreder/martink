@@ -27,14 +27,23 @@ extern "C" {
 
 #include "config.h"
 
+
 #include <inttypes.h>
 #include <stddef.h>
-#include <sys/types.h>
+//#include <sys/types.h>
 
 #include <string.h>
+
 #include <arch/soc.h>
 #include "util.h"
 #include "list.h"
+
+#include "dev/block.h"
+#include "dev/framebuffer.h"
+#include "dev/i2c.h"
+#include "dev/parallel.h"
+#include "dev/serial.h"
+#include "dev/tty.h"
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <kernel/dev/parallel.h>
 #include "nettypes.h"
 
 struct enc28j60 {

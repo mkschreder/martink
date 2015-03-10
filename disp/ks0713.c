@@ -439,7 +439,7 @@ void ks0713_clear(struct ks0713 *self){
 
 #include "lcd_font_5x7.h"
 
-static void _ks0713_put(tty_dev_t self, uint8_t ch, color_t fg, color_t bg){
+static void _ks0713_put(tty_dev_t self, uint8_t ch, tty_color_t fg, tty_color_t bg){
 	struct ks0713 *dev = container_of(self, struct ks0713, tty); 
 	(void)(fg); 
 	(void)(bg); 

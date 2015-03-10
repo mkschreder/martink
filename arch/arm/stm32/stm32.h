@@ -23,5 +23,7 @@
 #include "adc.h"
 #include "clock.h"
 
+void EnterFlashUpgrade(void); 
+
 //#define eeprom_update_block(a, b, c) {}
 //#define eeprom_read_block(a, b, c) {}

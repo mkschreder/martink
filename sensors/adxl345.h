@@ -24,6 +24,9 @@
 
 #define ADXL345_ADDR (0x53<<1) //device address
 
+#include <kernel/thread.h>
+#include <kernel/dev/i2c.h>
+
 struct adxl345 {
 	i2c_dev_t i2c;
 	uint8_t addr; 
@@ -31,7 +34,7 @@ struct adxl345 {
 	uint16_t raw_ax, raw_ay, raw_az; 
 	uint8_t status; 
 	timestamp_t time; 
-	struct pt thread, bthread; 
+	struct libk_thread thread; 
 };
 
 void adxl345_init(struct adxl345 *self, i2c_dev_t i2c, uint8_t addr);

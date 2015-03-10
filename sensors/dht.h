@@ -30,6 +30,8 @@
 #define DHT_INPUTPIN PD2
 */
 
+#include <kernel/dev/parallel.h>
+
 //sensor type
 #define DHT_DHT11 1
 #define DHT_DHT22 2

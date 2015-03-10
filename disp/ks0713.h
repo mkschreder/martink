@@ -18,7 +18,9 @@
 
 #include <inttypes.h>
 
-#include "interface.h"
+#include <kernel/dev/framebuffer.h>
+#include <kernel/dev/tty.h>
+#include <kernel/thread.h>
 
 #define KS0713_WIDTH		128
 #define KS0713_HEIGHT		64

@@ -22,6 +22,8 @@
 
 #include "config.h"
 
+#include <kernel/dev/i2c.h>
+
 #define I2C_READ    1
 #define I2C_WRITE   0
 

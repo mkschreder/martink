@@ -1,7 +1,6 @@
 #include <arch/soc.h>
 
 #include "m2_fb.h"
-#include <util/cbuf.h>
 #include <string.h>
 
 static struct m2_fb _m2fb; 
@@ -192,7 +191,7 @@ void m2_fb_init(fbuf_dev_t _fb, m2_rom_void_p element){
 	m2_SetU8g(&self->u8g, m2_u8g_box_icon);
 	m2_SetFont(0, (const void *)u8g_font_u8glib_4);
 	m2_SetFont(1, (const void *)u8g_font_helvB08);
-	m2_SetFont(2, (const void *)u8g_font_helvB08n);
+	m2_SetFont(2, (const void *)u8g_font_6x13);
 	
 	cbuf_init(&self->key_buffer, self->key_buffer_data, sizeof(self->key_buffer_data)); 
 	

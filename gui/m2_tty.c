@@ -1,7 +1,6 @@
 #include <arch/soc.h>
 
 #include "m2_tty.h"
-#include <util/cbuf.h>
 #include <string.h>
 
 static uint8_t _m2_tty_es(m2_p ep, uint8_t msg){

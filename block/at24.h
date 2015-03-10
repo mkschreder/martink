@@ -3,6 +3,9 @@
 #define AT24_PAGE_SIZE 32
 #define AT24_ADDRESS_SIZE 2
 
+#include <kernel/dev/block.h>
+#include <kernel/thread.h>
+
 struct at24_op {
 	ssize_t size; // total length
 	uint16_t addr; // eeprom address

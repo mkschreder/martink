@@ -23,6 +23,9 @@
 
 #pragma once 
 
+#include <kernel/dev/parallel.h>
+#include <kernel/dev/serial.h>
+
 struct mpu6000{
 	serial_dev_t port;
 	pio_dev_t 	gpio; 

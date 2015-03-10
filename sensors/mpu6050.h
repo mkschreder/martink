@@ -35,7 +35,8 @@
 "C" {
 #endif
 
-#include <thread/pt.h>
+#include <kernel/thread.h>
+#include <kernel/dev/i2c.h>
 
 enum {
 	MPU6050_REG_PWR_MGMT_1, 
@@ -55,7 +56,7 @@ struct mpu6050{
 	int16_t raw_ax, raw_ay, raw_az; 
 	int16_t raw_gx, raw_gy, raw_gz; 
 	// threads
-	struct libk_thread uthread, ithread; 
+	struct libk_thread thread; 
 	//struct pt uthread, rthread, wthread, ithread; 
 	uint8_t buffer[6]; // i2c buffer
 	timestamp_t time; // for time keeping

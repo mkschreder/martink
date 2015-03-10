@@ -90,13 +90,11 @@
 
 #pragma message("skipping hmc5883 driver")
 #if 0
-static PT_THREAD(_hmc5883l_init_thread(struct pt *thr, struct hmc5883l *self)){
+
+static PT_THREAD(_hmc5883l_thread(struct pt *thr, struct hmc5883l *self)){
 	struct pt *bthr = &self->bthread; 
 	
 	PT_BEGIN(thr); 
-	
-	// ensure only run when not ready
-	PT_WAIT_WHILE(thr, self->status & HMC5883L_STATUS_READY); 
 	
 	// wait for the compass to start
 	self->time = timestamp_from_now_us(50000L); 
@@ -123,14 +121,6 @@ static PT_THREAD(_hmc5883l_init_thread(struct pt *thr, struct hmc5883l *self)){
 	PT_WAIT_UNTIL(thr, timestamp_expired(self->time)); 
 	
 	self->status |= HMC5883L_STATUS_READY; 
-	
-	PT_END(thr); 
-}
-
-static PT_THREAD(_hmc5883l_update_thread(struct pt *thr, struct hmc5883l *self)){
-	struct pt *bthr = &self->bthread; 
-	
-	PT_BEGIN(thr); 
 	
 	while(1){
 		PT_SPAWN(thr, bthr, i2c_read_reg_thread_sp(self->i2c, bthr, 

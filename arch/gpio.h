@@ -67,7 +67,7 @@ void gpio_init(void);
 
 /// returns a standard parallel interface for the hardware gpio pins
 /// as a \ref struct parallel_interface
-pio_dev_t gpio_get_parallel_interface(void); 
+//pio_dev_t gpio_get_parallel_interface(void); 
 /*
 #define gpio_set(pin, value) PFCALL(gpio, set, value)
 #define gpio_set_direction(pin, dir)

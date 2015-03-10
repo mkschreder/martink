@@ -25,6 +25,8 @@
 
 #include <arch/soc.h>
 
+#include <kernel/thread.h>
+
 //defined sensitivity
 #define ACS712_SENSITIVITY5 0.185
 #define ACS712_SENSITIVITY20 0.100
@@ -37,7 +39,7 @@ struct acs712 {
 	uint8_t adc_chan; 
 	uint16_t interval; 
 	timestamp_t time; 
-	struct pt uthread; 
+	struct libk_thread thread; 
 	uint16_t raw_value; 
 }; 
 

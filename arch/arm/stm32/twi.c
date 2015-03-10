@@ -1,7 +1,7 @@
 #include <arch/soc.h>
 
-#include <util/cbuf.h>
-#include <thread/pt.h>
+#include <kernel/cbuf.h>
+#include <kernel/thread.h>
 
 #include <inttypes.h>
 

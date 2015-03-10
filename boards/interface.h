@@ -22,7 +22,7 @@
 #pragma once
 
 #include "flight_control/interface.h"
-#include "../arch/interface.h"
+#include <kernel/dev/serial.h>
 
 struct fc_quad_rx_input {
 	uint16_t 		channel[6];

@@ -23,9 +23,8 @@
 
 #include "gpio.h"
 #include "spi.h"
-#include "interface.h"
 
-#include <kernel/device.h>
+#include <kernel/dev/serial.h>
 
 struct spi_dev {
 	uint8_t id;

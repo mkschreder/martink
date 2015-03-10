@@ -9,7 +9,7 @@ Please refer to LICENSE file for licensing information.
 #ifndef SEVSEG_H_
 #define SEVSEG_H_
 
-#include <arch/interface.h>
+#include <kernel/dev/parallel.h>
 
 //definitions
 typedef enum {

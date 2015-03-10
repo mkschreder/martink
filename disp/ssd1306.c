@@ -255,7 +255,7 @@ void ssd1306_set_region(ssd1306_t *dev, uint16_t x0, uint16_t y0, uint16_t w, ui
 		ssd1306_command(home[c]); 
 	}*/
 }
-
+/*
 void ssd1306_draw(ssd1306_t *self, uint16_t x, uint16_t y, fb_image_t img){
 	ssd1306_set_region(self, x, y, img.w, img.h); 
 	
@@ -320,5 +320,5 @@ int16_t ssd1306_printf(ssd1306_t *dev, uint8_t col, const char *fmt, ...){
 	ssd1306_puts(dev, buf, col); 
 	
 	return n; 
-}
+}*/
 #endif

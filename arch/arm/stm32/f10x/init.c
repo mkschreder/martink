@@ -116,10 +116,37 @@ static void RCC_Configuration(void){
 	} 
 }
 
+static uint32_t _boot_magic = 0; 
+
+static void _enter_bootloader(void){
+	__asm__("LDR	R0, =0x1FFFF000"); 
+	__asm__("LDR	SP,[R0, #0]"); 
+	__asm__("LDR	R0,[R0, #4]"); 
+	__asm__("BX		R0"); 
+}
+
+void EnterFlashUpgrade(void); 
+void NVIC_GenerateSystemReset(void); 
+void EnterFlashUpgrade(void){
+	_boot_magic = 0xDEADBEEF; // 64KBSTM32F103
+	NVIC_SystemReset();
+}
 
 void c_startup(void)
 {
 	char *src, *dst;
+	
+	//SystemInit(); 
+	RCC_Configuration(); 
+	/*
+	RCC_HCLKConfig(RCC_SYSCLK_Div1);
+	RCC_PCLK1Config(RCC_HCLK_Div4); 
+	RCC_PCLK2Config(RCC_HCLK_Div4);
+	*/
+	
+	if(_boot_magic == 0xdeadbeef){
+		_enter_bootloader(); 
+	}
 	
 	dst = &_ramstart; 
 	while(dst < &_estack)
@@ -133,14 +160,6 @@ void c_startup(void)
 	src = &_sbss;
 	while(src < &_ebss) 
 		*(src++) = 0;
-	
-	//SystemInit(); 
-	RCC_Configuration(); 
-	/*
-	RCC_HCLKConfig(RCC_SYSCLK_Div1);
-	RCC_PCLK1Config(RCC_HCLK_Div4); 
-	RCC_PCLK2Config(RCC_HCLK_Div4);
-	*/
 	
 	ConstructorsInit(); 
 	

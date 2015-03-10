@@ -21,7 +21,7 @@
 
 #pragma once
 
-int8_t 		uart_init(uint8_t dev_id, uint32_t baud);
+int8_t 		uart_init(uint8_t dev_id, uint32_t baud, uint8_t *tx_buffer, uint8_t tx_size, uint8_t *rx_buffer, uint8_t rx_size);
 void 			uart_deinit(uint8_t dev_id); 
 uint16_t 	uart_getc(uint8_t dev_id); 
 int8_t 		uart_putc(uint8_t dev_id, uint8_t ch);

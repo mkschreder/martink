@@ -7,61 +7,14 @@ Example for the fst6 radio transmitter board
 #include <boards/rc/flysky-t6-tx.h>
 #include <tty/vt100.h>
 #include <gui/m2_fb.h>
+#include <kernel/transfer.h>
+
 #include "gui.hpp" 
 
 extern char _sdata; 
 
 #define DEMO_STATUS_RD_CONFIG (1 << 0)
 #define DEMO_STATUS_WR_CONFIG (1 << 1)
-
-typedef enum {
-	IO_WRITE, 
-	IO_READ
-} io_direction_t; 
-
-struct block_transfer {
-	uint8_t completed; 
-	ssize_t address; 
-	ssize_t transfered; 
-	ssize_t size; 
-	uint8_t *buffer; 
-	io_direction_t dir; 
-	block_dev_t dev; 
-}; 
-
-void blk_transfer_init(struct block_transfer *tr, 
-	block_dev_t dev, uint32_t address, uint8_t *buffer, uint32_t size, io_direction_t dir){
-	tr->completed = 0; 
-	tr->address = address; 
-	tr->transfered = 0; 
-	tr->size = size; 
-	tr->buffer = buffer; 
-	tr->dir = dir; 
-	tr->dev = dev; 
-}
-
-uint8_t blk_transfer_completed(struct block_transfer *tr){
-	if(tr->completed == 1) {
-		 return 1; 
-	} else if(tr->transfered < tr->size){
-		ssize_t transfered = 0; 
-		
-		if(tr->dir == IO_WRITE)
-			transfered = blk_writepage(tr->dev, tr->address + tr->transfered, tr->buffer + tr->transfered, tr->size - tr->transfered); 
-		else
-			transfered = blk_readpage(tr->dev, tr->address + tr->transfered, tr->buffer + tr->transfered, tr->size - tr->transfered); 
-			
-		if(transfered > 0) {
-			printf("Transfered %d bytes of %d\n", transfered, tr->size); 
-			tr->transfered += transfered; 
-		}
-	} else if(tr->transfered == tr->size && !blk_get_status(tr->dev, BLKDEV_BUSY)){
-		tr->completed = 1; 
-		return 1; 
-	}
-	
-	return 0; 
-}
 
 #define CHANNEL_FLAG_REVERSED (1 << 0)
 
@@ -88,14 +41,21 @@ struct stick_config {
 	int16_t offset; 
 }; 
 
-struct config {
+struct config_profile {
 	struct channel_config channels[6]; 
 	struct stick_config sticks[4]; 
 	struct mix_config mixes[3]; 
+	uint8_t lcd_contrast; 
+	uint8_t lcd_backlight; 
+	uint8_t sound; 
+}; 
+
+struct config {
+	struct config_profile profiles[6]; 
 	uint16_t checksum; 
 }; 
 
-const struct config default_config = {
+const struct config_profile default_profile = {
 	.channels = {
 		{.source = 0, .min = 1000, .max = 2000, .rate = 100, .exponent = 0, .flags = 0, .offset = 0},
 		{.source = 1, .min = 1000, .max = 2000, .rate = 100, .exponent = 0, .flags = 0, .offset = 0},
@@ -110,12 +70,14 @@ const struct config default_config = {
 		{.offset = 0},
 		{.offset = 0}
 	},
-	.mixes {
+	.mixes = {
 		{.enabled = 0, .master_channel = 0, .slave_channel = 1, .pos_mix = 50, .neg_mix = 50, .offset = 0}, 
 		{.enabled = 0, .master_channel = 0, .slave_channel = 1, .pos_mix = 50, .neg_mix = 50, .offset = 0}, 
 		{.enabled = 0, .master_channel = 0, .slave_channel = 1, .pos_mix = 50, .neg_mix = 50, .offset = 0}
 	}, 
-	.checksum = 0
+	.lcd_contrast = 50, 
+	.lcd_backlight = 1, 
+	.sound = 1
 }; 
 
 uint16_t fletcher16( uint8_t const *data, size_t bytes ){
@@ -205,7 +167,9 @@ LIBK_THREAD(config_thread){
 			// set the saved checksum to the newly loaded config
 			app.saved_config_checksum = app.conf.checksum; 
 			gui->channel.request_load = 1; 
-			
+			gui->mix.request_load = 1; 
+			gui->profile.request_load = 1; 
+			//gui->profile.id = 0; 
 			//config_update_checksum(&app.conf); 
 			
 			blk_close(app.eeprom); 
@@ -237,88 +201,282 @@ void generic_root_change_cb(m2_rom_void_p new_root, m2_rom_void_p old_root, uint
   printf("%p->%p %d\n", old_root, new_root, change_value);
 }
 
+void update_outputs(void){
+	struct config_profile *prof = &app.conf.profiles[gui->profile.id]; 
+			
+	// read raw values for each channel
+	uint16_t outputs[6]; 
+	uint16_t inputs[6]; 
+	
+	// read all of the input values and update gui inputs indicators
+	for(int c = 0; c < 6; c++){
+		inputs[c] = map(fst6_read_stick((fst6_stick_t)c), 0, 4096, 0, 1000); 
+		gui->inputs[c].value = 1000 + inputs[c]; 
+	}
+	
+	for(int c = 0; c < 6; c++) {
+		uint16_t raw = 0; 
+		struct channel_config *cc = &prof->channels[c]; 
+		switch(cc->source){
+			case 0: 
+			case 1: 
+			case 2: 
+			case 3: 
+			case 4: 
+			case 5: {
+				if(cc->flags & CHANNEL_FLAG_REVERSED){
+					raw = 2000 - inputs[cc->source]; 
+				} else {
+					raw = 1000 + inputs[cc->source]; 
+				}
+				//if(cc->source < 4)
+				//	raw += prof->sticks[cc->source].offset; 
+			} break; 
+			case 6: 
+				raw = (fst6_key_down(FST6_KEY_SWA))?1000:2000; break; 
+			case 7: 
+				raw = (fst6_key_down(FST6_KEY_SWB))?1000:2000; break; 
+			case 8: 
+				raw = (fst6_key_down(FST6_KEY_SWC))?1000:2000; break; 
+			case 9: 
+				raw = (fst6_key_down(FST6_KEY_SWD))?1000:2000; break; 
+			default: 
+				raw = 1500; 
+		}
+		// convert to value -1 to 1
+		float out = (float)(map(raw, cc->min, cc->max, 0, 2000)) / 1000.0 - 1; 
+		
+		// apply exponent curve
+		if(out >= 0)
+			out = out/(1+((float)cc->exponent/10.0)*(1-out)); 
+		else
+			out = out/(1+((float)cc->exponent/10.0)*(1+out)); 
+		
+		// convert to 1000 to 2000 value and map using the rate 
+		// when rate = 50 then result is mapped to range 1250 to 1750
+		outputs[c] = map((uint32_t)(1500 + out * 500), 
+			1000, 2000, // from range
+			1500 - ((uint32_t)cc->rate * 5), 
+			1500 + ((uint32_t)cc->rate * 5)); 
+		
+		// apply channel offset to the result
+		outputs[c] = constrain(outputs[c] + cc->offset, 1000, 2000); 
+		
+		// update currently edited gui channel
+		if(gui->channel.id == c){
+			gui->channel.input = raw; 
+			gui->channel.output = outputs[c]; 
+		}
+	}
+	
+	// do mixing here
+	for(int c = 0; c < 3; c++){
+		uint8_t master_id = prof->mixes[c].master_channel; 
+		uint8_t slave_id = prof->mixes[c].slave_channel; 
+		
+		uint32_t slave_out = 0; 
+		if(master_id < 6 && slave_id < 6 && master_id != slave_id){
+			int32_t val = outputs[master_id] - 1500; 
+			if(val > 0)
+				slave_out = constrain(outputs[slave_id] + (prof->mixes[c].pos_mix * val) / 100 + prof->mixes[c].offset * 5, 1000, 2000); 
+			else
+				slave_out = constrain(outputs[slave_id] + (prof->mixes[c].neg_mix * val) / 100 - prof->mixes[c].offset * 5, 1000, 2000); 
+		}
+		if(gui->mix.id == c){
+			gui->mix.master_value = outputs[master_id]; 
+			gui->mix.slave_value = slave_out; 
+		}
+		// store mix if it is enabled
+		if(prof->mixes[c].enabled){
+			outputs[slave_id] = slave_out; 
+		}
+	}
+	
+	// update gui outputs
+	for(int c = 0; c < 6; c++){
+		gui->out[c].value = outputs[c]; 
+	}
+	// write outputs
+	fst6_write_ppm(outputs[0], outputs[1], outputs[2], outputs[3], outputs[4], outputs[5]); 
+}
+
 LIBK_THREAD(output_thread){
 	PT_BEGIN(pt); 
 	
 	while(1){
-		// read raw values for each channel
-		uint16_t outputs[6]; 
-		uint16_t inputs[6]; 
-		
-		// read all of the input values and update gui inputs indicators
-		for(int c = 0; c < 6; c++){
-			inputs[c] = map(fst6_read_stick((fst6_stick_t)c), 0, 4096, 0, 1000); 
-			gui->inputs[c].value = 1000 + inputs[c]; 
-		}
-		
-		for(int c = 0; c < 6; c++) {
-			uint16_t raw = 0; 
-			struct channel_config *cc = &app.conf.channels[c]; 
-			switch(cc->source){
-				case 0: 
-				case 1: 
-				case 2: 
-				case 3: 
-				case 4: 
-				case 5: {
-					if(cc->flags & CHANNEL_FLAG_REVERSED){
-						raw = 2000 - inputs[cc->source]; 
-					} else {
-						raw = 1000 + inputs[cc->source]; 
-					}
-					if(cc->source < 4)
-						raw += app.conf.sticks[cc->source].offset; 
-				} break; 
-				case 6: 
-					raw = (fst6_key_down(FST6_KEY_SWA))?1000:2000; break; 
-				case 7: 
-					raw = (fst6_key_down(FST6_KEY_SWB))?1000:2000; break; 
-				case 8: 
-					raw = (fst6_key_down(FST6_KEY_SWC))?1000:2000; break; 
-				case 9: 
-					raw = (fst6_key_down(FST6_KEY_SWD))?1000:2000; break; 
-				default: 
-					raw = 1500; 
-			}
-			outputs[c] = cc->offset + map(raw, cc->min, cc->max, 1000, 2000); 
-			// update currently edited gui channel
-			if(gui->channel.id == c){
-				gui->channel.input = raw; 
-				gui->channel.output = outputs[c]; 
-			}
-		}
-		
-		// do mixing here
-		for(int c = 0; c < 3; c++){
-			uint8_t master_id = app.conf.mixes[c].master_channel; 
-			uint8_t slave_id = app.conf.mixes[c].slave_channel; 
-			if(app.conf.mixes[c].enabled && master_id < 6 && slave_id < 6 && master_id != slave_id){
-				int32_t val = outputs[master_id] - 1500; 
-				if(val > 0)
-					outputs[slave_id] = constrain(outputs[slave_id] + (app.conf.mixes[c].pos_mix * val) / 100 + app.conf.mixes[c].offset * 5, 1000, 2000); 
-				else
-					outputs[slave_id] = constrain(outputs[slave_id] + (app.conf.mixes[c].neg_mix * val) / 100 - app.conf.mixes[c].offset * 5, 1000, 2000); 
-			}
-		}
-		
-		// update gui outputs
-		for(int c = 0; c < 6; c++){
-			gui->out[c].value = outputs[c]; 
-		}
-		// write outputs
-		fst6_write_ppm(outputs[0], outputs[1], outputs[2], outputs[3], outputs[4], outputs[5]); 
-			
+		update_outputs(); 
 		PT_YIELD(pt); 
 	}
 	
 	PT_END(pt); 
 }
 
+void update_gui(void){
+	// read switches
+	gui->sw[0] = fst6_key_down(FST6_KEY_SWA); 
+	gui->sw[1] = fst6_key_down(FST6_KEY_SWB); 
+	gui->sw[2] = fst6_key_down(FST6_KEY_SWC); 
+	gui->sw[3] = fst6_key_down(FST6_KEY_SWD); 
+	
+	struct config_profile *prof = &app.conf.profiles[gui->profile.id]; 
+	// sync the gui
+	if(gui->channel.request_load){
+		uint8_t id = (gui->channel.id < 6)?gui->channel.id:0; 
+		struct channel_config *ch = &prof->channels[id]; 
+		gui->channel.source = ch->source; 
+		gui->channel.reverse = (ch->flags & CHANNEL_FLAG_REVERSED)?1:0; 
+		gui->channel.rate = ch->rate; 
+		gui->channel.exponent = ch->exponent; 
+		gui->channel.min = ch->min; 
+		gui->channel.max = ch->max; 
+		gui->channel.offset = 1500 + ch->offset; 
+		gui->channel.request_load = 0; 
+	} else {
+		uint8_t id = (gui->channel.id < 6)?gui->channel.id:0; 
+		struct channel_config *ch = &prof->channels[id]; 
+		ch->source = gui->channel.source % 10; 
+		if(gui->channel.reverse)
+			ch->flags |= CHANNEL_FLAG_REVERSED;
+		else
+			ch->flags &= ~CHANNEL_FLAG_REVERSED; 
+		ch->rate = constrain((int8_t)gui->channel.rate, 0, 100); 
+		ch->exponent = constrain((int8_t)gui->channel.exponent, 0, 100); 
+		ch->min = gui->channel.min; 
+		ch->max = gui->channel.max; 
+		ch->offset = constrain((int16_t)gui->channel.offset, 1000, 2000) - 1500; 
+	}
+	
+	if(gui->mix.request_load){
+		uint8_t id = (gui->mix.id < 3)?gui->mix.id:0; 
+		struct mix_config *m = &prof->mixes[id]; 
+		gui->mix.master_channel = m->master_channel; 
+		gui->mix.slave_channel = m->slave_channel; 
+		gui->mix.pos_mix = m->pos_mix; 
+		gui->mix.neg_mix = m->neg_mix; 
+		gui->mix.offset = m->offset; 
+		gui->mix.request_load = 0; 
+		gui->mix.enabled = m->enabled; 
+	} else {
+		uint8_t id = (gui->mix.id < 3)?gui->mix.id:0; 
+		struct mix_config *m = &prof->mixes[id]; 
+		m->master_channel = gui->mix.master_channel; 
+		m->slave_channel = gui->mix.slave_channel; 
+		m->pos_mix = gui->mix.pos_mix; 
+		m->neg_mix = gui->mix.neg_mix; 
+		m->offset = gui->mix.offset; 
+		m->enabled = gui->mix.enabled; 
+	}
+	
+	if(gui->profile.request_load){
+		gui->profile.lcd_brightness = prof->lcd_contrast;
+		gui->profile.lcd_backlight = prof->lcd_backlight; 
+		gui->profile.sound = prof->sound;
+		for(int c = 0; c < 3; c++){
+			if(prof->mixes[c].enabled)
+				gui->profile.mix_enabled[c] = 1; 
+			else 
+				gui->profile.mix_enabled[c] = 0; 
+		}
+		gui->profile.request_load = 0; 
+	} else {
+		// check if we need to turn backlight on/off
+		if(prof->lcd_backlight != gui->profile.lcd_backlight){
+			if(gui->profile.lcd_backlight){
+				fst6_set_lcd_backlight(1); 
+			} else {
+				fst6_set_lcd_backlight(0); 
+			}
+		}
+		prof->lcd_contrast = gui->profile.lcd_brightness;
+		prof->lcd_backlight = gui->profile.lcd_backlight; 
+		prof->sound = gui->profile.sound;
+		for(int c = 0; c < 3; c++){
+			if(gui->profile.mix_enabled[c])
+				prof->mixes[c].enabled = 1; 
+			else 
+				prof->mixes[c].enabled = 0; 
+		}
+	}
+	
+	if(gui->profile.do_reset){
+		memcpy(&app.conf.profiles[gui->profile.id], &default_profile, sizeof(default_profile)); 
+		gui->profile.request_load = 1; 
+		gui->profile.do_reset = 0; 
+	} else {
+		
+	}
+	
+	gui->vbat = ((uint32_t)fst6_read_stick(FST6_STICK_VBAT) * 120) / 4096; 
+}
+
+void handle_keys(void){
+	struct config_profile *prof = &app.conf.profiles[gui->profile.id]; 
+	int16_t key = 0; 
+	static const int OFFSET_STEP = 5; 
+	
+	while((key = fst6_read_key()) > 0){
+		if(!(FST6_KEY_FLAG_UP & key)){
+			switch(key & FST6_KEY_MASK){
+				case FST6_KEY_OK: 
+					m2_fb_put_key(M2_KEY_SELECT); 
+					break; 
+				case FST6_KEY_SELECT: 
+					m2_fb_put_key(M2_KEY_EXIT); 
+					break; 
+				case FST6_KEY_CANCEL: 
+					m2_fb_put_key(M2_KEY_DATA_DOWN); 
+					break; 
+				case FST6_KEY_ROTA: 
+					m2_fb_put_key(M2_KEY_NEXT); 
+					break; 
+				case FST6_KEY_ROTB: 
+					m2_fb_put_key(M2_KEY_PREV); 
+					break; 
+				case FST6_KEY_CH1P: 
+					prof->sticks[0].offset += OFFSET_STEP; 
+					break; 
+				case FST6_KEY_CH1M: 
+					prof->sticks[0].offset-= OFFSET_STEP; 
+					break; 
+				case FST6_KEY_CH2P: 
+					prof->sticks[1].offset+= OFFSET_STEP; 
+					break; 
+				case FST6_KEY_CH2M: 
+					prof->sticks[1].offset-= OFFSET_STEP; 
+					break; 
+				case FST6_KEY_CH3P: 
+					prof->sticks[2].offset+= OFFSET_STEP; 
+					break; 
+				case FST6_KEY_CH3M: 
+					prof->sticks[2].offset-= OFFSET_STEP; 
+					break; 
+				case FST6_KEY_CH4P: 
+					prof->sticks[3].offset+= OFFSET_STEP; 
+					break; 
+				case FST6_KEY_CH4M: 
+					prof->sticks[3].offset-= OFFSET_STEP; 
+					break; 
+			}
+			if(prof->sound){
+				// play a tone (300hz, 25ms)
+				fst6_play_tone(300, 25); 
+			}
+			printf("KEY: %d\n", key & FST6_KEY_MASK); 
+		} else {
+			// play sound for switches even when they are toggled back
+			if(prof->sound && (key & FST6_KEY_MASK) >= FST6_KEY_SWA && (key & FST6_KEY_MASK) <= FST6_KEY_SWD){
+				// play a tone (300hz, 25ms)
+				fst6_play_tone(300, 25); 
+			}
+			printf("DOW: %d\n", key & FST6_KEY_MASK); 
+			
+		}
+	}
+}
+
 LIBK_THREAD(main_thread){
 	//serial_dev_t screen = fst6_get_screen_serial_interface(); 
 	//fst6_key_mask_t keys = fst6_read_keys(); 
-	int16_t key = 0; 
-	static const int OFFSET_STEP = 5; 
 	
 	PT_BEGIN(pt); 
 	
@@ -330,7 +488,9 @@ LIBK_THREAD(main_thread){
 		for(uint16_t c = 0; c < sizeof(struct config); c++){
 			printf("%x ", ((uint8_t*)&app.conf)[c]); 
 		} printf("\n"); 
-		memcpy(&app.conf, &default_config, sizeof(struct config)); 
+		for(int c = 0; c < 6; c++){
+			memcpy(&app.conf.profiles[c], &default_profile, sizeof(default_profile)); 
+		}
 		config_update_checksum(&app.conf); 
 		app.status |= DEMO_STATUS_WR_CONFIG; 
 		PT_WAIT_WHILE(pt, app.status & DEMO_STATUS_WR_CONFIG); 
@@ -354,146 +514,18 @@ LIBK_THREAD(main_thread){
 			app.status |= DEMO_STATUS_WR_CONFIG; 
 		}
 		
-		// read switches
-		gui->sw[0] = fst6_key_down(FST6_KEY_SWA); 
-		gui->sw[1] = fst6_key_down(FST6_KEY_SWB); 
-		gui->sw[2] = fst6_key_down(FST6_KEY_SWC); 
-		gui->sw[3] = fst6_key_down(FST6_KEY_SWD); 
+		update_gui(); 
+		handle_keys(); 
 		
-		// sync the gui
-		if(gui->channel.request_load){
-			uint8_t id = (gui->channel.id < 6)?gui->channel.id:0; 
-			struct channel_config *ch = &app.conf.channels[id]; 
-			gui->channel.source = ch->source; 
-			gui->channel.reverse = (ch->flags & CHANNEL_FLAG_REVERSED)?1:0; 
-			gui->channel.rate = ch->rate; 
-			gui->channel.exponent = ch->exponent; 
-			gui->channel.min = ch->min; 
-			gui->channel.max = ch->max; 
-			gui->channel.offset = 1500 + ch->offset; 
-			gui->channel.request_load = 0; 
-		} else {
-			uint8_t id = (gui->channel.id < 6)?gui->channel.id:0; 
-			struct channel_config *ch = &app.conf.channels[id]; 
-			ch->source = gui->channel.source % 10; 
-			if(gui->channel.reverse)
-				ch->flags |= CHANNEL_FLAG_REVERSED;
-			else
-				ch->flags &= ~CHANNEL_FLAG_REVERSED; 
-			ch->rate = constrain((int8_t)gui->channel.rate, 0, 100); 
-			ch->exponent = constrain((int8_t)gui->channel.exponent, 0, 100); 
-			ch->min = gui->channel.min; 
-			ch->max = gui->channel.max; 
-			ch->offset = constrain((int16_t)gui->channel.offset, 1000, 2000) - 1500; 
+		// handle flash upgrade
+		if(gui->do_flash_upgrade){
+			gui->do_flash_upgrade = 0; 
+			static timestamp_t time = timestamp_from_now_us(1000000); 
+			PT_WAIT_UNTIL(pt, timestamp_expired(time)); // give some time to show the dialog
+			// issue reboot into bootloader mode
+			EnterFlashUpgrade(); 
 		}
 		
-		if(gui->mix.request_load){
-			uint8_t id = (gui->mix.id < 3)?gui->mix.id:0; 
-			struct mix_config *m = &app.conf.mixes[id]; 
-			gui->mix.master_channel = m->master_channel; 
-			gui->mix.slave_channel = m->slave_channel; 
-			gui->mix.pos_mix = m->pos_mix; 
-			gui->mix.neg_mix = m->neg_mix; 
-			gui->mix.offset = m->offset; 
-			gui->mix.request_load = 0; 
-		} else {
-			uint8_t id = (gui->mix.id < 3)?gui->mix.id:0; 
-			struct mix_config *m = &app.conf.mixes[id]; 
-			m->master_channel = gui->mix.master_channel; 
-			m->slave_channel = gui->mix.slave_channel; 
-			m->pos_mix = gui->mix.pos_mix; 
-			m->neg_mix = gui->mix.neg_mix; 
-			m->offset = gui->mix.offset; 
-		}
-		
-		// enable any mixes
-		for(int c = 0; c < 3; c++){
-			if(gui->mix_enabled[c]){
-				app.conf.mixes[c].enabled = 1; 
-			} else {
-				app.conf.mixes[c].enabled = 0; 
-			}
-		}
-		
-		while((key = fst6_read_key()) > 0){
-			if(!(FST6_KEY_FLAG_UP & key)){
-				switch(key & FST6_KEY_MASK){
-					case FST6_KEY_OK: 
-						m2_fb_put_key(M2_KEY_SELECT); 
-						break; 
-					case FST6_KEY_SELECT: 
-						m2_fb_put_key(M2_KEY_EXIT); 
-						break; 
-					case FST6_KEY_CANCEL: 
-						m2_fb_put_key(M2_KEY_DATA_DOWN); 
-						break; 
-					case FST6_KEY_ROTA: 
-						m2_fb_put_key(M2_KEY_NEXT); 
-						break; 
-					case FST6_KEY_ROTB: 
-						m2_fb_put_key(M2_KEY_PREV); 
-						break; 
-					case FST6_KEY_CH1P: 
-						app.conf.sticks[0].offset += OFFSET_STEP; 
-						break; 
-					case FST6_KEY_CH1M: 
-						app.conf.sticks[0].offset-= OFFSET_STEP; 
-						break; 
-					case FST6_KEY_CH2P: 
-						app.conf.sticks[1].offset+= OFFSET_STEP; 
-						break; 
-					case FST6_KEY_CH2M: 
-						app.conf.sticks[1].offset-= OFFSET_STEP; 
-						break; 
-					case FST6_KEY_CH3P: 
-						app.conf.sticks[2].offset+= OFFSET_STEP; 
-						break; 
-					case FST6_KEY_CH3M: 
-						app.conf.sticks[2].offset-= OFFSET_STEP; 
-						break; 
-					case FST6_KEY_CH4P: 
-						app.conf.sticks[3].offset+= OFFSET_STEP; 
-						break; 
-					case FST6_KEY_CH4M: 
-						app.conf.sticks[3].offset-= OFFSET_STEP; 
-						break; 
-				}
-				printf("KEY: %d\n", key & FST6_KEY_MASK); 
-			} else {
-				printf("DOW: %d\n", key & FST6_KEY_MASK); 
-				/*switch(key & FST6_KEY_MASK){
-					case FST6_KEY_SWA: 
-						gui->sw[0] = 1; 
-						break; 
-					case FST6_KEY_SWB: 
-						gui->sw[1] = 1; 
-						break; 
-					case FST6_KEY_SWC: 
-						gui->sw[2] = 1; 
-						break; 
-					case FST6_KEY_SWD: 
-						gui->sw[3] = 1; 
-						break; 
-				}*/
-			}
-		}
-		/*
-		for(int c = 0; c < 6; c++) {
-			gui->ch[c].value = (int)fst6_read_stick((fst6_stick_t)c); 
-			
-			if(!gui->calibrated){
-				gui->ch[c].value = 1000 + (gui->ch[c].value >> 2); 
-			
-				if(gui->ch[c].value < gui->ch[c].min)
-					gui->ch[c].min = gui->ch[c].value; 
-				if(gui->ch[c].value > gui->ch[c].max)
-					gui->ch[c].max = gui->ch[c].value; 
-			} else {
-				gui->ch[c].value = map(1000 + (gui->ch[c].value >> 2), 
-					gui->ch[c].min, gui->ch[c].max, 1000, 2000); 
-			}
-		}
-		*/
 		PT_YIELD(pt); 
 		/*continue; 
 		{

@@ -3,8 +3,9 @@
 #include <lib/m2gui/m2.h>
 #include <lib/m2gui/u8glib/m2ghu8g.h>
 
-#include <disp/interface.h>
-#include <util/cbuf.h>
+#include <kernel/dev/framebuffer.h>
+#include <kernel/thread.h>
+#include <kernel/cbuf.h>
 
 #ifdef __cplusplus
 extern "C" {

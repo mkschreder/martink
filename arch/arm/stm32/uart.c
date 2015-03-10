@@ -27,7 +27,7 @@
 
 #include <arch/soc.h>
 
-#include <util/cbuf.h>
+#include <kernel/cbuf.h>
 
 #include "uart.h"
 
@@ -79,20 +79,12 @@ static const struct uart_device _devices[] = {
 }; 
 
 static struct cbuf rx_buffers[DEV_COUNT]; 
-static uint8_t rx_data[DEV_COUNT][UART_RX_BUFFER_SIZE]; 
+//static uint8_t rx_data[DEV_COUNT][UART_RX_BUFFER_SIZE]; 
 static struct cbuf tx_buffers[DEV_COUNT]; 
-static uint8_t tx_data[DEV_COUNT][UART_TX_BUFFER_SIZE]; 
+//static uint8_t tx_data[DEV_COUNT][UART_TX_BUFFER_SIZE]; 
 
-/*
-DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-DECLARE_STATIC_CBUF(uart1_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-DECLARE_STATIC_CBUF(uart2_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-DECLARE_STATIC_CBUF(uart3_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-DECLARE_STATIC_CBUF(uart4_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-DECLARE_STATIC_CBUF(uart5_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-*/
 
-int8_t uart_init(uint8_t dev_id, uint32_t baud){
+int8_t uart_init(uint8_t dev_id, uint32_t baud, uint8_t *tx_buffer, uint8_t tx_size, uint8_t *rx_buffer, uint8_t rx_size){
 	USART_InitTypeDef usartConfig;
 	
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
@@ -102,8 +94,8 @@ int8_t uart_init(uint8_t dev_id, uint32_t baud){
 	const struct uart_device *conf = &_devices[dev_id]; 
 	USART_TypeDef *dev = _devices[dev_id].dev; 
 	
-	cbuf_init(&rx_buffers[dev_id], rx_data[dev_id], UART_RX_BUFFER_SIZE); 
-	cbuf_init(&tx_buffers[dev_id], tx_data[dev_id], UART_TX_BUFFER_SIZE); 
+	cbuf_init(&rx_buffers[dev_id], rx_buffer, rx_size); 
+	cbuf_init(&tx_buffers[dev_id], tx_buffer, tx_size); 
 	
 	USART_DeInit(dev); 
 	

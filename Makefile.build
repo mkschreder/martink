@@ -1,5 +1,4 @@
-obj-y += main.o
-
+include kernel/Makefile
 include arch/Makefile
 include boards/Makefile
 include block/Makefile

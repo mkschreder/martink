@@ -116,22 +116,11 @@ float bmp085_read_altitude(struct bmp085 *self) {
 	return ((1 - pow(pressure/(double)101325, 0.1903 )) / 0.0000225577) + BMP085_UNITMOFFSET; 
 }
 
-void bmp085_init(struct bmp085 *self, i2c_dev_t i2c, uint8_t addr) {
-	self->i2c = i2c;
-	self->addr = addr; 
-	self->ut = self->up = 0; 
-	PT_INIT(&self->ithread); 
-	PT_INIT(&self->bthread); 
-	PT_INIT(&self->uthread); 
-}
 
-static PT_THREAD(_bmp085_init_thread(struct pt *thr, struct bmp085 *self)){
-	struct pt *bthr = &self->bthread; 
-	uint8_t *buff = self->buf; 
+static PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)){
+	struct bmp085 *self = container_of(kthread, struct bmp085, thread); 
 	
 	PT_BEGIN(thr); 
-	
-	PT_WAIT_WHILE(thr, self->status & BMP085_STATUS_READY); 
 	
 	PT_SPAWN(thr, bthr, i2c_read_reg_thread(self->i2c, bthr, self->addr, BMP085_REGAC1, self->buf, 2)); 
 	self->regac1 = ((int)buff[0] <<8 | ((int)buff[1]));
@@ -168,16 +157,6 @@ static PT_THREAD(_bmp085_init_thread(struct pt *thr, struct bmp085 *self)){
 	
 	self->status |= BMP085_STATUS_READY; 
 	
-	PT_END(thr); 
-}
-
-static PT_THREAD(_bmp085_update_thread(struct pt *thr, struct bmp085 *self)){
-	struct pt *bthr = &self->bthread; 
-	
-	PT_BEGIN(thr); 
-	
-	PT_WAIT_UNTIL(thr, self->status & BMP085_STATUS_READY); 
-	
 	while(1){
 		// read uncompensated temperature
 		self->buf[0] = BMP085_REGCONTROL; 
@@ -210,11 +189,13 @@ static PT_THREAD(_bmp085_update_thread(struct pt *thr, struct bmp085 *self)){
 	PT_END(thr); 
 }
 
-void bmp085_update(struct bmp085 *self){
-	if(!(self->status & BMP085_STATUS_READY))
-		_bmp085_init_thread(&self->ithread, self); 
-	else
-		_bmp085_update_thread(&self->uthread, self); 
+void bmp085_init(struct bmp085 *self, i2c_dev_t i2c, uint8_t addr) {
+	self->i2c = i2c;
+	self->addr = addr; 
+	self->ut = self->up = 0; 
+	
+	// one thread per bmp sensor
+	libk_create_thread(&self->thread, _bmp085_thread, "bmp085"); 
 }
 
 #endif

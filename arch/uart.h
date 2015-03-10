@@ -23,6 +23,8 @@
 
 #include "config.h"
 
+#include <kernel/dev/serial.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 

@@ -13,6 +13,7 @@
 #define FST6_ADC_BATTERY 6
 
 #define FST6_PWM_SPEAKER PWM_CH11
+#define FST6_GPIO_SPEAKER GPIO_PA8
 
 #define FST6_STATUS_WR_CONFIG (1 << 0)
 #define FST6_STATUS_RD_CONFIG (1 << 1)
@@ -23,6 +24,11 @@ struct fst6_config {
 	uint16_t size; 
 }; 
 
+#define FST6_UART1_TX_SIZE 128
+#define FST6_UART1_RX_SIZE 64
+#define FST6_UART2_TX_SIZE 128
+#define FST6_UART2_RX_SIZE 64
+
 struct fst6 {
 	struct ks0713 disp;
 	struct vt100 vt; 
@@ -31,6 +37,12 @@ struct fst6 {
 	timestamp_t time_to_render; 
 	timestamp_t pwm_end_time; 
 	uint16_t ppm_buffer[7]; 
+	
+	// cache buffers
+	uint8_t uart1_tx[FST6_UART1_TX_SIZE]; 
+	uint8_t uart1_rx[FST6_UART1_RX_SIZE]; 
+	uint8_t uart2_tx[FST6_UART2_TX_SIZE]; 
+	uint8_t uart2_rx[FST6_UART2_RX_SIZE]; 
 	
 	uint8_t  status; 
 }; 
@@ -70,12 +82,19 @@ uint16_t fst6_read_battery_voltage(void){
 }
 
 void fst6_play_tone(uint32_t freq, uint32_t duration_ms){
+	_board.status |= FST6_STATUS_BEEP; 
+	(void)freq; (void)duration_ms; 
+	/*
 	// exit if invalid frequency or if another tone is in progress
 	if(freq == 0 || !timestamp_expired(_board.pwm_end_time)) return; 
-	//uint32_t period = 1000000UL / freq; 
-	//pwm_set_period(FST6_PWM_SPEAKER, period); 
-	//pwm_write(FST6_PWM_SPEAKER, period >> 2); 
-	_board.pwm_end_time = timestamp_from_now_us(duration_ms * 1000UL); 
+	uint32_t period = 1000000UL / freq; 
+	pwm_set_period(FST6_PWM_SPEAKER, period); 
+	pwm_write(FST6_PWM_SPEAKER, period >> 2); 
+	_board.pwm_end_time = timestamp_from_now_us(duration_ms * 1000UL); */
+}
+
+void fst6_set_lcd_backlight(uint8_t on){
+	ks0713_set_backlight(&_board.disp, on); 
 }
 
 void fst6_write_ppm(uint16_t ch1, uint16_t ch2, uint16_t ch3, 
@@ -96,7 +115,7 @@ void fst6_init(void){
 	
 	timestamp_init(); 
 	gpio_init(); 
-	uart_init(0, 38400); 
+	uart_init(0, 38400, _board.uart1_tx, FST6_UART1_TX_SIZE, _board.uart1_rx, FST6_UART1_RX_SIZE); 
 	
 	printf("FST6 Init\n"); 
 	
@@ -120,6 +139,8 @@ void fst6_init(void){
 	gpio_configure(GPIO_PA4, GP_INPUT | GP_ANALOG); 
 	gpio_configure(GPIO_PA5, GP_INPUT | GP_ANALOG); 
 	gpio_configure(GPIO_PA6, GP_INPUT | GP_ANALOG); 
+	
+	gpio_configure(FST6_GPIO_SPEAKER, GP_OUTPUT); 
 	
 	printf("FST6: starting adc\n"); 
 	adc_init(); 
@@ -163,62 +184,38 @@ void fst6_init(void){
 		length[c] = acc; 
 	}
 	length[6] = 20000 - acc; */
-	//ppm_configure(PWM_CH14, 0, 0, ppm, 6); 
+	//pwm_configure(FST6_PWM_SPEAKER, 1000, 500); 
 	ppm_configure(PWM_CH14, _board.ppm_buffer, 7, 400); 
 }
-/*
-static PT_THREAD(_fst6_eeprom_thread(struct pt *thr)){
-	PT_BEGIN(thr); 
-	
-	if(_board.status & FST6_STATUS_WR_CONFIG){
-		
-	} else if(_board.status & FST6_STATUS_RD_CONFIG){
-		
-	}
-	
-	PT_END(thr); 
-}*/
 
 LIBK_THREAD(_speaker_silent){
-	static timestamp_t time = 0; 
+	//static timestamp_t time = 0; 
 	PT_BEGIN(pt); 
 	
 	while(1){
 		PT_WAIT_UNTIL(pt, _board.status & FST6_STATUS_BEEP); 
+		//static const uint32_t period = 1000000UL / 1000; 
+		//pwm_set_period(FST6_PWM_SPEAKER, period); 
+		//pwm_write(FST6_PWM_SPEAKER, 500); 
+		gpio_set(FST6_GPIO_SPEAKER); 
+		_board.pwm_end_time = timestamp_from_now_us(25 * 1000UL); 
+		PT_WAIT_UNTIL(pt, timestamp_expired(_board.pwm_end_time)); 
+		//pwm_set_period(FST6_PWM_SPEAKER, 0); 
+		//pwm_write(FST6_PWM_SPEAKER, 0); 
+		gpio_clear(FST6_GPIO_SPEAKER); 
+		_board.status &= ~FST6_STATUS_BEEP; 
+		PT_YIELD(pt); 
+		/*
+		_board.pwm_end_time
+		PT_WAIT_UNTIL(pt, _board.status & FST6_STATUS_BEEP); 
 		// do the beep 
 		time = timestamp_from_now_us(200000); 
-		PT_WAIT_UNTIL(pt, timestamp_expired(time)); 
+		PT_WAIT_UNTIL(pt, timestamp_expired(time)); */
 	}
 	
 	PT_END(pt); 
 }
-/*
-LIBK_THREAD(_fst6_ks0713_commit){
-	static timestamp_t time = 0; 
-	PT_BEGIN(pt); 
-	while(1){
-		PT_WAIT_UNTIL(pt, timestamp_expired(time)); 
-		ks0713_commit(&_board.disp); 
-		time = timestamp_from_now_us(20000); 
-	}
-	PT_END(pt); 
-}
-*/
-/*
-int8_t fst6_write_config(const uint8_t *data, uint16_t size){
-	(void)(data); 
-	(void)(size); 
-	//at24_start_write(&_board.eeprom, 0, data, size); 
-	return 0; 
-}
 
-int8_t fst6_read_config(uint8_t *data, uint16_t size){
-	(void)(data); 
-	(void)(size); 
-	//at24_start_read(&_board.eeprom, 0, data, size); 
-	return 0; 
-}
-*/
 block_dev_t fst6_get_storage_device(void){
 	return at24_get_block_device_interface(&_board.eeprom); 
 }

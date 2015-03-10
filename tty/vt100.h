@@ -25,7 +25,8 @@
 extern "C" {
 #endif
 
-#include <disp/interface.h>
+#include <kernel/dev/tty.h>
+#include <kernel/dev/serial.h>
 
 #define VT100_CHAR_WIDTH 6
 #define VT100_CHAR_HEIGHT 8
@@ -64,8 +65,6 @@ struct vt100 {
 	
 	struct serial_if *serial; 
 };
-
-#include "../arch/interface.h"
 
 //void vt100_init(void (*send_response)(char *str));
 void vt100_init(struct vt100 *self, tty_dev_t display); 

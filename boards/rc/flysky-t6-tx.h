@@ -4,7 +4,9 @@
 extern "C" {
 #endif
 
-#include <disp/interface.h>
+#include <kernel/dev/block.h>
+#include <kernel/dev/framebuffer.h>
+#include <kernel/thread.h>
 #include <hid/fst6_keys.h>
 
 typedef enum {
@@ -14,6 +16,7 @@ typedef enum {
 	FST6_STICK3, 
 	FST6_STICK4, 
 	FST6_STICK5,
+	FST6_STICK_VBAT,
 	FST6_STICKS_COUNT
 } fst6_stick_t; 
 
@@ -22,6 +25,7 @@ int16_t fst6_read_key(void);
 uint8_t fst6_key_down(fst6_key_code_t key); 
 uint16_t fst6_read_battery_voltage(void); 
 uint16_t fst6_read_stick(fst6_stick_t id); 
+void fst6_set_lcd_backlight(uint8_t on); 
 void fst6_play_tone(uint32_t frequency, uint32_t duration_ms); 
 void fst6_write_ppm(uint16_t ch1, uint16_t ch2, uint16_t ch3, 
 	uint16_t ch4, uint16_t ch5, uint16_t ch6); 

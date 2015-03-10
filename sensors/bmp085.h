@@ -27,6 +27,9 @@
 
 #include <stdio.h>
 
+#include <kernel/dev/i2c.h>
+#include <kernel/thread.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,7 +43,7 @@ struct bmp085 {
 	unsigned int regac4, regac5, regac6;
 	long ut, up; 
 	uint8_t buf[4]; // i2c buffer
-	struct pt uthread, ithread, bthread; 
+	struct libk_thread thread; 
 	timestamp_t time; 
 	uint8_t status; 
 };

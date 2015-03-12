@@ -34,19 +34,23 @@ extern "C" {
 #include <kernel/dev/i2c.h>
 
 struct hmc5883l {
-	i2c_dev_t i2c;
-	uint8_t addr;
+	block_dev_t dev;
+	struct block_transfer tr; 
+	
+	uint8_t buf[6]; 
+	
 	float scale; 
-	uint8_t buffer[6]; 
-	struct libk_thread thread; 
 	timestamp_t time; 
-	uint16_t raw_mx, raw_my, raw_mz; 
+	int16_t raw_mag[3]; 
+	
 	uint8_t status; 
 	uint32_t sensor_id; 
+	
+	struct libk_thread thread; 
 };
 
 //functions
-void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr);
+void hmc5883l_init(struct hmc5883l *self, block_dev_t dev);
 void hmc5883l_readRawMag(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, int16_t *mzraw);
 void hmc5883l_read_adjusted(struct hmc5883l *self, float *mx, float *my, float *mz);
 void hmc5883l_convertMag(struct hmc5883l *self, 

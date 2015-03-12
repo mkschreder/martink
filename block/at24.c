@@ -79,6 +79,7 @@ static PT_THREAD(_at24_write_thread(struct pt *thr, struct at24 *self)){
 }
 */
 // main io thread that shuffles data between the queued operation and the device
+/*
 static PT_THREAD(_at24_thread(struct libk_thread *kthread, struct pt *pt)){
 	struct at24 *self = container_of(kthread, struct at24, thread); 
 	
@@ -154,37 +155,43 @@ static PT_THREAD(_at24_thread(struct libk_thread *kthread, struct pt *pt)){
 	
 	PT_END(pt); 
 }
-
-void at24_init(struct at24 *self, i2c_dev_t i2c)
+*/
+void at24_init(struct at24 *self, block_dev_t i2c)
 {
-	self->i2c = i2c; 
-	self->status = 0; 
-	self->op = (struct at24_op){0}; 
-	libk_create_thread(&self->thread, _at24_thread, "at24"); 
+	i2cblk_init(&self->i2cblk, i2c, EEPROM_ADDR); 
+	self->i2cdev = i2cblk_get_interface(&self->i2cblk); 
+	blk_ioctl(self->i2cdev, I2CBLK_SET_AW, 2); // set 16 bit address width
+	//blk_transfer_reset(&self->tr); 
+	//self->status = 0; 
+	//self->op = (struct at24_op){0}; 
+	//libk_create_thread(&self->thread, _at24_thread, "at24"); 
+}
+/*
+ssize_t at24_seek(struct at24 *self, ssize_t pos, int from){
+	switch(from){
+		case SEEK_SET: self->cur = 0; break; 
+		case SEEK_END: self->cur = self->size; break; 
+		case SEEK_CUR: self->cur += pos; break; 
+	}
+	return self->cur; 
 }
 
-ssize_t at24_writepage(struct at24 *self, uint16_t eeaddr, const uint8_t* data, ssize_t count){
+ssize_t at24_write(struct at24 *self, const uint8_t* data, ssize_t count){
 	if(self->user_thread != libk_current_thread()) return -EACCES; 
 	
-	// writes always fail while another operation is in progress
-	if(at24_get_status(self, AT24_FLAG_BUSY)) return -EBUSY; 
+	if(self->status & AT24_FLAG_BUSY) return -EBUSY; 
 	
-	self->status |= (AT24_FLAG_BUSY | AT24_FLAG_WRITE); 
-	self->status &= ~(AT24_FLAG_READ); 
+	self->status |= AT24_FLAG_BUSY; 
+	if(count > sizeof(self->buffer)) count = sizeof(self->buffer); 
 	
-	// place address first
-	self->op.buffer[0] = eeaddr >> 8; 
-	self->op.buffer[1] = eeaddr; 
+	memcpy(self->buffer, data, count); 
 	
-	// then data
-	if(count > AT24_PAGE_SIZE) count = AT24_PAGE_SIZE; 
-	memcpy(self->op.buffer + AT24_ADDRESS_SIZE, data, count); 
-	self->op.size = count + AT24_ADDRESS_SIZE; 
+	blk_transfer_init(&self->tr, i2cblk_get_interface(&self->i2cblk), self->cur, self->buffer, count, IO_WRITE); 
 	
 	return count; 
 }
 
-ssize_t at24_readpage(struct at24 *self, uint16_t eeaddr, uint8_t* data, ssize_t count){
+ssize_t at24_read(struct at24 *self, uint8_t* data, ssize_t count){
 	if(self->user_thread != libk_current_thread()) return -EACCES; 
 	
 	// reads only fail if write is in progress. Otherwise bytes can be read continuously as they arrive. 
@@ -240,39 +247,64 @@ int8_t at24_get_geometry(struct at24 *self, struct block_device_geometry *geom){
 	geom->pages = geom->sectors * 256; 
 	return 0; 
 }
-
+*/
 static uint8_t _at24_open(block_dev_t self){
 	struct at24 *at = container_of(self, struct at24, dev); 
-	return at24_open(at); 
+	return blk_open(at->i2cdev); 
 }
 
 static int8_t _at24_close(block_dev_t self){
 	struct at24 *at = container_of(self, struct at24, dev); 
-	return at24_close(at); 
+	return blk_close(at->i2cdev); 
+}
+
+static ssize_t _at24_seek(block_dev_t self, ssize_t pos, int from){
+	struct at24 *at = container_of(self, struct at24, dev);
+	ssize_t cur = blk_seek(at->i2cdev, 0, SEEK_CUR); 
+	if(cur < 0) return cur; 
+	
+	switch(from){
+		case SEEK_SET: 
+			if(pos > at->size) return -EFBIG; 
+			break; 
+		case SEEK_END: 
+			if(pos > 0) return -EFBIG; 
+			else if(at->size + pos < 0) return -EFBIG; 
+			break; 
+		case SEEK_CUR: 
+			if(cur + pos > at->size) return -EFBIG; 
+			break;  
+	}
+
+	return blk_seek(at->i2cdev, pos, from); 
 }
 
 /// copies a page into the internal cache
-static ssize_t _at24_writepage(block_dev_t self, page_address_t page, const uint8_t *data, ssize_t data_size){
+static ssize_t _at24_write(block_dev_t self, const uint8_t *data, ssize_t data_size){
 	struct at24 *at = container_of(self, struct at24, dev); 
-	return at24_writepage(at, page & ~(AT24_PAGE_SIZE - 1), data, (data_size > AT24_PAGE_SIZE)?AT24_PAGE_SIZE:data_size); 
+	return blk_write(at->i2cdev, data, data_size); 
 }
 
 /// reads a page from the internal cache if available
-static ssize_t _at24_readpage(block_dev_t self, page_address_t page, uint8_t *data, ssize_t data_size){
+static ssize_t _at24_read(block_dev_t self, uint8_t *data, ssize_t data_size){
 	struct at24 *at = container_of(self, struct at24, dev); 
-	return at24_readpage(at, page & ~(AT24_PAGE_SIZE - 1), data, (data_size > AT24_PAGE_SIZE)?AT24_PAGE_SIZE:data_size); 
+	return blk_read(at->i2cdev, data, data_size); 
 }
-
+/*
 static int8_t _at24_get_geometry(block_dev_t self, struct block_device_geometry *geom){
-	struct at24 *at = container_of(self, struct at24, dev); 
-	return at24_get_geometry(at, geom); 
+	//struct at24 *at = container_of(self, struct at24, dev); 
+	(void)self; 
+	geom->page_size = AT24_PAGE_SIZE; 
+	geom->sectors = 1; 
+	geom->pages = geom->sectors * 256; 
+	return 0; 
 }
-
-static uint8_t _at24_get_status(block_dev_t self, blkdev_status_t flags){
-	struct at24 *at = container_of(self, struct at24, dev); 
-	at24_flag_t f = 0; 
-	f |= (flags & BLKDEV_BUSY)?AT24_FLAG_BUSY:0; 
-	return at24_get_status(at, f); 
+*/
+static int16_t _at24_ioctl(block_dev_t dev, ioctl_req_t req, ...){
+	(void)dev; 
+	(void)req; 
+	//struct at24 *self = container_of(dev, struct at24, dev); 
+	return -EINVAL; 
 }
 
 block_dev_t at24_get_block_device_interface(struct at24 *self){
@@ -283,10 +315,12 @@ block_dev_t at24_get_block_device_interface(struct at24 *self){
 		_if = (struct block_device) {
 			.open = _at24_open, 
 			.close = _at24_close, 
-			.writepage = _at24_writepage,
-			.readpage = _at24_readpage,
-			.get_geometry = _at24_get_geometry,
-			.get_status = _at24_get_status
+			.read = _at24_read,
+			.write = _at24_write,
+			.seek = _at24_seek, 
+			.ioctl = _at24_ioctl, 
+			//.get_geometry = _at24_get_geometry,
+			//.get_status = _at24_get_status
 		}; 
 		i = &_if; 
 	}

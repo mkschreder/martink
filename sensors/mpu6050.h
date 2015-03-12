@@ -50,17 +50,20 @@ enum {
 }; 
 
 struct mpu6050{
-	i2c_dev_t i2c;
-	uint8_t addr;
+	block_dev_t dev;
+	struct block_transfer tr; 
+	
 	// cached data
-	int16_t raw_ax, raw_ay, raw_az; 
-	int16_t raw_gx, raw_gy, raw_gz; 
+	int16_t raw_acc[3]; 
+	int16_t raw_gyr[3]; 
+	
 	// threads
 	struct libk_thread thread; 
 	//struct pt uthread, rthread, wthread, ithread; 
-	uint8_t buffer[6]; // i2c buffer
+	uint8_t buf[6]; // i2c buffer
+	
 	timestamp_t time; // for time keeping
-	uint16_t counter, read_count; 
+	
 	uint8_t state; // status 
 }; 
 
@@ -69,7 +72,7 @@ struct mpu6050{
 #define MPU6050_GETATTITUDE 0
 
 //functions
-void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr);
+void mpu6050_init(struct mpu6050 *self, block_dev_t device);
 void mpu6050_deinit(struct mpu6050 *self); 
 //void mpu6050_update(struct mpu6050 *self); 
 uint8_t mpu6050_probe(struct mpu6050 *self);

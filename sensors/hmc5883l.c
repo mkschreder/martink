@@ -88,65 +88,96 @@
 
 #define HMC5883L_STATUS_READY 1
 
-#pragma message("skipping hmc5883 driver")
-#if 0
+static int _hmc5883l_read_reg(struct hmc5883l *self, uint8_t reg, uint8_t width){
+	if(!blk_open(self->dev)) return -1; 
+	blk_seek(self->dev, reg, SEEK_SET); 
+	blk_transfer_start(&self->tr, self->dev, self->buf, width, IO_READ); 
+	return 1; 
+}
 
-static PT_THREAD(_hmc5883l_thread(struct pt *thr, struct hmc5883l *self)){
-	struct pt *bthr = &self->bthread; 
+static int _hmc5883l_write_reg8(struct hmc5883l *self, uint8_t reg, uint8_t value){
+	if(!blk_open(self->dev)) return -1; 
+	blk_seek(self->dev, reg, SEEK_SET); 
+	self->buf[0] = value; 
+	blk_transfer_start(&self->tr, self->dev, self->buf, 1, IO_WRITE); 
+	return 1; 
+}
+
+static uint8_t _hmc5883l_done(struct hmc5883l *self){
+	//int ret = blk_transfer_result(&self->tr); 
+	if(blk_transfer_result(&self->tr) == TR_BUSY) return 0; 
+	blk_close(self->dev); 
+	return 1; // TODO handle errors
+}
+
+#define REG_VALUE16(buf) ((int)(buf)[0] << 8 | ((int)(buf)[1]))
+#define REG_VALUE24() ((int32_t)self->buf[0] << 16 | (int32_t)self->buf[1] << 8 | ((int32_t)self->buf[2]))
+
+#define READ_REG16(reg) PT_WAIT_WHILE(pt, _hmc5883l_read_reg(self, reg, 2) <= 0)
+#define READ_VEC3_16(reg) PT_WAIT_WHILE(pt, _hmc5883l_read_reg(self, reg, 6) <= 0)
+#define STORE_VEC3_16(target) target[0] = REG_VALUE16(self->buf); target[1] = REG_VALUE16(self->buf + 2); target[2] = REG_VALUE16(self->buf + 4);
+#define READ_REG24(reg) PT_WAIT_WHILE(pt, _hmc5883l_read_reg(self, reg, 3) <= 0)
+#define WRITE_REG8(reg, value) PT_WAIT_WHILE(pt, _hmc5883l_write_reg8(self, reg, (value)) <= 0)
+#define SYNC() PT_WAIT_UNTIL(pt, _hmc5883l_done(self))
+
+#define TIMEOUT(t) do { self->time = timestamp_from_now_us(t); \
+		PT_WAIT_UNTIL(pt, timestamp_expired(self->time)); } while(0); 
+
+PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)); 
+PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
+	struct hmc5883l *self = container_of(kthread, struct hmc5883l, thread); 
 	
-	PT_BEGIN(thr); 
+	PT_BEGIN(pt); 
 	
 	// wait for the compass to start
-	self->time = timestamp_from_now_us(50000L); 
-	PT_WAIT_UNTIL(thr, timestamp_expired(self->time)); 
+	TIMEOUT(50000L); 
 	
-	self->buffer[0] = HMC5883L_CONFREGA; 
-	self->buffer[1] = HMC5883L_NUM_SAMPLES4 | HMC5883L_RATE30; 
-	PT_SPAWN(thr, bthr, i2c_write_thread(self->i2c, bthr, self->addr, self->buffer, 2)); 
+	WRITE_REG8(HMC5883L_CONFREGA, HMC5883L_NUM_SAMPLES4 | HMC5883L_RATE30);
+	SYNC();  
+	WRITE_REG8(HMC5883L_CONFREGB, HMC5883L_SCALE << 5); 
+	SYNC(); 
+	WRITE_REG8(HMC5883L_MODEREG, HMC5883L_MEASUREMODE); 
+	SYNC(); 
 	
-	self->buffer[0] = HMC5883L_CONFREGB; 
-	self->buffer[1] = HMC5883L_SCALE << 5; 
-	PT_SPAWN(thr, bthr, i2c_write_thread(self->i2c, bthr, self->addr, self->buffer, 2)); 
+	READ_REG24(HMC5883L_REG_IDA); 
+	SYNC(); 
+	self->sensor_id = REG_VALUE24(); 
 	
-	//set measurement mode
-	self->buffer[0] = HMC5883L_MODEREG; 
-	self->buffer[1] = HMC5883L_MEASUREMODE; 
-	PT_SPAWN(thr, bthr, i2c_write_thread(self->i2c, bthr, self->addr, self->buffer, 2)); 
-	
-	// read id 
-	PT_SPAWN(thr, bthr, i2c_read_reg_thread_sp(self->i2c, bthr, self->addr, HMC5883L_REG_IDA, self->buffer, 3)); 
-	self->sensor_id = ((uint32_t)self->buffer[0] << 16) | ((uint32_t)self->buffer[1] << 8) | self->buffer[2]; 
-	
-  self->time = timestamp_from_now_us(7000L); 
-	PT_WAIT_UNTIL(thr, timestamp_expired(self->time)); 
+	TIMEOUT(7000L); 
 	
 	self->status |= HMC5883L_STATUS_READY; 
 	
 	while(1){
-		PT_SPAWN(thr, bthr, i2c_read_reg_thread_sp(self->i2c, bthr, 
-			self->addr, HMC5883L_DATAREGBEGIN, self->buffer, 6)); 
+		READ_VEC3_16(HMC5883L_DATAREGBEGIN); 
+		SYNC(); 
+		STORE_VEC3_16(self->raw_mag); 
 		
-		uint8_t *buff = self->buffer; 
+		static timestamp_t tfps = 0; 
+		static int fps = 0; 
+		if(timestamp_expired(tfps)){
+			printf("HMC FPS: %d\n", fps); 
+			fps = 0; 
+			tfps = timestamp_from_now_us(1000000); 
+		} fps++; 
 		
-		self->raw_mx = (int16_t)((buff[0] << 8) | buff[1]);
-		self->raw_my = (int16_t)((buff[2] << 8) | buff[3]);
-		self->raw_mz = (int16_t)((buff[4] << 8) | buff[5]);
+		//TIMEOUT(10000); 
 		
-		// sleep for 5ms
-		self->time = timestamp_from_now_us(5000L); 
-		PT_WAIT_UNTIL(thr, timestamp_expired(self->time)); 
+		PT_YIELD(pt); 
+		//printf("HMC: %d %d %d\n", self->raw_mag[0], self->raw_mag[1], self->raw_mag[2]); 
+		
+		//TIMEOUT(10000L);
 	}
 	
-	PT_END(thr); 
+	PT_END(pt); 
 }
 
-void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr) {
-	self->i2c = i2c;
-	self->addr = addr;
-	PT_INIT(&self->uthread); 
-	PT_INIT(&self->ithread); 
-	PT_INIT(&self->bthread); 
+void hmc5883l_init(struct hmc5883l *self, block_dev_t i2c) {
+	self->dev = i2c;
 	self->status = 0; 
+	
+	blk_transfer_init(&self->tr); 
+	
+	libk_create_thread(&self->thread, _hmc5883l_thread, "hmc5883l"); 
 	
 	switch(HMC5883L_SCALE) {
 		case HMC5883L_SCALE088: 
@@ -176,17 +207,10 @@ void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr) {
 	}
 }
 
-void hmc5883l_update(struct hmc5883l *self){
-	if(self->status & HMC5883L_STATUS_READY)
-		_hmc5883l_update_thread(&self->uthread, self); 
-	else
-		_hmc5883l_init_thread(&self->ithread, self); 
-}
-
 void hmc5883l_readRawMag(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, int16_t *mzraw) {
-	*mxraw = self->raw_mx;
-	*mzraw = self->raw_my;
-	*myraw = self->raw_mz;
+	*mxraw = self->raw_mag[0];
+	*mzraw = self->raw_mag[1];
+	*myraw = self->raw_mag[2];
 }
 
 void hmc5883l_convertMag(struct hmc5883l *self, 
@@ -233,4 +257,3 @@ void hmc5883l_read_adjusted(struct hmc5883l *self, float *mx, float *my, float *
 	#endif
 }
 */
-#endif

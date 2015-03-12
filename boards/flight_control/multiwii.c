@@ -88,7 +88,10 @@ struct rc_input {
 struct multiwii_board {
 	uint16_t 				rc_values[6]; 
 	pio_dev_t 			gpio0; 
-	i2c_dev_t 			twi0; 
+	block_dev_t 		twi0; 
+	struct i2c_block_device bmpblk; 
+	struct i2c_block_device mpublk; 
+	struct i2c_block_device hmcblk; 
 	struct bmp085 	bmp;
 	struct mpu6050 	mpu;
 	struct hmc5883l hmc; 
@@ -185,7 +188,7 @@ void mwii_init(void){
 	
 	gpio_init();
 	//spi_init(); 
-	i2cdev_init(0); 
+	avr_i2c_init(0); 
 	pwm_init(); 
 	//adc0_init_default(); 
 	sei(); 
@@ -206,7 +209,7 @@ void mwii_init(void){
 	fdev_set_udata(stderr, uart_get_serial_interface(0)); 
 */
 	// first thing must enable interrupts
-	//printf("BOOT\n");
+	printf("BOOT\n");
 	
 	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
 	//gpio_set(GPIO_MWII_LED); 
@@ -229,7 +232,7 @@ void mwii_init(void){
 	
 	brd->gpio0 = gpio_get_parallel_interface();
 	
-	brd->twi0 = twi_get_interface(0);
+	brd->twi0 = avr_i2c_get_interface(0);
 	
 	/* 
 	// I2C scanner 
@@ -243,14 +246,17 @@ void mwii_init(void){
 	}
 	*/
 	gpio_set(GPIO_MWII_LED);
-	 
-	mpu6050_init(&brd->mpu, brd->twi0, MPU6050_ADDR); 
-	kdebug("MPU6050: %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
 	
-	bmp085_init(&brd->bmp, brd->twi0, BMP085_ADDR); 
-	kdebug("BMP085: found\n");
+	i2cblk_init(&brd->mpublk, brd->twi0, MPU6050_ADDR); 
+	mpu6050_init(&brd->mpu, i2cblk_get_interface(&brd->mpublk)); 
+	//kdebug("MPU6050: %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
 	
-	hmc5883l_init(&brd->hmc, brd->twi0, HMC5883L_ADDR);
+	i2cblk_init(&brd->bmpblk, brd->twi0, BMP085_ADDR); 
+	bmp085_init(&brd->bmp, i2cblk_get_interface(&brd->bmpblk)); 
+	//kdebug("BMP085: found\n");
+	
+	i2cblk_init(&brd->hmcblk, brd->twi0, HMC5883L_ADDR); 
+	hmc5883l_init(&brd->hmc, i2cblk_get_interface(&brd->hmcblk));
 	
 	gpio_clear(GPIO_MWII_LED); 
 	
@@ -283,9 +289,9 @@ uint16_t mwii_read_pwm(mwii_in_pwm_channel_t chan){
 }
 
 /// gets main i2c interface of the board (it only has one) 
-i2c_dev_t mwii_get_i2c_interface(void){
-	return twi_get_interface(0); 
-}
+//i2c_dev_t mwii_get_i2c_interface(void){
+//	return avr_i2c_get_interface(0); 
+//}
 
 /// gets main usart interface
 serial_dev_t mwii_get_uart_interface(void){

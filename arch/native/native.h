@@ -4,7 +4,10 @@
 extern "C" {
 #endif
 
+#define sei() {}
+
 #include <inttypes.h>
+#include <sys/types.h>
 #include "time.h"
 /*
 #define MINCOMMAND 800

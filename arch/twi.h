@@ -27,4 +27,4 @@
 #define I2C_READ    1
 #define I2C_WRITE   0
 
-i2c_dev_t twi_get_interface(uint8_t id);
+//i2c_dev_t i2c_get_interface(uint8_t id);

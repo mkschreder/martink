@@ -67,8 +67,9 @@ extern "C" {
 #error "You have not chosen an architecture!"
 #endif
 
-#include "static_cbuf.h"
+//#include "static_cbuf.h"
 #include <kernel/list.h>
+#include <kernel/thread.h>
 
 #include "time.h"
 #include "uart.h"
@@ -76,6 +77,7 @@ extern "C" {
 #include "spi.h"
 #include "gpio.h"
 #include "pwm.h"
+#include "i2cblk.h"
 
 #ifndef PROGMEM
 #define PROGMEM

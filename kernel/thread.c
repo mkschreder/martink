@@ -42,6 +42,7 @@ static void libk_schedule(void){
 		timestamp_t time = timestamp_now(); 
 		struct pt *_backup = _current_thread; 
 		_current_thread = &thr->thread; 
+		//printf("> %s\n", thr->name); timestamp_delay_us(100000); 
 		thr->proc(thr, &thr->thread); 
 		_current_thread = _backup; 
 		timestamp_t tnow = timestamp_now(); 
@@ -83,7 +84,7 @@ void libk_print_info(void){
 		ustotal += thr->time; 
 	}
 	printf("TOTAL: %d threads, %lu us\n", count, ustotal); 
-	printf("FPS: %lu\n", libk_get_fps()); 
+	printf("FPS: %lu\n", (unsigned long)libk_get_fps()); 
 }
 
 LIBK_THREAD(fps_count){

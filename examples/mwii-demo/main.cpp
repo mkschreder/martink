@@ -41,32 +41,42 @@ int8_t _on_adc_event(struct adc_connection *con, uint16_t ev){
 }
 */
 LIBK_THREAD(app_thread){
-	struct application *app = container_of(kthread, struct application, thread); 
+	//struct application *app = container_of(kthread, struct application, thread); 
 	PT_BEGIN(pt); 
 	while(1){
-		uint16_t ch; 
-		PT_WAIT_WHILE(pt, (ch = serial_getc(app->uart)) == SERIAL_NO_DATA); 
-		app->time = timestamp_now(); 
-		printf("Measuring adc.. \n"); 
-		adc_start_read(1, &app->adc); 
-		PT_WAIT_WHILE(pt, adc_busy()); 
-		printf("Measured to %u in %lu us\n", app->adc, (uint32_t)timestamp_ticks_to_us((timestamp_now() - app->time))); 
-		printf("Reading N pulse..\n"); 
-		gpio_start_read(MWII_GPIO_D9, &app->state, GP_READ_PULSE_P); 
-		PT_WAIT_WHILE(pt, gpio_pin_busy(MWII_GPIO_D9)); 
-		printf("Pulse length: %lu\n", timestamp_ticks_to_us((app->state.t_down - app->state.t_up))); 
-		float ax, ay, az; 
-		timestamp_t t = timestamp_now(); 
-		mwii_read_acceleration_g(&ax, &ay, &az); 
-		t = timestamp_ticks_to_us(timestamp_now() - t); 
-		printf("ACC: %d %d %d, time: %lu us\n", 
-			(int16_t)(ax * 1000), (int16_t)(ay * 1000), (int16_t)(az * 1000), (uint32_t)t);  
-		printf("TEMP: %d, PRES: %lu\n", (int16_t)(mwii_read_temperature_c() * 10), (long)mwii_read_pressure_pa()); 
-		float x, y, z; 
-		mwii_read_magnetic_field(&x, &y, &z); 
-		printf("MAG: %d %d %d\n", 
-			(int16_t)(x * 10), (int16_t)(y * 10), (int16_t)(z * 10));  
-		
+		static timestamp_t time = 0; 
+		time = timestamp_from_now_us(1000000); 
+		PT_WAIT_UNTIL(pt, timestamp_expired(time)); 
+		printf(".\n"); 
+		{
+			//uint16_t ch; 
+			/*PT_WAIT_WHILE(pt, (ch = serial_getc(app->uart)) == SERIAL_NO_DATA); 
+			app->time = timestamp_now(); 
+			printf("Measuring adc.. \n"); 
+			adc_start_read(1, &app->adc); 
+			PT_WAIT_WHILE(pt, adc_busy()); 
+			printf("Measured to %u in %lu us\n", app->adc, (uint32_t)timestamp_ticks_to_us((timestamp_now() - app->time))); 
+			printf("Reading N pulse..\n"); 
+			gpio_start_read(MWII_GPIO_D9, &app->state, GP_READ_PULSE_P); 
+			PT_WAIT_WHILE(pt, gpio_pin_busy(MWII_GPIO_D9)); 
+			printf("Pulse length: %lu\n", timestamp_ticks_to_us((app->state.t_down - app->state.t_up))); 
+			*/
+			float ax, ay, az, gx, gy, gz; 
+			timestamp_t t = timestamp_now(); 
+			mwii_read_acceleration_g(&ax, &ay, &az); 
+			mwii_read_angular_velocity_dps(&gx, &gy, &gz); 
+			t = timestamp_ticks_to_us(timestamp_now() - t); 
+			printf("ACC: %d %d %d, ", 
+				(int16_t)(ax * 1000), (int16_t)(ay * 1000), (int16_t)(az * 1000));  
+			printf("GYR: %d %d %d, ", 
+				(int16_t)(gx * 1000), (int16_t)(gy * 1000), (int16_t)(gz * 1000));  
+			printf("TEMP: %d, PRES: %lu ", (int16_t)(mwii_read_temperature_c() * 10), (long)mwii_read_pressure_pa()); 
+			float x, y, z; 
+			mwii_read_magnetic_field(&x, &y, &z); 
+			printf("MAG: %d %d %d\n", 
+				(int16_t)(x * 10), (int16_t)(y * 10), (int16_t)(z * 10));  
+		}
+		PT_YIELD(pt); 
 		//app->time = timestamp_from_now_us(1000000); 
 		//PT_WAIT_UNTIL(pt, timestamp_expired(app->time)); 
 	}

@@ -61,17 +61,20 @@ extern volatile uint8_t _twi0_status;
 #define TWI_REP_START_SENT 4
 
 #include <kernel/dev/i2c.h>
+#include <kernel/dev/block.h>
 
-int8_t i2cdev_init(uint8_t dev_id); 
-void i2cdev_deinit(uint8_t dev_id); 
+int8_t avr_i2c_init(uint8_t dev_id); 
+void avr_i2c_deinit(uint8_t dev_id); 
+block_dev_t avr_i2c_get_interface(uint8_t dev_id); 
+/*
+uint8_t i2cdev_open(uint8_t dev_id); 
+void i2cdev_close(uint8_t dev_id); 
 int8_t i2cdev_write(uint8_t dev_id, uint8_t addr, const uint8_t *data, uint8_t sz); 
 int8_t i2cdev_read(uint8_t dev_id, uint8_t addr, uint8_t *data, uint8_t sz); 
 int8_t i2cdev_stop(uint8_t dev_id); 
 //void twi_wait(uint8_t dev_id, uint8_t addr); 
 uint8_t i2cdev_status(uint8_t dev_id, i2cdev_status_t flags); 
-uint8_t i2cdev_open(uint8_t dev_id); 
-void i2cdev_close(uint8_t dev_id); 
-
+*/
 /*
 void twi0_slave_init(uint8_t addr);
 uint8_t twi0_slave_data_available(void);

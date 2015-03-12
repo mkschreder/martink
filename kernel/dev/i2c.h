@@ -1,5 +1,8 @@
 #pragma once
 
+// ioctl
+#define I2C_SEND_STOP 1000
+
 typedef enum {
 	I2CDEV_BUSY = (1 << 0), 
 	I2CDEV_LOCKED = (1 << 1), 

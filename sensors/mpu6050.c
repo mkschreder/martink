@@ -96,9 +96,7 @@
 #define MPU6050_STATE_INITIALIZED (1 << 0)
 
 #include <thread/pt.h>
-
-#pragma message("Mpu6050 not compiled!")
-#if 0 
+/*
 static PT_THREAD(_mpu6050_init_thread(struct libk_thread *kthread, struct pt *pt)){
 	struct mpu6050 *self = container_of(kthread, struct mpu6050, ithread); 
 	//struct pt *thr = &self->ithread; 
@@ -139,7 +137,7 @@ static PT_THREAD(_mpu6050_init_thread(struct libk_thread *kthread, struct pt *pt
 		}
 	}
 	i2c_close(self->i2c); 
-	
+	*/
 	//	reset the device 
 	/*self->buffer[0] = MPU6050_RA_PWR_MGMT_1; 
 	self->buffer[1] = MPU6050_PWR1_CLOCK_PLL_XGYRO;
@@ -194,59 +192,136 @@ static PT_THREAD(_mpu6050_init_thread(struct libk_thread *kthread, struct pt *pt
 	//PT_SPAWN(pt, wpt, i2c_write_thread(self->i2c, wpt, self->addr, self->buffer, 2)); 
 	
 	i2c_release(pt); 
-	*/
+	*//*
+	static const struct {
+		uint16_t reg, value; 
+	} init_sequence[] = {
+		{MPU6050_TIME_DELAY, 50000}, 
+		{MPU6050_TIME_DELAY, 50000}, 
+		{MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_CLOCK_PLL_XGYRO}, 
+		{MPU6050_TIME_DELAY, 10000}, 
+		{MPU6050_RA_CONFIG, MPU6050_CFG_DLPF_BW_42}, 
+		{MPU6050_RA_SMPLRT_DIV, 4}, 
+		{MPU6050_RA_GYRO_CONFIG, MPU6050_GYRO_CONFIG_FS_2000}, 
+		{MPU6050_RA_ACCEL_CONFIG, MPU6050_ACCEL_CONFIG_FS_2}, 
+		{MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_I2C_BYPASS_EN}, 
+		{MPU6050_RA_USER_CTRL, 0}
+	}; 
+	
+	PT_WAIT_UNTIL(pt, i2c_open(self->i2c)); 
+	
+	for(self->counter = 0; self->counter < sizeof(init_sequence) / sizeof(init_sequence[0]); self->counter++){
+		if(init_sequence[self->counter].reg == MPU6050_TIME_DELAY){
+			self->time = timestamp_from_now_us(100000L); 
+			PT_WAIT_UNTIL(pt, timestamp_expired(self->time)); 
+		} else {
+			self->buffer[0] = init_sequence[self->counter].reg; 
+			self->buffer[1] = init_sequence[self->counter].value; 
+			i2c_write(self->i2c, self->addr, self->buffer, 2); 
+			PT_WAIT_UNTIL(pt, i2c_status(self->i2c, I2CDEV_TX_DONE)); 
+		}
+	}
+	i2c_close(self->i2c); 
+	
 	self->state |= MPU6050_STATE_INITIALIZED; 
 
 	PT_END(pt); 
 }
+*/
 
-static PT_THREAD(_mpu6050_update_thread(struct libk_thread *kthread, struct pt *pt)){
-	struct mpu6050 *self = container_of(kthread, struct mpu6050, uthread); 
-	const struct opslist {
-		uint8_t reg; 
-		int16_t *out[3]; 
-	} ops[] = {
-		{
-			MPU6050_RA_ACCEL_XOUT_H, 
-			{&self->raw_ax, &self->raw_ay, &self->raw_az}
-		}, 
-		{
-			MPU6050_RA_GYRO_XOUT_H, 
-			{&self->raw_gx, &self->raw_gy, &self->raw_gz}
-		}
-	}; 
+
+static int _mpu6050_read_reg(struct mpu6050 *self, uint8_t reg, uint8_t width){
+	if(!blk_open(self->dev)) return -1; 
+	blk_seek(self->dev, reg, SEEK_SET); 
+	blk_transfer_start(&self->tr, self->dev, self->buf, width, IO_READ); 
+	return 1; 
+}
+
+static int _mpu6050_write_reg8(struct mpu6050 *self, uint8_t reg, uint8_t value){
+	if(!blk_open(self->dev)) return -1; 
+	blk_seek(self->dev, reg, SEEK_SET); 
+	self->buf[0] = value; 
+	blk_transfer_start(&self->tr, self->dev, self->buf, 1, IO_WRITE); 
+	return 1; 
+}
+
+static uint8_t _mpu6050_done(struct mpu6050 *self){
+	if(blk_transfer_result(&self->tr) == TR_BUSY) return 0; 
+	blk_close(self->dev); 
+	return 1; // TODO handle errors
+}
+
+#define REG_VALUE16(buf) ((int)(buf)[0] << 8 | ((int)(buf)[1]))
+#define REG_VALUE24() ((int32_t)self->buf[0] << 16 | (int32_t)self->buf[1] << 8 | ((int32_t)self->buf[2]))
+
+#define READ_REG16(reg) PT_WAIT_WHILE(pt, _mpu6050_read_reg(self, reg, 2) <= 0)
+#define READ_VEC3_16(reg) PT_WAIT_WHILE(pt, _mpu6050_read_reg(self, reg, 6) <= 0)
+#define STORE_VEC3_16(target) target[0] = REG_VALUE16(self->buf); target[1] = REG_VALUE16(self->buf + 2); target[2] = REG_VALUE16(self->buf + 4);
+#define READ_REG24(reg) PT_WAIT_WHILE(pt, _mpu6050_read_reg(self, reg, 3) <= 0)
+#define WRITE_REG8(reg, value) PT_WAIT_WHILE(pt, _mpu6050_write_reg8(self, reg, (value)) <= 0)
+#define SYNC() PT_WAIT_UNTIL(pt, _mpu6050_done(self))
+
+#define TIMEOUT(t) do { self->time = timestamp_from_now_us(t); \
+		PT_WAIT_UNTIL(pt, timestamp_expired(self->time)); } while(0); 
+
+PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)); 
+PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
+	struct mpu6050 *self = container_of(kthread, struct mpu6050, thread); 
 	
 	PT_BEGIN(pt); 
 	
-	// wait until the init sequence has completed
-	PT_WAIT_UNTIL(pt, self->state & MPU6050_STATE_INITIALIZED); 
+	TIMEOUT(50000); 
+	
+	WRITE_REG8(MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_CLOCK_PLL_XGYRO); 
+	SYNC(); 
+	
+	TIMEOUT(10000); 
+	
+	WRITE_REG8(MPU6050_RA_CONFIG, MPU6050_CFG_DLPF_BW_42); 
+	SYNC(); 
+	WRITE_REG8(MPU6050_RA_SMPLRT_DIV, 4); 
+	SYNC(); 
+	WRITE_REG8(MPU6050_RA_GYRO_CONFIG, MPU6050_GYRO_CONFIG_FS_2000); 
+	SYNC(); 
+	WRITE_REG8(MPU6050_RA_ACCEL_CONFIG, MPU6050_ACCEL_CONFIG_FS_2); 
+	SYNC(); 
+	WRITE_REG8(MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_I2C_BYPASS_EN);  
+	SYNC(); 
+	WRITE_REG8(MPU6050_RA_USER_CTRL, 0); 
+	SYNC(); 
+	
+	self->state |= MPU6050_STATE_INITIALIZED; 
 	
 	// get the data from sensor at regular intervals
+	
 	while(1){
-		self->time = timestamp_now(); 
+		//self->time = timestamp_now(); 
 		
-		PT_WAIT_UNTIL(pt, i2c_open(self->i2c)); 
+		READ_VEC3_16(MPU6050_RA_ACCEL_XOUT_H); 
+		SYNC(); 
+		STORE_VEC3_16(self->raw_acc); 
 		
-		for(self->counter = 0; self->counter < sizeof(ops) / sizeof(ops[0]); self->counter++){
-			PT_WAIT_UNTIL(pt, i2c_write(self->i2c, self->addr, &ops[self->counter].reg, 1)); 
-			PT_WAIT_UNTIL(pt, i2c_status(self->i2c, I2CDEV_TX_DONE)); 
+		READ_VEC3_16(MPU6050_RA_GYRO_XOUT_H); 
+		SYNC(); 
+		STORE_VEC3_16(self->raw_gyr); 
+		
+		static timestamp_t tfps = 0; 
+		static int fps = 0; 
+		if(timestamp_expired(tfps)){
+			printf("MPU FPS: %d\n", fps); 
+			fps = 0; 
+			tfps = timestamp_from_now_us(1000000); 
+		} fps++; 
+		
+		//TIMEOUT(10000); 
+		
+		PT_YIELD(pt); 
+		//printf("MPU: %d %d %d %d %d %d\n", self->raw_acc[0], self->raw_acc[1], self->raw_acc[2], 
+		//	self->raw_gyr[0], self->raw_gyr[1], self->raw_gyr[2]); 
 			
-			for(self->read_count = 0;self->read_count < 6;){
-				int16_t read = i2c_read(self->i2c, self->addr, 
-					self->buffer + self->read_count, 6 - self->read_count); 
-				if(read > 0)
-					self->read_count += read; 
-				PT_YIELD(pt); 
-			}
-			*(ops[self->counter].out[0]) = (((int16_t)self->buffer[0]) << 8) | self->buffer[1];
-			*(ops[self->counter].out[1]) = (((int16_t)self->buffer[2]) << 8) | self->buffer[3];
-			*(ops[self->counter].out[2]) = (((int16_t)self->buffer[4]) << 8) | self->buffer[5];
-		}
-		self->read_count = 0; 
-		i2c_close(self->i2c); 
-		
-		self->time = timestamp_from_now_us(10000 - timestamp_ticks_to_us(timestamp_now() - self->time)); 
-		PT_WAIT_UNTIL(pt, timestamp_expired(self->time)); 
+		//TIMEOUT(10000); 
+		//self->time = timestamp_from_now_us(10000 - timestamp_ticks_to_us(timestamp_now() - self->time)); 
+		//PT_WAIT_UNTIL(pt, timestamp_expired(self->time)); 
 		
 		//PT_WAIT_UNTIL(pt, i2c_write(self->i2c, self->addr, &opslist[self->counter].reg, 1, 0) == 1);
 		//PT_WAIT_UNTIL(pt, i2c_read(self->i2c, self->addr, self->buffer, 6, I2C_SEND_STOP) == 6); 
@@ -286,13 +361,11 @@ static PT_THREAD(_mpu6050_update_thread(struct libk_thread *kthread, struct pt *
 }
 
 
-void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr) {
-	self->i2c = i2c; 
-	self->addr = addr;
+void mpu6050_init(struct mpu6050 *self, block_dev_t dev) {
+	self->dev = dev; 
 	self->state = 0; 
 	
-	libk_create_thread(&self->uthread, _mpu6050_update_thread, "mpu6050_update"); 
-	libk_create_thread(&self->ithread, _mpu6050_init_thread, "mpu6050_init"); 
+	libk_create_thread(&self->thread, _mpu6050_thread, "mpu6050"); 
 	
 	/*PT_INIT(&self->uthread); // update
 	PT_INIT(&self->rthread); // read
@@ -301,8 +374,7 @@ void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr) {
 }
 
 void mpu6050_deinit(struct mpu6050 *self){
-	libk_delete_thread(&self->uthread); 
-	libk_delete_thread(&self->ithread); 
+	libk_unlink_thread(&self->thread);
 }
 
 /*
@@ -319,15 +391,15 @@ void mpu6050_update(struct mpu6050 *self){
 
 
 void mpu6050_readRawAcc(struct mpu6050 *self, int16_t* ax, int16_t* ay, int16_t* az){
-	*ax = self->raw_ax; 
-	*ay = self->raw_ay; 
-	*az = self->raw_az; 
+	*ax = self->raw_acc[0]; 
+	*ay = self->raw_acc[1]; 
+	*az = self->raw_acc[2]; 
 }
 
 void mpu6050_readRawGyr(struct mpu6050 *self, int16_t* gx, int16_t* gy, int16_t* gz){
-	*gx = self->raw_gx; 
-	*gy = self->raw_gy; 
-	*gz = self->raw_gz; 
+	*gx = self->raw_gyr[0]; 
+	*gy = self->raw_gyr[1]; 
+	*gz = self->raw_gyr[2]; 
 }
 
 void mpu6050_convertAcc(struct mpu6050 *self, int16_t ax, int16_t ay, int16_t az, float *axg, float *ayg, float *azg){
@@ -593,4 +665,4 @@ void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr) {
 	//MPU6050_TIMER0INIT
 	#endif
 }*/
-#endif
+

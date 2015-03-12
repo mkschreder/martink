@@ -1,6 +1,7 @@
 #pragma once
 
 #include "thread/pt.h"
+#include "list.h"
 
 #ifdef __cplusplus
 extern "C" {

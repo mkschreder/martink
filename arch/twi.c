@@ -24,11 +24,10 @@
 #include "twi.h"
 
 #define DEVICE_CAST(from, to) struct i2c_device *to = container_of(from, struct i2c_device, interface);  
-
+/*
 struct i2c_device {
-	uint8_t port_id;
-	uint8_t addr; 
-	struct block_if *interface; 
+	uint8_t id;
+	struct i2c_interface *interface; 
 };
 
 static struct i2c_device _twi[4] = {
@@ -45,20 +44,13 @@ static int16_t 			_i2c_stop(i2c_dev_t self){
 
 static uint32_t	_i2c_write(i2c_dev_t self, uint8_t adr, const uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
-	return i2cdev_write(dev->id, dev->adr, data, max_sz); 
+	return i2cdev_write(dev->id, adr, data, max_sz); 
 }
 
 static uint32_t	_i2c_read(i2c_dev_t self, uint8_t adr, uint8_t *data, uint16_t max_sz){
 	DEVICE_CAST(self, dev);
 	return i2cdev_read(dev->id, adr, data, max_sz); 
 }
-/*
-static void			_i2c_wait(i2c_dev_t self, uint8_t addr){
-	DEVICE_CAST(self, dev);
-	i2c_wait(dev->id, addr); 
-}
-*/
-
 static uint8_t			_i2c_status(i2c_dev_t self, uint16_t status){
 	DEVICE_CAST(self, dev);
 	return i2cdev_status(dev->id, status); 
@@ -103,11 +95,6 @@ uint32_t	i2c_read(i2c_dev_t dev, uint8_t address, uint8_t *data, uint16_t max_sz
 int16_t i2c_stop(i2c_dev_t dev){
 	return (*dev)->stop(dev); 
 }
-/*
-void i2c_wait(i2c_dev_t dev, uint8_t addr){
-	(*dev)->wait(dev, addr); 
-}
-*/
 uint8_t i2c_status(i2c_dev_t dev, uint16_t flags){
 	return (*dev)->status(dev, flags); 
 }
@@ -119,7 +106,7 @@ uint8_t i2c_open(i2c_dev_t dev){
 void i2c_close(i2c_dev_t dev){
 	(*dev)->close(dev); 
 }
-
+*/
 /*
 int8_t i2c_read_async(i2c_dev_t i2c, uint8_t addr, uint8_t reg, uint8_t *buff, uint8_t wr_bytes, uint8_t bytes){
 	

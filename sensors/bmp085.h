@@ -37,12 +37,14 @@ extern "C" {
 #define BMP085_ADDR (0x77<<1) //0x77 default I2C address
 
 struct bmp085 {
-	i2c_dev_t i2c;
-	uint8_t addr;
+	block_dev_t dev;
+	struct block_transfer tr; 
+	
 	int regac1, regac2, regac3, regb1, regb2, regmb, regmc, regmd;
 	unsigned int regac4, regac5, regac6;
-	long ut, up; 
+	int32_t ut, up; 
 	uint8_t buf[4]; // i2c buffer
+	
 	struct libk_thread thread; 
 	timestamp_t time; 
 	uint8_t status; 
@@ -50,7 +52,7 @@ struct bmp085 {
 
 //functions
 /// inits the device over the interface supplied 
-void bmp085_init(struct bmp085 *self, i2c_dev_t i2c, uint8_t addr);
+void bmp085_init(struct bmp085 *self, block_dev_t i2c);
 /// runs all background tasks for the bmp sensor
 void bmp085_update(struct bmp085 *self); 
 /// returns pressure 

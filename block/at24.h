@@ -5,23 +5,20 @@
 
 #include <kernel/dev/block.h>
 #include <kernel/thread.h>
+#include <arch/i2cblk.h>
 
-struct at24_op {
-	ssize_t size; // total length
-	uint16_t addr; // eeprom address
-	uint8_t buffer[AT24_PAGE_SIZE + AT24_ADDRESS_SIZE]; 
-	ssize_t result; 
-	int16_t error; 
-	timestamp_t timeout; 
-}; 
+#define AT24_PAGE_SIZE 32 
 
 struct at24 {
-	i2c_dev_t i2c;
-	struct at24_op op; 
-	struct libk_thread thread; 
-	struct pt *user_thread; 
+	struct i2c_block_device i2cblk;
+	block_dev_t i2cdev; 
+	ssize_t size; 
+	//struct block_transfer tr; 
+	//struct pt *user_thread; 
+	//uint16_t cur; 
+	//uint8_t buffer[AT24_PAGE_SIZE]; 
 	struct block_device *dev; 
-	uint8_t status; 
+	//uint8_t status; 
 };
 
 typedef enum {
@@ -32,18 +29,21 @@ typedef enum {
 } at24_flag_t; 
 
 /// initializes a new eeprom structure
-void at24_init(struct at24 *self, i2c_dev_t i2c); 
+void at24_init(struct at24 *self, block_dev_t i2c); 
+/*
 /// aquires the eeprom for this thread
 uint8_t at24_open(struct at24 *self); 
 /// releases the eeprom for others
 int8_t 	at24_close(struct at24 *self); 
 /// starts a write to the eeprom (max 1 page at a time)
-ssize_t at24_writepage(struct at24 *self, uint16_t addr, const uint8_t *buf, ssize_t count); 
+ssize_t at24_write(struct at24 *self, const uint8_t *buf, ssize_t count); 
 /// starts a read sequence from the eeprom (max 1 page at a time)
-ssize_t at24_readpage(struct at24 *self, uint16_t addr, uint8_t *buf, ssize_t count); 
+ssize_t at24_read(struct at24 *self, uint8_t *buf, ssize_t count); 
+/// seeks to a position in the eeprom
+ssize_t at24_seek(struct at24 *self, ssize_t pos, int from); 
 /// checks if eeprom transacton is in progress
 uint8_t at24_get_status(struct at24 *self, at24_flag_t flags); 
 /// get block device geometry for this device
 int8_t at24_get_geometry(struct at24 *self, struct block_device_geometry *geom); 
-
+*/
 block_dev_t at24_get_block_device_interface(struct at24 *self); 

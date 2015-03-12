@@ -308,11 +308,11 @@ static int16_t _at24_ioctl(block_dev_t dev, ioctl_req_t req, ...){
 }
 
 block_dev_t at24_get_block_device_interface(struct at24 *self){
-	static struct block_device _if;
-	static struct block_device *i = 0; 
+	static struct block_device_ops _if;
+	static struct block_device_ops *i = 0; 
 	
 	if(!i){
-		_if = (struct block_device) {
+		_if = (struct block_device_ops) {
 			.open = _at24_open, 
 			.close = _at24_close, 
 			.read = _at24_read,

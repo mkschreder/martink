@@ -74,7 +74,7 @@ struct avr_i2c_device {
 	volatile uint8_t cur; 
 	volatile uint8_t tr_size; 
 	volatile uint8_t status; 
-	struct block_device *api; 
+	struct block_device_ops *api; 
 	struct pt *user_thread; 
 	/*
 	uint8_t *twi_rd_data;
@@ -403,8 +403,8 @@ static int16_t _avr_i2c_ioctl(block_dev_t dev, ioctl_req_t req, ...){
 block_dev_t avr_i2c_get_interface(uint8_t dev_id){
 	if(dev_id > 0) return 0; 
 	
-	static struct block_device _if;
-	_if = (struct block_device) {
+	static struct block_device_ops _if;
+	_if = (struct block_device_ops) {
 		.open = _avr_i2c_open, 
 		.close = _avr_i2c_close, 
 		.read = 	_avr_i2c_read,

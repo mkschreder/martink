@@ -1,7 +1,7 @@
  
 #pragma once 
-struct block_device; 
-typedef struct block_device **block_dev_t; 
+struct block_device_ops; 
+typedef struct block_device_ops **block_dev_t; 
 
 typedef uint16_t blk_address_t; 
 
@@ -17,7 +17,7 @@ struct block_device_geometry {
 
 typedef unsigned int ioctl_req_t; 
 
-struct block_device {
+struct block_device_ops {
 	uint8_t (*open)(block_dev_t self); 
 	int8_t 	(*close)(block_dev_t self); 
 	ssize_t (*write)(block_dev_t self, const uint8_t *data, ssize_t data_size); 

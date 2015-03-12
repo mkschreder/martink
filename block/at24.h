@@ -17,7 +17,7 @@ struct at24 {
 	//struct pt *user_thread; 
 	//uint16_t cur; 
 	//uint8_t buffer[AT24_PAGE_SIZE]; 
-	struct block_device *dev; 
+	struct block_device_ops *dev; 
 	//uint8_t status; 
 };
 

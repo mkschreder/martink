@@ -230,39 +230,10 @@ static PT_THREAD(_mpu6050_init_thread(struct libk_thread *kthread, struct pt *pt
 */
 
 
-static int _mpu6050_read_reg(struct mpu6050 *self, uint8_t reg, uint8_t width){
-	if(!blk_open(self->dev)) return -1; 
-	blk_seek(self->dev, reg, SEEK_SET); 
-	blk_transfer_start(&self->tr, self->dev, self->buf, width, IO_READ); 
-	return 1; 
-}
-
-static int _mpu6050_write_reg8(struct mpu6050 *self, uint8_t reg, uint8_t value){
-	if(!blk_open(self->dev)) return -1; 
-	blk_seek(self->dev, reg, SEEK_SET); 
-	self->buf[0] = value; 
-	blk_transfer_start(&self->tr, self->dev, self->buf, 1, IO_WRITE); 
-	return 1; 
-}
-
-static uint8_t _mpu6050_done(struct mpu6050 *self){
-	if(blk_transfer_result(&self->tr) == TR_BUSY) return 0; 
-	blk_close(self->dev); 
-	return 1; // TODO handle errors
-}
-
-#define REG_VALUE16(buf) ((int)(buf)[0] << 8 | ((int)(buf)[1]))
-#define REG_VALUE24() ((int32_t)self->buf[0] << 16 | (int32_t)self->buf[1] << 8 | ((int32_t)self->buf[2]))
-
-#define READ_REG16(reg) PT_WAIT_WHILE(pt, _mpu6050_read_reg(self, reg, 2) <= 0)
-#define READ_VEC3_16(reg) PT_WAIT_WHILE(pt, _mpu6050_read_reg(self, reg, 6) <= 0)
-#define STORE_VEC3_16(target) target[0] = REG_VALUE16(self->buf); target[1] = REG_VALUE16(self->buf + 2); target[2] = REG_VALUE16(self->buf + 4);
-#define READ_REG24(reg) PT_WAIT_WHILE(pt, _mpu6050_read_reg(self, reg, 3) <= 0)
-#define WRITE_REG8(reg, value) PT_WAIT_WHILE(pt, _mpu6050_write_reg8(self, reg, (value)) <= 0)
-#define SYNC() PT_WAIT_UNTIL(pt, _mpu6050_done(self))
-
 #define TIMEOUT(t) do { self->time = timestamp_from_now_us(t); \
 		PT_WAIT_UNTIL(pt, timestamp_expired(self->time)); } while(0); 
+
+#define STORE_VEC3_16(target) target[0] = READ_INT16(self->buf); target[1] = READ_INT16(self->buf + 2); target[2] = READ_INT16(self->buf + 4);
 
 PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)); 
 PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
@@ -272,23 +243,23 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 	
 	TIMEOUT(50000); 
 	
-	WRITE_REG8(MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_CLOCK_PLL_XGYRO); 
-	SYNC(); 
+	self->buf[0] = MPU6050_PWR1_CLOCK_PLL_XGYRO; 
+	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_PWR_MGMT_1, self->buf, 1); 
 	
 	TIMEOUT(10000); 
 	
-	WRITE_REG8(MPU6050_RA_CONFIG, MPU6050_CFG_DLPF_BW_42); 
-	SYNC(); 
-	WRITE_REG8(MPU6050_RA_SMPLRT_DIV, 4); 
-	SYNC(); 
-	WRITE_REG8(MPU6050_RA_GYRO_CONFIG, MPU6050_GYRO_CONFIG_FS_2000); 
-	SYNC(); 
-	WRITE_REG8(MPU6050_RA_ACCEL_CONFIG, MPU6050_ACCEL_CONFIG_FS_2); 
-	SYNC(); 
-	WRITE_REG8(MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_I2C_BYPASS_EN);  
-	SYNC(); 
-	WRITE_REG8(MPU6050_RA_USER_CTRL, 0); 
-	SYNC(); 
+	self->buf[0] = MPU6050_CFG_DLPF_BW_42; 
+	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_CONFIG, self->buf, 1); 
+	self->buf[0] = 4; 
+	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_SMPLRT_DIV, self->buf, 1); 
+	self->buf[0] = MPU6050_GYRO_CONFIG_FS_2000; 
+	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_GYRO_CONFIG, self->buf, 1); 
+	self->buf[0] = MPU6050_ACCEL_CONFIG_FS_2; 
+	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_ACCEL_CONFIG, self->buf, 1); 
+	self->buf[0] = MPU6050_INTCFG_I2C_BYPASS_EN; 
+	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_INT_PIN_CFG, self->buf, 1);  
+	self->buf[0] = 0; 
+	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_USER_CTRL, self->buf, 1); 
 	
 	self->state |= MPU6050_STATE_INITIALIZED; 
 	
@@ -296,13 +267,10 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 	
 	while(1){
 		//self->time = timestamp_now(); 
-		
-		READ_VEC3_16(MPU6050_RA_ACCEL_XOUT_H); 
-		SYNC(); 
+		IO_READ(pt, &self->tr, self->dev, MPU6050_RA_ACCEL_XOUT_H, self->buf, 6); 
 		STORE_VEC3_16(self->raw_acc); 
 		
-		READ_VEC3_16(MPU6050_RA_GYRO_XOUT_H); 
-		SYNC(); 
+		IO_READ(pt, &self->tr, self->dev, MPU6050_RA_GYRO_XOUT_H, self->buf, 6);  
 		STORE_VEC3_16(self->raw_gyr); 
 		
 		static timestamp_t tfps = 0; 

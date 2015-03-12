@@ -88,40 +88,10 @@
 
 #define HMC5883L_STATUS_READY 1
 
-static int _hmc5883l_read_reg(struct hmc5883l *self, uint8_t reg, uint8_t width){
-	if(!blk_open(self->dev)) return -1; 
-	blk_seek(self->dev, reg, SEEK_SET); 
-	blk_transfer_start(&self->tr, self->dev, self->buf, width, IO_READ); 
-	return 1; 
-}
-
-static int _hmc5883l_write_reg8(struct hmc5883l *self, uint8_t reg, uint8_t value){
-	if(!blk_open(self->dev)) return -1; 
-	blk_seek(self->dev, reg, SEEK_SET); 
-	self->buf[0] = value; 
-	blk_transfer_start(&self->tr, self->dev, self->buf, 1, IO_WRITE); 
-	return 1; 
-}
-
-static uint8_t _hmc5883l_done(struct hmc5883l *self){
-	//int ret = blk_transfer_result(&self->tr); 
-	if(blk_transfer_result(&self->tr) == TR_BUSY) return 0; 
-	blk_close(self->dev); 
-	return 1; // TODO handle errors
-}
-
-#define REG_VALUE16(buf) ((int)(buf)[0] << 8 | ((int)(buf)[1]))
-#define REG_VALUE24() ((int32_t)self->buf[0] << 16 | (int32_t)self->buf[1] << 8 | ((int32_t)self->buf[2]))
-
-#define READ_REG16(reg) PT_WAIT_WHILE(pt, _hmc5883l_read_reg(self, reg, 2) <= 0)
-#define READ_VEC3_16(reg) PT_WAIT_WHILE(pt, _hmc5883l_read_reg(self, reg, 6) <= 0)
-#define STORE_VEC3_16(target) target[0] = REG_VALUE16(self->buf); target[1] = REG_VALUE16(self->buf + 2); target[2] = REG_VALUE16(self->buf + 4);
-#define READ_REG24(reg) PT_WAIT_WHILE(pt, _hmc5883l_read_reg(self, reg, 3) <= 0)
-#define WRITE_REG8(reg, value) PT_WAIT_WHILE(pt, _hmc5883l_write_reg8(self, reg, (value)) <= 0)
-#define SYNC() PT_WAIT_UNTIL(pt, _hmc5883l_done(self))
-
 #define TIMEOUT(t) do { self->time = timestamp_from_now_us(t); \
 		PT_WAIT_UNTIL(pt, timestamp_expired(self->time)); } while(0); 
+
+#define STORE_VEC3_16(target) target[0] = READ_INT16(self->buf); target[1] = READ_INT16(self->buf + 2); target[2] = READ_INT16(self->buf + 4);
 
 PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)); 
 PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
@@ -132,24 +102,22 @@ PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
 	// wait for the compass to start
 	TIMEOUT(50000L); 
 	
-	WRITE_REG8(HMC5883L_CONFREGA, HMC5883L_NUM_SAMPLES4 | HMC5883L_RATE30);
-	SYNC();  
-	WRITE_REG8(HMC5883L_CONFREGB, HMC5883L_SCALE << 5); 
-	SYNC(); 
-	WRITE_REG8(HMC5883L_MODEREG, HMC5883L_MEASUREMODE); 
-	SYNC(); 
+	self->buf[0] = HMC5883L_NUM_SAMPLES4 | HMC5883L_RATE30; 
+	IO_WRITE(pt, &self->tr, self->dev, HMC5883L_CONFREGA, self->buf, 1);
+	self->buf[0] = HMC5883L_SCALE << 5; 
+	IO_WRITE(pt, &self->tr, self->dev, HMC5883L_CONFREGB, self->buf, 1);
+	self->buf[0] = HMC5883L_MEASUREMODE; 
+	IO_WRITE(pt, &self->tr, self->dev, HMC5883L_MODEREG, self->buf, 1);
 	
-	READ_REG24(HMC5883L_REG_IDA); 
-	SYNC(); 
-	self->sensor_id = REG_VALUE24(); 
+	IO_READ(pt, &self->tr, self->dev, HMC5883L_REG_IDA, self->buf, 3); 
+	self->sensor_id = READ_INT24(self->buf); 
 	
 	TIMEOUT(7000L); 
 	
 	self->status |= HMC5883L_STATUS_READY; 
 	
 	while(1){
-		READ_VEC3_16(HMC5883L_DATAREGBEGIN); 
-		SYNC(); 
+		IO_READ(pt, &self->tr, self->dev, HMC5883L_DATAREGBEGIN, self->buf, 6); 
 		STORE_VEC3_16(self->raw_mag); 
 		
 		static timestamp_t tfps = 0; 

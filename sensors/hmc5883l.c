@@ -111,8 +111,9 @@ PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
 	self->buf[0] = HMC5883L_MEASUREMODE; 
 	IO_WRITE(pt, &self->tr, self->dev, HMC5883L_MODEREG, self->buf, 1);
 	
-	IO_READ(pt, &self->tr, self->dev, HMC5883L_REG_IDA, self->buf, 3); 
-	self->sensor_id = READ_INT24(self->buf); 
+	// TODO: requires stop between write address and read
+	//IO_READ(pt, &self->tr, self->dev, HMC5883L_REG_IDA, self->buf, 3); 
+	//self->sensor_id = READ_INT24(self->buf); 
 	
 	IO_END(pt, &self->tr, self->dev); 
 	

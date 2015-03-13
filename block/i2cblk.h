@@ -6,7 +6,7 @@
 #define I2CBLK_IADDR32	(4 << 0)
 #define I2CBLK_IADDR_BITS (7) // mask
 
-//#define I2CBLK_SEND_STOP_AFTER_ADDR (1 << 2)
+#define I2CBLK_SEND_STOP_AFTER_ADDR (1 << 3)
 
 #define I2C_BLOCK_BUFFER_SIZE (16 + 4)
 

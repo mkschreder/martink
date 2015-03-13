@@ -59,7 +59,7 @@ int blk_transfer(struct block_transfer *self,
 				}
 			} else { // 0
 				printf("TR: ret == 0: should not happen!\n"); 
-				while(1); 
+				//while(1); 
 			}
 		} break; 
 		/*case BLKTR_COMPLETED: 

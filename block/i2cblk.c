@@ -142,11 +142,12 @@ static ssize_t _i2cblk_read(block_dev_t dev, uint8_t *data, ssize_t data_size){
 			
 			I2CBLK_DEBUG("I2CBLK: addrsent\n"); 
 			
+			// send stop after the read
+			blk_ioctl(self->i2c, I2C_SEND_STOP, 1); 
+			
 			self->state = I2CBLK_READ; 
 			// fall through
 		case I2CBLK_READ: 
-			// send stop after the read
-			blk_ioctl(self->i2c, I2C_SEND_STOP, 1); 
 			
 			if(!io_read(&self->tr, self->i2c, self->i2c_addr, self->buffer, data_size)) return -EAGAIN; 
 			

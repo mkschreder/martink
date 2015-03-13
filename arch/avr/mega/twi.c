@@ -118,11 +118,11 @@ ISR(TWI_vect)
 		}
 		else
 		{
-			// Allow rep start! Disable TWI Interrupt
 			if(_device.status & AVR_I2C_FLAG_SEND_STOP)
 				// Initiate STOP condition after last byte; TWI Interrupt disabled
 				TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(1<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
 			else
+				// allow rep start
 				TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
 			
 			// Transfer finished
@@ -192,7 +192,8 @@ ISR(TWI_vect)
 
 static uint8_t _avr_i2c_busy(uint8_t dev_id){
 	if(dev_id >= 1) return 1; 
-	return (((TWCR & _BV(TWIE)) != 0) || (TWCR & _BV(TWSTO)))?1:0;
+	if(((TWCR & _BV(TWIE)) != 0) || (TWCR & _BV(TWSTO))) return 1; 
+	return 0; 
 }
 
 int8_t avr_i2c_init(uint8_t dev_id) {
@@ -323,8 +324,8 @@ static ssize_t _avr_i2c_read(block_dev_t dev, uint8_t *data, ssize_t count){
 		I2C_DEBUG("I2C: readready: %x %d: ", self->addr, (int)count); 
 		for(int c = 0; c < count; c++) I2C_DEBUG("%x ", self->buffer[c]);
 		I2C_DEBUG("\n"); 
-	
 		self->status &= ~AVR_I2C_FLAG_DATA_READY; 
+		
 		return count; 
 	}
 	
@@ -355,6 +356,8 @@ uint8_t _avr_i2c_status(uint8_t dev_id, uint16_t flags){
 static int16_t _avr_i2c_ioctl(block_dev_t dev, ioctl_req_t req, ...){
 	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, api); 
 	if(self->user_thread != libk_current_thread()) return -EACCES; 
+	
+	if(_avr_i2c_busy(self->dev_id)) return -EWOULDBLOCK;
 	
 	switch(req) {
 		case I2C_SEND_STOP: {

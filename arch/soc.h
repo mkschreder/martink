@@ -77,7 +77,6 @@ extern "C" {
 #include "spi.h"
 #include "gpio.h"
 #include "pwm.h"
-#include "i2cblk.h"
 
 #ifndef PROGMEM
 #define PROGMEM

@@ -5,7 +5,7 @@
 
 #include <kernel/dev/block.h>
 #include <kernel/thread.h>
-#include <arch/i2cblk.h>
+#include <block/i2cblk.h>
 
 #define AT24_PAGE_SIZE 32 
 

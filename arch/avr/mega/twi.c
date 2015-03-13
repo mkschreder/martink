@@ -76,11 +76,6 @@ struct avr_i2c_device {
 	volatile uint8_t status; 
 	struct block_device_ops *api; 
 	struct pt *user_thread; 
-	/*
-	uint8_t *twi_rd_data;
-	const uint8_t *twi_wr_data; 
-	static volatile uint8_t twi_data_counter;
-	static volatile uint8_t twi_status;*/
 }; 
 
 static struct avr_i2c_device _device; 
@@ -200,22 +195,6 @@ static uint8_t _avr_i2c_busy(uint8_t dev_id){
 	return (((TWCR & _BV(TWIE)) != 0) || (TWCR & _BV(TWSTO)))?1:0;
 }
 
-static int8_t _avr_i2c_stop(struct avr_i2c_device *self){
-	(void)self; 
-	if(_avr_i2c_busy(self->dev_id)) return -EBUSY; 
-	//if(!(self->status & AVR_I2C_FLAG_STOP_REQUIRED)) return 0; 
-	//self->status &= ~AVR_I2C_FLAG_STOP_REQUIRED; 
-	// not sure if this is really necessary
-	/* if(!(self->status & AVR_I2C_FLAG_DONE)) return -EBUSY; 
-	*/
-	//I2C_DEBUG("I2C: stop\n"); 
-	// Initiate a STOP condition
-	//TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(1<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
-	//while(_avr_i2c_busy(self->dev_id)); 
-	
-	return 0; 
-}
-
 int8_t avr_i2c_init(uint8_t dev_id) {
 	// only one twi interface for now
 	if(dev_id >= 1) return -1; 
@@ -257,7 +236,7 @@ static uint8_t _avr_i2c_open(block_dev_t dev){
 	
 	I2C_DEBUG("I2C: open\n"); 
 	
-	self->status |= AVR_I2C_FLAG_LOCKED; 
+	self->status |= AVR_I2C_FLAG_LOCKED | AVR_I2C_FLAG_SEND_STOP; 
 	self->user_thread = libk_current_thread(); 
 	
 	return 1; 
@@ -265,17 +244,17 @@ static uint8_t _avr_i2c_open(block_dev_t dev){
 
 static int8_t _avr_i2c_close(block_dev_t dev){
 	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, api); 
-	if(self->user_thread != libk_current_thread()) return -1; 
-	if(!(self->status & AVR_I2C_FLAG_LOCKED)) return -1; 
+	if(self->user_thread != libk_current_thread()) return 0; 
+	if(!(self->status & AVR_I2C_FLAG_LOCKED)) return 0; 
 	
-	_avr_i2c_stop(self); 
+	//_avr_i2c_stop(self); 
 	
 	I2C_DEBUG("I2C: close\n"); 
 	
 	self->status &= ~AVR_I2C_FLAG_LOCKED; 
 	self->user_thread = 0; 
 	
-	return 0; 
+	return 1; 
 }
 
 static ssize_t _avr_i2c_seek(block_dev_t dev, ssize_t pos, int whence){

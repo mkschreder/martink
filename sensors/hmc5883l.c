@@ -102,6 +102,8 @@ PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
 	// wait for the compass to start
 	TIMEOUT(50000L); 
 	
+	IO_BEGIN(pt, &self->tr, self->dev); 
+	
 	self->buf[0] = HMC5883L_NUM_SAMPLES4 | HMC5883L_RATE30; 
 	IO_WRITE(pt, &self->tr, self->dev, HMC5883L_CONFREGA, self->buf, 1);
 	self->buf[0] = HMC5883L_SCALE << 5; 
@@ -112,14 +114,20 @@ PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
 	IO_READ(pt, &self->tr, self->dev, HMC5883L_REG_IDA, self->buf, 3); 
 	self->sensor_id = READ_INT24(self->buf); 
 	
+	IO_END(pt, &self->tr, self->dev); 
+	
 	TIMEOUT(7000L); 
 	
 	self->status |= HMC5883L_STATUS_READY; 
 	
 	while(1){
+		IO_BEGIN(pt, &self->tr, self->dev); 
+		
 		IO_READ(pt, &self->tr, self->dev, HMC5883L_DATAREGBEGIN, self->buf, 6); 
 		STORE_VEC3_16(self->raw_mag); 
 		
+		IO_END(pt, &self->tr, self->dev); 
+	
 		static timestamp_t tfps = 0; 
 		static int fps = 0; 
 		if(timestamp_expired(tfps)){
@@ -145,7 +153,7 @@ void hmc5883l_init(struct hmc5883l *self, block_dev_t i2c) {
 	
 	blk_transfer_init(&self->tr); 
 	
-	libk_create_thread(&self->thread, _hmc5883l_thread, "hmc5883l"); 
+	//libk_create_thread(&self->thread, _hmc5883l_thread, "hmc5883l"); 
 	
 	switch(HMC5883L_SCALE) {
 		case HMC5883L_SCALE088: 

@@ -8,7 +8,8 @@
 #include "../arch/native/time.c"
 #include "../arch/time.c"
 #include "../kernel/transfer.c"
-#include "../arch/i2cblk.c"
+#include "../block/i2cblk.c"
+#include "../block/block_device.c"
 
 #define BLOCK_SIZE 32
 #define BLOCK_COUNT 2
@@ -31,37 +32,28 @@ LIBK_THREAD(main){
 		printf("Tick: %d\n", ticks++); 
 		PT_WAIT_UNTIL(pt, timestamp_expired(time)); 
 		
-		blk_open(_app.rd); 
+		IO_BEGIN(pt, &_app.tr, _app.rd); 
 		
 		printf("Writing data..\n"); 
 		for(unsigned int c = 0; c < sizeof(_app.buffer); c++){
 			_app.buffer[c] = c; 
 		}
-		blk_seek(_app.rd, 0, SEEK_SET); 
-		blk_transfer_start(&_app.tr, _app.rd, _app.buffer, sizeof(_app.buffer), IO_WRITE); 
-		PT_WAIT_WHILE(pt, blk_transfer_result(&_app.tr) == TR_BUSY); 
-		if(blk_transfer_result(&_app.tr) == TR_COMPLETED){
-			printf("Success!\n"); 
-		} else {
-			printf("Failed: %s\n", strerror(errno)); 
-		}
+		
+		IO_WRITE(pt, &_app.tr, _app.rd, 0, _app.buffer, sizeof(_app.buffer)); 
+		
 		printf("Reading data..\n"); 
 		memset(_app.buffer, 0, sizeof(_app.buffer)); 
-		blk_seek(_app.rd, 0, SEEK_SET); 
-		blk_transfer_start(&_app.tr, _app.rd, _app.buffer, sizeof(_app.buffer), IO_READ); 
-		PT_WAIT_WHILE(pt, blk_transfer_result(&_app.tr) == TR_BUSY); 
-		if(blk_transfer_result(&_app.tr) == TR_COMPLETED){
-			for(unsigned int c = 0; c < sizeof(_app.buffer); c++){
-				if(_app.buffer[c] != c){
-					printf("Data integrity check failed at %d: expected %d, got %d\n", c, c, _app.buffer[c]); 
-					PT_WAIT_WHILE(pt, 1); 
-				}
+		
+		IO_READ(pt, &_app.tr, _app.rd, 0, _app.buffer, sizeof(_app.buffer));
+		
+		IO_END(pt, &_app.tr, _app.rd); 
+		 
+		for(unsigned int c = 0; c < sizeof(_app.buffer); c++){
+			if(_app.buffer[c] != c){
+				printf("Data integrity check failed at %d: expected %d, got %d\n", c, c, _app.buffer[c]); 
+				PT_WAIT_WHILE(pt, 1); 
 			}
-			printf("Success!\n"); 
-		} else {
-			printf("Failed: %s\n", strerror(errno)); 
 		}
-		blk_close(_app.rd); 
 		
 	}
 	PT_END(pt); 

@@ -243,6 +243,8 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 	
 	TIMEOUT(50000); 
 	
+	IO_BEGIN(pt, &self->tr, self->dev); 
+	
 	self->buf[0] = MPU6050_PWR1_CLOCK_PLL_XGYRO; 
 	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_PWR_MGMT_1, self->buf, 1); 
 	
@@ -261,18 +263,24 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 	self->buf[0] = 0; 
 	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_USER_CTRL, self->buf, 1); 
 	
+	IO_END(pt, &self->tr, self->dev); 
+	
 	self->state |= MPU6050_STATE_INITIALIZED; 
 	
 	// get the data from sensor at regular intervals
 	
 	while(1){
 		//self->time = timestamp_now(); 
+		IO_BEGIN(pt, &self->tr, self->dev); 
+		
 		IO_READ(pt, &self->tr, self->dev, MPU6050_RA_ACCEL_XOUT_H, self->buf, 6); 
 		STORE_VEC3_16(self->raw_acc); 
 		
 		IO_READ(pt, &self->tr, self->dev, MPU6050_RA_GYRO_XOUT_H, self->buf, 6);  
 		STORE_VEC3_16(self->raw_gyr); 
 		
+		IO_END(pt, &self->tr, self->dev); 
+	
 		static timestamp_t tfps = 0; 
 		static int fps = 0; 
 		if(timestamp_expired(tfps)){
@@ -333,7 +341,7 @@ void mpu6050_init(struct mpu6050 *self, block_dev_t dev) {
 	self->dev = dev; 
 	self->state = 0; 
 	
-	libk_create_thread(&self->thread, _mpu6050_thread, "mpu6050"); 
+	//libk_create_thread(&self->thread, _mpu6050_thread, "mpu6050"); 
 	
 	/*PT_INIT(&self->uthread); // update
 	PT_INIT(&self->rthread); // read

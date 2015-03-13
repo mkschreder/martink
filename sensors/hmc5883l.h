@@ -32,6 +32,7 @@ extern "C" {
 
 #include <kernel/thread.h>
 #include <kernel/dev/i2c.h>
+#include <kernel/transfer.h>
 
 struct hmc5883l {
 	block_dev_t dev;

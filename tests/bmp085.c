@@ -8,14 +8,15 @@
 #include "../arch/native/time.c"
 #include "../arch/time.c"
 #include "../kernel/transfer.c"
-#include "../arch/i2cblk.c"
+#include "../block/i2cblk.c"
 #include "../sensors/bmp085.c"
+#include "../block/block_device.c"
 
 #define BLOCK_SIZE 32
 #define BLOCK_COUNT 2
 
 struct app {
-	struct bmp085 bmp; 
+	struct bmp085 bmp, bmp2; 
 	block_dev_t rd; 
 	struct block_transfer tr; 
 	uint8_t buffer[BLOCK_SIZE * BLOCK_COUNT]; 
@@ -48,6 +49,7 @@ int main(){
 	i2cblk_init(&i2cblk, rd_get_interface(&rd), BMP085_ADDR); 
 	
 	bmp085_init(&_app.bmp, i2cblk_get_interface(&i2cblk)); 
+	bmp085_init(&_app.bmp2, i2cblk_get_interface(&i2cblk)); 
 	
 	libk_run(); 
 }

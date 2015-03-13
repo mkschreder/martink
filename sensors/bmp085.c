@@ -81,6 +81,7 @@ PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)){
 	PT_BEGIN(thr); 
 	
 	IO_BEGIN(thr, &self->tr, self->dev); 
+	
 	IO_READ(thr, &self->tr, self->dev, BMP085_REGAC1, self->buf, 2); 
 	self->regac1 = READ_INT16(self->buf); 
 	IO_READ(thr, &self->tr, self->dev, BMP085_REGAC2, self->buf, 2); 
@@ -103,47 +104,34 @@ PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)){
 	self->regmc = READ_INT16(self->buf); 
 	IO_READ(thr, &self->tr, self->dev, BMP085_REGMD, self->buf, 2); 
 	self->regmd = READ_INT16(self->buf); 
+	
 	IO_END(thr, &self->tr, self->dev); 
 	
-	/*
-	READ_REG16(BMP085_REGAC1); 
-	WAIT_REG16(self->regac1); 
-	READ_REG16(BMP085_REGAC2); 
-	WAIT_REG16(self->regac2); 
-	READ_REG16(BMP085_REGAC3); 
-	WAIT_REG16(self->regac3); 
-	READ_REG16(BMP085_REGAC4); 
-	WAIT_REGUINT(self->regac4); 
-	READ_REG16(BMP085_REGAC5); 
-	WAIT_REGUINT(self->regac5); 
-	READ_REG16(BMP085_REGAC6); 
-	WAIT_REGUINT(self->regac6); 
-	READ_REG16(BMP085_REGB1); 
-	WAIT_REG16(self->regb1); 
-	READ_REG16(BMP085_REGB2); 
-	WAIT_REG16(self->regb2); 
-	READ_REG16(BMP085_REGMB); 
-	WAIT_REG16(self->regmb); 
-	READ_REG16(BMP085_REGMC); 
-	WAIT_REG16(self->regmc); 
-	READ_REG16(BMP085_REGMD); 
-	WAIT_REG16(self->regmd); 
-	*/
 	self->status |= BMP085_STATUS_READY; 
 	
 	while(1){
 		// read uncompensated temperature
 		IO_BEGIN(thr, &self->tr, self->dev); 
+		
 		self->buf[0] = BMP085_REGREADTEMPERATURE; 
 		IO_WRITE(thr, &self->tr, self->dev, BMP085_REGCONTROL, self->buf, 1); 
+		
 		IO_SLEEP(self->time, 5000); 
+		
 		IO_READ(thr, &self->tr, self->dev, BMP085_REGCONTROLOUTPUT, self->buf, 2); 
 		self->ut = READ_INT16(self->buf); 
-		self->buf[0] = BMP085_REGCONTROL; 
-		IO_WRITE(thr, &self->tr, self->dev, BMP085_REGREADPRESSURE+(BMP085_MODE << 6), self->buf, 1); 
+		
+		self->buf[0] = BMP085_REGREADPRESSURE+(BMP085_MODE << 6); 
+		IO_WRITE(thr, &self->tr, self->dev, BMP085_REGCONTROL, self->buf, 1); 
+		
 		IO_SLEEP(self->time, (2 + (3<<BMP085_MODE)) * 1000L); 
-		IO_READ(thr, &self->tr, self->dev, BMP085_REGREADTEMPERATURE, self->buf, 3); 
-		self->up = READ_INT24(self->buf); 
+		
+		IO_READ(thr, &self->tr, self->dev, BMP085_REGCONTROLOUTPUT, self->buf, 3); 
+		self->up = READ_INT24(self->buf)  >> (8-BMP085_MODE); 
+		
+		printf("P: %04x%04x ", (int16_t)(self->up >> 16), (int16_t)self->up); 
+		printf("T: %04x%04x\n", (int16_t)(self->ut >> 16), (int16_t)self->ut); 
+		
 		IO_END(thr, &self->tr, self->dev); 
 		PT_YIELD(thr);
 		/*

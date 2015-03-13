@@ -35,6 +35,7 @@
 "C" {
 #endif
 
+#include <kernel/transfer.h>
 #include <kernel/thread.h>
 #include <kernel/dev/i2c.h>
 

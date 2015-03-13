@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 
+#include <kernel/transfer.h>
 #include <kernel/dev/i2c.h>
 #include <kernel/thread.h>
 

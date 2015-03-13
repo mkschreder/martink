@@ -14,5 +14,8 @@ struct block_device {
 }; 
 
 void block_device_init(struct block_device *self); 
+
+uint8_t block_device_open(struct block_device *self);
+int8_t block_device_close(struct block_device *self);
 uint8_t block_device_can_access(struct block_device *self); 
 block_dev_t block_device_get_interface(struct block_device *self); 

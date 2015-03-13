@@ -22,12 +22,8 @@ typedef enum {
 } blk_transfer_result_t; 
 
 struct block_transfer {
-	//block_dev_t dev; // target device
-	ssize_t offset;  // device offset
-	//uint8_t *buffer; // current buffer position
-	ssize_t size; 	 // size left to process
-	//ssize_t transfered; 
-	//io_direction_t dir; 
+	//ssize_t offset;  
+	ssize_t size;
 	uint8_t state; 
 }; 
 /*
@@ -38,7 +34,7 @@ void blk_transfer_start(struct block_transfer *tr,
 blk_transfer_result_t blk_transfer_result(struct block_transfer *tr); 
 */
 void blk_transfer_init(struct block_transfer *tr); 
-int blk_transfer(struct block_transfer *tr, block_dev_t dev, uint8_t *data, ssize_t size, io_direction_t dir); 
+int blk_transfer(struct block_transfer *tr, block_dev_t dev, ssize_t offset, uint8_t *data, ssize_t size, io_direction_t dir); 
 uint8_t blk_transfer_busy(struct block_transfer *self); 
 
 uint8_t io_begin(struct block_transfer *tr, block_dev_t dev);

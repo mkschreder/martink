@@ -129,8 +129,8 @@ PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)){
 		IO_READ(thr, &self->tr, self->dev, BMP085_REGCONTROLOUTPUT, self->buf, 3); 
 		self->up = READ_INT24(self->buf)  >> (8-BMP085_MODE); 
 		
-		printf("P: %04x%04x ", (int16_t)(self->up >> 16), (int16_t)self->up); 
-		printf("T: %04x%04x\n", (int16_t)(self->ut >> 16), (int16_t)self->ut); 
+		//printf("P: %04x%04x ", (int16_t)(self->up >> 16), (int16_t)self->up); 
+		//printf("T: %04x%04x\n", (int16_t)(self->ut >> 16), (int16_t)self->ut); 
 		
 		IO_END(thr, &self->tr, self->dev); 
 		PT_YIELD(thr);

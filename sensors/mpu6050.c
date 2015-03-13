@@ -341,7 +341,7 @@ void mpu6050_init(struct mpu6050 *self, block_dev_t dev) {
 	self->dev = dev; 
 	self->state = 0; 
 	
-	//libk_create_thread(&self->thread, _mpu6050_thread, "mpu6050"); 
+	libk_create_thread(&self->thread, _mpu6050_thread, "mpu6050"); 
 	
 	/*PT_INIT(&self->uthread); // update
 	PT_INIT(&self->rthread); // read

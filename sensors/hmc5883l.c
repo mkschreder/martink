@@ -153,7 +153,7 @@ void hmc5883l_init(struct hmc5883l *self, block_dev_t i2c) {
 	
 	blk_transfer_init(&self->tr); 
 	
-	//libk_create_thread(&self->thread, _hmc5883l_thread, "hmc5883l"); 
+	libk_create_thread(&self->thread, _hmc5883l_thread, "hmc5883l"); 
 	
 	switch(HMC5883L_SCALE) {
 		case HMC5883L_SCALE088: 

@@ -56,7 +56,9 @@ struct mpu6050{
 	int16_t raw[6]; 
 	
 	// threads
-	struct libk_thread thread; 
+	struct libk_thread kthread; 
+	struct async_task task; 
+	
 	//struct pt uthread, rthread, wthread, ithread; 
 	uint8_t buf[6]; // i2c buffer
 	

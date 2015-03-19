@@ -23,11 +23,19 @@ struct io_device_ops {
 }; 
 
 typedef struct io_device {
-	struct async_task open, close, write, read, seek, ioctl; 
+	struct async_task vopen, vclose, vwrite, vread, vseek, vioctl; 
 	struct io_device_ops *api; 
 } io_device_t; 
 
 void io_init(struct io_device *self); 
+
+
+ASYNC_PROTOTYPE(io_device_t, open); 
+ASYNC_PROTOTYPE(io_device_t, close); 
+ASYNC_PROTOTYPE(io_device_t, write, const uint8_t *data, ssize_t size); 
+ASYNC_PROTOTYPE(io_device_t, read, uint8_t *data, ssize_t size); 
+ASYNC_PROTOTYPE(io_device_t, seek, ssize_t ofs, int whence); 
+ASYNC_PROTOTYPE(io_device_t, ioctl, ioctl_req_t req, ...);
 
 #define IO_OPEN(io) AWAIT_TASK(io_device_t, open, io)
 #define IO_CLOSE(io) AWAIT_TASK(io_device_t, close, io)

@@ -43,6 +43,7 @@ Revision Info:  $Id: twi_master.c 117 2010-06-24 20:21:28Z pieterconradie $
 #include <arch/soc.h>
 #include <string.h>
 #include <kernel/dev/i2c.h>
+#include <kernel/cbuf.h>
 
 #include "twi.h"
 
@@ -68,14 +69,19 @@ Revision Info:  $Id: twi_master.c 117 2010-06-24 20:21:28Z pieterconradie $
 #define I2C_DEBUG(...) {} //printf(__VA_ARGS__)
 
 struct avr_i2c_device {
-	struct io_device io; 
-	
 	uint8_t dev_id; 
+	
+	struct io_device io; 
+	struct cbuf buffer; 
+	
+	uint8_t _buffer[AVR_I2C_BUFFER_SIZE]; 
+	
 	volatile uint8_t addr; // current i2c address
-	volatile uint8_t buffer[AVR_I2C_BUFFER_SIZE]; 
-	volatile uint8_t cur; // current position in buffer
-	volatile uint8_t tr_size; // total size of pending transaction
+	volatile ssize_t rx_left; 
+	volatile ssize_t queued_count; 
 	volatile uint8_t status; 
+	
+	async_mutex_t lock, buffer_lock; 
 	//struct block_device_ops *api; 
 	//struct pt *user_thread; 
 }; 
@@ -94,7 +100,7 @@ ISR(TWI_vect)
 
 	case TW_REP_START:
 		// REPEATED START has been transmitted
-		_device.cur = 0; 
+		//_device.cur = 0; 
 		
 		// Load data register with TWI slave address
 		TWDR = _device.addr;
@@ -108,13 +114,11 @@ ISR(TWI_vect)
 
 	case TW_MT_DATA_ACK:
 		// Data byte has been tramsmitted and ACK received
-		if(_device.tr_size != 0)
+		if(cbuf_get_waiting(&_device.buffer))
 		{
 			// Load data register with next byte
-			TWDR = _device.buffer[_device.cur];
-			// Decrement counter
-			_device.tr_size--;
-			_device.cur++; 
+			TWDR = cbuf_get(&_device.buffer);
+			
 			// TWI Interrupt enabled and clear flag to send next byte
 			TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 		}
@@ -135,22 +139,17 @@ ISR(TWI_vect)
 	case TW_MR_DATA_ACK:
 		// Data byte has been received and ACK tramsmitted
 		// Buffer received byte
-		_device.buffer[_device.cur] = TWDR;
-		// Decrement counter
-		_device.tr_size--;
-		_device.cur++; 
+		cbuf_put(&_device.buffer, TWDR);
+		_device.rx_left--; 
 		// Fall through...
 
 	case TW_MR_SLA_ACK:
 		// SLA+R has been transmitted and ACK received
 		// See if last expected byte will be received ...
-		if(_device.tr_size > 1)
-		{
+		if(_device.rx_left > 1) {
 			// Send ACK after reception
 			TWCR = (1<<TWINT)|(1<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
-		}
-		else
-		{
+		} else {
 			// Send NACK after next reception
 			TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 		}
@@ -159,10 +158,9 @@ ISR(TWI_vect)
 	case TW_MR_DATA_NACK:
 		// Data byte has been received and NACK tramsmitted
 		// Buffer received byte
-		_device.buffer[_device.cur] = TWDR;
+		cbuf_put(&_device.buffer, TWDR);
 		// Decrement counter
-		_device.tr_size--;
-		_device.cur ++; 
+		_device.rx_left--;
 		
 		if(_device.status & AVR_I2C_FLAG_SEND_STOP)
 			// Initiate STOP condition after last byte; TWI Interrupt disabled
@@ -202,12 +200,18 @@ int8_t avr_i2c_init(uint8_t dev_id) {
 	// only one twi interface for now
 	if(dev_id >= 1) return -1; 
 	
-	io_init(&_device.io); 
+	struct avr_i2c_device *self = &_device; 
+	
+	io_init(&self->io); 
+	cbuf_init(&self->buffer, self->_buffer, AVR_I2C_BUFFER_SIZE); 
+	
+	ASYNC_MUTEX_INIT(self->lock, 1); 
+	ASYNC_MUTEX_INIT(self->buffer_lock, 1); 
 	
 	// Initialise variable
-	_device.tr_size = 0;
-	_device.cur = 0; 
-	_device.dev_id = 0; 
+	self->rx_left = 0; 
+	self->status = AVR_I2C_FLAG_ENABLED; 
+	self->status &= ~AVR_I2C_FLAG_SEND_STOP; 
 	
 	// Initialize TWI clock
 	TWSR = TWI_PRESCALER;
@@ -216,9 +220,6 @@ int8_t avr_i2c_init(uint8_t dev_id) {
 	// Load data register with default content; release SDA
 	TWDR = 0xff;
 
-	_device.status |= AVR_I2C_FLAG_ENABLED; 
-	_device.status &= ~AVR_I2C_FLAG_SEND_STOP; 
-	
 	// Enable TWI peripheral with interrupt disabled
 	TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
 
@@ -234,112 +235,162 @@ void avr_i2c_deinit(uint8_t dev_id){
 }
 
 
-static PT_THREAD(_avr_i2c_open(struct pt *pt, struct io_device *dev)){
-	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, io); 
+static ASYNC(io_device_t, vopen){
+	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
 	
-	PT_BEGIN(pt); 
-	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
-	PT_END(pt); 
+	ASYNC_BEGIN(); 
+	
+	ASYNC_MUTEX_LOCK(dev->lock); 
+	
+	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+	
+	ASYNC_END(); 
 }
 
-static PT_THREAD(_avr_i2c_close(struct pt *pt, struct io_device *dev)){
-	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, io); 
+static ASYNC(io_device_t, vclose){
+	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
 	
-	PT_BEGIN(pt); 
-	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
-	I2C_DEBUG("I2C: close\n"); 
-	PT_END(pt); 
+	ASYNC_BEGIN(); 
+	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+	
+	ASYNC_MUTEX_UNLOCK(dev->lock); 
+	
+	I2C_DEBUG("I2C: closed\n"); 
+	ASYNC_END(); 
 }
 
-static PT_THREAD(_avr_i2c_seek(struct pt *pt, struct io_device *dev, ssize_t pos, int whence)){
-	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, io); 
+static ASYNC(io_device_t, vseek, ssize_t pos, int whence){
+	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
 	
-	PT_BEGIN(pt); 
-	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
+	ASYNC_BEGIN();
+	
+	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
 	(void)whence; 
 	
 	I2C_DEBUG("i2c: seek %d\n", pos); 
-	self->addr = pos; 
-	PT_END(pt); 
+	dev->addr = pos; 
+	
+	ASYNC_END(); 
 }
 
-static PT_THREAD(_avr_i2c_write(struct pt *pt, struct io_device *dev, const uint8_t *data, ssize_t count)){
-	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, io); 
+static ASYNC(io_device_t, vwrite, const uint8_t *data, ssize_t size){
+	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
 	
-	PT_BEGIN(pt);
-	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
-	
-	// Copy address; clear R/~W bit in SLA+R/W address field
-	self->addr &= ~I2C_READ;
-
-	// Copy some data to the buffer
-	if(count > AVR_I2C_BUFFER_SIZE) count = AVR_I2C_BUFFER_SIZE; 
-	
-	I2C_DEBUG("I2C: writestart %x %d: ", self->addr, (int)count); 
-	for(int c = 0; c < count; c++) I2C_DEBUG("%x ", data[c]);
-	I2C_DEBUG("\n"); 
-	
-	for(int c = 0; c < count; c++) self->buffer[c] = data[c]; 
-	self->tr_size = count; 
-	self->cur = 0; 
-	
-	// Initiate a START condition; Interrupt enabled and flag cleared
-	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
-	
-	// wait until the operation completes
-	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
-	
-	PT_END(pt); 
+	ASYNC_BEGIN();
+		// wait for previous transaction to complete
+		AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+		
+		// lock the buffer so that read can not start using it
+		ASYNC_MUTEX_LOCK(dev->buffer_lock); 
+		
+		// set address. clear R/~W bit in SLA+R/W address field
+		dev->addr &= ~I2C_READ;
+		
+		// clear buffer
+		cbuf_clear(&dev->buffer); 
+		dev->queued_count = 0; 
+		
+		I2C_DEBUG("I2C: writestart %x %d: ", dev->addr, (int)size); 
+		for(int c = 0; c < size; c++) I2C_DEBUG("%x ", data[c]);
+		I2C_DEBUG("\n"); 
+		
+		// we do a busy loop here for pushing data as quickly as possible
+		// into the cache. This is because it is tricky to make i2c isr wait
+		// for more data. Instead it is better to busy loop until all data is
+		// in cache and then do an async wait until transaction completes. 
+		// this means that i2c transactions < cache size are async. All others
+		// are blocking for as long as necessary to make sure that data gets
+		// cached properly. 
+		while(dev->queued_count < size){
+			// we try to write to the data queue 
+			ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+				dev->queued_count += cbuf_putn(&dev->buffer, 
+					data + dev->queued_count, size - dev->queued_count); 
+			}
+			
+			// start transmission if it has not been started yet
+			if(!_avr_i2c_busy(dev->dev_id))
+				TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
+		}
+		
+		// here we can yield because now all data is in the buffer 
+		AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+		
+		ASYNC_MUTEX_UNLOCK(dev->buffer_lock); 
+	ASYNC_END(); 
 }
 
-static PT_THREAD(_avr_i2c_read(struct pt *pt, struct io_device *dev, uint8_t *data, ssize_t count)){
-	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, io); 
+static ASYNC(io_device_t, vread, uint8_t *data, ssize_t size){
+	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
 	
-	PT_BEGIN(pt); 
-	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
+	ASYNC_BEGIN(); 
 	
-	self->addr |= I2C_READ;
+	// lock the buffer so that read can not start using it
+	// must always lock mutex first before checking for busy device
+	ASYNC_MUTEX_LOCK(dev->buffer_lock); 
+	
+	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+		
+	dev->addr |= I2C_READ;
 
-	if(count > AVR_I2C_BUFFER_SIZE) count = AVR_I2C_BUFFER_SIZE; 
-	self->tr_size = count;
-	self->cur = 0; 
+	// clear buffer
+	cbuf_clear(&dev->buffer); 
+	dev->queued_count = 0; 
+	dev->rx_left = size; 
 	
-	I2C_DEBUG("I2C: readstart: %x %d\n", self->addr, (int)count); 
+	I2C_DEBUG("I2C: readstart: %x %d\n", dev->addr, (int)count); 
 	
 	// Initiate a START condition; Interrupt enabled and flag cleared
 	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 	
 	// wait until the read is completed
-	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
+	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
 	
-	// copy data to the supplied buffer
-	if(self->cur < count) count = self->cur; 
-	for(int c = 0; c < count; c++) data[c] = self->buffer[c]; 
-	I2C_DEBUG("I2C: readready: %x %d: ", self->addr, (int)count); 
-	for(int c = 0; c < count; c++) I2C_DEBUG("%x ", self->buffer[c]);
+	// here we make sure that we receive the whole buffer before returning
+	// if the buffer becomes full before we are able to copy data, data will
+	// be lost. This means that we can only reliably receive one i2c block
+	// at a time. 
+	while(dev->queued_count < size){
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+			dev->queued_count += cbuf_getn(&dev->buffer, 
+				data + dev->queued_count, size - dev->queued_count); 
+		}
+		AWAIT(cbuf_get_waiting(&dev->buffer)); 
+	}
+	
+	// always for safety make sure that everything is done
+	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+	
+	I2C_DEBUG("I2C: readready: %x %d: ", dev->addr, (int)size); 
+	for(int c = 0; c < size; c++) I2C_DEBUG("%x ", data[c]);
 	I2C_DEBUG("\n"); 
 	
-	PT_END(pt); 
+	ASYNC_MUTEX_UNLOCK(dev->buffer_lock); 
+	
+	ASYNC_END(); 
 }
 
-static PT_THREAD(_avr_i2c_ioctl(struct pt *pt, struct io_device *dev, ioctl_req_t req, va_list vl)){
-	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, io); 
+static ASYNC(io_device_t, vioctl, ioctl_req_t req, va_list vl){
+	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
 	
-	PT_BEGIN(pt); 
-	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id));
+	ASYNC_BEGIN(); 
+	
+	// wait for the device to not be busy since changing settings on a busy
+	// device is dangerous
+	AWAIT(!_avr_i2c_busy(dev->dev_id));
 	
 	if(req == I2C_SEND_STOP){
 		uint8_t en = va_arg(vl, int); 
 		I2C_DEBUG("I2C: sendstop: %d\n", en); 
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
 			if(en)
-				self->status |= AVR_I2C_FLAG_SEND_STOP; 
+				dev->status |= AVR_I2C_FLAG_SEND_STOP; 
 			else
-				self->status &= ~AVR_I2C_FLAG_SEND_STOP; 
+				dev->status &= ~AVR_I2C_FLAG_SEND_STOP; 
 		}
 	} 
 	
-	PT_END(pt); 
+	ASYNC_END(); 
 }
 
 io_dev_t avr_i2c_get_interface(uint8_t dev_id){
@@ -348,12 +399,12 @@ io_dev_t avr_i2c_get_interface(uint8_t dev_id){
 	static struct io_device_ops _if;
 	if(!_device.io.api){
 		_if = (struct io_device_ops) {
-			.open = _avr_i2c_open, 
-			.close = _avr_i2c_close, 
-			.read = 	_avr_i2c_read,
-			.write = 	_avr_i2c_write,
-			.seek = _avr_i2c_seek, 
-			.ioctl = _avr_i2c_ioctl, 
+			.open = __io_device_t_vopen__, 
+			.close = __io_device_t_vclose__, 
+			.read = 	__io_device_t_vread__,
+			.write = 	__io_device_t_vwrite__,
+			.seek = __io_device_t_vseek__, 
+			.ioctl = __io_device_t_vioctl__, 
 		};
 		_device.io.api = &_if; 
 	}

@@ -67,11 +67,10 @@
 
 #define BMP085_IO_TIMEOUT 500000
 
+typedef struct bmp085 bmp085_t; 
 
-	
-PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)); 
-PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)){
-	struct bmp085 *self = container_of(kthread, struct bmp085, thread); 
+static ASYNC(bmp085_t, task){
+	//struct bmp085 *self = container_of(kthread, struct bmp085, thread); 
 	
 	struct {
 		uint8_t reg; 
@@ -95,18 +94,18 @@ PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)){
 		{ BMP085_REGAC6, &self->regac6 }
 	}; 
 	
-	PT_BEGIN(thr); 
+	ASYNC_BEGIN(); 
 	
-	PT_ASYNC_BEGIN(thr, self->dev, BMP085_IO_TIMEOUT); 
+	IO_OPEN(self->dev); 
 	
 	for(self->count = 0; self->count < (int)(sizeof(init_sequence) / sizeof(init_sequence[0])); self->count++){
-		PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, init_sequence[self->count].reg, SEEK_SET); 
-		PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+		IO_SEEK(self->dev, init_sequence[self->count].reg, SEEK_SET); 
+		IO_READ(self->dev, self->buf, 2); 
 		*(init_sequence[self->count].out) = READ_INT16(self->buf); 
 	}
 	for(self->count = 0; self->count < (int)(sizeof(init_sequence2) / sizeof(init_sequence2[0])); self->count++){
-		PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, init_sequence2[self->count].reg, SEEK_SET); 
-		PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+		IO_SEEK(self->dev, init_sequence2[self->count].reg, SEEK_SET); 
+		IO_READ(self->dev, self->buf, 2); 
 		*(init_sequence2[self->count].out) = READ_INT16(self->buf); 
 	}
 	/*
@@ -154,16 +153,16 @@ PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)){
 	PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
 	self->regmd = READ_INT16(self->buf); 
 	*/
-	PT_ASYNC_END(thr, self->dev, BMP085_IO_TIMEOUT); 
+	IO_CLOSE(self->dev); 
 	
 	self->status |= BMP085_STATUS_READY; 
 	
 	while(1){
 		// read uncompensated temperature
-		PT_ASYNC_BEGIN(thr, self->dev, BMP085_IO_TIMEOUT); 
+		IO_OPEN(self->dev); 
 		self->buf[0] = BMP085_REGREADTEMPERATURE; 
-		PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGCONTROL, SEEK_SET); 
-		PT_ASYNC_WRITE(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 1); 
+		IO_SEEK(self->dev, BMP085_REGCONTROL, SEEK_SET); 
+		IO_WRITE(self->dev, self->buf, 1); 
 		
 		/*
 		self->buf[0] = BMP085_REGREADTEMPERATURE; 
@@ -189,7 +188,7 @@ PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)){
 		//printf("P: %04x%04x ", (int16_t)(self->up >> 16), (int16_t)self->up); 
 		//printf("T: %04x%04x\n", (int16_t)(self->ut >> 16), (int16_t)self->ut); 
 		
-		PT_ASYNC_END(thr, self->dev, BMP085_IO_TIMEOUT); 
+		IO_CLOSE(self->dev); 
 		/*
 		static timestamp_t tfps = 0; 
 		static int fps = 0; 
@@ -199,10 +198,17 @@ PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)){
 			tfps = timestamp_from_now_us(1000000); 
 		} fps++; 
 		*/
-		PT_YIELD(thr);
 	}
 	
-	PT_END(thr); 
+	ASYNC_END(); 
+}
+
+PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *pt));
+PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *pt)){ 
+	struct bmp085 *self = container_of(kthread, struct bmp085, kthread); 
+	PT_BEGIN(pt); 
+	PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(bmp085_t, task, 0, self) != ASYNC_ENDED); 
+	PT_END(pt); 
 }
 
 static long bmp085_getrawtemperature(struct bmp085 *self) {
@@ -258,8 +264,9 @@ void bmp085_init(struct bmp085 *self, io_dev_t i2c_dev) {
 	//self->dev = i2cblk_get_interface(&self->i2cblk); 
 	self->dev = i2c_dev; 
 	self->ut = self->up = 0; 
-	
+	ASYNC_INIT(&self->task); 
+
 	// one thread per bmp sensor
-	libk_create_thread(&self->thread, _bmp085_thread, "bmp085"); 
+	libk_create_thread(&self->kthread, _bmp085_thread, "bmp085"); 
 }
 

@@ -233,10 +233,9 @@ static PT_THREAD(_mpu6050_init_thread(struct libk_thread *kthread, struct pt *pt
 
 #define MPU6050_IO_TIMEOUT 500000
 
-PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)); 
-PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
-	struct mpu6050 *self = container_of(kthread, struct mpu6050, thread); 
-	
+typedef struct mpu6050 mpu6050_t; 
+
+static ASYNC(mpu6050_t, task){
 	static const struct _init {
 		uint8_t reg; 
 		uint16_t value; 
@@ -252,17 +251,17 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 		{ MPU6050_RA_USER_CTRL, 0 }, 
 	}; 
 	
-	PT_BEGIN(pt); 
+	ASYNC_BEGIN(); 
 	
-	PT_ASYNC_BEGIN(pt, self->dev, MPU6050_IO_TIMEOUT); 
+	IO_OPEN(self->dev); 
 	
 	for(self->count = 0; self->count < (sizeof(init_sequence) / sizeof(init_sequence[0])); self->count++){
 		if(init_sequence[self->count].reg == 0xff) {
-			PT_SLEEP(pt, self->time, init_sequence[self->count].value); 
+			AWAIT_DELAY(self->time, init_sequence[self->count].value); 
 		} else {
 			self->buf[0] = init_sequence[self->count].value; 
-			PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, init_sequence[self->count].reg, SEEK_SET); 
-			PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
+			IO_SEEK(self->dev, init_sequence[self->count].reg, SEEK_SET); 
+			IO_WRITE(self->dev, self->buf, 1); 
 		}
 	}
 	/*
@@ -298,7 +297,7 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_USER_CTRL, SEEK_SET); 
 	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
 	*/
-	PT_ASYNC_END(pt, self->dev, MPU6050_IO_TIMEOUT); 
+	IO_CLOSE(self->dev); 
 	
 	self->state |= MPU6050_STATE_INITIALIZED; 
 	
@@ -306,12 +305,12 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 	
 	while(1){
 		//self->time = timestamp_now(); 
-		PT_ASYNC_BEGIN(pt, self->dev, MPU6050_IO_TIMEOUT); 
+		IO_OPEN(self->dev); 
 		
 		uint8_t regs[] = { MPU6050_RA_ACCEL_XOUT_H, MPU6050_RA_GYRO_XOUT_H }; 
 		for(self->count = 0; self->count < 2; self->count ++){
-			PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, regs[self->count], SEEK_SET); 
-			PT_ASYNC_READ(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 6); 
+			IO_SEEK(self->dev, regs[self->count], SEEK_SET); 
+			IO_READ(self->dev, self->buf, 6); 
 			STORE_VEC3_16((self->raw + (self->count * 3))); 
 		}
 		/*
@@ -319,7 +318,7 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 		PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 6); 
 		STORE_VEC3_16(self->raw_gyr); 
 		*/
-		PT_ASYNC_END(pt, self->dev, MPU6050_IO_TIMEOUT); 
+		IO_CLOSE(self->dev); 
 		/*
 		static timestamp_t tfps = 0; 
 		static int fps = 0; 
@@ -331,7 +330,6 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 		*/
 		//TIMEOUT(10000); 
 		
-		PT_YIELD(pt); 
 		//printf("MPU: %d %d %d %d %d %d\n", self->raw_acc[0], self->raw_acc[1], self->raw_acc[2], 
 		//	self->raw_gyr[0], self->raw_gyr[1], self->raw_gyr[2]); 
 			
@@ -373,15 +371,23 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 		// limit to 10ms between requests
 	}
 	
-	PT_END(pt); 
+	ASYNC_END(); 
 }
 
+PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)); 
+PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
+	struct mpu6050 *self = container_of(kthread, struct mpu6050, kthread); 
+	
+	PT_BEGIN(pt); 
+	PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(mpu6050_t, task, 0, self) != ASYNC_ENDED); 
+	PT_END(pt); 
+}
 
 void mpu6050_init(struct mpu6050 *self, io_dev_t dev) {
 	self->dev = dev; 
 	self->state = 0; 
 	
-	libk_create_thread(&self->thread, _mpu6050_thread, "mpu6050"); 
+	libk_create_thread(&self->kthread, _mpu6050_thread, "mpu6050"); 
 	
 	/*PT_INIT(&self->uthread); // update
 	PT_INIT(&self->rthread); // read
@@ -390,7 +396,7 @@ void mpu6050_init(struct mpu6050 *self, io_dev_t dev) {
 }
 
 void mpu6050_deinit(struct mpu6050 *self){
-	libk_unlink_thread(&self->thread);
+	libk_unlink_thread(&self->kthread);
 }
 
 /*

@@ -92,47 +92,47 @@
 
 #define HMC_IO_TIMEOUT 500000
 
-PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)); 
-PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
-	struct hmc5883l *self = container_of(kthread, struct hmc5883l, thread); 
+typedef struct hmc5883l hmc5883l_t; 
+
+static ASYNC(hmc5883l_t, task){
 	
-	PT_BEGIN(pt); 
+	ASYNC_BEGIN(); 
 	
 	// wait for the compass to start
-	PT_SLEEP(pt, self->time, 50000L); 
+	AWAIT_DELAY(self->time, 50000L); 
 	
-	PT_ASYNC_BEGIN(pt, self->dev, HMC_IO_TIMEOUT); 
+	IO_OPEN(self->dev); 
 	
 	self->buf[0] = HMC5883L_NUM_SAMPLES4 | HMC5883L_RATE30; 
-	PT_ASYNC_SEEK(pt, self->dev, HMC_IO_TIMEOUT, HMC5883L_CONFREGA, SEEK_SET); 
-	PT_ASYNC_WRITE(pt, self->dev, HMC_IO_TIMEOUT, self->buf, 1);
+	IO_SEEK(self->dev, HMC5883L_CONFREGA, SEEK_SET); 
+	IO_WRITE(self->dev, self->buf, 1);
 	
 	self->buf[0] = HMC5883L_SCALE << 5; 
-	PT_ASYNC_SEEK(pt, self->dev, HMC_IO_TIMEOUT, HMC5883L_CONFREGB, SEEK_SET); 
-	PT_ASYNC_WRITE(pt, self->dev, HMC_IO_TIMEOUT, self->buf, 1);
+	IO_SEEK(self->dev, HMC5883L_CONFREGB, SEEK_SET); 
+	IO_WRITE(self->dev, self->buf, 1);
 	
 	self->buf[0] = HMC5883L_MEASUREMODE; 
-	PT_ASYNC_SEEK(pt, self->dev, HMC_IO_TIMEOUT, HMC5883L_MODEREG, SEEK_SET); 
-	PT_ASYNC_WRITE(pt, self->dev, HMC_IO_TIMEOUT, self->buf, 1);
+	IO_SEEK(self->dev, HMC5883L_MODEREG, SEEK_SET); 
+	IO_WRITE(self->dev, self->buf, 1);
 	
 	// TODO: requires stop between write address and read
 	//IO_READ(pt, &self->tr, self->dev, HMC5883L_REG_IDA, self->buf, 3); 
 	//self->sensor_id = READ_INT24(self->buf); 
 	
-	PT_ASYNC_END(pt, self->dev, HMC_IO_TIMEOUT); 
+	IO_CLOSE(self->dev); 
 	
-	PT_SLEEP(pt, self->time, 7000L); 
+	AWAIT_DELAY(self->time, 7000L); 
 	
 	self->status |= HMC5883L_STATUS_READY; 
 	
 	while(1){
-		PT_ASYNC_BEGIN(pt, self->dev, HMC_IO_TIMEOUT); 
+		IO_OPEN(self->dev); 
 		
-		PT_ASYNC_SEEK(pt, self->dev, HMC_IO_TIMEOUT, HMC5883L_DATAREGBEGIN, SEEK_SET); 
-		PT_ASYNC_READ(pt, self->dev, HMC_IO_TIMEOUT, self->buf, 1);
+		IO_SEEK(self->dev, HMC5883L_DATAREGBEGIN, SEEK_SET); 
+		IO_READ(self->dev, self->buf, 6);
 		STORE_VEC3_16(self->raw_mag); 
 		
-		PT_ASYNC_END(pt, self->dev, HMC_IO_TIMEOUT); 
+		IO_CLOSE(self->dev); 
 	/*
 		static timestamp_t tfps = 0; 
 		static int fps = 0; 
@@ -144,12 +144,21 @@ PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
 		*/
 		//TIMEOUT(10000); 
 		
-		PT_YIELD(pt); 
 		//printf("HMC: %d %d %d\n", self->raw_mag[0], self->raw_mag[1], self->raw_mag[2]); 
 		
 		//TIMEOUT(10000L);
 	}
 	
+	ASYNC_END(); 
+}
+
+
+PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)); 
+PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
+	struct hmc5883l *self = container_of(kthread, struct hmc5883l, kthread); 
+	
+	PT_BEGIN(pt); 
+	PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(hmc5883l_t, task, 0, self) != ASYNC_ENDED); 
 	PT_END(pt); 
 }
 
@@ -157,7 +166,7 @@ void hmc5883l_init(struct hmc5883l *self, io_dev_t i2c) {
 	self->dev = i2c;
 	self->status = 0; 
 	
-	libk_create_thread(&self->thread, _hmc5883l_thread, "hmc5883l"); 
+	libk_create_thread(&self->kthread, _hmc5883l_thread, "hmc5883l"); 
 	
 	switch(HMC5883L_SCALE) {
 		case HMC5883L_SCALE088: 

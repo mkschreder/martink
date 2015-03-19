@@ -44,7 +44,8 @@ struct bmp085 {
 	int32_t ut, up; 
 	uint8_t buf[4]; // i2c buffer
 	
-	struct libk_thread thread; 
+	struct libk_thread kthread; 
+	struct async_task task; 
 	int 	count; 
 	timestamp_t time; 
 	uint8_t status; 

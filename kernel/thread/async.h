@@ -6,7 +6,15 @@
 #define ASYNC_ENDED   3
 
 typedef char async_return_t; 
+typedef uint8_t async_mutex_t; 
 
+#define ASYNC_MUTEX_INIT(mutex, max) (mutex) = max
+#define ASYNC_MUTEX_LOCK(mutex) do { AWAIT(mutex); --(mutex); } while(0)
+#define ASYNC_MUTEX_UNLOCK(mutex) (mutex)++
+
+#define AWAIT_DELAY(var, time_us) { var = timestamp_from_now_us(time_us); AWAIT(timestamp_expired(var)); }
+
+#define ASYNC_PROTOTYPE(object_type, task_name, ...) async_return_t __##object_type##_##task_name##__(struct async_task *parent, object_type *self, ##__VA_ARGS__)
 
 #ifdef __cplusplus
 
@@ -26,6 +34,8 @@ struct async_task {
 
 //#define ASYNC_INVOKE_ONCE(object_type, task_name, parent, ...) __##object_type##_##task_name##__(parent, __VA_ARGS__)
 
+
+
 #else
 /*****************
 ** C implementation
@@ -38,12 +48,11 @@ struct async_task {
 
 #define ASYNC_INIT(task)  do { (task)->parent = 0; LC_INIT((task)->lc); } while(0)
 
-#define ASYNC_DECL(task, ...) async_return_t __##object_type##_##task_name##__(struct async_task *parent, object_type *self, ##__VA_ARGS__)
-
 #define ASYNC(object_type, task_name, ...) async_return_t __##object_type##_##task_name##__(struct async_task *parent, object_type *self, ##__VA_ARGS__){ \
 	struct async_task *_async = &self->task_name; \
 
 #define ASYNC_INVOKE_ONCE(object_type, task_name, parent, ...) __##object_type##_##task_name##__(parent, __VA_ARGS__)
+
 #define AWAIT_TASK(object_type, task_name, ...) AWAIT(((__##object_type##_##task_name##__(_async, __VA_ARGS__)) == ASYNC_ENDED))
 
 #endif

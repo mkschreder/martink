@@ -45,7 +45,8 @@ struct hmc5883l {
 	uint8_t status; 
 	uint32_t sensor_id; 
 	
-	struct libk_thread thread; 
+	struct libk_thread kthread; 
+	struct async_task task; 
 };
 
 //functions

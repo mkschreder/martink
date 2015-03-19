@@ -7,6 +7,7 @@
 
 typedef char async_return_t; 
 
+
 #ifdef __cplusplus
 
 struct async_task {
@@ -19,6 +20,7 @@ struct async_task {
 
 #define ASYNC(object_type, task_name, ...) async_return_t object_type::task_name(struct async_task *parent, ##__VA_ARGS__){ \
 	struct async_task *_async = &this->__##task_name##__; 
+
 
 #define AWAIT_TASK(task, ...) AWAIT(((task(_async, __VA_ARGS__)) == ASYNC_ENDED))
 
@@ -74,3 +76,7 @@ struct async_task {
 	LC_SET(_async->lc); \
 	if(ASYNC_YIELD_FLAG == 0) return ASYNC_WAITING;\
 } while(0)
+
+#define ASYNC_MUTEX_INIT(mutex, max) (mutex) = max
+#define ASYNC_MUTEX_LOCK(mutex) do { AWAIT(mutex); --(mutex); } while(0)
+#define ASYNC_MUTEX_UNLOCK(mutex) (mutex)++

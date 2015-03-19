@@ -16,88 +16,89 @@ enum {
 	BDEV_STATE_OPEN
 }; 
 
-struct bdev {
+typedef struct bdev {
 	struct io_device io; 
+	ssize_t size; 
 	int tick;
-};
+} bdev_t;
 
 void bdev_init(struct bdev *self){
 	io_init(&self->io); 
 }
 
-PT_THREAD(bdev_open_async(struct pt *pt, io_dev_t dev)){
-	struct bdev *self = container_of(dev, struct bdev, io); 
+static ASYNC(io_device_t, open){
+	struct bdev *dev = container_of(self, struct bdev, io); 
 
-	PT_BEGIN(pt); 
-	for(self->tick = 10; self->tick > 0; self->tick--){
+	ASYNC_BEGIN(); 
+	// here lock mutex for open/close for exclusive access
+	// ...
+	
+	for(dev->tick = 10; dev->tick > 0; dev->tick--){
 		printf("opening\n"); 
-		PT_YIELD(pt); 
+		ASYNC_YIELD(); 
 	}
 	printf("bdev open done\n"); 
 	
-	PT_END(pt); 
+	ASYNC_END(); 
 }
 
-PT_THREAD(bdev_close_async(struct pt *pt, io_dev_t dev)){
-	struct bdev *self = container_of(dev, struct bdev, io); 
+static ASYNC(io_device_t, close){
+	struct bdev *dev = container_of(self, struct bdev, io); 
 	
-	PT_BEGIN(pt); 
-	for(self->tick = 10; self->tick > 0; self->tick--){
-		PT_YIELD(pt); 
+	ASYNC_BEGIN(); 
+	for(dev->tick = 10; dev->tick > 0; dev->tick--){
+		ASYNC_YIELD(); 
 	}
 	printf("bdev close done\n"); 
-	PT_END(pt); 
+	ASYNC_END(); 
 }
 
-PT_THREAD(bdev_write_async(struct pt *pt, io_dev_t dev, const uint8_t *data, ssize_t data_size)){
-	struct bdev *self = container_of(dev, struct bdev, io); 
-	int count = 0; 
-	if(data_size >= BDEV_PACKET_SIZE) count = BDEV_PACKET_SIZE; 
-	else count = data_size; 
+static ASYNC(io_device_t, write, const uint8_t *data, ssize_t data_size)){
+	struct bdev *dev = container_of(self, struct bdev, io); 
+	if(data_size >= BDEV_PACKET_SIZE) data_size = BDEV_PACKET_SIZE; 
 	
-	count = 2; 
+	ASYNC_BEGIN(); 
 	
-	PT_BEGIN(pt); 
-	while(1){
-		
-		for(int c = 0; c < count; c++){
+	dev->size = data_size; 
+	
+	while(dev->size){
+		for(int c = 0; c < data_size && dev->size; c++, dev->size--){
 			printf("%c", data[c]); 
 		}
 		printf("\n"); 
 		
-		if(_io_progress(&self->io, count) == 0) break; 
-		
-		PT_YIELD(pt); 
+		ASYNC_YIELD(); 
 	}
 	printf("bdev write done\n"); 
-	PT_END(pt); 
+	
+	ASYNC_END(); 
 }
 
-PT_THREAD(bdev_read_async(struct pt *pt, io_dev_t dev, uint8_t *data, ssize_t data_size)){
-	PT_BEGIN(pt); 
-	PT_END(pt); 
+static ASYNC(io_device_t, read, uint8_t *data, ssize_t data_size)){
+	ASYNC_BEGIN(); 
+	ASYNC_END(); 
 }
 
-PT_THREAD(bdev_seek_async(struct pt *pt, io_dev_t dev, ssize_t ofs, int whence)){
-	PT_BEGIN(pt); 
-	PT_END(pt); 
+static ASYNC(io_device_t, seek, ssize_t ofs, int whence)){
+	ASYNC_BEGIN(); 
+	ASYNC_END(); 
 }
 
-PT_THREAD(bdev_ioctl_async(struct pt *pt, io_dev_t dev, ioctl_req_t req, ...)){
-	PT_BEGIN(pt); 
-	PT_END(pt); 
+static ASYNC(io_device_t, ioctl, ioctl_req_t req, ...)){
+	ASYNC_BEGIN(); 
+	ASYNC_END(); 
 }
 
 io_dev_t bdev_get_io_interface(struct bdev *self){
 	static struct io_device_ops _api; 
 	if(!self->io.api){
 		_api = (struct io_device_ops){
-			.open = bdev_open_async, 
-			.close = bdev_close_async, 
-			.read = bdev_read_async, 
-			.write = bdev_write_async, 
-			.seek = bdev_seek_async, 
-			.ioctl = bdev_ioctl_async
+			.open = __io_device_t_open__, 
+			.close = __io_device_t_close__, 
+			.read = __io_device_t_read__, 
+			.write = __io_device_t_write__, 
+			.seek = __io_device_t_seek__, 
+			.ioctl = __io_device_t_ioctl__
 		};
 	}
 	self->io.api = &_api; 
@@ -107,35 +108,44 @@ io_dev_t bdev_get_io_interface(struct bdev *self){
 struct bdev bd; 
 static int _run = 2; 
 
-LIBK_THREAD(main_thread){
+typedef struct application {
+	struct async_task main; 
+} app_t; 
+
+void app_init(struct application *self){
+	ASYNC_INIT(&self->main); 
+}
+
+ASYNC(app_t, main){
 	io_dev_t io = bdev_get_io_interface(&bd); 
 	
 	static char buffer[32]; 
 	sprintf(buffer, "Hello World!"); 
 	
-	PT_BEGIN(pt); 
+	ASYNC_BEGIN(); 
+	
 	printf("first wait open\n"); 
-	PT_ASYNC_BEGIN(pt, io, 1000);
+	AWAIT_TASK(io_device_t, open, io);
 	printf("first write\n"); 
-	PT_ASYNC_SEEK(pt, io, 100000, 100, SEEK_SET); 
-	if(io_error(io)){
+	AWAIT_TASK(io_device_t, seek, io, 100, SEEK_SET); 
+	/*if(io_error(io)){
 		printf("seek1 failed: %s\n", strerror(-io_error(io))); 
 		PT_ASYNC_END(pt, io, 1000);  
 		PT_EXIT(pt); 
-	}
-	PT_ASYNC_WRITE(pt, io, 100000, buffer, strlen(buffer)); 
-	if(io_error(io)){
+	}*/
+	AWAIT_TASK(io_device_t, write, io, buffer, strlen(buffer)); 
+	/*if(io_error(io)){
 		printf("Write1 failed: %s\n", strerror(-io_error(io))); 
 		PT_ASYNC_END(pt, io, 1000);  
 		PT_EXIT(pt); 
-	} 
+	} */
 	printf("writing some more\n"); 
-	PT_ASYNC_WRITE(pt, io, 100000, buffer, strlen(buffer)); 
-	PT_ASYNC_END(pt, io, 1000);  
+	AWAIT_TASK(io_device_t, write, io, buffer, strlen(buffer)); 
+	AWAIT_TASK(io_device_t, close, io);  
 	_run--; 
-	PT_END(pt); 
+	ASYNC_END(); 
 }
-
+/*
 LIBK_THREAD(second_thread){
 	io_dev_t io = bdev_get_io_interface(&bd); 
 	
@@ -154,15 +164,16 @@ LIBK_THREAD(second_thread){
 	_run--; 
 	PT_END(pt); 
 }
-
+*/
 int main(void){
 	printf("STARTING..\n"); 
 	printf("Size: %lu\n", sizeof(struct io_device) + sizeof(struct io_device_ops)); 
-	
+	struct application app; 
+	app_init(&app); 
 	bdev_init(&bd); 
 	
 	while(_run){
-		libk_schedule(); 
+		ASYNC_INVOKE_ONCE(app_t, main, 0, &app); 
 	}
 	
 	printf("Done\n"); 

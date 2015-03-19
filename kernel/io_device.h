@@ -20,7 +20,8 @@ struct io_device_ops {
 	async_return_t (*ioctl)(struct pt *pt, io_dev_t self, ioctl_req_t req, va_list va); 
 }; 
 
-struct io_device {
+typedef struct io_device {
+	struct async_task open, close, write, read, seek, ioctl; 
 	struct pt thread; 
 	struct pt *user_thread; 
 	ssize_t size; // bytes left to transfer
@@ -29,7 +30,7 @@ struct io_device {
 	int16_t error; 
 	timestamp_t timeout; 
 	struct io_device_ops *api; 
-}; 
+} io_device_t; 
 
 void io_init(struct io_device *self); 
 ssize_t _io_progress(struct io_device *self, ssize_t processed); 

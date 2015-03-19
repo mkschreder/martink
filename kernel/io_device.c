@@ -102,36 +102,8 @@ static int8_t _io_op(struct io_device *self, ssize_t size){
 	return -1; 
 }
 
-
-ASYNC(io_write(io_dev_t dev, const uint8_t *data, ssize_t size)){
-	struct io_device *self = dev; 
-	ssize_t offset = size - self->size; 
-	
-	if(self->user_thread != libk_current_thread()) {
-		self->error = -EACCES; 
-		return ASYNC_WAITING; 
-	}
-	
-	if(timestamp_expired(self->time)){
-		IO_DEBUG("timed out!\n"); 
-		self->error = -ETIMEDOUT; 
-		IO_SET_STATE(self, IO_STATE_OPEN); 
-		return ASYNC_ENDED; 
-	}
-	
-	ASYNC_BEGIN(&self->async_write); 
-	
-	self->time = timestamp_from_now_us(self->timeout); 
-	self->size = size; 
-	self->error = 0; 
-	
-	IO_SET_STATE(self, IO_STATE_PROGRESS); 
-	
-	AWAIT_TASK(self->api->write(&self->thread, dev, data + offset, size - offset)); 
-	
-	IO_SET_STATE(self, IO_STATE_OPEN); 
-	
-	ASYNC_END(); 
+ASYNC(io_device_t, io_write, const uint8_t *data, ssize_t size)){
+	return self->api->write(parent, self, data, size);
 }
 
 uint8_t io_write(io_dev_t dev, const uint8_t *data, ssize_t size){

@@ -4,7 +4,6 @@
 
 #include <kernel/thread.h>
 #include <kernel/dev/block.h>
-#include <block/block_device.h>
 
 #include "i2cblk.h"
 
@@ -17,6 +16,8 @@
 */
 #define I2CBLK_DEBUG(...) {} //printf(__VA_ARGS__) 
 
+#define I2CBLK_IO_TIMEOUT 500000
+
 enum {
 	I2CBLK_BAD, 
 	I2CBLK_READY, 
@@ -26,28 +27,33 @@ enum {
 	I2CBLK_FINISH
 }; 
 
-void i2cblk_init(struct i2c_block_device *self, block_dev_t i2c, uint8_t i2c_addr){
+void i2cblk_init(struct i2c_block_device *self, io_dev_t i2c, uint8_t i2c_addr){
 	self->i2c = i2c; 
 	self->i2c_addr = i2c_addr; 
 	self->flags = I2CBLK_IADDR8; 
-	self->state = I2CBLK_READY; 
 	self->cur = 0; 
-	block_device_init(&self->base); 
-	blk_transfer_init(&self->tr); 
+	io_init(&self->io); 
 	//libk_create_thread(&self->thread, _i2cblk_thread, "i2cblk"); 
 }
 
 
-static uint8_t _i2cblk_open(block_dev_t dev){
-	struct i2c_block_device *self = container_of(dev, struct i2c_block_device, api); 
-	//I2CBLK_DEBUG("I2CBLK: open\n"); 
-	return block_device_open(&self->base); 
+static PT_THREAD(_i2cblk_open(struct pt *pt, struct io_device *dev)){
+	struct i2c_block_device *self = container_of(dev, struct i2c_block_device, io); 
+	
+	PT_BEGIN(pt); 
+	
+	self->cur = 0; 
+	
+	PT_END(pt); 
 }
 
-static int8_t _i2cblk_close(block_dev_t dev){
-	struct i2c_block_device *self = container_of(dev, struct i2c_block_device, api); 
+static PT_THREAD(_i2cblk_close(struct pt *pt, struct io_device *dev)){
+	//struct i2c_block_device *self = container_of(dev, struct i2c_block_device, io); 
+	(void)dev; 
 	I2CBLK_DEBUG("I2CBLK: close\n"); 
-	return block_device_close(&self->base); 
+	
+	PT_BEGIN(pt); 
+	PT_END(pt); 
 }
 
 
@@ -65,134 +71,93 @@ static void _i2cblk_write_address(struct i2c_block_device *dev){
 	}
 }
 
-static ssize_t _i2cblk_write(block_dev_t dev, const uint8_t *data, ssize_t data_size){
-	struct i2c_block_device *self = container_of(dev, struct i2c_block_device, api); 
-	if(!block_device_can_access(&self->base)) return -EACCES; 
+static PT_THREAD(_i2cblk_write(struct pt *pt, struct io_device *dev, const uint8_t *data, ssize_t data_size)){
+	struct i2c_block_device *self = container_of(dev, struct i2c_block_device, io); 
 	
 	uint8_t addr_size = 0; 
 	addr_size = self->flags & I2CBLK_IADDR_BITS; 
 	data_size = (data_size > (I2C_BLOCK_BUFFER_SIZE - addr_size))?(I2C_BLOCK_BUFFER_SIZE - addr_size):data_size; 
 
-	switch(self->state){
-		case I2CBLK_READY:  
-			if(!io_begin(&self->tr, self->i2c)) return -EAGAIN; 
-			
-			I2CBLK_DEBUG("I2CBLK: startwrite\n"); 
-			
-			// copy data and address into our work buffer
-			_i2cblk_write_address(self); 
-			
-			memcpy(self->buffer + addr_size, data, data_size); 
-			
-			// send stop after the write
-			blk_ioctl(self->i2c, I2C_SEND_STOP, 1); 
-			
-			self->state = I2CBLK_WRITE; 
-			// fall through
-		case I2CBLK_WRITE: 
-			
-			if(!io_write(&self->tr, self->i2c, self->i2c_addr, self->buffer, data_size + addr_size)) return -EAGAIN; 
-			
-			//I2CBLK_DEBUG("I2CBLK: writedone\n"); 
-			//io_end(&self->tr, self->i2c); 
-			
-			self->state = I2CBLK_FINISH; 
-			
-		case I2CBLK_FINISH: 
-			// need to wait until device is released
-			I2CBLK_DEBUG("I2CBLK: writedone\n"); 
-			if(!io_end(&self->tr, self->i2c)) return -EAGAIN; 
-			self->state = I2CBLK_READY; 
-			
-			return data_size; 
+	PT_BEGIN(pt); 
+	
+	PT_ASYNC_BEGIN(pt, self->i2c, I2CBLK_IO_TIMEOUT); 
+	
+	I2CBLK_DEBUG("I2CBLK: startwrite\n"); 
+	
+	while(1){
+		// copy data and address into our work buffer
+		_i2cblk_write_address(self); 
+		
+		memcpy(self->buffer + addr_size, data, data_size); 
+	
+		// send stop after the write
+		PT_ASYNC_IOCTL(pt, self->i2c, I2CBLK_IO_TIMEOUT, I2C_SEND_STOP, 1); 
+		
+		PT_ASYNC_SEEK(pt, self->i2c, I2CBLK_IO_TIMEOUT, self->i2c_addr, SEEK_SET); 
+		PT_ASYNC_WRITE(pt, self->i2c, I2CBLK_IO_TIMEOUT, self->buffer, data_size + addr_size); 
+		
+		self->cur += data_size; 
+		
+		if(_io_progress(&self->io, data_size) == 0){
+			break; 
+		}
+		
+		PT_YIELD(pt); 
 	}
-	// never get here
-	return -EAGAIN; 
+	
+	I2CBLK_DEBUG("I2CBLK: writedone\n"); 
+			
+	PT_ASYNC_END(pt, self->i2c, I2CBLK_IO_TIMEOUT); 
+	
+	PT_END(pt);  
 }
 
-static ssize_t _i2cblk_read(block_dev_t dev, uint8_t *data, ssize_t data_size){
-	struct i2c_block_device *self = container_of(dev, struct i2c_block_device, api); 
-	if(!block_device_can_access(&self->base)) return -EACCES; 
+static PT_THREAD(_i2cblk_read(struct pt *pt, struct io_device *dev, uint8_t *data, ssize_t data_size)){
+	struct i2c_block_device *self = container_of(dev, struct i2c_block_device, io); 
 	
-	uint8_t addr_size = 0; 
-	
+	uint8_t addr_size = self->flags & I2CBLK_IADDR_BITS; 
 	data_size = (data_size > (I2C_BLOCK_BUFFER_SIZE))?(I2C_BLOCK_BUFFER_SIZE):data_size; 
 	
-	switch(self->state){
-		case I2CBLK_READY: 
-			if(!io_begin(&self->tr, self->i2c)) return -EAGAIN; 
-			
-			I2CBLK_DEBUG("I2CBLK: startread\n"); 
-			
-			// prepare to write address 
-			_i2cblk_write_address(self); 
-			addr_size = self->flags & I2CBLK_IADDR_BITS; 
-			 
-			// disable sending stop after this write (so we can do repeat start)
-			blk_ioctl(self->i2c, I2C_SEND_STOP, 0); 
-			
-			self->state = I2CBLK_READ_SEND_ADDRESS; 
-			// fall through
-		case I2CBLK_READ_SEND_ADDRESS: 
-			addr_size = self->flags & I2CBLK_IADDR_BITS; 
-			
-			//I2CBLK_DEBUG("I2CBLK: sendadres\n"); 
-			
-			if(!io_write(&self->tr, self->i2c, self->i2c_addr, self->buffer, addr_size)) return -EAGAIN; 
-			
-			I2CBLK_DEBUG("I2CBLK: addrsent\n"); 
-			
-			// send stop after the read
-			blk_ioctl(self->i2c, I2C_SEND_STOP, 1); 
-			
-			self->state = I2CBLK_READ; 
-			// fall through
-		case I2CBLK_READ: 
-			
-			if(!io_read(&self->tr, self->i2c, self->i2c_addr, self->buffer, data_size)) return -EAGAIN; 
-			
-			memcpy(data, self->buffer, data_size); 
-			
-			self->state = I2CBLK_FINISH;
-			// fall through
-		case I2CBLK_FINISH: 
-			//I2CBLK_DEBUG("I2CBLK: readdone\n"); 
-			
-			if(!io_end(&self->tr, self->i2c)) return -EAGAIN; 
-			I2CBLK_DEBUG("I2CBLK: readdone\n"); 
-			
-			self->state = I2CBLK_READY; 
-			
-			return data_size; 
+	PT_BEGIN(pt); 
+	
+	while(1){
+		PT_ASYNC_BEGIN(pt, self->i2c, I2CBLK_IO_TIMEOUT); 
+	
+		I2CBLK_DEBUG("I2CBLK: startread\n"); 
+	
+		// prepare to write address 
+		_i2cblk_write_address(self); 
+		 
+		// disable sending stop after this write (so we can do repeat start)
+		PT_ASYNC_IOCTL(pt, self->i2c, I2CBLK_IO_TIMEOUT, I2C_SEND_STOP, 0); 
+		
+		PT_ASYNC_SEEK(pt, self->i2c, I2CBLK_IO_TIMEOUT, self->i2c_addr, SEEK_SET); 
+		PT_ASYNC_WRITE(pt, self->i2c, I2CBLK_IO_TIMEOUT, self->buffer, addr_size); 
+				
+		I2CBLK_DEBUG("I2CBLK: addrsent\n"); 
+		
+		// read the data and send stop after the read
+		PT_ASYNC_IOCTL(pt, self->i2c, I2CBLK_IO_TIMEOUT, I2C_SEND_STOP, 1); 
+		PT_ASYNC_READ(pt, self->i2c, I2CBLK_IO_TIMEOUT, self->buffer, data_size); 
+		
+		PT_ASYNC_END(pt, self->i2c, I2CBLK_IO_TIMEOUT); 
+		
+		memcpy(data, self->buffer, data_size); 
+		self->cur += data_size; 
+		
+		if(_io_progress(&self->io, data_size) == 0){
+			break; 
+		}
+		PT_YIELD(pt); 
 	}
 	
-	return -EAGAIN; 
-}
-/*
-static int8_t _i2cblk_get_geometry(block_dev_t dev, struct block_device_geometry *geom){
-	(void)dev; 
-	//struct i2c_block_device *self = container_of(dev, struct i2c_block_device, api); 
-	geom->page_size = 1; // i2c devices always byte addressable
-	return 0; 
-}
-
-static uint8_t _i2cblk_get_status(block_dev_t dev, blkdev_status_t flags){
-	struct i2c_block_device *self = container_of(dev, struct i2c_block_device, api); 
-	uint8_t i2cbusy = i2cdev_status(self->i2c_id, I2CDEV_BUSY);
-	uint8_t f = 0;  
+	I2CBLK_DEBUG("I2CBLK: readdone\n"); 
 	
-	//if(self->flags & I2CBLK_STATUS_WRITE_PROGRESS && !i2cbusy)
-	//	self->flags &= ~I2CBLK_STATUS_WRITE_PROGRESS; 
-		
-	if((flags & BLKDEV_BUSY) && (i2cbusy || self->flags & I2CBLK_STATUS_READ_PROGRESS))
-		f |= BLKDEV_BUSY; 
-
-	return (f & flags) == flags; 
+	PT_END(pt); 
 }
-*/
-static ssize_t _i2cblk_seek(block_dev_t dev, ssize_t ofs, int whence){
-	struct i2c_block_device *self = container_of(dev, struct i2c_block_device, api); 
-	if(!block_device_can_access(&self->base)) return -EACCES; 
+
+static PT_THREAD(_i2cblk_seek(struct pt *pt, struct io_device *dev, ssize_t ofs, int whence)){
+	struct i2c_block_device *self = container_of(dev, struct i2c_block_device, io); 
 	
 	switch(whence){
 		case SEEK_SET: self->cur = ofs; break; 
@@ -206,39 +171,40 @@ static ssize_t _i2cblk_seek(block_dev_t dev, ssize_t ofs, int whence){
 		} break; 
 		case SEEK_CUR: self->cur += ofs; break; 
 	}
-	return self->cur; 
+	
+	PT_BEGIN(pt); 
+	PT_END(pt); 
 }
 
 
-static int16_t _i2cblk_ioctl(block_dev_t dev, ioctl_req_t req, ...){
-	struct i2c_block_device *self = container_of(dev, struct i2c_block_device, api); 
-	if(!block_device_can_access(&self->base)) return -EACCES; 
-	
+static PT_THREAD(_i2cblk_ioctl(struct pt *pt, struct io_device *dev, ioctl_req_t req, va_list vl)){
+	//struct i2c_block_device *self = container_of(dev, struct i2c_block_device, io); 
+	(void)vl; 
+	(void)dev; 
 	switch(req) {
 		case I2CBLK_SET_AW: 
 			I2CBLK_DEBUG("I2CBLK: aw not implemented!\n"); 
 			break; 
-		default: 
-			return -EINVAL; 
 	}
-	return -1; 
+	
+	PT_BEGIN(pt); 
+	PT_END(pt); 
 }
 
-block_dev_t i2cblk_get_interface(struct i2c_block_device *self){
-	static struct block_device_ops _if;
-	static struct block_device_ops *i = 0; 
+io_dev_t i2cblk_get_interface(struct i2c_block_device *self){
+	static struct io_device_ops _if;
 	
-	if(!i){
+	if(!self->io.api){
 		_if.open = _i2cblk_open; 
 		_if.close = _i2cblk_close; 
 		_if.write = _i2cblk_write; 
 		_if.read = _i2cblk_read; 
 		_if.ioctl = _i2cblk_ioctl; 
 		_if.seek = _i2cblk_seek; 
-		i = &_if; 
+		self->io.api = &_if; 
 	}
-	self->api = i; 
-	return &self->api; 
+	
+	return &self->io; 
 }
 
 

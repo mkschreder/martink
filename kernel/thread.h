@@ -12,9 +12,11 @@ struct libk_thread {
 	char (*proc)(struct libk_thread *kthread, struct pt *self); 
 	struct pt thread; 
 	// debug
+	#ifdef LIBK_DEBUG_THREADS
 	long unsigned int time; 
 	long unsigned int framecount, timecount; 
 	const char *name; 
+	#endif
 }; 
 
 void libk_create_thread(struct libk_thread *self, char (*proc)(struct libk_thread *kthread, struct pt *self), const char *name); 
@@ -25,6 +27,8 @@ void libk_unlink_thread(struct libk_thread *self);
 //void libk_schedule_thread(struct pt *thread, void (*proc)(void *arg), void *arg); 
 /// returns currently running thread, or 0 if we are outside of any thread context
 struct pt *libk_current_thread(void); 
+/// does a scheduling pass. Should only be called from top level code and never a thread. 
+uint8_t libk_schedule(void); 
 /// runs main loop. Never returns. 
 void libk_run(void); 
 
@@ -44,6 +48,7 @@ void libk_print_info(void);
 /// thread with the run queue. 
 #define LIBK_THREAD(func) _LIBK_THREAD(__COUNTER__, func)
 
+#define PT_SLEEP(pt, var, time_us) { var = timestamp_from_now_us(time_us); PT_WAIT_UNTIL(pt, timestamp_expired(var)); }
 
 #ifdef __cplusplus
 }

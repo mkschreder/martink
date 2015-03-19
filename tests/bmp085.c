@@ -3,22 +3,20 @@
 #include "../arch/soc.h"
 #include "../kernel/dev/block.h"
 #include <kernel/thread.h>
+#include "../kernel/io_device.c"
 #include "../block/rd.c"
 #include "../kernel/thread.c"
 #include "../arch/native/time.c"
 #include "../arch/time.c"
-#include "../kernel/transfer.c"
 #include "../block/i2cblk.c"
 #include "../sensors/bmp085.c"
-#include "../block/block_device.c"
 
 #define BLOCK_SIZE 32
 #define BLOCK_COUNT 2
 
 struct app {
 	struct bmp085 bmp, bmp2; 
-	block_dev_t rd; 
-	struct block_transfer tr; 
+	io_dev_t rd; 
 	uint8_t buffer[BLOCK_SIZE * BLOCK_COUNT]; 
 }; 
 

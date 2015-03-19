@@ -35,7 +35,6 @@
 "C" {
 #endif
 
-#include <kernel/transfer.h>
 #include <kernel/thread.h>
 #include <kernel/dev/i2c.h>
 
@@ -51,12 +50,10 @@ enum {
 }; 
 
 struct mpu6050{
-	block_dev_t dev;
-	struct block_transfer tr; 
+	io_dev_t dev;
 	
 	// cached data
-	int16_t raw_acc[3]; 
-	int16_t raw_gyr[3]; 
+	int16_t raw[6]; 
 	
 	// threads
 	struct libk_thread thread; 
@@ -64,7 +61,7 @@ struct mpu6050{
 	uint8_t buf[6]; // i2c buffer
 	
 	timestamp_t time; // for time keeping
-	
+	unsigned int count; 
 	uint8_t state; // status 
 }; 
 
@@ -73,7 +70,7 @@ struct mpu6050{
 #define MPU6050_GETATTITUDE 0
 
 //functions
-void mpu6050_init(struct mpu6050 *self, block_dev_t device);
+void mpu6050_init(struct mpu6050 *self, io_dev_t device);
 void mpu6050_deinit(struct mpu6050 *self); 
 //void mpu6050_update(struct mpu6050 *self); 
 uint8_t mpu6050_probe(struct mpu6050 *self);

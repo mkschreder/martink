@@ -32,11 +32,9 @@ extern "C" {
 
 #include <kernel/thread.h>
 #include <kernel/dev/i2c.h>
-#include <kernel/transfer.h>
 
 struct hmc5883l {
-	block_dev_t dev;
-	struct block_transfer tr; 
+	io_dev_t dev;
 	
 	uint8_t buf[6]; 
 	
@@ -51,7 +49,7 @@ struct hmc5883l {
 };
 
 //functions
-void hmc5883l_init(struct hmc5883l *self, block_dev_t dev);
+void hmc5883l_init(struct hmc5883l *self, io_dev_t dev);
 void hmc5883l_readRawMag(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, int16_t *mzraw);
 void hmc5883l_read_adjusted(struct hmc5883l *self, float *mx, float *my, float *mz);
 void hmc5883l_convertMag(struct hmc5883l *self, 

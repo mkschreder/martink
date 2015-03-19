@@ -14,22 +14,16 @@
 #define I2CBLK_SET_AW 2
 
 #include <kernel/dev/block.h>
-#include <kernel/transfer.h>
-#include <block/block_device.h>
+#include <kernel/io_device.h>
 
 struct i2c_block_device {
-	block_dev_t i2c; // i2c block device for this device
+	io_dev_t i2c; // i2c block device for this device
 	uint8_t i2c_addr; // address of the i2c device on i2c bus
-	struct block_transfer tr; 
 	ssize_t cur;  // current file position
 	uint8_t buffer[I2C_BLOCK_BUFFER_SIZE]; 
-	uint8_t state; 
 	uint8_t flags; // block device flags
-	struct block_device base; 
-	struct block_device_ops *api; 
-	//struct libk_thread thread; 
-	//struct pt *user_thread; 
+	struct io_device io; // our base class
 }; 
 
-void i2cblk_init(struct i2c_block_device *self, block_dev_t i2c, uint8_t i2c_addr); 
-block_dev_t i2cblk_get_interface(struct i2c_block_device *self); 
+void i2cblk_init(struct i2c_block_device *self, io_dev_t i2c, uint8_t i2c_addr); 
+io_dev_t i2cblk_get_interface(struct i2c_block_device *self); 

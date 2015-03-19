@@ -156,11 +156,11 @@ static PT_THREAD(_at24_thread(struct libk_thread *kthread, struct pt *pt)){
 	PT_END(pt); 
 }
 */
-void at24_init(struct at24 *self, block_dev_t i2c)
+void at24_init(struct at24 *self, io_dev_t i2c)
 {
 	i2cblk_init(&self->i2cblk, i2c, EEPROM_ADDR); 
-	self->i2cdev = i2cblk_get_interface(&self->i2cblk); 
-	blk_ioctl(self->i2cdev, I2CBLK_SET_AW, 2); // set 16 bit address width
+	self->dev = i2cblk_get_interface(&self->i2cblk); 
+	//blk_ioctl(self->i2cdev, I2CBLK_SET_AW, 2); // set 16 bit address width
 	//blk_transfer_reset(&self->tr); 
 	//self->status = 0; 
 	//self->op = (struct at24_op){0}; 
@@ -248,7 +248,9 @@ int8_t at24_get_geometry(struct at24 *self, struct block_device_geometry *geom){
 	return 0; 
 }
 */
-static uint8_t _at24_open(block_dev_t self){
+
+/*
+static _at24_open(block_dev_t self){
 	struct at24 *at = container_of(self, struct at24, dev); 
 	return blk_open(at->i2cdev); 
 }
@@ -290,6 +292,7 @@ static ssize_t _at24_read(block_dev_t self, uint8_t *data, ssize_t data_size){
 	struct at24 *at = container_of(self, struct at24, dev); 
 	return blk_read(at->i2cdev, data, data_size); 
 }
+*/
 /*
 static int8_t _at24_get_geometry(block_dev_t self, struct block_device_geometry *geom){
 	//struct at24 *at = container_of(self, struct at24, dev); 
@@ -300,6 +303,7 @@ static int8_t _at24_get_geometry(block_dev_t self, struct block_device_geometry 
 	return 0; 
 }
 */
+/*
 static int16_t _at24_ioctl(block_dev_t dev, ioctl_req_t req, ...){
 	(void)dev; 
 	(void)req; 
@@ -327,7 +331,7 @@ block_dev_t at24_get_block_device_interface(struct at24 *self){
 	self->dev = i; 
 	return &self->dev; 
 }
-
+*/
 /*
 /// waits until eeprom is ready and then waits until write is completed
 uint16_t at24_blocking_write(struct at24 *self, uint16_t addr, const uint8_t *buf, uint16_t count){

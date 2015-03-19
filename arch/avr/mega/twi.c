@@ -68,14 +68,16 @@ Revision Info:  $Id: twi_master.c 117 2010-06-24 20:21:28Z pieterconradie $
 #define I2C_DEBUG(...) {} //printf(__VA_ARGS__)
 
 struct avr_i2c_device {
+	struct io_device io; 
+	
 	uint8_t dev_id; 
 	volatile uint8_t addr; // current i2c address
 	volatile uint8_t buffer[AVR_I2C_BUFFER_SIZE]; 
-	volatile uint8_t cur; 
-	volatile uint8_t tr_size; 
+	volatile uint8_t cur; // current position in buffer
+	volatile uint8_t tr_size; // total size of pending transaction
 	volatile uint8_t status; 
-	struct block_device_ops *api; 
-	struct pt *user_thread; 
+	//struct block_device_ops *api; 
+	//struct pt *user_thread; 
 }; 
 
 static struct avr_i2c_device _device; 
@@ -200,6 +202,8 @@ int8_t avr_i2c_init(uint8_t dev_id) {
 	// only one twi interface for now
 	if(dev_id >= 1) return -1; 
 	
+	io_init(&_device.io); 
+	
 	// Initialise variable
 	_device.tr_size = 0;
 	_device.cur = 0; 
@@ -230,61 +234,40 @@ void avr_i2c_deinit(uint8_t dev_id){
 }
 
 
-static uint8_t _avr_i2c_open(block_dev_t dev){
-	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, api); 
-	if(_avr_i2c_busy(self->dev_id)) return 0; 
-	if(self->status & AVR_I2C_FLAG_LOCKED) return 0; 
+static PT_THREAD(_avr_i2c_open(struct pt *pt, struct io_device *dev)){
+	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, io); 
 	
-	I2C_DEBUG("I2C: open\n"); 
-	
-	self->status |= AVR_I2C_FLAG_LOCKED | AVR_I2C_FLAG_SEND_STOP; 
-	self->user_thread = libk_current_thread(); 
-	
-	return 1; 
+	PT_BEGIN(pt); 
+	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
+	PT_END(pt); 
 }
 
-static int8_t _avr_i2c_close(block_dev_t dev){
-	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, api); 
-	if(self->user_thread != libk_current_thread()) return 0; 
-	if(!(self->status & AVR_I2C_FLAG_LOCKED)) return 0; 
+static PT_THREAD(_avr_i2c_close(struct pt *pt, struct io_device *dev)){
+	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, io); 
 	
-	//_avr_i2c_stop(self); 
-	
+	PT_BEGIN(pt); 
+	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
 	I2C_DEBUG("I2C: close\n"); 
-	
-	self->status &= ~AVR_I2C_FLAG_LOCKED; 
-	self->user_thread = 0; 
-	
-	return 1; 
+	PT_END(pt); 
 }
 
-static ssize_t _avr_i2c_seek(block_dev_t dev, ssize_t pos, int whence){
-	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, api); 
-	if(self->user_thread != libk_current_thread()) return -EACCES; 
+static PT_THREAD(_avr_i2c_seek(struct pt *pt, struct io_device *dev, ssize_t pos, int whence)){
+	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, io); 
+	
+	PT_BEGIN(pt); 
+	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
 	(void)whence; 
 	
 	I2C_DEBUG("i2c: seek %d\n", pos); 
 	self->addr = pos; 
-	return self->addr; 
-	/*
-	switch(whence){
-		case SEEK_SET: self->addr = pos; return self->addr; 
-		case SEEK_CUR: self->addr += pos; return self->addr; 
-		default: 
-			return -1; 
-	}
-	return -1; */
+	PT_END(pt); 
 }
 
-static ssize_t _avr_i2c_write(block_dev_t dev, const uint8_t *data, ssize_t count){
-	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, api); 
-	if(self->user_thread != libk_current_thread()) return -EACCES; 
+static PT_THREAD(_avr_i2c_write(struct pt *pt, struct io_device *dev, const uint8_t *data, ssize_t count)){
+	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, io); 
 	
-	// all io is non blocking in libk!
-	if(_avr_i2c_busy(self->dev_id)) {
-		I2C_DEBUG("i2c: writebusy\n"); 
-		return -EWOULDBLOCK; 
-	}
+	PT_BEGIN(pt);
+	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
 	
 	// Copy address; clear R/~W bit in SLA+R/W address field
 	self->addr &= ~I2C_READ;
@@ -303,35 +286,20 @@ static ssize_t _avr_i2c_write(block_dev_t dev, const uint8_t *data, ssize_t coun
 	// Initiate a START condition; Interrupt enabled and flag cleared
 	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 	
-	// return number of bytes we have stashed for transmission
-	return count; 
+	// wait until the operation completes
+	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
+	
+	PT_END(pt); 
 }
 
-static ssize_t _avr_i2c_read(block_dev_t dev, uint8_t *data, ssize_t count){
-	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, api); 
-	if(self->user_thread != libk_current_thread()) return -EACCES; 
+static PT_THREAD(_avr_i2c_read(struct pt *pt, struct io_device *dev, uint8_t *data, ssize_t count)){
+	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, io); 
 	
-	// Wait for previous transaction to finish
-	if(_avr_i2c_busy(self->dev_id)) {
-		//I2C_DEBUG("i2cbusy\n"); 
-		return -EWOULDBLOCK; 
-	}
+	PT_BEGIN(pt); 
+	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
 	
-	// check if any data has been stored in the receive buffer and return it
-	if(self->status & AVR_I2C_FLAG_DATA_READY){
-		if(self->cur < count) count = self->cur; 
-		for(int c = 0; c < count; c++) data[c] = self->buffer[c]; 
-		I2C_DEBUG("I2C: readready: %x %d: ", self->addr, (int)count); 
-		for(int c = 0; c < count; c++) I2C_DEBUG("%x ", self->buffer[c]);
-		I2C_DEBUG("\n"); 
-		self->status &= ~AVR_I2C_FLAG_DATA_READY; 
-		
-		return count; 
-	}
-	
-	// Copy address; set R/~W bit in SLA+R/W address field
 	self->addr |= I2C_READ;
-	
+
 	if(count > AVR_I2C_BUFFER_SIZE) count = AVR_I2C_BUFFER_SIZE; 
 	self->tr_size = count;
 	self->cur = 0; 
@@ -341,61 +309,55 @@ static ssize_t _avr_i2c_read(block_dev_t dev, uint8_t *data, ssize_t count){
 	// Initiate a START condition; Interrupt enabled and flag cleared
 	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 	
-	// signal that user should call this function again
-	return -EAGAIN; 
-}
-/*
-uint8_t _avr_i2c_status(uint8_t dev_id, uint16_t flags){
-	if(dev_id >= 1) return 1; 
-	uint8_t ret = 0; 
-	// IF TWI Interrupt is enabled then the peripheral is busy
-	if(flags & I2CDEV_BUSY) ret |= (((TWCR & _BV(TWIE)) != 0) || (TWCR & _BV(TWSTO)))?1:0; 
-	return ret; 
-}*/
-
-static int16_t _avr_i2c_ioctl(block_dev_t dev, ioctl_req_t req, ...){
-	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, api); 
-	if(self->user_thread != libk_current_thread()) return -EACCES; 
+	// wait until the read is completed
+	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id)); 
 	
-	if(_avr_i2c_busy(self->dev_id)) return -EWOULDBLOCK;
+	// copy data to the supplied buffer
+	if(self->cur < count) count = self->cur; 
+	for(int c = 0; c < count; c++) data[c] = self->buffer[c]; 
+	I2C_DEBUG("I2C: readready: %x %d: ", self->addr, (int)count); 
+	for(int c = 0; c < count; c++) I2C_DEBUG("%x ", self->buffer[c]);
+	I2C_DEBUG("\n"); 
 	
-	switch(req) {
-		case I2C_SEND_STOP: {
-			va_list vl; 
-			va_start(vl, req); 
-			uint8_t en = va_arg(vl, int); 
-			va_end(vl); 
-			I2C_DEBUG("I2C: sendstop: %d\n", en); 
-			ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-				if(en)
-					self->status |= AVR_I2C_FLAG_SEND_STOP; 
-				else
-					self->status &= ~AVR_I2C_FLAG_SEND_STOP; 
-			}
-		} return 0; 
-			//return _avr_i2c_stop(self); 
-			// Wait until STOP has finished
-			//while(TWCR & _BV(TWSTO));
-		default: 
-			return -EINVAL; 
-	}
-	return -1; 
+	PT_END(pt); 
 }
 
-block_dev_t avr_i2c_get_interface(uint8_t dev_id){
+static PT_THREAD(_avr_i2c_ioctl(struct pt *pt, struct io_device *dev, ioctl_req_t req, va_list vl)){
+	struct avr_i2c_device *self = container_of(dev, struct avr_i2c_device, io); 
+	
+	PT_BEGIN(pt); 
+	PT_WAIT_WHILE(pt, _avr_i2c_busy(self->dev_id));
+	
+	if(req == I2C_SEND_STOP){
+		uint8_t en = va_arg(vl, int); 
+		I2C_DEBUG("I2C: sendstop: %d\n", en); 
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+			if(en)
+				self->status |= AVR_I2C_FLAG_SEND_STOP; 
+			else
+				self->status &= ~AVR_I2C_FLAG_SEND_STOP; 
+		}
+	} 
+	
+	PT_END(pt); 
+}
+
+io_dev_t avr_i2c_get_interface(uint8_t dev_id){
 	if(dev_id > 0) return 0; 
 	
-	static struct block_device_ops _if;
-	_if = (struct block_device_ops) {
-		.open = _avr_i2c_open, 
-		.close = _avr_i2c_close, 
-		.read = 	_avr_i2c_read,
-		.write = 	_avr_i2c_write,
-		.seek = _avr_i2c_seek, 
-		.ioctl = _avr_i2c_ioctl, 
-	};
-	_device.api = &_if; 
-	return &_device.api; 
+	static struct io_device_ops _if;
+	if(!_device.io.api){
+		_if = (struct io_device_ops) {
+			.open = _avr_i2c_open, 
+			.close = _avr_i2c_close, 
+			.read = 	_avr_i2c_read,
+			.write = 	_avr_i2c_write,
+			.seek = _avr_i2c_seek, 
+			.ioctl = _avr_i2c_ioctl, 
+		};
+		_device.io.api = &_if; 
+	}
+	return &_device.io; 
 }
 
 /*

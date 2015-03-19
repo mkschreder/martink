@@ -11,13 +11,14 @@
 
 struct at24 {
 	struct i2c_block_device i2cblk;
-	block_dev_t i2cdev; 
+	struct io_device io; 
+	io_dev_t dev; 
 	ssize_t size; 
 	//struct block_transfer tr; 
 	//struct pt *user_thread; 
 	//uint16_t cur; 
 	//uint8_t buffer[AT24_PAGE_SIZE]; 
-	struct block_device_ops *dev; 
+	//struct block_device_ops *dev; 
 	//uint8_t status; 
 };
 
@@ -29,7 +30,7 @@ typedef enum {
 } at24_flag_t; 
 
 /// initializes a new eeprom structure
-void at24_init(struct at24 *self, block_dev_t i2c); 
+void at24_init(struct at24 *self, io_dev_t i2c); 
 /*
 /// aquires the eeprom for this thread
 uint8_t at24_open(struct at24 *self); 

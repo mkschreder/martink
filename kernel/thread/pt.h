@@ -53,7 +53,7 @@
 
 struct pt {
   lc_t lc; // line to resume on
-  char status; // status of the thread after a run 
+  /*char status;*/ // status of the thread after a run 
 };
 
 #define PT_WAITING 0
@@ -78,7 +78,7 @@ struct pt {
  *
  * \hideinitializer
  */
-#define PT_INIT(pt)   { (pt)->status = 0; LC_INIT((pt)->lc); }
+#define PT_INIT(pt)   { /*(pt)->status = 0;*/ LC_INIT((pt)->lc); }
 
 /** @} */
 
@@ -113,7 +113,7 @@ struct pt {
  *
  * \hideinitializer
  */
-#define PT_BEGIN(pt) { char PT_YIELD_FLAG = 1; (void)PT_YIELD_FLAG; if((pt)->status >= PT_EXITED) return (pt)->status; LC_RESUME((pt)->lc)
+#define PT_BEGIN(pt) { char PT_YIELD_FLAG = 1; (void)PT_YIELD_FLAG; /*if((pt)->status >= PT_EXITED) return (pt)->status; */LC_RESUME((pt)->lc)
 
 /**
  * Declare the end of a protothread.
@@ -126,7 +126,7 @@ struct pt {
  * \hideinitializer
  */
 #define PT_END(pt) LC_END((pt)->lc); PT_YIELD_FLAG = 0; \
-                   (pt)->status = PT_ENDED; return PT_ENDED; }
+                   /*(pt)->status = PT_ENDED; */return PT_ENDED; }
 
 /** @} */
 
@@ -150,10 +150,9 @@ struct pt {
   do {						\
     LC_SET((pt)->lc);				\
     if(!(condition)) {				\
-      (pt)->status = PT_WAITING; return PT_WAITING;			\
+      /*(pt)->status = PT_WAITING; */return PT_WAITING;			\
     }						\
   } while(0)
-#define BLOCKING_WAIT_UNTIL(cond) do {} while(!(cond))
 /**
  * Block and wait while condition is true.
  *
@@ -166,7 +165,6 @@ struct pt {
  * \hideinitializer
  */
 #define PT_WAIT_WHILE(pt, cond)  PT_WAIT_UNTIL((pt), !(cond))
-#define BLOCKING_WAIT_WHILE(cond) BLOCKING_WAIT_UNTIL(!(cond))
 
 /** @} */
 
@@ -231,7 +229,7 @@ struct pt {
 #define PT_RESTART(pt)				\
   do {						\
     PT_INIT(pt);				\
-    (pt)->status = PT_WAITING; return PT_WAITING;			\
+    /*(pt)->status = PT_WAITING;*/ return PT_WAITING;			\
   } while(0)
 
 /**
@@ -248,7 +246,7 @@ struct pt {
 #define PT_EXIT(pt)				\
   do {						\
     PT_INIT(pt);				\
-    (pt)->status = PT_EXITED; return PT_EXITED;			\
+    /*(pt)->status = PT_EXITED; */return PT_EXITED;			\
   } while(0)
 
 /** @} */
@@ -294,7 +292,7 @@ struct pt {
     PT_YIELD_FLAG = 0;				\
     LC_SET((pt)->lc);				\
     if(PT_YIELD_FLAG == 0) {			\
-      (pt)->status = PT_YIELDED; return PT_YIELDED;			\
+      /*(pt)->status = PT_YIELDED;*/ return PT_YIELDED;			\
     }						\
   } while(0)
 
@@ -314,7 +312,7 @@ struct pt {
     PT_YIELD_FLAG = 0;				\
     LC_SET((pt)->lc);				\
     if((PT_YIELD_FLAG == 0) || !(cond)) {	\
-      (pt)->status = PT_YIELDED; return PT_YIELDED;			\
+      /*(pt)->status = PT_YIELDED;*/ return PT_YIELDED;			\
     }						\
   } while(0)
 

@@ -88,7 +88,7 @@ struct rc_input {
 struct multiwii_board {
 	uint16_t 				rc_values[6]; 
 	pio_dev_t 			gpio0; 
-	block_dev_t 		twi0; 
+	io_dev_t 				twi0; 
 	struct i2c_block_device bmpblk; 
 	struct i2c_block_device mpublk; 
 	struct i2c_block_device hmcblk; 
@@ -209,7 +209,7 @@ void mwii_init(void){
 	fdev_set_udata(stderr, uart_get_serial_interface(0)); 
 */
 	// first thing must enable interrupts
-	printf("BOOT\n");
+	//kprintf("BOOT\n");
 	
 	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
 	//gpio_set(GPIO_MWII_LED); 

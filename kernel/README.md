@@ -33,3 +33,42 @@ The main area where this kind of multitasking really is useful is device drivers
 Another attractive feature of libk threading is that it is completely implemented in software - meaning that it will work the same on all hardware. It is after all just an array of "update" methods that the kernel schedules periodically. 
 
 I have found that I could improve performance with protothreading almost 100x. When I eliminated all busy delay loops in the device drivers I have found that my application was able to run a lot faster and also it has become much more responsive. I have not howerver noticed a significant memory overhead. By far the main memory overhead (which is also a necessary evil) is caching data in memory so that it can be retained while another thread has control of the CPU. Most drivers use caching in one way or another. 
+
+IO operations in libk
+---------------------
+
+All io operations in libk are derived from the io_device subsystem. This means that all io operations are asynchronous and should therefore only be called from within a protothread. So whenever you need to do some io, you also must always have a task running that will process the io for you. All IO operations must also return into the main scheduler. This means that the following will not work: 
+
+    while(!io_write(dev, timeout, buffer, size)); // blocking loop
+    
+Instead one needs to do this: 
+
+    PT_ASYNC_WRITE(pt, dev, timeout, buffer, size); 
+    
+Inside a context of a protothread. 
+
+Asynchronous IO for embedded systems
+------------------------------------
+
+Asynchronous io is nearly always a bit cumbersome to implement. It nearly always results in a more complicated program and in nearly all cases it requires the program to be structured as a state machine. When all IO operations are non blocking, the program needs to be structured in such a way that it can both wait for the io operation to complete and also to be able to do other things while it is waiting for the io operation to complete. If the system was multithreaded and blocking, we could easily just have the operating system put the process to sleep and then awaken it when io is ready. But in the perfect world we want to have many processes in the same application that never block the rest of the application while they are waiting for io. For this we need something else. Unfortunately there is no way we can escape structuring the program as a state machine. But we can do so in the most syntactically pleasant way. 
+
+If all io operations maintain internal state over the curse of multiple calls, we can also say that each function that does io is also a state machine that cycles through a number of states while it starts and waits for different io operations to complete. We can hide this fact from the programmer by writing a set of clever macros that will make it easier for us to implement the methods that need to cycle through several states. Luckily this has already been written and it is best known as protothreads. 
+
+Protothreads are just a set of macros that make it easier to write switch/case state machines that always cycle from one state to the next in a sequence. It is like async.each_series() in jquery. With protothreads we can structure multiple asynchronous operations in a sequence and hide all of the switch/case logic behind the scenes. 
+
+But this is not just a good way to structure individual methods - it also makes it possible to write hierarchies of these state machine methods. This is particularly useful in the context of doing io because we usually have many io operations that call other io operations that call even more io operations. And all of these io operations are asynchronous so without protothreads it would be a nightmare to write such io code. But with protothreads we can make this work very simple. 
+
+ASYNC/AWAIT pattern in C and C++
+--------------------------------
+
+The async/await pattern allows methods to be asynchronous and take arbitrary number of frames to execute. This is extremely useful when programming something that changes over time - for example if we need to animate some object over a number of frames. 
+
+Unfortunately async/await is not natively supported (yet) in C and C++, but we can get away with simulating this behavior using address labels feature which allows us to jump to an arbitrary location inside a method. 
+
+Limitations of async methods
+----------------------------
+
+Asynchronous methods have several limitations though: 
+
+* They can not declare any local variables - all variables have to be part of the async context that is stored elsewhere and has a lifetime longer than the scope of the method itself. This is quite natural, since async methods return and resume multiple times.
+* An async method starts from the top the first time it is called, then goes to the bottom (if it can) and once it finishes it resumes at the top again. We can also have methods that never finish and instead run in a loop. This is perfectly fine as well since we can easily jump into a loop using the address labels technique. 

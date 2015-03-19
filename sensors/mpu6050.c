@@ -229,41 +229,76 @@ static PT_THREAD(_mpu6050_init_thread(struct libk_thread *kthread, struct pt *pt
 }
 */
 
-
-#define TIMEOUT(t) do { self->time = timestamp_from_now_us(t); \
-		PT_WAIT_UNTIL(pt, timestamp_expired(self->time)); } while(0); 
-
 #define STORE_VEC3_16(target) target[0] = READ_INT16(self->buf); target[1] = READ_INT16(self->buf + 2); target[2] = READ_INT16(self->buf + 4);
+
+#define MPU6050_IO_TIMEOUT 500000
 
 PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)); 
 PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 	struct mpu6050 *self = container_of(kthread, struct mpu6050, thread); 
 	
+	static const struct _init {
+		uint8_t reg; 
+		uint16_t value; 
+	} init_sequence[] = {
+		{ 0xff, 50000 },
+		{ MPU6050_RA_PWR_MGMT_1, MPU6050_PWR1_CLOCK_PLL_XGYRO },
+		{ 0xff, 10000 },
+		{ MPU6050_RA_CONFIG, MPU6050_CFG_DLPF_BW_42 },
+		{ MPU6050_RA_SMPLRT_DIV, 4 },
+		{ MPU6050_RA_GYRO_CONFIG, MPU6050_GYRO_CONFIG_FS_2000 }, 
+		{ MPU6050_RA_ACCEL_CONFIG, MPU6050_ACCEL_CONFIG_FS_2 }, 
+		{ MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_I2C_BYPASS_EN }, 
+		{ MPU6050_RA_USER_CTRL, 0 }, 
+	}; 
+	
 	PT_BEGIN(pt); 
 	
-	TIMEOUT(50000); 
+	PT_ASYNC_BEGIN(pt, self->dev, MPU6050_IO_TIMEOUT); 
 	
-	IO_BEGIN(pt, &self->tr, self->dev); 
+	for(self->count = 0; self->count < (sizeof(init_sequence) / sizeof(init_sequence[0])); self->count++){
+		if(init_sequence[self->count].reg == 0xff) {
+			PT_SLEEP(pt, self->time, init_sequence[self->count].value); 
+		} else {
+			self->buf[0] = init_sequence[self->count].value; 
+			PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, init_sequence[self->count].reg, SEEK_SET); 
+			PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
+		}
+	}
+	/*
+	PT_SLEEP(pt, self->time, 50000); 
 	
 	self->buf[0] = MPU6050_PWR1_CLOCK_PLL_XGYRO; 
-	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_PWR_MGMT_1, self->buf, 1); 
+	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_PWR_MGMT_1, SEEK_SET); 
+	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
 	
-	TIMEOUT(10000); 
+	PT_SLEEP(pt, self->time, 10000); 
 	
 	self->buf[0] = MPU6050_CFG_DLPF_BW_42; 
-	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_CONFIG, self->buf, 1); 
-	self->buf[0] = 4; 
-	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_SMPLRT_DIV, self->buf, 1); 
-	self->buf[0] = MPU6050_GYRO_CONFIG_FS_2000; 
-	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_GYRO_CONFIG, self->buf, 1); 
-	self->buf[0] = MPU6050_ACCEL_CONFIG_FS_2; 
-	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_ACCEL_CONFIG, self->buf, 1); 
-	self->buf[0] = MPU6050_INTCFG_I2C_BYPASS_EN; 
-	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_INT_PIN_CFG, self->buf, 1);  
-	self->buf[0] = 0; 
-	IO_WRITE(pt, &self->tr, self->dev, MPU6050_RA_USER_CTRL, self->buf, 1); 
+	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_CONFIG, SEEK_SET); 
+	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
 	
-	IO_END(pt, &self->tr, self->dev); 
+	self->buf[0] = 4; 
+	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_SMPLRT_DIV, SEEK_SET); 
+	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
+	
+	self->buf[0] = MPU6050_GYRO_CONFIG_FS_2000; 
+	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_GYRO_CONFIG, SEEK_SET); 
+	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
+	
+	self->buf[0] = MPU6050_ACCEL_CONFIG_FS_2; 
+	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_ACCEL_CONFIG, SEEK_SET); 
+	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
+	
+	self->buf[0] = MPU6050_INTCFG_I2C_BYPASS_EN; 
+	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_INT_PIN_CFG, SEEK_SET); 
+	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
+	
+	self->buf[0] = 0; 
+	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_USER_CTRL, SEEK_SET); 
+	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
+	*/
+	PT_ASYNC_END(pt, self->dev, MPU6050_IO_TIMEOUT); 
 	
 	self->state |= MPU6050_STATE_INITIALIZED; 
 	
@@ -271,24 +306,29 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 	
 	while(1){
 		//self->time = timestamp_now(); 
-		IO_BEGIN(pt, &self->tr, self->dev); 
+		PT_ASYNC_BEGIN(pt, self->dev, MPU6050_IO_TIMEOUT); 
 		
-		IO_READ(pt, &self->tr, self->dev, MPU6050_RA_ACCEL_XOUT_H, self->buf, 6); 
-		STORE_VEC3_16(self->raw_acc); 
-		
-		IO_READ(pt, &self->tr, self->dev, MPU6050_RA_GYRO_XOUT_H, self->buf, 6);  
+		uint8_t regs[] = { MPU6050_RA_ACCEL_XOUT_H, MPU6050_RA_GYRO_XOUT_H }; 
+		for(self->count = 0; self->count < 2; self->count ++){
+			PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, regs[self->count], SEEK_SET); 
+			PT_ASYNC_READ(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 6); 
+			STORE_VEC3_16((self->raw + (self->count * 3))); 
+		}
+		/*
+		PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_GYRO_XOUT_H, SEEK_SET); 
+		PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 6); 
 		STORE_VEC3_16(self->raw_gyr); 
-		
-		IO_END(pt, &self->tr, self->dev); 
-	
+		*/
+		PT_ASYNC_END(pt, self->dev, MPU6050_IO_TIMEOUT); 
+		/*
 		static timestamp_t tfps = 0; 
 		static int fps = 0; 
 		if(timestamp_expired(tfps)){
-			printf("MPU FPS: %d\n", fps); 
+			kprintf("MPU FPS: %d\n", fps); 
 			fps = 0; 
 			tfps = timestamp_from_now_us(1000000); 
 		} fps++; 
-		
+		*/
 		//TIMEOUT(10000); 
 		
 		PT_YIELD(pt); 
@@ -337,7 +377,7 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 }
 
 
-void mpu6050_init(struct mpu6050 *self, block_dev_t dev) {
+void mpu6050_init(struct mpu6050 *self, io_dev_t dev) {
 	self->dev = dev; 
 	self->state = 0; 
 	
@@ -367,15 +407,15 @@ void mpu6050_update(struct mpu6050 *self){
 
 
 void mpu6050_readRawAcc(struct mpu6050 *self, int16_t* ax, int16_t* ay, int16_t* az){
-	*ax = self->raw_acc[0]; 
-	*ay = self->raw_acc[1]; 
-	*az = self->raw_acc[2]; 
+	*ax = self->raw[0]; 
+	*ay = self->raw[1]; 
+	*az = self->raw[2]; 
 }
 
 void mpu6050_readRawGyr(struct mpu6050 *self, int16_t* gx, int16_t* gy, int16_t* gz){
-	*gx = self->raw_gyr[0]; 
-	*gy = self->raw_gyr[1]; 
-	*gz = self->raw_gyr[2]; 
+	*gx = self->raw[3]; 
+	*gy = self->raw[4]; 
+	*gz = self->raw[5]; 
 }
 
 void mpu6050_convertAcc(struct mpu6050 *self, int16_t ax, int16_t ay, int16_t az, float *axg, float *ayg, float *azg){

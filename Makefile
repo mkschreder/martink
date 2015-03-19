@@ -9,7 +9,8 @@ CFLAGS := -Wall -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wshadow -Wcast-align -Wchar-subscripts -Winline \
 -Wnested-externs -Wredundant-decls -Wmissing-field-initializers -Wextra \
--Wformat=2 -Wno-format-nonliteral -Wpointer-arith -Wno-missing-braces -Wpedantic
+-Wformat=2 -Wno-format-nonliteral -Wpointer-arith -Wno-missing-braces 
+#-Wpedantic
 CXXFLAGS := -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wcast-align -Wchar-subscripts -Wredundant-decls

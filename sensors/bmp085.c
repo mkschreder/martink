@@ -64,123 +64,142 @@
 #define BMP085_FILTERPRESSURE 1 //avarage filter for pressure
 
 #define BMP085_STATUS_READY 1
-/*
-#define READ_REG16(reg) PT_WAIT_UNTIL(thr, _bmp085_read_reg(self, reg, 2) > 0)
-#define WAIT_REG16(target) do { PT_WAIT_UNTIL(thr, _bmp085_done(self)); target = REG_VALUE16(); } while(0)
-#define WAIT_REGUINT(target) do { PT_WAIT_UNTIL(thr, _bmp085_done(self)); target = REG_VALUEUINT(); } while(0)
-#define READ_REG24(reg) PT_WAIT_UNTIL(thr, _bmp085_read_reg(self, reg, 3) > 0)
-#define WAIT_REG24(target) do { PT_WAIT_UNTIL(thr, _bmp085_done(self)); target = REG_VALUE24(); } while(0)
-#define WRITE_REG8(reg, value) PT_WAIT_UNTIL(thr, _bmp085_write_reg8(self, reg, value) > 0)
-#define WAIT() do { PT_WAIT_UNTIL(thr, _bmp085_done(self)); } while(0)
-*/
 
+#define BMP085_IO_TIMEOUT 500000
+
+
+	
 PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)); 
 PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *thr)){
 	struct bmp085 *self = container_of(kthread, struct bmp085, thread); 
 	
+	struct {
+		uint8_t reg; 
+		int16_t *out; 
+	} init_sequence[] = {
+		{ BMP085_REGAC1, &self->regac1 }, 
+		{ BMP085_REGAC2, &self->regac2 }, 
+		{ BMP085_REGAC3, &self->regac3 },
+		{ BMP085_REGB1, &self->regb1 },
+		{ BMP085_REGB2, &self->regb2 },
+		{ BMP085_REGMB, &self->regmb },
+		{ BMP085_REGMC, &self->regmc },
+		{ BMP085_REGMD, &self->regmd },
+	};  
+	struct {
+		uint8_t reg; 
+		uint16_t *out; 
+	} init_sequence2[] = {
+		{ BMP085_REGAC4, &self->regac4 },
+		{ BMP085_REGAC5, &self->regac5 },
+		{ BMP085_REGAC6, &self->regac6 }
+	}; 
+	
 	PT_BEGIN(thr); 
 	
-	IO_BEGIN(thr, &self->tr, self->dev); 
+	PT_ASYNC_BEGIN(thr, self->dev, BMP085_IO_TIMEOUT); 
 	
-	IO_READ(thr, &self->tr, self->dev, BMP085_REGAC1, self->buf, 2); 
+	for(self->count = 0; self->count < (int)(sizeof(init_sequence) / sizeof(init_sequence[0])); self->count++){
+		PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, init_sequence[self->count].reg, SEEK_SET); 
+		PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+		*(init_sequence[self->count].out) = READ_INT16(self->buf); 
+	}
+	for(self->count = 0; self->count < (int)(sizeof(init_sequence2) / sizeof(init_sequence2[0])); self->count++){
+		PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, init_sequence2[self->count].reg, SEEK_SET); 
+		PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+		*(init_sequence2[self->count].out) = READ_INT16(self->buf); 
+	}
+	/*
+	PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGAC1, SEEK_SET); 
+	PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
 	self->regac1 = READ_INT16(self->buf); 
-	IO_READ(thr, &self->tr, self->dev, BMP085_REGAC2, self->buf, 2); 
-	self->regac2 = READ_INT16(self->buf); 
-	IO_READ(thr, &self->tr, self->dev, BMP085_REGAC3, self->buf, 2); 
-	self->regac3 = READ_INT16(self->buf); 
-	IO_READ(thr, &self->tr, self->dev, BMP085_REGAC4, self->buf, 2); 
-	self->regac4 = READ_UINT16(self->buf); 
-	IO_READ(thr, &self->tr, self->dev, BMP085_REGAC5, self->buf, 2); 
-	self->regac5 = READ_UINT16(self->buf); 
-	IO_READ(thr, &self->tr, self->dev, BMP085_REGAC6, self->buf, 2); 
-	self->regac6 = READ_UINT16(self->buf); 
-	IO_READ(thr, &self->tr, self->dev, BMP085_REGB1, self->buf, 2); 
-	self->regb1 = READ_INT16(self->buf); 
-	IO_READ(thr, &self->tr, self->dev, BMP085_REGB2, self->buf, 2); 
-	self->regb2 = READ_INT16(self->buf); 
-	IO_READ(thr, &self->tr, self->dev, BMP085_REGMB, self->buf, 2); 
-	self->regmb = READ_INT16(self->buf); 
-	IO_READ(thr, &self->tr, self->dev, BMP085_REGMC, self->buf, 2); 
-	self->regmc = READ_INT16(self->buf); 
-	IO_READ(thr, &self->tr, self->dev, BMP085_REGMD, self->buf, 2); 
-	self->regmd = READ_INT16(self->buf); 
 	
-	IO_END(thr, &self->tr, self->dev); 
+	PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGAC2, SEEK_SET); 
+	PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+	self->regac2 = READ_INT16(self->buf); 
+	
+	PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGAC3, SEEK_SET); 
+	PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+	self->regac3 = READ_INT16(self->buf); 
+	
+	PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGAC4, SEEK_SET); 
+	PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+	self->regac4 = READ_UINT16(self->buf); 
+	
+	PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGAC5, SEEK_SET); 
+	PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+	self->regac5 = READ_UINT16(self->buf); 
+	
+	PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGAC6, SEEK_SET); 
+	PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+	self->regac6 = READ_UINT16(self->buf); 
+	
+	PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGB1, SEEK_SET); 
+	PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+	self->regb1 = READ_INT16(self->buf); 
+	
+	PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGB2, SEEK_SET); 
+	PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+	self->regb2 = READ_INT16(self->buf); 
+	
+	PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGMB, SEEK_SET); 
+	PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+	self->regmb = READ_INT16(self->buf); 
+	
+	PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGMC, SEEK_SET); 
+	PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+	self->regmc = READ_INT16(self->buf); 
+	
+	PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGMD, SEEK_SET); 
+	PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
+	self->regmd = READ_INT16(self->buf); 
+	*/
+	PT_ASYNC_END(thr, self->dev, BMP085_IO_TIMEOUT); 
 	
 	self->status |= BMP085_STATUS_READY; 
 	
 	while(1){
 		// read uncompensated temperature
-		IO_BEGIN(thr, &self->tr, self->dev); 
-		
+		PT_ASYNC_BEGIN(thr, self->dev, BMP085_IO_TIMEOUT); 
 		self->buf[0] = BMP085_REGREADTEMPERATURE; 
-		IO_WRITE(thr, &self->tr, self->dev, BMP085_REGCONTROL, self->buf, 1); 
+		PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGCONTROL, SEEK_SET); 
+		PT_ASYNC_WRITE(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 1); 
 		
-		IO_SLEEP(self->time, 5000); 
+		/*
+		self->buf[0] = BMP085_REGREADTEMPERATURE; 
+		PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGCONTROL, SEEK_SET); 
+		PT_ASYNC_WRITE(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 1); 
 		
-		IO_READ(thr, &self->tr, self->dev, BMP085_REGCONTROLOUTPUT, self->buf, 2); 
+		PT_SLEEP(thr, self->time, 5000); 
+		
+		PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGCONTROLOUTPUT, SEEK_SET); 
+		PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 2); 
 		self->ut = READ_INT16(self->buf); 
 		
 		self->buf[0] = BMP085_REGREADPRESSURE+(BMP085_MODE << 6); 
-		IO_WRITE(thr, &self->tr, self->dev, BMP085_REGCONTROL, self->buf, 1); 
+		PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGCONTROL, SEEK_SET); 
+		PT_ASYNC_WRITE(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 1); 
 		
-		IO_SLEEP(self->time, (2 + (3<<BMP085_MODE)) * 1000L); 
+		PT_SLEEP(thr, self->time, (2 + (3<<BMP085_MODE)) * 1000L); 
 		
-		IO_READ(thr, &self->tr, self->dev, BMP085_REGCONTROLOUTPUT, self->buf, 3); 
+		PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGCONTROLOUTPUT, SEEK_SET); 
+		PT_ASYNC_READ(thr, self->dev, BMP085_IO_TIMEOUT, self->buf, 3); 
 		self->up = READ_INT24(self->buf)  >> (8-BMP085_MODE); 
-		
-		printf("P: %04x%04x ", (int16_t)(self->up >> 16), (int16_t)self->up); 
-		printf("T: %04x%04x\n", (int16_t)(self->ut >> 16), (int16_t)self->ut); 
-		
-		IO_END(thr, &self->tr, self->dev); 
-		PT_YIELD(thr);
-		/*
-		READ_REG24(BMP085_REGCONTROLOUTPUT); 
-		WAIT_REG24(self->up); 
-		WRITE_REG8(BMP085_REGCONTROL, BMP085_REGREADTEMPERATURE); 
-		WAIT(); 
-		
-		// min. 4.5ms read Temp delay
-		TIMEOUT(5000); 
-		
-		READ_REG16(BMP085_REGCONTROLOUTPUT); 
-		WAIT_REG16(self->ut); 
-		
-		// read uncompensated pressure
-		WRITE_REG8(BMP085_REGCONTROL, BMP085_REGREADPRESSURE+(BMP085_MODE << 6)); 
-		WAIT(); 
-		
-		TIMEOUT((2 + (3<<BMP085_MODE)) * 1000L); 
-		
-		READ_REG24(BMP085_REGCONTROLOUTPUT); 
-		WAIT_REG24(self->up); 
-		
+		*/
 		//printf("P: %04x%04x ", (int16_t)(self->up >> 16), (int16_t)self->up); 
 		//printf("T: %04x%04x\n", (int16_t)(self->ut >> 16), (int16_t)self->ut); 
 		
-		//PT_SPAWN(thr, bthr, i2c_read_reg_thread(self->i2c, bthr, self->addr, BMP085_REGCONTROLOUTPUT, self->buf, 3));
-		//self->up = ((((long)self->buf[0] <<16) | ((long)self->buf[1] <<8) | ((long)self->buf[2])) >> (8-BMP085_MODE)); 
-		self->up = self->up >> (8-BMP085_MODE); 
-		
+		PT_ASYNC_END(thr, self->dev, BMP085_IO_TIMEOUT); 
+		/*
 		static timestamp_t tfps = 0; 
 		static int fps = 0; 
 		if(timestamp_expired(tfps)){
-			printf("BMP FPS: %d\n", fps); 
+			kprintf("BMP FPS: %d\n", fps); 
 			fps = 0; 
 			tfps = timestamp_from_now_us(1000000); 
 		} fps++; 
-		
-		//TIMEOUT(10000); 
-		
-		PT_YIELD(thr); */
-		/*
-		{
-			int16_t t = 10000 - ((2 + (3<<BMP085_MODE)) * 1000L) - 5000; 
-			if(t > 0) {
-				TIMEOUT(t); 
-			}
-			else PT_YIELD(thr); 
-		}*/
+		*/
+		PT_YIELD(thr);
 	}
 	
 	PT_END(thr); 
@@ -234,7 +253,7 @@ float bmp085_read_altitude(struct bmp085 *self) {
 	return ((1 - pow(pressure/(double)101325, 0.1903 )) / 0.0000225577) + BMP085_UNITMOFFSET; 
 }
 
-void bmp085_init(struct bmp085 *self, block_dev_t i2c_dev) {
+void bmp085_init(struct bmp085 *self, io_dev_t i2c_dev) {
 	//i2cblk_init(&self->i2cblk, i2c, addr, I2CBLK_IADDR8); 
 	//self->dev = i2cblk_get_interface(&self->i2cblk); 
 	self->dev = i2c_dev; 

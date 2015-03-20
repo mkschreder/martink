@@ -307,12 +307,19 @@ static ASYNC(mpu6050_t, task){
 		//self->time = timestamp_now(); 
 		IO_OPEN(self->dev); 
 		
-		uint8_t regs[] = { MPU6050_RA_ACCEL_XOUT_H, MPU6050_RA_GYRO_XOUT_H }; 
+		static const uint8_t regs[] = { MPU6050_RA_ACCEL_XOUT_H, MPU6050_RA_GYRO_XOUT_H}; 
 		for(self->count = 0; self->count < 2; self->count ++){
 			IO_SEEK(self->dev, regs[self->count], SEEK_SET); 
 			IO_READ(self->dev, self->buf, 6); 
 			STORE_VEC3_16((self->raw + (self->count * 3))); 
 		}
+		/*IO_SEEK(self->dev, MPU6050_RA_ACCEL_XOUT_H, SEEK_SET); 
+		IO_READ(self->dev, self->buf, 6); 
+		STORE_VEC3_16((self->raw)); 
+			
+		IO_SEEK(self->dev, MPU6050_RA_GYRO_XOUT_H, SEEK_SET); 
+		IO_READ(self->dev, self->buf, 6); 
+		STORE_VEC3_16((self->raw + 3)); */
 		/*
 		PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_GYRO_XOUT_H, SEEK_SET); 
 		PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 6); 
@@ -330,9 +337,9 @@ static ASYNC(mpu6050_t, task){
 		*/
 		//TIMEOUT(10000); 
 		
-		//printf("MPU: %d %d %d %d %d %d\n", self->raw_acc[0], self->raw_acc[1], self->raw_acc[2], 
-		//	self->raw_gyr[0], self->raw_gyr[1], self->raw_gyr[2]); 
-			
+		//printf("MPU: %d %d %d %d %d %d\n", self->raw[0], self->raw[1], self->raw[2], 
+		//	self->raw[3], self->raw[4], self->raw[5]); 
+		
 		//TIMEOUT(10000); 
 		//self->time = timestamp_from_now_us(10000 - timestamp_ticks_to_us(timestamp_now() - self->time)); 
 		//PT_WAIT_UNTIL(pt, timestamp_expired(self->time)); 
@@ -379,7 +386,10 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 	struct mpu6050 *self = container_of(kthread, struct mpu6050, kthread); 
 	
 	PT_BEGIN(pt); 
-	PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(mpu6050_t, task, 0, self) != ASYNC_ENDED); 
+	while(1){
+		PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(mpu6050_t, task, 0, self) != ASYNC_ENDED); 
+		PT_YIELD(pt); 
+	}
 	PT_END(pt); 
 }
 

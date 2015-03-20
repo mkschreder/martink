@@ -48,6 +48,8 @@ static ASYNC(io_device_t, vopen){
 	ASYNC_MUTEX_LOCK(dev->lock); 
 	dev->addr = 0; 
 	
+	I2CBLK_DEBUG("I2CBLK: open\n"); 
+	
 	ASYNC_END(); 
 }
 
@@ -55,9 +57,9 @@ static ASYNC(io_device_t, vclose){
 	struct i2c_block_device *dev = container_of(self, struct i2c_block_device, io); 
 
 	ASYNC_BEGIN(); 
-	I2CBLK_DEBUG("I2CBLK: close\n"); 
-	
 	ASYNC_MUTEX_UNLOCK(dev->lock); 
+	
+	I2CBLK_DEBUG("I2CBLK: close\n"); 
 	
 	ASYNC_END();
 }
@@ -87,7 +89,6 @@ static ASYNC(io_device_t, vwrite, const uint8_t *data, ssize_t size){
 	
 	ASYNC_MUTEX_LOCK(dev->buffer_lock); 
 	
-	IO_OPEN(dev->i2c); 
 	
 	I2CBLK_DEBUG("I2CBLK: startwrite\n"); 
 	
@@ -100,6 +101,8 @@ static ASYNC(io_device_t, vwrite, const uint8_t *data, ssize_t size){
 		
 		memcpy(dev->buffer + addr_size, data, tr_size); 
 	
+		IO_OPEN(dev->i2c); 
+	
 		// send stop after the write
 		IO_IOCTL(dev->i2c, I2C_SEND_STOP, 1); 
 		
@@ -107,14 +110,14 @@ static ASYNC(io_device_t, vwrite, const uint8_t *data, ssize_t size){
 		
 		IO_WRITE(dev->i2c, dev->buffer, tr_size + addr_size); 
 		
+		IO_CLOSE(dev->i2c); 
+	
 		dev->offset += tr_size; 
 		dev->addr += tr_size; 
 	}
 	
 	I2CBLK_DEBUG("I2CBLK: writedone\n"); 
 			
-	IO_CLOSE(dev->i2c); 
-	
 	ASYNC_MUTEX_UNLOCK(dev->buffer_lock); 
 	
 	ASYNC_END();  
@@ -122,48 +125,51 @@ static ASYNC(io_device_t, vwrite, const uint8_t *data, ssize_t size){
 
 static ASYNC(io_device_t, vread, uint8_t *data, ssize_t size){
 	struct i2c_block_device *dev = container_of(self, struct i2c_block_device, io); 
+	(void)data; 
 	
 	uint8_t addr_size = dev->flags & I2CBLK_IADDR_BITS; 
 	ssize_t tr_size = ((size - dev->offset) > I2C_BLOCK_BUFFER_SIZE)?I2C_BLOCK_BUFFER_SIZE:(size - dev->offset); 
-
+	
+	(void)addr_size; 
+	
 	ASYNC_BEGIN(); 
-	
-	ASYNC_MUTEX_LOCK(dev->buffer_lock); 
-	
-	dev->offset = 0; 
-	tr_size = (size > I2C_BLOCK_BUFFER_SIZE)?I2C_BLOCK_BUFFER_SIZE:size; 
+		
+		ASYNC_MUTEX_LOCK(dev->buffer_lock); 
+		
+		dev->offset = 0; 
+		tr_size = (size > I2C_BLOCK_BUFFER_SIZE)?I2C_BLOCK_BUFFER_SIZE:size; 
 
-	while(dev->offset < size){
-		IO_OPEN(dev->i2c); 
-	
-		I2CBLK_DEBUG("I2CBLK: startread\n"); 
-	
-		// prepare to write address 
-		_write_address(dev); 
-		 
-		// disable sending stop after this write (so we can do repeat start)
-		IO_IOCTL(dev->i2c, I2C_SEND_STOP, 0); 
+		while(dev->offset < size){
+			IO_OPEN(dev->i2c); 
 		
-		IO_SEEK(dev->i2c, dev->i2c_addr, SEEK_SET); 
-		IO_WRITE(dev->i2c, dev->buffer, addr_size); 
-				
-		I2CBLK_DEBUG("I2CBLK: addrsent\n"); 
+			I2CBLK_DEBUG("I2CBLK: startread\n"); 
 		
-		// read the data and send stop after the read
-		IO_IOCTL(dev->i2c, I2C_SEND_STOP, 1); 
+			// prepare to write address 
+			_write_address(dev); 
+			
+			// disable sending stop after this write (so we can do repeat start)
+			IO_IOCTL(dev->i2c, I2C_SEND_STOP, (dev->flags & I2CBLK_SEND_STOP_AFTER_ADDR)?1:0); 
+			
+			IO_SEEK(dev->i2c, dev->i2c_addr, SEEK_SET); 
+			IO_WRITE(dev->i2c, dev->buffer, addr_size); 
+			
+			I2CBLK_DEBUG("I2CBLK: addrsent\n"); 
+			
+			// read the data and send stop after the read
+			IO_IOCTL(dev->i2c, I2C_SEND_STOP, 1); 
+			
+			// read one block at a time
+			IO_READ(dev->i2c, data + dev->offset, tr_size); 
+			
+			IO_CLOSE(dev->i2c); 
+			
+			dev->offset += tr_size; 
+			dev->addr += tr_size; 
+		}
 		
-		// read one block at a time
-		IO_READ(dev->i2c, data + dev->offset, tr_size); 
+		I2CBLK_DEBUG("I2CBLK: readdone\n"); 
+		ASYNC_MUTEX_UNLOCK(dev->buffer_lock); 
 		
-		IO_CLOSE(dev->i2c); 
-		
-		dev->offset += tr_size; 
-		dev->addr += tr_size; 
-	}
-	
-	I2CBLK_DEBUG("I2CBLK: readdone\n"); 
-	ASYNC_MUTEX_UNLOCK(dev->buffer_lock); 
-	
 	ASYNC_END(); 
 }
 
@@ -184,16 +190,30 @@ static ASYNC(io_device_t, vseek, ssize_t ofs, int whence){
 			dev->addr = (0x7fffffff + ofs) & 0x7fffffff; 
 	} else if(whence == SEEK_CUR) dev->addr += ofs;
 	
+	I2CBLK_DEBUG("I2CBLK: seek %x\n", dev->addr); 
+	
+	ASYNC_MUTEX_UNLOCK(dev->buffer_lock); 
+	
 	ASYNC_END(); 
 }
 
 
 static ASYNC(io_device_t, vioctl, ioctl_req_t req, va_list vl){
-	//struct i2c_block_device *self = container_of(dev, struct i2c_block_device, io); 
-	(void)vl; 
-	(void)req; 
-	
+	struct i2c_block_device *dev = container_of(self, struct i2c_block_device, io); 
+
 	ASYNC_BEGIN(); 
+	
+	ASYNC_MUTEX_LOCK(dev->buffer_lock); 
+	
+	if(req == I2CBLK_SEND_STOP_AFTER_ADDR){
+		uint8_t en = va_arg(vl, int); 
+		if(en)
+			dev->flags |= I2CBLK_SEND_STOP_AFTER_ADDR; 
+		else
+			dev->flags &= ~I2CBLK_SEND_STOP_AFTER_ADDR; 
+	}
+	
+	ASYNC_MUTEX_UNLOCK(dev->buffer_lock); 
 	
 	ASYNC_END(); 
 }

@@ -24,6 +24,7 @@ struct i2c_block_device {
 	ssize_t addr; // current position in the block device
 	uint8_t buffer[I2C_BLOCK_BUFFER_SIZE]; 
 	uint8_t flags; // block device flags
+	timestamp_t time; 
 	struct io_device io; // our base class
 	async_mutex_t lock, buffer_lock; 
 }; 

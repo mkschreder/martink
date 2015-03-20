@@ -70,8 +70,7 @@
 typedef struct bmp085 bmp085_t; 
 
 static ASYNC(bmp085_t, task){
-	//struct bmp085 *self = container_of(kthread, struct bmp085, thread); 
-	
+
 	struct {
 		uint8_t reg; 
 		int16_t *out; 
@@ -160,10 +159,24 @@ static ASYNC(bmp085_t, task){
 	while(1){
 		// read uncompensated temperature
 		IO_OPEN(self->dev); 
+		
 		self->buf[0] = BMP085_REGREADTEMPERATURE; 
 		IO_SEEK(self->dev, BMP085_REGCONTROL, SEEK_SET); 
 		IO_WRITE(self->dev, self->buf, 1); 
+		AWAIT_DELAY(self->time, 5000); 
+		IO_SEEK(self->dev, BMP085_REGCONTROLOUTPUT, SEEK_SET); 
+		IO_READ(self->dev, self->buf, 2); 
+		self->ut = READ_INT16(self->buf); 
 		
+		self->buf[0] = BMP085_REGREADPRESSURE+(BMP085_MODE << 6); 
+		IO_SEEK(self->dev, BMP085_REGCONTROL, SEEK_SET); 
+		IO_WRITE(self->dev, self->buf, 1); 
+		AWAIT_DELAY(self->time, (2 + (3<<BMP085_MODE)) * 1000L); 
+		IO_SEEK(self->dev, BMP085_REGCONTROLOUTPUT, SEEK_SET); 
+		IO_READ(self->dev, self->buf, 3); 
+		self->up = READ_INT24(self->buf)  >> (8-BMP085_MODE);
+		 
+		IO_CLOSE(self->dev); 
 		/*
 		self->buf[0] = BMP085_REGREADTEMPERATURE; 
 		PT_ASYNC_SEEK(thr, self->dev, BMP085_IO_TIMEOUT, BMP085_REGCONTROL, SEEK_SET); 
@@ -188,7 +201,6 @@ static ASYNC(bmp085_t, task){
 		//printf("P: %04x%04x ", (int16_t)(self->up >> 16), (int16_t)self->up); 
 		//printf("T: %04x%04x\n", (int16_t)(self->ut >> 16), (int16_t)self->ut); 
 		
-		IO_CLOSE(self->dev); 
 		/*
 		static timestamp_t tfps = 0; 
 		static int fps = 0; 
@@ -207,7 +219,10 @@ PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *pt));
 PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *pt)){ 
 	struct bmp085 *self = container_of(kthread, struct bmp085, kthread); 
 	PT_BEGIN(pt); 
-	PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(bmp085_t, task, 0, self) != ASYNC_ENDED); 
+	while(1){
+		PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(bmp085_t, task, 0, self) != ASYNC_ENDED); 
+		PT_YIELD(pt); 
+	}
 	PT_END(pt); 
 }
 

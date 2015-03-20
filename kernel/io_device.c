@@ -43,7 +43,7 @@ ASYNC_PROTOTYPE(io_device_t, write, const uint8_t *data, ssize_t size){
 }
 
 ASYNC_PROTOTYPE(io_device_t, read, uint8_t *data, ssize_t size){
-	return self->api->write(parent, self, data, size); 
+	return self->api->read(parent, self, data, size); 
 }
 
 ASYNC_PROTOTYPE(io_device_t, seek, ssize_t ofs, int whence){

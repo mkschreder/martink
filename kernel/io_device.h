@@ -42,7 +42,7 @@ ASYNC_PROTOTYPE(io_device_t, ioctl, ioctl_req_t req, ...);
 #define IO_WRITE(io, data, size) AWAIT_TASK(io_device_t, write, io, data, size)
 #define IO_READ(io, data, size) AWAIT_TASK(io_device_t, read, io, data, size)
 #define IO_SEEK(io, pos, from) AWAIT_TASK(io_device_t, seek, io, pos, from)
-#define IO_IOCTL(io, req, ...) AWAIT_TASK(io_device_t, seek, io, req, ##__VA_ARGS__)
+#define IO_IOCTL(io, req, ...) AWAIT_TASK(io_device_t, ioctl, io, req, ##__VA_ARGS__)
 
 #define READ_INT16(buf) (((int16_t)(buf)[0] <<8) | ((int16_t)(buf)[1]))
 #define READ_UINT16(buf) (((uint16_t)(buf)[0] <<8) | ((uint16_t)(buf)[1]))

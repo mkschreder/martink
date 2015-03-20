@@ -49,70 +49,73 @@ PT_THREAD(_rd_thread(struct libk_thread *kthread, struct pt *pt)){
 }
 
 
-static PT_THREAD(_rd_open(struct pt *pt, struct io_device *dev)){
-	struct ramdisk *self = container_of(dev, struct ramdisk, io); 
+static ASYNC(io_device_t, vopen){
+	struct ramdisk *dev = container_of(self, struct ramdisk, io); 
+	
+	ASYNC_BEGIN(); 
+	ASYNC_MUTEX_LOCK(dev->lock); 
 	RAMDISK_DEBUG("RD: open\n"); 
+	
 	self->cur = 0; 
 	
-	PT_BEGIN(pt); 
-	PT_END(pt); 
+	ASYNC_END(); 
 }
 
-static PT_THREAD(_rd_close(struct pt *pt, struct io_device *dev)){
-	struct ramdisk *self = container_of(dev, struct ramdisk, io); 
+static ASYNC(io_device_t, vclose){
+	struct ramdisk *dev = container_of(self, struct ramdisk, io); 
+	ASYNC_BEGIN(); 
+	
+	ASYNC_MUTEX_UNLOCK(dev->lock); 
+	
 	RAMDISK_DEBUG("RD: close\n"); 
-	PT_BEGIN(pt); 
-	PT_END(pt); 
+	
+	ASYNC_END(); 
 }
 
-static PT_THREAD(_rd_seek(struct pt *pt, struct io_device *dev, ssize_t pos, int whence)){
-	struct ramdisk *self = container_of(dev, struct ramdisk, io); 
+static ASYNC(io_device_t, vseek, ssize_t pos, int whence){
+	struct ramdisk *dev = container_of(self, struct ramdisk, io); 
+	
+	ASYNC_BEGIN(); 
 	
 	RAMDISK_DEBUG("RD: seek: %x, %d, %d\n", (unsigned int)pos, (unsigned int)pos, whence);
 	
 	switch(whence){
-		case SEEK_SET: self->cur = pos; break; 
-		case SEEK_CUR: self->cur += pos; break; 
-		case SEEK_END: self->cur = self->size; break; 
+		case SEEK_SET: dev->cur = pos; break; 
+		case SEEK_CUR: dev->cur += pos; break; 
+		case SEEK_END: dev->cur = dev->size; break; 
 	}
 	
-	if(self->cur < 0) self->cur = 0; 
-	if(self->cur > self->size) self->cur = self->size; 
+	if(dev->cur < 0) dev->cur = 0; 
+	if(dev->cur > dev->size) dev->cur = dev->size; 
 	
-	PT_BEGIN(pt); 
-	PT_END(pt); 
+	ASYNC_END(); 
 }
 
-static PT_THREAD(_rd_write(struct pt *pt, struct io_device *dev, const uint8_t *data, ssize_t count)){
-	struct ramdisk *self = container_of(dev, struct ramdisk, io); 
+static ASYNC(io_device_t, vwrite, const uint8_t *data, ssize_t count){
+	struct ramdisk *dev = container_of(self, struct ramdisk, io); 
 	
 	// Copy some data to the cache
 	if(count > RAMDISK_CACHE_SIZE) count = RAMDISK_CACHE_SIZE; 
 	
-	
-	PT_BEGIN(pt); 
+	ASYNC_BEGIN(); 
 	
 	while(1){
 		// check if writing is even possible
-		if(self->cur >= self->size) {
-			RAMDISK_DEBUG("Write past end: %d %d\n", self->cur, self->size); 
-			PT_EXIT(pt); 
+		if(dev->cur >= dev->size) {
+			RAMDISK_DEBUG("Write past end: %d %d\n", dev->cur, dev->size); 
+			ASYNC_EXIT(); 
 		}
 		
-		memcpy(self->cache, data, count); 
-		self->tr_size = count; 
-		self->status |= RAMDISK_FLAG_WRITE; 
-		self->status &= ~RAMDISK_FLAG_TE; 
+		memcpy(dev->cache, data, count); 
+		dev->tr_size = count; 
+		dev->status |= RAMDISK_FLAG_WRITE; 
+		dev->status &= ~RAMDISK_FLAG_TE; 
 		
 		RAMDISK_DEBUG("RD: write\n"); 
 	
 		PT_WAIT_UNTIL(pt, self->status & RAMDISK_FLAG_TE); 
 		
 		self->cur += count; 
-		
-		if(_io_progress(&self->io, count) == 0){
-			break; 
-		}
 		
 		PT_YIELD(pt); 
 	}

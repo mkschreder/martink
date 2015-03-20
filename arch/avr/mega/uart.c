@@ -35,10 +35,10 @@ static struct {
 ISR(USART_RX_vect) { 
 	uint8_t err = ( UART0_STATUS & (_BV(FE0)|_BV(DOR0))); 
 	uint8_t data = UDR0; 
-	if(cbuf_is_full(&uart0_rx_buf)){ 
+	if(cbuf_is_full_isr(&uart0_rx_buf)){ 
 		err = SERIAL_BUFFER_FULL >> 8; 
 	} else { 
-		cbuf_put(&uart0_rx_buf, data); 
+		cbuf_put_isr(&uart0_rx_buf, data); 
 	} 
 	uart0.error = err; 
 }
@@ -48,8 +48,8 @@ ISR(USART_TX_vect) {
 }
 
 ISR(USART_UDRE_vect) {
-	if(cbuf_get_waiting(&uart0_tx_buf)){
-		uart0_putc_direct(cbuf_get(&uart0_tx_buf)); 
+	if(cbuf_get_waiting_isr(&uart0_tx_buf)){
+		uart0_putc_direct(cbuf_get_isr(&uart0_tx_buf)); 
 	} else {
 		uart0_interrupt_dre_off(); 
 	}
@@ -92,7 +92,7 @@ uint16_t uart0_putc(uint8_t data){
 		uart0_interrupt_dre_off();
 		int ret = cbuf_put(&uart0_tx_buf, data);
 		uart0_interrupt_dre_on();
-		if(ret == -1) _delay_us(1);
+		if(ret == 0) _delay_us(1);
 		else return 0; 
 	} while(timeout--);
 	return SERIAL_BUFFER_FULL; 

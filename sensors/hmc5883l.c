@@ -26,6 +26,7 @@
 
 #include <arch/soc.h>
 #include "hmc5883l.h"
+#include <block/i2cblk.h>
 
 
 //registers
@@ -103,6 +104,8 @@ static ASYNC(hmc5883l_t, task){
 	
 	IO_OPEN(self->dev); 
 	
+	IO_IOCTL(self->dev, I2CBLK_SEND_STOP_AFTER_ADDR, 1); 
+	
 	self->buf[0] = HMC5883L_NUM_SAMPLES4 | HMC5883L_RATE30; 
 	IO_SEEK(self->dev, HMC5883L_CONFREGA, SEEK_SET); 
 	IO_WRITE(self->dev, self->buf, 1);
@@ -158,7 +161,10 @@ PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
 	struct hmc5883l *self = container_of(kthread, struct hmc5883l, kthread); 
 	
 	PT_BEGIN(pt); 
-	PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(hmc5883l_t, task, 0, self) != ASYNC_ENDED); 
+	while(1){
+		PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(hmc5883l_t, task, 0, self) != ASYNC_ENDED); 
+		PT_YIELD(pt); 
+	}
 	PT_END(pt); 
 }
 

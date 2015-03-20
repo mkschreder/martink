@@ -9,6 +9,8 @@ extern "C" {
 #include <inttypes.h>
 #include <sys/types.h>
 #include "time.h"
+
+#define ATOMIC_BLOCK(type) if(1)
 /*
 #define MINCOMMAND 800
 

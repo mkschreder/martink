@@ -88,7 +88,7 @@ struct async_queue {
 typedef struct async_queue async_queue_t; 
 
 #define ASYNC_GLOBAL_QUEUE __async_global_queue
-extern async_queue_t ASYNC_GLOBAL_QUEUE; 
+extern struct async_queue ASYNC_GLOBAL_QUEUE; 
 
 struct async_process {
 	struct list_head list; 
@@ -97,7 +97,8 @@ struct async_process {
 	const char *name; 
 }; 
 
-void async_queue_process(async_queue_t *queue, struct async_process *proc, ASYNC_PTR(int, async_process_t, func), const char *name); 
+void async_process_init(struct async_process *self, ASYNC_PTR(int, async_process_t, func), const char *name); 
+void async_queue_process(async_queue_t *queue, struct async_process *self); 
 uint8_t async_queue_run(async_queue_t *queue); 
 
 #define __ASYNC_PROCESS(c, func) static _ASYNC(int, async_process_t, func, task)
@@ -105,7 +106,7 @@ uint8_t async_queue_run(async_queue_t *queue);
 #define _ASYNC_PROCESS(c, func) __ASYNC_PROCESS(c, func)
 #define ASYNC_PROCESS(func) _ASYNC_PROCESS(__COUNTER__, func)
 
-#define ASYNC_QUEUE(queue) static async_queue queue; void __attribute__((constructor)) __init_queue_##queue##__(void){\
+#define ASYNC_QUEUE(queue) static struct async_queue queue; static void __attribute__((constructor)) __init_queue_##queue##__(void){\
 	INIT_LIST_HEAD(&queue.list); \
 }
 #define ASYNC_PROCESS_INIT(ptr, func) async_process_init((ptr), ASYNC_NAME(int, async_process_t, func), #func)

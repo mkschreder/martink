@@ -1,9 +1,9 @@
 #include <arch/soc.h>
 #include "async.h"
 
-static async_process *__current_process = 0; 
-async_queue ASYNC_GLOBAL_QUEUE; 
-void __attribute__((constructor)) _init_global_queue(void){
+static struct async_process *__current_process = 0; 
+struct async_queue ASYNC_GLOBAL_QUEUE; 
+static void __attribute__((constructor)) _init_global_queue(void){
 	INIT_LIST_HEAD(&ASYNC_GLOBAL_QUEUE.list); 
 }
 

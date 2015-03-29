@@ -72,3 +72,58 @@ Asynchronous methods have several limitations though:
 
 * They can not declare any local variables - all variables have to be part of the async context that is stored elsewhere and has a lifetime longer than the scope of the method itself. This is quite natural, since async methods return and resume multiple times.
 * An async method starts from the top the first time it is called, then goes to the bottom (if it can) and once it finishes it resumes at the top again. We can also have methods that never finish and instead run in a loop. This is perfectly fine as well since we can easily jump into a loop using the address labels technique. 
+
+ASYNChronous programming in C and C++
+------------------------------------
+
+If you want to take advantage of asynchronous paradigms in C and C++ then most of the time you are out of luck because these languages have not been designed with asynchronicity in mind from the start (although there are currently talks about including async facilities into the language itself and there are boost libraries like boost asio that allow some degree of asynchronicity) but what I'm about to show you is a method that I have developed for writing complete applications in asynchronous manner which works the same way in both C and C++ (with extra faculties specifically designed for having C++ member methods as async threads). 
+
+The method is based on the concept of protothreads that has been developed earlier, but I have fixed several shortcomings of the original pt library and added many new features and most importantly I have made it possible to safely write nested protothread code that was not possible with protothreads due to lack of built in protection against multiple threads accessing the same code at the same time. I have found that with original PT code it was very hard to achieve predictability even when using the supplied mutex library. What was needed is awareness of the calling thread in order to restrict access to only one caller at a time. This has been a big addition to the ASYNC/AWAIT library that makes it possible to have nested calls to other async tasks without having to supply a context (which was unsafe). 
+
+The new async/await library adds following on top of protothreads concept: 
+- Ability to call AWAIT_TASK(any_async_method) from multiple threads at the same time without worrying about corrupt data inside the task that we await. 
+- Ability to have async methods as members of a class
+- Ability to automatically register all global async methods and call them at each frame using round robin scheduling. 
+
+What is it that we are trying to do?
+-----------------------------------
+
+What I wanted to do was this: I wanted to implement an asynchronous IO framework that would work in small embedded chips and would consume minimal resources. I wanted it to be possible to have several async methods that worked on the same object and I wanted to avoid having to pass a context to each of the methods that it was to work on. The context associated with a thread is the same every time in async/await. It is bound to the actual async method and not to the caller. This makes it possible for us to have methods that will always run to completion. The original PT library forced us to pass an initialized context to a thread we wanted to "spawn" and this led to problem that threads were never guaranteed to run to completion. In async/await, instead of having the concept of "spawning" threads we have the concept of calling async methods and awaiting their completion. I have thus also removed the unnecessary thread states and replaced them with just two: waiting and running. 
+
+Thinking of the protothreads as "asynchronous methods" is a lot more productive than to think about them as threads. After all, they are not real threads, but instead they are ordinary methods that may take multiple calls to complete. Thus we have the "await" concept that provides means of waiting for an asynchronous method to run to completion. Furthermore, when an async method runs to completion, it always restarts from the top. So the next call to the method will start it up from the top again so that it can enter a new cycle of asynchronous operations that it may internally need to wait for. Normally asynchronous methods take more than one call to complete. The caller also needs to provide the same arguments from the first call and until the call that returns ASYNC_ENDED value signaling that the method is done running. This is how asynchronous methods work. You pass the same arguments, call it several times and then continue with next task once it has completed running. 
+
+I have also provided facilities for specifically allowing async methods to be called from other async methods without the danger of two calls happening at the same time. One important property that has been added to each async method is exclusivity to only one caller. This means that when an async method calls another async method for the first time, the other method will only continue running when subsequent calls come from the same caller until it completes. Once it complets, it can respond to a call from another caller. While it is busy, to all other callers it will appear as busy so they will keep calling it repeatedly and once it is done processing one caller, it will accept call from another caller and block everybody else. So we get the effect of a queue of callers without wasting any resources because the queue is implicit. Current implementation only requires each async method to save it's caller before resuming itself, and if the caller is not the same as the caller it is currently processing then it will exit even before resuming it's operation. This gives us complete protection against multiple callers running the async method at the same time. 
+
+Asynchronous IO library
+-----------------------
+
+The best way to show how this concept works in practice is to show you a concrete implementation of asyncrhonous IO. This implementation is part of libk and libk has been refactored to only use async io. So all communication with peripherals in libk is asyncrhonous. This means that all io is non blocking. And also all operations are cooperative, which greatly simplifies non-io code (although when some io code is asyncrhonous, all io code has to be asynchronous as well). 
+
+The async io library presupposes that all io devices are readable, writable, seekable (to a degree) and controllable (ioctl), as well as "openable" and "closable". 
+
+The original PT implementation
+------------------------------
+
+The original PT library provided us with easy means of structuring asyncrhonous code in the form of state machine. It had two methods of doing this: one with switch/case statements and one using address labels (address labels does not compile with -pedantic flag so it is not very "standard" feature but works much better than switch/case). 
+
+It had however several shortcomings: 
+
+Lack of protection
+
+When you wanted to spawn a thread, you had to create a local context (struct pt) and then initialize it and pass it repeatedly to the thread function. This was all fine, until you had threads that depended on a context (which is almost always the case in object oriented code), and when you then spawned the thread from another thread A, it would modify the state of it's object and if you then spawned it again from thread B before thread A was done with it, you had it run from the top and overwrite the changes made by the instance spawned from thread A. 
+
+This was very inconvenient. Because as you may already know, protothreads must store their state in an object that you repeatedly pass into the thread. So having protothreads that are reentrant also requires that you have a unique object that contains data that the protothread uses and that you never share that object with other threads. 
+
+One may instantly think "well I will just put a mutex around shared data and be done with it" but it is not that simple with protothreads because even if a thread can check the lock when it first starts running (the check must be between ASYNC_BEGIN() and ASYNC_END()), it will happily jump over that check next time because we are passing a different context. 
+
+Work queues
+------------
+
+In contrast with AWAIT_TASK() work queues can be used to wait for multiple tasks that are all running in parallel. When we await for tasks in series, they all have to run in series, but the biggest benefit of async comes from being able to run things in parallel. And in fact, if the hardware allows things to happen simultaneously (such as for example i2c transfer and spi transfer can be happening in parallel) this setup will automatically take advantage of this fact and you can then do things truly in parallel. 
+
+You applicaiton though only needs to care about constructing a work queue of tasks that need to run in parallel and then execute that queue. 
+
+	// we use ASYNC_QUEUE() macro to define a static async queue
+	ASYNC_QUEUE(queue)
+	
+An async queue maintains a list of async_process instances that we can link into the async queue.

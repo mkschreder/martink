@@ -55,6 +55,7 @@ static const struct i2c_device_id at24_ids[] = {
 #define I2C_PacketSize           8
 
 #define AT24_READ_TIMEOUT_US 1000000UL
+#define AT24_BLOCK_SIZE 32
 
 /*
 static PT_THREAD(_at24_write_thread(struct pt *thr, struct at24 *self)){
@@ -156,16 +157,38 @@ static PT_THREAD(_at24_thread(struct libk_thread *kthread, struct pt *pt)){
 	PT_END(pt); 
 }
 */
-void at24_init(struct at24 *self, io_dev_t i2c)
-{
-	i2cblk_init(&self->i2cblk, i2c, EEPROM_ADDR); 
-	self->dev = i2cblk_get_interface(&self->i2cblk); 
+void at24_init(struct at24 *self, io_dev_t i2c){
+	i2cblk_init(&self->i2cblk, i2c, EEPROM_ADDR, AT24_BLOCK_SIZE, I2CBLK_IADDR16); 
+	
+	//self->dev = i2cblk_get_interface(&self->i2cblk); 
 	//blk_ioctl(self->i2cdev, I2CBLK_SET_AW, 2); // set 16 bit address width
 	//blk_transfer_reset(&self->tr); 
 	//self->status = 0; 
 	//self->op = (struct at24_op){0}; 
 	//libk_create_thread(&self->thread, _at24_thread, "at24"); 
 }
+
+
+io_dev_t at24_get_interface(struct at24 *self){
+	return i2cblk_get_interface(&self->i2cblk); 
+	/*static struct io_device_ops _if;
+	static struct io_device_ops *i = 0; 
+	
+	if(!i){
+		_if = (struct io_device_ops) {
+			.open = _at24_open, 
+			.close = _at24_close, 
+			.read = _at24_read,
+			.write = _at24_write,
+			.seek = _at24_seek, 
+			.ioctl = _at24_ioctl
+		}; 
+		i = &_if; 
+	}
+	self->dev.api = i; 
+	return &self->api; */
+}
+
 /*
 ssize_t at24_seek(struct at24 *self, ssize_t pos, int from){
 	switch(from){

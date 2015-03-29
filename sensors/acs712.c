@@ -35,9 +35,10 @@
 
 static PT_THREAD(_acs712_update_thread(struct libk_thread *kthread, struct pt *pt)){
 	struct acs712 *self = container_of(kthread, struct acs712, thread); 
+	(void)self; 
 	
 	PT_BEGIN(pt); 
-	
+	/*
 	while(1){
 		PT_WAIT_UNTIL(pt, self->interval != 0 && timestamp_expired(self->time)); 
 		
@@ -48,7 +49,7 @@ static PT_THREAD(_acs712_update_thread(struct libk_thread *kthread, struct pt *p
 		PT_WAIT_WHILE(pt, adc_busy()); 
 		
 		self->time = timestamp_from_now_us(self->interval); 
-	}
+	}*/
 	PT_END(pt); 
 }
 

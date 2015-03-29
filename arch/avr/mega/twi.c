@@ -237,7 +237,7 @@ void avr_i2c_deinit(uint8_t dev_id){
 }
 
 
-static ASYNC(io_device_t, vopen){
+static ASYNC(io_result_t, io_device_t, vopen){
 	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
 	
 	ASYNC_BEGIN(); 
@@ -247,10 +247,10 @@ static ASYNC(io_device_t, vopen){
 	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
 	
 	I2C_DEBUG("i2c: open\n"); 
-	ASYNC_END(); 
+	ASYNC_END(0); 
 }
 
-static ASYNC(io_device_t, vclose){
+static ASYNC(io_result_t, io_device_t, vclose){
 	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
 	
 	ASYNC_BEGIN(); 
@@ -259,10 +259,10 @@ static ASYNC(io_device_t, vclose){
 	ASYNC_MUTEX_UNLOCK(dev->lock); 
 	
 	I2C_DEBUG("I2C: closed\n"); 
-	ASYNC_END(); 
+	ASYNC_END(0); 
 }
 
-static ASYNC(io_device_t, vseek, ssize_t pos, int whence){
+static ASYNC(io_result_t, io_device_t, vseek, ssize_t pos, int whence){
 	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
 	
 	ASYNC_BEGIN();
@@ -273,10 +273,10 @@ static ASYNC(io_device_t, vseek, ssize_t pos, int whence){
 	I2C_DEBUG("i2c: seek %d\n", pos); 
 	dev->addr = pos; 
 	
-	ASYNC_END(); 
+	ASYNC_END(pos); 
 }
 
-static ASYNC(io_device_t, vwrite, const uint8_t *data, ssize_t size){
+static ASYNC(io_result_t, io_device_t, vwrite, const uint8_t *data, ssize_t size){
 	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
 	
 	ASYNC_BEGIN();
@@ -320,14 +320,13 @@ static ASYNC(io_device_t, vwrite, const uint8_t *data, ssize_t size){
 		AWAIT(!_avr_i2c_busy(dev->dev_id)); 
 		
 		ASYNC_MUTEX_UNLOCK(dev->buffer_lock); 
-	ASYNC_END(); 
+	ASYNC_END(size); 
 }
 
-static ASYNC(io_device_t, vread, uint8_t *data, ssize_t size){
+static ASYNC(io_result_t, io_device_t, vread, uint8_t *data, ssize_t size){
 	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
 	
 	ASYNC_BEGIN(); 
-		
 		// lock the buffer so that read can not start using it
 		// must always lock mutex first before checking for busy device
 		ASYNC_MUTEX_LOCK(dev->buffer_lock); 
@@ -368,10 +367,10 @@ static ASYNC(io_device_t, vread, uint8_t *data, ssize_t size){
 		
 		ASYNC_MUTEX_UNLOCK(dev->buffer_lock); 
 		
-	ASYNC_END(); 
+	ASYNC_END(size); 
 }
 
-static ASYNC(io_device_t, vioctl, ioctl_req_t req, va_list vl){
+static ASYNC(io_result_t, io_device_t, vioctl, ioctl_req_t req, va_list vl){
 	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
 	
 	ASYNC_BEGIN(); 
@@ -389,9 +388,10 @@ static ASYNC(io_device_t, vioctl, ioctl_req_t req, va_list vl){
 			else
 				dev->status &= ~AVR_I2C_FLAG_SEND_STOP; 
 		}
+		ASYNC_EXIT(0); 
 	} 
 	
-	ASYNC_END(); 
+	ASYNC_END(-1); 
 }
 
 io_dev_t avr_i2c_get_interface(uint8_t dev_id){
@@ -425,4 +425,3 @@ void twi0_slave_init(uint8_t addr){
   TWCR = (1<<TWEN)|(0<<TWIE)|(0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC); 
   //TWI_busy = 0;
 }*/
-

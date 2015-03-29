@@ -21,7 +21,8 @@ struct i2c_block_device {
 	io_dev_t i2c; // i2c block device for this device
 	uint8_t i2c_addr; // address of the i2c device on i2c bus
 	ssize_t offset;  // current position in transaction
-	ssize_t addr; // current position in the block device
+	int32_t addr; // current position in the block device
+	uint16_t block_size; // size of the maximum number of bytes that can be read/written continuously. 
 	uint8_t buffer[I2C_BLOCK_BUFFER_SIZE]; 
 	uint8_t flags; // block device flags
 	timestamp_t time; 
@@ -29,5 +30,5 @@ struct i2c_block_device {
 	async_mutex_t lock, buffer_lock; 
 }; 
 
-void i2cblk_init(struct i2c_block_device *self, io_dev_t i2c, uint8_t i2c_addr); 
+void i2cblk_init(struct i2c_block_device *self, io_dev_t i2c, uint8_t i2c_addr, uint16_t block_size, uint8_t flags); 
 io_dev_t i2cblk_get_interface(struct i2c_block_device *self); 

@@ -28,14 +28,14 @@
 /* use the temp object from m2draw.c */
 extern m2_nav_t m2_draw_current;
 
-static void m2_draw_sub(m2_dfs_fnptr cb)
+static void m2_draw_sub_dfs(m2_dfs_fnptr cb)
 {
   cb(&m2_draw_current);
   if ( m2_nav_down(&m2_draw_current, 0) != 0 )
   {
     do
     {
-      m2_draw_sub(cb);
+      m2_draw_sub_dfs(cb);
     } while ( m2_nav_next(&m2_draw_current) != 0 );
     m2_nav_up(&m2_draw_current);
   }
@@ -45,6 +45,6 @@ void m2_nav_dfs(m2_nav_p nav, m2_dfs_fnptr cb)
 {
   m2_draw_current.element_list[0] = nav->element_list[0];
   m2_draw_current.depth = 1;
-  m2_draw_sub(cb);
+  m2_draw_sub_dfs(cb);
 }
 

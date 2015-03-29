@@ -39,8 +39,9 @@ extern "C" {
 struct bmp085 {
 	io_dev_t dev; // underlying register file device
 	
-	int16_t regac1, regac2, regac3, regb1, regb2, regmb, regmc, regmd;
-	uint16_t regac4, regac5, regac6;
+	int32_t calib_data[11]; 
+	//int16_t regac1, regac2, regac3, regb1, regb2, regmb, regmc, regmd;
+	//uint16_t regac4, regac5, regac6;
 	int32_t ut, up; 
 	uint8_t buf[4]; // i2c buffer
 	

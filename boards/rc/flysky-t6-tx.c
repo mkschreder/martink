@@ -151,7 +151,7 @@ void fst6_init(void){
 	//delay_ms(1000); 
 	
 	printf("FST6: starting eeprom\n"); 
-	at24_init(&_board.eeprom, twi_get_interface(0)); 
+	at24_init(&_board.eeprom, i2cdev_get_interface(0)); 
 	
 	printf("FST6: starting display\n"); 
 	ks0713_init(&_board.disp, _fst6_write_ks0713); 
@@ -216,8 +216,8 @@ LIBK_THREAD(_speaker_silent){
 	PT_END(pt); 
 }
 
-block_dev_t fst6_get_storage_device(void){
-	return at24_get_block_device_interface(&_board.eeprom); 
+io_dev_t fst6_get_storage_device(void){
+	return at24_get_interface(&_board.eeprom); 
 }
 
 serial_dev_t fst6_get_screen_serial_interface(void){

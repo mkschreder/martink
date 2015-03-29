@@ -28,9 +28,35 @@
 
 #include "adc.h"
 
+void avr_adc_init(struct avr_adc *self){
+	(void)self; 
+	
+}
 
-//uint8_t _adc_mode = ADC_MODE_AUTOMATIC;
+ASYNC(int, adc_t, avr_adc_open){
+	ASYNC_BEGIN(); 
+	
+	ASYNC_END(0); 
+}
+ 
+ASYNC(int, adc_t, avr_adc_close){
+	ASYNC_BEGIN(); 
+	ASYNC_END(0); 
+}
 
+ASYNC(uint16_t, adc_t, avr_adc_read, uint8_t channel){
+	ASYNC_BEGIN(); 
+	
+	AWAIT(!adc0_conversion_in_progress()); 
+	 
+	adc0_set_channel(channel & 0x07); 
+	adc0_start_conversion(); 
+	
+	AWAIT(!adc0_conversion_in_progress()); 
+	
+	ASYNC_END(ADC); 
+}
+/*
 static volatile uint16_t *_adc_data = 0; 
 
 uint8_t adc_aquire(uint8_t chan){
@@ -45,18 +71,11 @@ void adc_release(void){
 uint8_t adc_busy(void){
 	return adc0_conversion_in_progress(); 
 }
-
-void adc_start_read(uint8_t channel, volatile uint16_t *value){
-	if(adc0_conversion_in_progress()) return; 
-	_adc_data = value;  
-	adc0_set_channel(channel & 0x07); 
-	adc0_start_conversion(); 
-}
-
+*/
 ISR(ADC_vect){
-	if(!_adc_data) return; 
+	/*if(!_adc_data) return; 
 	*_adc_data = ADC; 
-	_adc_data = 0; 
+	_adc_data = 0; */
 	/*_adc_values[adc0_get_channel() & 0x07] = adc;
 	if(_adc_mode == ADC_MODE_AUTOMATIC){
 		adc0_set_channel((adc0_get_channel() + 1) & 0x07); 

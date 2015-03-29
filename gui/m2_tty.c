@@ -3,8 +3,13 @@
 #include "m2_tty.h"
 #include <string.h>
 
+static struct m2_tty *_m2_tty_current = 0; 
+
 static uint8_t _m2_tty_es(m2_p ep, uint8_t msg){
-	struct m2_tty *self = container_of(ep, struct m2_tty, m2); 
+	(void)ep; 
+	struct m2_tty *self = _m2_tty_current; 
+	if(!self) return 0; 
+	
 	switch(msg){
 		case M2_ES_MSG_GET_KEY:
 		{
@@ -28,7 +33,6 @@ static void _m2_tty_clear_screen(struct m2_tty *self){
 	serial_printf(self->screen, "\x1b[2J"); 
 }
 
-static struct m2_tty *_m2_tty_current = 0; 
 
 static uint8_t _m2_tty_gh(m2_gfx_arg_p  arg){
 	struct m2_tty *self = _m2_tty_current; //container_of(arg, struct m2_tty, arg); 
@@ -143,14 +147,10 @@ static PT_THREAD(_m2_tty_thread(struct libk_thread *kthread, struct pt *pt)){
 	PT_BEGIN(pt); 
 	
 	while(1){
-		self->time = 0; 
-		if(timestamp_expired(self->time)){
-			_m2_tty_current = self; 
-			m2_CheckKey();
-			m2_HandleKey();  
-			m2_Draw();
-			self->time = timestamp_from_now_us(1000000/25); 
-		}
+		_m2_tty_current = self; 
+		m2_CheckKey();
+		m2_HandleKey();  
+		m2_Draw();
 		PT_YIELD(pt); 
 	}
 	

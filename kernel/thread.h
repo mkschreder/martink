@@ -8,6 +8,9 @@
 extern "C" {
 #endif
 
+
+//////////////////////////////
+
 struct libk_thread {
 	struct list_head list; 
 	char (*proc)(struct libk_thread *kthread, struct pt *self); 

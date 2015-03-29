@@ -91,11 +91,9 @@
 
 #define STORE_VEC3_16(target) target[0] = READ_INT16(self->buf); target[1] = READ_INT16(self->buf + 2); target[2] = READ_INT16(self->buf + 4);
 
-#define HMC_IO_TIMEOUT 500000
-
 typedef struct hmc5883l hmc5883l_t; 
 
-static ASYNC(hmc5883l_t, task){
+static ASYNC(int, hmc5883l_t, task){
 	
 	ASYNC_BEGIN(); 
 	
@@ -104,7 +102,7 @@ static ASYNC(hmc5883l_t, task){
 	
 	IO_OPEN(self->dev); 
 	
-	IO_IOCTL(self->dev, I2CBLK_SEND_STOP_AFTER_ADDR, 1); 
+	//IO_IOCTL(self->dev, I2CBLK_SEND_STOP_AFTER_ADDR, 1); 
 	
 	self->buf[0] = HMC5883L_NUM_SAMPLES4 | HMC5883L_RATE30; 
 	IO_SEEK(self->dev, HMC5883L_CONFREGA, SEEK_SET); 
@@ -130,21 +128,22 @@ static ASYNC(hmc5883l_t, task){
 	
 	while(1){
 		IO_OPEN(self->dev); 
+		//IO_IOCTL(self->dev, I2CBLK_SEND_STOP_AFTER_ADDR, 1); 
 		
 		IO_SEEK(self->dev, HMC5883L_DATAREGBEGIN, SEEK_SET); 
 		IO_READ(self->dev, self->buf, 6);
 		STORE_VEC3_16(self->raw_mag); 
 		
 		IO_CLOSE(self->dev); 
-	/*
+	
 		static timestamp_t tfps = 0; 
 		static int fps = 0; 
 		if(timestamp_expired(tfps)){
-			kprintf("HMC FPS: %d\n", fps); 
+			printf("HMC FPS: %d\n", fps); 
 			fps = 0; 
 			tfps = timestamp_from_now_us(1000000); 
 		} fps++; 
-		*/
+		
 		//TIMEOUT(10000); 
 		
 		//printf("HMC: %d %d %d\n", self->raw_mag[0], self->raw_mag[1], self->raw_mag[2]); 
@@ -152,7 +151,7 @@ static ASYNC(hmc5883l_t, task){
 		//TIMEOUT(10000L);
 	}
 	
-	ASYNC_END(); 
+	ASYNC_END(0); 
 }
 
 
@@ -162,7 +161,7 @@ PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
 	
 	PT_BEGIN(pt); 
 	while(1){
-		PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(hmc5883l_t, task, 0, self) != ASYNC_ENDED); 
+		PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(0, hmc5883l_t, task, 0, self) != ASYNC_ENDED); 
 		PT_YIELD(pt); 
 	}
 	PT_END(pt); 
@@ -171,6 +170,8 @@ PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
 void hmc5883l_init(struct hmc5883l *self, io_dev_t i2c) {
 	self->dev = i2c;
 	self->status = 0; 
+	
+	ASYNC_INIT(&self->task); 
 	
 	libk_create_thread(&self->kthread, _hmc5883l_thread, "hmc5883l"); 
 	

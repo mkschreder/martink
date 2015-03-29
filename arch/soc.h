@@ -70,6 +70,7 @@ extern "C" {
 //#include "static_cbuf.h"
 #include <kernel/list.h>
 #include <kernel/thread.h>
+#include <kernel/io_device.h>
 
 #include "time.h"
 #include "uart.h"

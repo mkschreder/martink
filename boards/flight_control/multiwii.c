@@ -247,15 +247,15 @@ void mwii_init(void){
 	*/
 	gpio_set(GPIO_MWII_LED);
 	
-	i2cblk_init(&brd->mpublk, brd->twi0, MPU6050_ADDR); 
+	i2cblk_init(&brd->mpublk, brd->twi0, MPU6050_ADDR, 8, I2CBLK_IADDR8); 
 	mpu6050_init(&brd->mpu, i2cblk_get_interface(&brd->mpublk)); 
 	//kdebug("MPU6050: %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
 	
-	i2cblk_init(&brd->bmpblk, brd->twi0, BMP085_ADDR); 
+	i2cblk_init(&brd->bmpblk, brd->twi0, BMP085_ADDR, 8, I2CBLK_IADDR8); 
 	bmp085_init(&brd->bmp, i2cblk_get_interface(&brd->bmpblk)); 
 	//kdebug("BMP085: found\n");
 	
-	i2cblk_init(&brd->hmcblk, brd->twi0, HMC5883L_ADDR); 
+	i2cblk_init(&brd->hmcblk, brd->twi0, HMC5883L_ADDR, 8, I2CBLK_IADDR8); 
 	hmc5883l_init(&brd->hmc, i2cblk_get_interface(&brd->hmcblk));
 	
 	gpio_clear(GPIO_MWII_LED); 

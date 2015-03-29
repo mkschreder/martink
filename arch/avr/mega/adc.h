@@ -156,11 +156,24 @@ extern uint8_t _adc_mode;
 		:(0)) \
 )
 
+#include <kernel/thread.h>
+
+typedef struct avr_adc {
+	struct async_task avr_adc_open, avr_adc_close, avr_adc_read; 
+} adc_t; 
+
+void avr_adc_init(struct avr_adc *self); 
+
+ASYNC_PROTOTYPE(int, adc_t, avr_adc_open); 
+ASYNC_PROTOTYPE(int, adc_t, avr_adc_close); 
+ASYNC_PROTOTYPE(uint16_t, adc_t, avr_adc_read, uint8_t channel); 
+
+/*
 uint8_t adc_aquire(uint8_t chan); 
 void adc_release(void); 
 uint8_t adc_busy(void);
 void adc_start_read(uint8_t channel, volatile uint16_t *value); 
-
+*/
 /*
 #include <util/list.h>
 #include <util/pipe.h>

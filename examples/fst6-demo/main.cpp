@@ -7,7 +7,6 @@ Example for the fst6 radio transmitter board
 #include <boards/rc/flysky-t6-tx.h>
 #include <tty/vt100.h>
 #include <gui/m2_fb.h>
-#include <kernel/transfer.h>
 
 #include "gui.hpp" 
 
@@ -110,88 +109,20 @@ uint16_t config_calc_checksum(struct config *self){
 	return fletcher16((uint8_t*)self, sizeof(struct config) - sizeof(self->checksum));
 }
 
-struct application {
+typedef struct application {
 	struct libk_thread main_thread; 
-	struct block_transfer tr; 
-	block_dev_t eeprom; 
+	struct async_task save_config, load_config, main; 
+	io_dev_t eeprom; 
 	struct config conf; 
 	uint16_t saved_config_checksum; 
 	uint16_t prev_config_checksum; 
-	timestamp_t save_config_timeout; 
+	timestamp_t save_config_timeout;
+	timestamp_t time;  
 	uint8_t status; 
-}; 
+} app_t; 
 
 static struct application app; 
 static struct gui_data *gui; 
-
-LIBK_THREAD(config_thread){
-	
-	PT_BEGIN(pt); 
-	
-	while(1){
-		static struct block_device_geometry geom; 
-		blk_get_geometry(app.eeprom, &geom); 
-		
-		//printf("Using storage device %dkb, %d sectors, %d pages/sector, %d bytes per page\n", 
-		//	geom.pages * geom.page_size, geom.sectors, geom.pages / geom.sectors, geom.page_size); 
-			
-		PT_WAIT_UNTIL(pt, app.status & (DEMO_STATUS_WR_CONFIG | DEMO_STATUS_RD_CONFIG)); 
-		
-		if(app.status & DEMO_STATUS_WR_CONFIG){
-			printf("CONF: write\n"); 
-			
-			PT_WAIT_UNTIL(pt, blk_open(app.eeprom)); 
-			
-			config_update_checksum(&app.conf); 
-			
-			app.saved_config_checksum = app.conf.checksum; 
-			
-			blk_transfer_init(&app.tr, app.eeprom, 0, ((uint8_t*)&app.conf), sizeof(struct config), IO_WRITE); 
-			PT_WAIT_UNTIL(pt, blk_transfer_completed(&app.tr)); 
-			
-			blk_close(app.eeprom); 
-			
-			printf("CONF: saved\n"); 
-			app.status &= ~DEMO_STATUS_WR_CONFIG; 
-		} 
-		if(app.status & DEMO_STATUS_RD_CONFIG){
-			printf("CONF: read\n"); 
-			
-			PT_WAIT_UNTIL(pt, blk_open(app.eeprom)); 
-			
-			blk_transfer_init(&app.tr, app.eeprom, 0, ((uint8_t*)&app.conf), sizeof(struct config), IO_READ); 
-			PT_WAIT_UNTIL(pt, blk_transfer_completed(&app.tr)); 
-			
-			printf("CONF: loaded\n"); 
-			
-			// set the saved checksum to the newly loaded config
-			app.saved_config_checksum = app.conf.checksum; 
-			gui->channel.request_load = 1; 
-			gui->mix.request_load = 1; 
-			gui->profile.request_load = 1; 
-			//gui->profile.id = 0; 
-			//config_update_checksum(&app.conf); 
-			
-			blk_close(app.eeprom); 
-			
-			app.status &= ~DEMO_STATUS_RD_CONFIG;
-		}
-	}
-	
-	PT_END(pt); 
-}
-
-LIBK_THREAD(_console){
-	static serial_dev_t serial = 0; 
-	if(!serial) serial = uart_get_serial_interface(0); 
-	PT_BEGIN(pt); 
-	while(1){
-		PT_WAIT_WHILE(pt, uart_getc(0) == SERIAL_NO_DATA); 
-		libk_print_info(); 
-		PT_YIELD(pt); 
-	}
-	PT_END(pt); 
-}
 
 // valign: bottom, halign: center, display width
 /*======================================================================*/
@@ -298,17 +229,6 @@ void update_outputs(void){
 	}
 	// write outputs
 	fst6_write_ppm(outputs[0], outputs[1], outputs[2], outputs[3], outputs[4], outputs[5]); 
-}
-
-LIBK_THREAD(output_thread){
-	PT_BEGIN(pt); 
-	
-	while(1){
-		update_outputs(); 
-		PT_YIELD(pt); 
-	}
-	
-	PT_END(pt); 
 }
 
 void update_gui(void){
@@ -474,16 +394,44 @@ void handle_keys(void){
 	}
 }
 
-LIBK_THREAD(main_thread){
-	//serial_dev_t screen = fst6_get_screen_serial_interface(); 
-	//fst6_key_mask_t keys = fst6_read_keys(); 
+ASYNC(int, app_t, load_config){
+	ASYNC_BEGIN(); 
+	printf("CONF: read\n"); 
 	
-	PT_BEGIN(pt); 
+	IO_OPEN(self->eeprom); 
+	IO_READ(self->eeprom, (uint8_t*)(&self->conf), sizeof(struct config)); 
 	
-	// load the config and wait for it to be loaded
-	app.status |= DEMO_STATUS_RD_CONFIG; 
-	PT_WAIT_WHILE(pt, app.status & DEMO_STATUS_RD_CONFIG); 
-	if(!config_valid(&app.conf)){
+	printf("CONF: loaded\n"); 
+	
+	// set the saved checksum to the newly loaded config
+	app.saved_config_checksum = app.conf.checksum; 
+	gui->channel.request_load = 1; 
+	gui->mix.request_load = 1; 
+	gui->profile.request_load = 1; 
+	
+	IO_CLOSE(self->eeprom); 
+	
+	ASYNC_END(config_valid(&self->conf)); 
+}
+
+ASYNC(int, app_t, save_config){
+	ASYNC_BEGIN(); 
+	
+	config_update_checksum(&self->conf); 
+	self->saved_config_checksum = app.conf.checksum; 
+	
+	IO_OPEN(self->eeprom);
+	IO_SEEK(self->eeprom, 0, SEEK_SET); 
+	IO_WRITE(self->eeprom, (uint8_t*)(&self->conf), sizeof(struct config)); 
+	IO_CLOSE(self->eeprom); 
+	
+	ASYNC_END(0); 
+}
+
+ASYNC(int, app_t, main){
+	ASYNC_BEGIN(); 
+	
+	if(AWAIT_TASK(int, app_t, load_config, self) != 1){
 		printf("CONF: invalid checksum %x, expected %x\n", app.conf.checksum, config_calc_checksum(&app.conf));
 		for(uint16_t c = 0; c < sizeof(struct config); c++){
 			printf("%x ", ((uint8_t*)&app.conf)[c]); 
@@ -491,10 +439,10 @@ LIBK_THREAD(main_thread){
 		for(int c = 0; c < 6; c++){
 			memcpy(&app.conf.profiles[c], &default_profile, sizeof(default_profile)); 
 		}
-		config_update_checksum(&app.conf); 
-		app.status |= DEMO_STATUS_WR_CONFIG; 
-		PT_WAIT_WHILE(pt, app.status & DEMO_STATUS_WR_CONFIG); 
+		AWAIT_TASK(int, app_t, save_config, self); 
 	}
+	
+	printf("READY\n"); 
 	
 	while(1){
 		// check if it is time to save the config
@@ -511,65 +459,32 @@ LIBK_THREAD(main_thread){
 		// is different from the one already in the eeprom
 		if(app.conf.checksum != app.saved_config_checksum &&
 			timestamp_expired(app.save_config_timeout)){
-			app.status |= DEMO_STATUS_WR_CONFIG; 
+			AWAIT_TASK(int, app_t, save_config, self); 
 		}
 		
+		update_outputs(); 
 		update_gui(); 
 		handle_keys(); 
 		
 		// handle flash upgrade
 		if(gui->do_flash_upgrade){
 			gui->do_flash_upgrade = 0; 
-			static timestamp_t time = timestamp_from_now_us(1000000); 
-			PT_WAIT_UNTIL(pt, timestamp_expired(time)); // give some time to show the dialog
+			AWAIT_DELAY(self->time, 1000000); // give some time to show the dialog
 			// issue reboot into bootloader mode
 			EnterFlashUpgrade(); 
 		}
 		
-		PT_YIELD(pt); 
-		/*continue; 
-		{
-			timestamp_t t = timestamp_now(); 
-			
-			serial_printf(screen, "\x1b[2J\x1b[1;1H"); 
-			serial_printf(screen, " FlySky FS-T6 %dMhz\n", (SystemCoreClock / 1000000UL)); 
-			
-			//serial_printf(screen, "%s\n", (char*)buf); 
-			
-			for(int c = 0; c < 6; c+=2) {
-				sticks[c] = (int)fst6_read_stick((fst6_stick_t)c); 
-				sticks[c+1] = (int)fst6_read_stick((fst6_stick_t)(c+1)); 
-				sticks[c] = 1000 + (sticks[c] >> 2); 
-				sticks[c+1] = 1000 + (sticks[c+1] >> 2); 
-				
-				serial_printf(screen, "CH%d: %04d CH%d: %04d\n", 
-					c, (int)sticks[c], 
-					c + 1, (int)sticks[c+1]); 
-			}
-			// write ppm
-			fst6_write_ppm(sticks[0], sticks[1], sticks[2], sticks[3], sticks[4], sticks[5]); 
-			
-			serial_printf(screen, "VBAT: %d\n", (int)fst6_read_battery_voltage()); 
-			
-			serial_printf(screen, "Keys: "); 
-			for(int c = 0; c < 32; c++){
-				// play key sounds. 25ms long, 300hz
-				if(keys & (1 << c) && !_key_state[c]){// key is pressed 
-					fst6_play_tone(300, 25); 
-					_key_state[c] = 1; 
-				} else if(!(keys & (1 << c)) && _key_state[c]){ // released
-					_key_state[c] = 0; 
-				}
-				if(keys & (1 << c)){
-					serial_printf(screen, "%d ", c); 
-				}
-			}
-			t = timestamp_ticks_to_us(timestamp_now() - t); 
-			serial_printf(screen, "f:%lu,t:%d\n", libk_get_fps(), (uint32_t)t); 
-		}
-		PT_YIELD(pt); */
+		ASYNC_YIELD(); 
 	}
-	
+	ASYNC_END(0); 
+}
+
+LIBK_THREAD(main_thread){ 
+	PT_BEGIN(pt); 
+	while(1){
+		PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(0, app_t, main, 0, &app) != ASYNC_ENDED); 
+		PT_YIELD(pt); 
+	}
 	PT_END(pt); 
 }
 
@@ -583,18 +498,6 @@ int main(void){
 	gui_init(fst6_get_screen_framebuffer_interface()); 
 	
 	gui = gui_get_data(); 
-	
-	//status = DEMO_STATUS_WR_CONFIG | DEMO_STATUS_RD_CONFIG; 
-	/*
-	// test config read/write (to eeprom)
-	const char str[] = "Hello World!"; 
-	uint8_t buf[13] = {0}; 
-	printf("Writing string to config: %s\n", str); 
-	fst6_write_config((const uint8_t*)str, sizeof(str)); 
-	printf("Reading string from config: "); 
-	fst6_read_config(buf, sizeof(str)); 
-	printf("%s\n", buf); 
-	*/
 	
 	printf("Running libk loop\n"); 
 	

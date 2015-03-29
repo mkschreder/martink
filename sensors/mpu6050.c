@@ -235,7 +235,7 @@ static PT_THREAD(_mpu6050_init_thread(struct libk_thread *kthread, struct pt *pt
 
 typedef struct mpu6050 mpu6050_t; 
 
-static ASYNC(mpu6050_t, task){
+static ASYNC(int, mpu6050_t, task){
 	static const struct _init {
 		uint8_t reg; 
 		uint16_t value; 
@@ -264,39 +264,6 @@ static ASYNC(mpu6050_t, task){
 			IO_WRITE(self->dev, self->buf, 1); 
 		}
 	}
-	/*
-	PT_SLEEP(pt, self->time, 50000); 
-	
-	self->buf[0] = MPU6050_PWR1_CLOCK_PLL_XGYRO; 
-	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_PWR_MGMT_1, SEEK_SET); 
-	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
-	
-	PT_SLEEP(pt, self->time, 10000); 
-	
-	self->buf[0] = MPU6050_CFG_DLPF_BW_42; 
-	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_CONFIG, SEEK_SET); 
-	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
-	
-	self->buf[0] = 4; 
-	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_SMPLRT_DIV, SEEK_SET); 
-	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
-	
-	self->buf[0] = MPU6050_GYRO_CONFIG_FS_2000; 
-	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_GYRO_CONFIG, SEEK_SET); 
-	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
-	
-	self->buf[0] = MPU6050_ACCEL_CONFIG_FS_2; 
-	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_ACCEL_CONFIG, SEEK_SET); 
-	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
-	
-	self->buf[0] = MPU6050_INTCFG_I2C_BYPASS_EN; 
-	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_INT_PIN_CFG, SEEK_SET); 
-	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
-	
-	self->buf[0] = 0; 
-	PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_USER_CTRL, SEEK_SET); 
-	PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 1); 
-	*/
 	IO_CLOSE(self->dev); 
 	
 	self->state |= MPU6050_STATE_INITIALIZED; 
@@ -304,6 +271,8 @@ static ASYNC(mpu6050_t, task){
 	// get the data from sensor at regular intervals
 	
 	while(1){
+		static timestamp_t time = 0; 
+		time = timestamp_now(); 
 		//self->time = timestamp_now(); 
 		IO_OPEN(self->dev); 
 		
@@ -313,72 +282,28 @@ static ASYNC(mpu6050_t, task){
 			IO_READ(self->dev, self->buf, 6); 
 			STORE_VEC3_16((self->raw + (self->count * 3))); 
 		}
-		/*IO_SEEK(self->dev, MPU6050_RA_ACCEL_XOUT_H, SEEK_SET); 
-		IO_READ(self->dev, self->buf, 6); 
-		STORE_VEC3_16((self->raw)); 
-			
-		IO_SEEK(self->dev, MPU6050_RA_GYRO_XOUT_H, SEEK_SET); 
-		IO_READ(self->dev, self->buf, 6); 
-		STORE_VEC3_16((self->raw + 3)); */
-		/*
-		PT_ASYNC_SEEK(pt, self->dev, MPU6050_IO_TIMEOUT, MPU6050_RA_GYRO_XOUT_H, SEEK_SET); 
-		PT_ASYNC_WRITE(pt, self->dev, MPU6050_IO_TIMEOUT, self->buf, 6); 
-		STORE_VEC3_16(self->raw_gyr); 
-		*/
+		
 		IO_CLOSE(self->dev); 
-		/*
+		
+		time = timestamp_ticks_to_us(timestamp_now() - time); 
+		//printf("MPU read: %luus\n", (uint32_t)time); 
+		
 		static timestamp_t tfps = 0; 
 		static int fps = 0; 
 		if(timestamp_expired(tfps)){
-			kprintf("MPU FPS: %d\n", fps); 
+			printf("MPU FPS: %d\n", fps); 
 			fps = 0; 
 			tfps = timestamp_from_now_us(1000000); 
 		} fps++; 
-		*/
+		
 		//TIMEOUT(10000); 
 		
 		//printf("MPU: %d %d %d %d %d %d\n", self->raw[0], self->raw[1], self->raw[2], 
 		//	self->raw[3], self->raw[4], self->raw[5]); 
 		
-		//TIMEOUT(10000); 
-		//self->time = timestamp_from_now_us(10000 - timestamp_ticks_to_us(timestamp_now() - self->time)); 
-		//PT_WAIT_UNTIL(pt, timestamp_expired(self->time)); 
-		
-		//PT_WAIT_UNTIL(pt, i2c_write(self->i2c, self->addr, &opslist[self->counter].reg, 1, 0) == 1);
-		//PT_WAIT_UNTIL(pt, i2c_read(self->i2c, self->addr, self->buffer, 6, I2C_SEND_STOP) == 6); 
-		/* 
-		self->buffer[0] = opslist[self->counter].reg; 
-		i2c_start_write(i2c, addr, self->buffer, 1);
-		PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
-		
-		i2c_start_read(i2c, addr, self->buffer, 6);
-		PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
-		
-		i2c_stop(i2c); 
-		PT_WAIT_WHILE(thr, i2c_busy(i2c)); 
-		*/
-		/*buf[0] = MPU6050_RA_ACCEL_XOUT_H; 
-		i2c_read(self->i2c, self->addr, self->buffer, 1, 6); 
-		PT_WAIT_WHILE(pt, i2c_busy(self->i2c)); 
-		//PT_SPAWN(pt, rpt, 
-		//	i2c_read_reg_thread(self->i2c, rpt, self->addr, MPU6050_RA_ACCEL_XOUT_H, self->buffer, 6)); 
-		self->raw_ax = (((int16_t)buf[0]) << 8) | buf[1];
-		self->raw_ay = (((int16_t)buf[2]) << 8) | buf[3];
-		self->raw_az = (((int16_t)buf[4]) << 8) | buf[5];
-		
-		buf[0] = MPU6050_RA_GYRO_XOUT_H; 
-		i2c_read(self->i2c, self->addr, self->buffer, 1, 6); 
-		PT_WAIT_WHILE(pt, i2c_busy(self->i2c)); 
-		//PT_SPAWN(pt, rpt, 
-		//	i2c_read_reg_thread(self->i2c, rpt, self->addr, MPU6050_RA_GYRO_XOUT_H, self->buffer, 6)); 
-		self->raw_gx = (((int16_t)buf[0]) << 8) | buf[1];
-		self->raw_gy = (((int16_t)buf[2]) << 8) | buf[3];
-		self->raw_gz = (((int16_t)buf[4]) << 8) | buf[5];
-		*/
-		// limit to 10ms between requests
 	}
 	
-	ASYNC_END(); 
+	ASYNC_END(0); 
 }
 
 PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)); 
@@ -387,7 +312,7 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 	
 	PT_BEGIN(pt); 
 	while(1){
-		PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(mpu6050_t, task, 0, self) != ASYNC_ENDED); 
+		PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(0, mpu6050_t, task, 0, self) != ASYNC_ENDED); 
 		PT_YIELD(pt); 
 	}
 	PT_END(pt); 

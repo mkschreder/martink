@@ -18,13 +18,36 @@ void async_process_init(struct async_process *self, ASYNC_PTR(int, async_process
 }
 
 void async_queue_process(async_queue_t *queue, struct async_process *self){
-	if(self->ASYNC_NAME(int, async_process_t, proc) == 0) return; // prevent invalid proc pointers..
-	if(self->list.prev != self->list.next) return; // prevent adding to queue twice
+	if(self->ASYNC_NAME(int, async_process_t, proc) == 0) {
+		printf("NULL proc!\n"); return; // prevent invalid proc pointers..
+	}
+	if(self->list.prev != self->list.next) {
+		printf("ALREADY ADDED!\n"); 
+		return; // prevent adding to queue twice
+	}
 	ASYNC_DEBUG("Self: %p %s\n", self->ASYNC_NAME(int, async_process_t, proc), self->name); 
 	list_add_tail(&self->list, &queue->list); 
 }
 
-uint8_t async_queue_run(async_queue_t *queue){
+
+uint8_t async_queue_run_series(async_queue_t *queue){
+	int ret = 0; 
+	
+	if(list_empty(&queue->list)) return 0; 
+	struct async_process *p = list_first_entry(&queue->list, struct async_process, list); 
+	
+	__current_process = p; 
+	if((p->ASYNC_NAME(int, async_process_t, proc)(&ret, 0, p)) == ASYNC_ENDED){
+		// if the thread has exited then remove it from the list
+		ASYNC_DEBUG("Removing %s from task list\n", p->name); 
+		list_del_init(queue->list.next); 
+	}
+	__current_process = 0; 
+	
+	return 1; 
+}
+
+uint8_t async_queue_run_parallel(async_queue_t *queue){
 	uint8_t active = 0; 
 	struct list_head *ptr, *n; 
 	if(list_empty(&queue->list)) return 0; 

@@ -101,6 +101,7 @@ struct multiwii_board {
 	timestamp_t 		time; // time keeping
 	struct rc_input rc_inputs[4]; 
 	struct fc_quad_interface interface; 
+	struct async_process process; 
 }; 
 
 static struct multiwii_board _brd; 
@@ -114,16 +115,24 @@ static struct multiwii_board *brd = &_brd;
 	}\
 }
 
+/*
 static PT_THREAD(rc_thread(uint8_t c)){
 	static const gpio_pin_t pins[] = {GPIO_RC0, GPIO_RC1, GPIO_RC2, GPIO_RC3}; 
 	PT_BEGIN(&brd->rc_inputs[c].thread); 
 	while(1){
+		// reset rc inputs
+		for(int c = 0; c < 4; c++){
+			rc_thread(c); 
+			if(timestamp_expired(brd->rc_inputs[c].last_activity + timestamp_us_to_ticks(500000))){
+				brd->rc_values[c] = rc_defaults[c]; 
+			}
+		}
 		gpio_start_read(pins[c], &brd->rc_inputs[c].ps, GP_READ_PULSE_P); 
 		PT_WAIT_WHILE(&brd->rc_inputs[c].thread, gpio_pin_busy(pins[c])); 
 		COMPUTE_RC_CHAN(c); 
 	}
 	PT_END(&brd->rc_inputs[c].thread); 
-}
+}*/
 
 void mwii_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right){
 	mwii_write_pwm(MWII_OUT_PWM0, front);
@@ -176,6 +185,20 @@ static int _serial_fd_getc(FILE *stream){
 static FILE uart_fd = FDEV_SETUP_STREAM(_serial_fd_putc, _serial_fd_getc, _FDEV_SETUP_RW);
 static uint8_t uart_buffer[2][64]; 
 
+
+ASYNC_PROCESS(mwii_task){
+	ASYNC_BEGIN(); 
+	
+	while(1){
+		AWAIT(timestamp_expired(brd->time)); 
+		
+		
+		brd->time = timestamp_from_now_us(10000); 
+	}
+	
+	ASYNC_END(0); 
+}
+
 void mwii_init(void){
 	//soc_init(); 
 	time_init(); 
@@ -192,14 +215,6 @@ void mwii_init(void){
 	pwm_init(); 
 	//adc0_init_default(); 
 	sei(); 
-	/*
-	PT_INIT(&brd->rc_inputs[0].thread); 
-	PT_INIT(&brd->rc_inputs[1].thread); 
-	PT_INIT(&brd->rc_inputs[2].thread); 
-	PT_INIT(&brd->rc_inputs[3].thread); 
-	PT_INIT(&brd->uthread); 
-	*/
-	 
 	
 	/*
 	// setup stdout and stderr (avr-libc specific) 
@@ -261,6 +276,9 @@ void mwii_init(void){
 	gpio_clear(GPIO_MWII_LED); 
 	
 	hcsr04_init(&brd->hcsr, brd->gpio0, GPIO_MWII_HCSR_TRIGGER, GPIO_MWII_HCSR_ECHO); 
+	
+	ASYNC_PROCESS_INIT(&brd->process, mwii_task); 
+	ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, &brd->process); 
 	
 	//mwii_calibrate_mpu6050(); 
 	// let the escs init as well
@@ -354,26 +372,6 @@ void mwii_read_config(uint8_t *data, uint8_t size){
 /// schedules an esc calibration to be done upon next powerup
 void mwii_calibrate_escs_on_reboot(void){
 	// TODO: save a flag and check it upon reboot
-}
-
-LIBK_THREAD(mwii){
-	
-	PT_BEGIN(pt); 
-	
-	while(1){
-		PT_WAIT_UNTIL(pt, timestamp_expired(brd->time)); 
-		
-		// reset rc inputs
-		for(int c = 0; c < 4; c++){
-			rc_thread(c); 
-			if(timestamp_expired(brd->rc_inputs[c].last_activity + timestamp_us_to_ticks(500000))){
-				brd->rc_values[c] = rc_defaults[c]; 
-			}
-		}
-		brd->time = timestamp_from_now_us(10000); 
-	}
-	
-	PT_END(pt); 
 }
 
 /*

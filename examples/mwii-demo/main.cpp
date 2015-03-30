@@ -15,11 +15,10 @@ Example for the fst6 radio transmitter board
 #define typeof __typeof__
 
 struct application {
-	struct libk_thread thread; 
+	struct async_process process; 
 	serial_dev_t uart; 
-	uint16_t adc; 
 	timestamp_t time; 
-	struct pin_state state; 
+	//struct pin_state state; 
 }; 
 
 static struct application app; 
@@ -40,45 +39,40 @@ int8_t _on_adc_event(struct adc_connection *con, uint16_t ev){
 	return -1; 
 }
 */
-LIBK_THREAD(app_thread){
-	//struct application *app = container_of(kthread, struct application, thread); 
-	PT_BEGIN(pt); 
+ASYNC_PROCESS(app_task){
+	//struct application *self = container_of(__self, struct application, process); 
+	ASYNC_BEGIN(); 
 	while(1){
+		
 		static timestamp_t time = 0; 
 		static uint32_t fps = 0; 
 		static uint32_t frame_time; 
 		static timestamp_t t = 0; 
 		
-		if(timestamp_expired(time)){
-			time = timestamp_from_now_us(1000000); 
-			printf("APP FPS: %5lu, %5luus\n", fps, frame_time); 
-			fps = 0; frame_time = 0; 
-		}
 		t = timestamp_from_now_us(10000);
 		
-		//printf(".\n"); 
-		{
-			//uint16_t ch; 
-			/*PT_WAIT_WHILE(pt, (ch = serial_getc(app->uart)) == SERIAL_NO_DATA); 
-			app->time = timestamp_now(); 
-			printf("Measuring adc.. \n"); 
-			adc_start_read(1, &app->adc); 
-			PT_WAIT_WHILE(pt, adc_busy()); 
-			printf("Measured to %u in %lu us\n", app->adc, (uint32_t)timestamp_ticks_to_us((timestamp_now() - app->time))); 
-			printf("Reading N pulse..\n"); 
-			gpio_start_read(MWII_GPIO_D9, &app->state, GP_READ_PULSE_P); 
-			PT_WAIT_WHILE(pt, gpio_pin_busy(MWII_GPIO_D9)); 
-			printf("Pulse length: %lu\n", timestamp_ticks_to_us((app->state.t_down - app->state.t_up))); 
-			*/
-			float ax, ay, az, gx, gy, gz, x, y, z; 
-			//timestamp_t t = timestamp_now(); 
-			mwii_read_acceleration_g(&ax, &ay, &az); 
-			mwii_read_angular_velocity_dps(&gx, &gy, &gz); 
-			mwii_read_magnetic_field(&x, &y, &z); 
-			mwii_read_temperature_c();
-			mwii_read_pressure_pa(); 
-			
-			/*
+		//uint16_t ch; 
+		/*PT_WAIT_WHILE(pt, (ch = serial_getc(app->uart)) == SERIAL_NO_DATA); 
+		app->time = timestamp_now(); 
+		printf("Measuring adc.. \n"); 
+		adc_start_read(1, &app->adc); 
+		PT_WAIT_WHILE(pt, adc_busy()); 
+		printf("Measured to %u in %lu us\n", app->adc, (uint32_t)timestamp_ticks_to_us((timestamp_now() - app->time))); 
+		printf("Reading N pulse..\n"); 
+		gpio_start_read(MWII_GPIO_D9, &app->state, GP_READ_PULSE_P); 
+		PT_WAIT_WHILE(pt, gpio_pin_busy(MWII_GPIO_D9)); 
+		printf("Pulse length: %lu\n", timestamp_ticks_to_us((app->state.t_down - app->state.t_up))); 
+		*/
+		float ax, ay, az, gx, gy, gz, x, y, z; 
+		//timestamp_t t = timestamp_now(); 
+		mwii_read_acceleration_g(&ax, &ay, &az); 
+		mwii_read_angular_velocity_dps(&gx, &gy, &gz); 
+		mwii_read_magnetic_field(&x, &y, &z); 
+		mwii_read_temperature_c();
+		mwii_read_pressure_pa(); 
+		
+		if(timestamp_expired(time)){
+			time = timestamp_from_now_us(1000000); 
 			printf("ACC: %5d %5d %5d, ", 
 				(int16_t)(ax * 1000), (int16_t)(ay * 1000), (int16_t)(az * 1000));  
 			printf("GYR: %5d %5d %5d, ", 
@@ -87,21 +81,18 @@ LIBK_THREAD(app_thread){
 			
 			printf("MAG: %5d %5d %5d ", 
 				(int16_t)(x * 10), (int16_t)(y * 10), (int16_t)(z * 10));  
-			t = timestamp_ticks_to_us(timestamp_now() - t); 
-			printf("FRAME: %6luus\n", (uint32_t)t); */
+			printf("FRAME: %6luus\n", (uint32_t)t); 
+			printf("APP FPS: %5lu, %5luus\n", fps, frame_time); 
+			fps = 0; frame_time = 0; 
 		}
 		
-		
-		PT_WAIT_UNTIL(pt, timestamp_expired(t)); 
+		AWAIT(timestamp_expired(t)); 
 		t = timestamp_ticks_to_us(timestamp_now() - t); 
 		frame_time += t; 
 		
 		fps++; 
-		//PT_YIELD(pt); 
-		//app->time = timestamp_from_now_us(1000000); 
-		//PT_WAIT_UNTIL(pt, timestamp_expired(app->time)); 
 	}
-	PT_END(pt); 
+	ASYNC_END(0); 
 }
 
 int main(void){
@@ -112,7 +103,11 @@ int main(void){
 	gpio_configure(MWII_GPIO_A1, GP_INPUT | GP_PULLUP | GP_ANALOG); 
 	gpio_configure(MWII_GPIO_D9, GP_INPUT | GP_PULLUP | GP_PCINT); 
 	
-	libk_run(); 
+	ASYNC_PROCESS_INIT(&app.process, app_task); 
+	ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, &app.process); 
+	
+	while(ASYNC_RUN_QUEUE(&ASYNC_GLOBAL_QUEUE)); 
+	//libk_run(); 
 	/*while(1){
 		app_thread(&app); 
 		mwii_process_events(); 

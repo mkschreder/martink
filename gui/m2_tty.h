@@ -18,7 +18,7 @@ struct m2_tty {
 	uint16_t		width, height; 
 	struct cbuf	key_buffer; 
 	uint8_t 		key_buffer_data[8]; 
-	struct libk_thread thread; 
+	struct async_process process; 
 	timestamp_t time; 
 }; 
 

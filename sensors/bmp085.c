@@ -83,24 +83,8 @@ enum {
 
 typedef struct bmp085 bmp085_t; 
 
-static ASYNC(int, bmp085_t, task){
-	/*struct {
-		uint8_t reg; 
-		int16_t *out; 
-	} init_sequence[] = {
-		{ BMP085_REGAC1, &self->regac1 }, 
-		{ BMP085_REGAC2, &self->regac2 }, 
-		{ BMP085_REGAC3, &self->regac3 },
-		{ BMP085_REGB1, &self->regb1 },
-		{ BMP085_REGB2, &self->regb2 },
-		{ BMP085_REGMB, &self->regmb },
-		{ BMP085_REGMC, &self->regmc },
-		{ BMP085_REGMD, &self->regmd },
-		{ BMP085_REGAC4, (int16_t*)&self->regac4 },
-		{ BMP085_REGAC5, (int16_t*)&self->regac5 },
-		{ BMP085_REGAC6, (int16_t*)&self->regac6 }
-	}; */
-	
+ASYNC_PROCESS(bmp085_task){
+	struct bmp085 *self = container_of(__self, struct bmp085, process); 
 	struct read_seq {
 		uint8_t reg; 
 		uint8_t reg_val; 
@@ -170,21 +154,9 @@ static ASYNC(int, bmp085_t, task){
 			fps = 0; 
 			tfps = timestamp_from_now_us(1000000); 
 		} fps++; 
-		
 	}
 	
 	ASYNC_END(0); 
-}
-
-PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *pt));
-PT_THREAD(_bmp085_thread(struct libk_thread *kthread, struct pt *pt)){ 
-	struct bmp085 *self = container_of(kthread, struct bmp085, kthread); 
-	PT_BEGIN(pt); 
-	while(1){
-		PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(0, bmp085_t, task, 0, self) != ASYNC_ENDED); 
-		PT_YIELD(pt); 
-	}
-	PT_END(pt); 
 }
 
 static long bmp085_getrawtemperature(struct bmp085 *self) {
@@ -257,9 +229,12 @@ void bmp085_init(struct bmp085 *self, io_dev_t i2c_dev) {
 	//self->dev = i2cblk_get_interface(&self->i2cblk); 
 	self->dev = i2c_dev; 
 	self->ut = self->up = 0; 
-	ASYNC_INIT(&self->task); 
-
+	//ASYNC_INIT(&self->task); 
+	
+	ASYNC_PROCESS_INIT(&self->process, bmp085_task); 
+	ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, &self->process); 
+	
 	// one thread per bmp sensor
-	libk_create_thread(&self->kthread, _bmp085_thread, "bmp085"); 
+	//libk_create_thread(&self->kthread, _bmp085_thread, "bmp085"); 
 }
 

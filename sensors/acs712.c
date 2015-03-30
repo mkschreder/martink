@@ -32,13 +32,13 @@
 #include "acs712.h"
 #include <thread/pt.h>
 
-
+/*
 static PT_THREAD(_acs712_update_thread(struct libk_thread *kthread, struct pt *pt)){
 	struct acs712 *self = container_of(kthread, struct acs712, thread); 
 	(void)self; 
 	
 	PT_BEGIN(pt); 
-	/*
+	
 	while(1){
 		PT_WAIT_UNTIL(pt, self->interval != 0 && timestamp_expired(self->time)); 
 		
@@ -49,9 +49,10 @@ static PT_THREAD(_acs712_update_thread(struct libk_thread *kthread, struct pt *p
 		PT_WAIT_WHILE(pt, adc_busy()); 
 		
 		self->time = timestamp_from_now_us(self->interval); 
-	}*/
+	}
 	PT_END(pt); 
 }
+*/
 
 void acs712_init(struct acs712 *self, uint8_t adc_chan, uint16_t read_interval_us){
 	self->adc_chan = adc_chan; 
@@ -59,7 +60,7 @@ void acs712_init(struct acs712 *self, uint8_t adc_chan, uint16_t read_interval_u
 	self->raw_value = 0; 
 	self->time = timestamp_now(); 
 	
-	libk_create_thread(&self->thread, _acs712_update_thread, "acs0712"); 
+	//libk_create_thread(&self->thread, _acs712_update_thread, "acs0712"); 
 }
 
 float acs712_read_current(struct acs712 *self, float sensitivity, float vcc_volt) {

@@ -82,8 +82,6 @@ struct avr_i2c_device {
 	volatile uint8_t status; 
 	
 	async_mutex_t lock, buffer_lock; 
-	//struct block_device_ops *api; 
-	//struct pt *user_thread; 
 }; 
 
 static struct avr_i2c_device _device; 
@@ -238,7 +236,7 @@ void avr_i2c_deinit(uint8_t dev_id){
 
 
 static ASYNC(io_result_t, io_device_t, vopen){
-	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
+	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
 	
 	ASYNC_BEGIN(); 
 	
@@ -251,7 +249,7 @@ static ASYNC(io_result_t, io_device_t, vopen){
 }
 
 static ASYNC(io_result_t, io_device_t, vclose){
-	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
+	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
 	
 	ASYNC_BEGIN(); 
 	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
@@ -263,7 +261,7 @@ static ASYNC(io_result_t, io_device_t, vclose){
 }
 
 static ASYNC(io_result_t, io_device_t, vseek, ssize_t pos, int whence){
-	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
+	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
 	
 	ASYNC_BEGIN();
 	
@@ -277,7 +275,7 @@ static ASYNC(io_result_t, io_device_t, vseek, ssize_t pos, int whence){
 }
 
 static ASYNC(io_result_t, io_device_t, vwrite, const uint8_t *data, ssize_t size){
-	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
+	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
 	
 	ASYNC_BEGIN();
 		// lock the buffer so that read can not start using it
@@ -324,7 +322,7 @@ static ASYNC(io_result_t, io_device_t, vwrite, const uint8_t *data, ssize_t size
 }
 
 static ASYNC(io_result_t, io_device_t, vread, uint8_t *data, ssize_t size){
-	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
+	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
 	
 	ASYNC_BEGIN(); 
 		// lock the buffer so that read can not start using it
@@ -371,7 +369,7 @@ static ASYNC(io_result_t, io_device_t, vread, uint8_t *data, ssize_t size){
 }
 
 static ASYNC(io_result_t, io_device_t, vioctl, ioctl_req_t req, va_list vl){
-	struct avr_i2c_device *dev = container_of(self, struct avr_i2c_device, io); 
+	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
 	
 	ASYNC_BEGIN(); 
 	

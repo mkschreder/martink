@@ -42,7 +42,7 @@ void i2cblk_init(struct i2c_block_device *dev, io_dev_t i2c, uint8_t i2c_addr, u
 
 
 static ASYNC(io_result_t, io_device_t, vopen){
-	struct i2c_block_device *dev = container_of(self, struct i2c_block_device, io); 
+	struct i2c_block_device *dev = container_of(__self, struct i2c_block_device, io); 
 	
 	ASYNC_BEGIN(); 
 	
@@ -58,7 +58,7 @@ static ASYNC(io_result_t, io_device_t, vopen){
 }
 
 static ASYNC(io_result_t, io_device_t, vclose){
-	struct i2c_block_device *dev = container_of(self, struct i2c_block_device, io); 
+	struct i2c_block_device *dev = container_of(__self, struct i2c_block_device, io); 
 
 	ASYNC_BEGIN(); 
 	ASYNC_MUTEX_UNLOCK(dev->lock); 
@@ -84,7 +84,7 @@ static void _write_address(struct i2c_block_device *dev){
 }
 
 static ASYNC(io_result_t, io_device_t, vwrite, const uint8_t *data, ssize_t size){
-	struct i2c_block_device *dev = container_of(self, struct i2c_block_device, io); 
+	struct i2c_block_device *dev = container_of(__self, struct i2c_block_device, io); 
 	
 	uint8_t addr_size = dev->flags & I2CBLK_IADDR_BITS; 
 	ssize_t tr_size = ((size - dev->offset) > (ssize_t)dev->block_size)?(ssize_t)dev->block_size:(size - dev->offset); 
@@ -136,7 +136,7 @@ static ASYNC(io_result_t, io_device_t, vwrite, const uint8_t *data, ssize_t size
 }
 
 static ASYNC(io_result_t, io_device_t, vread, uint8_t *data, ssize_t size){
-	struct i2c_block_device *dev = container_of(self, struct i2c_block_device, io); 
+	struct i2c_block_device *dev = container_of(__self, struct i2c_block_device, io); 
 	(void)data; 
 	
 	uint8_t addr_size = dev->flags & I2CBLK_IADDR_BITS; 
@@ -193,7 +193,7 @@ static ASYNC(io_result_t, io_device_t, vread, uint8_t *data, ssize_t size){
 }
 
 static ASYNC(io_result_t, io_device_t, vseek, ssize_t ofs, int whence){
-	struct i2c_block_device *dev = container_of(self, struct i2c_block_device, io); 
+	struct i2c_block_device *dev = container_of(__self, struct i2c_block_device, io); 
 	
 	ASYNC_BEGIN(); 
 	
@@ -218,7 +218,7 @@ static ASYNC(io_result_t, io_device_t, vseek, ssize_t ofs, int whence){
 
 
 static ASYNC(io_result_t, io_device_t, vioctl, ioctl_req_t req, va_list vl){
-	struct i2c_block_device *dev = container_of(self, struct i2c_block_device, io); 
+	struct i2c_block_device *dev = container_of(__self, struct i2c_block_device, io); 
 
 	ASYNC_BEGIN(); 
 	

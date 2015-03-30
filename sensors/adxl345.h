@@ -34,7 +34,7 @@ struct adxl345 {
 	uint16_t raw_ax, raw_ay, raw_az; 
 	uint8_t status; 
 	timestamp_t time; 
-	struct libk_thread thread; 
+	struct async_process process; 
 };
 
 void adxl345_init(struct adxl345 *self, i2c_dev_t i2c, uint8_t addr);

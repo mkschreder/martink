@@ -51,7 +51,7 @@ struct ks0713 {
 	
 	void (*putn)(struct ks0713 *self, uint16_t *data, size_t size); 
 	
-	struct libk_thread thread; 
+	struct async_process process; 
 	struct ks0713_thread_data tr; 
 	
 	struct tty_device *tty; 

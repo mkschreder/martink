@@ -235,7 +235,8 @@ static PT_THREAD(_mpu6050_init_thread(struct libk_thread *kthread, struct pt *pt
 
 typedef struct mpu6050 mpu6050_t; 
 
-static ASYNC(int, mpu6050_t, task){
+ASYNC_PROCESS(mpu6050_task){
+	struct mpu6050 *self = container_of(__self, struct mpu6050, process); 
 	static const struct _init {
 		uint8_t reg; 
 		uint16_t value; 
@@ -306,6 +307,7 @@ static ASYNC(int, mpu6050_t, task){
 	ASYNC_END(0); 
 }
 
+/*
 PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)); 
 PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 	struct mpu6050 *self = container_of(kthread, struct mpu6050, kthread); 
@@ -317,12 +319,15 @@ PT_THREAD(_mpu6050_thread(struct libk_thread *kthread, struct pt *pt)){
 	}
 	PT_END(pt); 
 }
-
+*/
 void mpu6050_init(struct mpu6050 *self, io_dev_t dev) {
 	self->dev = dev; 
 	self->state = 0; 
 	
-	libk_create_thread(&self->kthread, _mpu6050_thread, "mpu6050"); 
+	ASYNC_PROCESS_INIT(&self->process, mpu6050_task); 
+	ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, &self->process); 
+	
+	//libk_create_thread(&self->kthread, _mpu6050_thread, "mpu6050"); 
 	
 	/*PT_INIT(&self->uthread); // update
 	PT_INIT(&self->rthread); // read
@@ -331,7 +336,8 @@ void mpu6050_init(struct mpu6050 *self, io_dev_t dev) {
 }
 
 void mpu6050_deinit(struct mpu6050 *self){
-	libk_unlink_thread(&self->kthread);
+	(void)self; 
+	//libk_unlink_thread(&self->kthread);
 }
 
 /*

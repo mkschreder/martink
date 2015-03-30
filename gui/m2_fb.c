@@ -20,13 +20,13 @@ static uint8_t _m2_fb_es(m2_p ep, uint8_t msg){
 	return 0; 
 }
 
-static PT_THREAD(_m2_fb_thread(struct libk_thread *kthread, struct pt *pt)){
-	(void)kthread; 
+ASYNC_PROCESS(m2_fb_task){
+	(void)__self; 
 	struct m2_fb *self = &_m2fb; 
 	
 	//struct m2_fb *self = container_of(kthread, struct m2_fb, thread); 
 	
-	PT_BEGIN(pt); 
+	ASYNC_BEGIN(); 
 	
 	while(1){
 		if(timestamp_expired(self->time)){
@@ -40,10 +40,10 @@ static PT_THREAD(_m2_fb_thread(struct libk_thread *kthread, struct pt *pt)){
       } while( u8g_NextPage(&self->u8g) );
 			self->time = timestamp_from_now_us(1000000/25); 
 		}
-		PT_YIELD(pt); 
+		ASYNC_YIELD(); 
 	}
 	
-	PT_END(pt); 
+	ASYNC_END(0); 
 }
 
 static void _m2_fb_set_pixel8(struct m2_fb *self, u8g_dev_arg_pixel_t *arg_pixel){
@@ -195,7 +195,8 @@ void m2_fb_init(fbuf_dev_t _fb, m2_rom_void_p element){
 	
 	cbuf_init(&self->key_buffer, self->key_buffer_data, sizeof(self->key_buffer_data)); 
 	
-	libk_create_thread(&self->thread, _m2_fb_thread, "m2_fb"); 
+	ASYNC_PROCESS_INIT(&self->process, m2_fb_task); 
+	ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, &self->process); 
 }
 
 

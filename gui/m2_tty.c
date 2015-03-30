@@ -141,20 +141,20 @@ static uint8_t _m2_tty_gh(m2_gfx_arg_p  arg){
 	return m2_gh_dummy(arg);
 }
 
-static PT_THREAD(_m2_tty_thread(struct libk_thread *kthread, struct pt *pt)){
-	struct m2_tty *self = container_of(kthread, struct m2_tty, thread); 
+ASYNC_PROCESS(m2_tty_task){
+	struct m2_tty *self = container_of(__self, struct m2_tty, process); 
 	
-	PT_BEGIN(pt); 
+	ASYNC_BEGIN(); 
 	
 	while(1){
 		_m2_tty_current = self; 
 		m2_CheckKey();
 		m2_HandleKey();  
 		m2_Draw();
-		PT_YIELD(pt); 
+		ASYNC_YIELD(); 
 	}
 	
-	PT_END(pt); 
+	ASYNC_END(0); 
 }
 
 void m2_tty_put_key(struct m2_tty *self, uint8_t key){
@@ -170,5 +170,6 @@ void m2_tty_init(struct m2_tty *self, serial_dev_t _screen, uint16_t w, uint16_t
 	
 	cbuf_init(&self->key_buffer, self->key_buffer_data, sizeof(self->key_buffer_data)); 
 	
-	libk_create_thread(&self->thread, _m2_tty_thread, "m2_tty"); 
+	ASYNC_PROCESS_INIT(&self->process, m2_tty_task); 
+	ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, &self->process); 
 }

@@ -39,7 +39,7 @@ struct acs712 {
 	uint8_t adc_chan; 
 	uint16_t interval; 
 	timestamp_t time; 
-	struct libk_thread thread; 
+	struct async_process process; 
 	uint16_t raw_value; 
 }; 
 

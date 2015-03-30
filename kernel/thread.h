@@ -10,7 +10,7 @@ extern "C" {
 
 
 //////////////////////////////
-
+/*
 struct libk_thread {
 	struct list_head list; 
 	char (*proc)(struct libk_thread *kthread, struct pt *self); 
@@ -53,7 +53,7 @@ void libk_print_info(void);
 #define LIBK_THREAD(func) _LIBK_THREAD(__COUNTER__, func)
 
 #define PT_SLEEP(pt, var, time_us) { var = timestamp_from_now_us(time_us); PT_WAIT_UNTIL(pt, timestamp_expired(var)); }
-
+*/
 #ifdef __cplusplus
 }
 #endif

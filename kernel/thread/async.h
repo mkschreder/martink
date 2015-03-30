@@ -42,8 +42,8 @@ struct async_task {
 
 #define _ASYNC(result_type, object_type, task_name, struct_name, ...) \
 	async_return_t __##object_type##_##task_name##__(result_type *_result, \
-	struct async_task *parent, object_type *self, ##__VA_ARGS__){ \
-	struct async_task *_async = &self->struct_name; 
+	struct async_task *parent, object_type *__self, ##__VA_ARGS__){ \
+	struct async_task *_async = &__self->struct_name; 
 
 #define ASYNC(result_type, object_type, task_name, ...) _ASYNC(result_type, object_type, task_name, task_name, ##__VA_ARGS__)
 	

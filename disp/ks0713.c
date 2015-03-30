@@ -93,10 +93,10 @@ static void ks0713_send_command(struct ks0713 *self, uint8_t cmd)
 	GPIO_Write(GPIOC, gpio);*/
 }
 
-static PT_THREAD(_ks0713_commit_thread_lomem(struct libk_thread *kthread, struct pt *pt)){
-	struct ks0713 *self = container_of(kthread, struct ks0713, thread); 
+ASYNC_PROCESS(ks0713_task){
+	struct ks0713 *self = container_of(__self, struct ks0713, process); 
 	
-	PT_BEGIN(pt); 
+	ASYNC_BEGIN();  
 	
 	while(1){
 		for (self->tr.row = 0; self->tr.row < KS0713_HEIGHT / 8; ++self->tr.row){
@@ -143,10 +143,10 @@ static PT_THREAD(_ks0713_commit_thread_lomem(struct libk_thread *kthread, struct
 				self->putn(self, &word, 1); 
 			}
 			// yield after each row transfer
-			PT_YIELD(pt);
+			ASYNC_YIELD(); 
 		}
 	}
-	PT_END(pt); 
+	ASYNC_END(0); 
 }
 
 /**
@@ -161,7 +161,8 @@ void ks0713_init(struct ks0713 *self, void (*putn)(struct ks0713 *self, uint16_t
 	self->contrast = 0x28; 
 	self->cursor_x = self->cursor_y = 0; 
 	
-	libk_create_thread(&self->thread, _ks0713_commit_thread_lomem, "ks0713_lomem"); 
+	ASYNC_PROCESS_INIT(&self->process, ks0713_task); 
+	ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, &self->process); 
 	
 	// set the pins high
 	self->port_state = KS0713_PIN_MASK; 

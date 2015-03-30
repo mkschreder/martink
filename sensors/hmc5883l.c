@@ -93,8 +93,8 @@
 
 typedef struct hmc5883l hmc5883l_t; 
 
-static ASYNC(int, hmc5883l_t, task){
-	
+ASYNC_PROCESS(hmc5883_task){
+	struct hmc5883l *self = container_of(__self, struct hmc5883l, process); 
 	ASYNC_BEGIN(); 
 	
 	// wait for the compass to start
@@ -144,36 +144,25 @@ static ASYNC(int, hmc5883l_t, task){
 			tfps = timestamp_from_now_us(1000000); 
 		} fps++; 
 		
+		ASYNC_YIELD(); 
 		//TIMEOUT(10000); 
 		
 		//printf("HMC: %d %d %d\n", self->raw_mag[0], self->raw_mag[1], self->raw_mag[2]); 
-		
-		//TIMEOUT(10000L);
 	}
 	
 	ASYNC_END(0); 
-}
-
-
-PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)); 
-PT_THREAD(_hmc5883l_thread(struct libk_thread *kthread, struct pt *pt)){
-	struct hmc5883l *self = container_of(kthread, struct hmc5883l, kthread); 
-	
-	PT_BEGIN(pt); 
-	while(1){
-		PT_WAIT_WHILE(pt, ASYNC_INVOKE_ONCE(0, hmc5883l_t, task, 0, self) != ASYNC_ENDED); 
-		PT_YIELD(pt); 
-	}
-	PT_END(pt); 
 }
 
 void hmc5883l_init(struct hmc5883l *self, io_dev_t i2c) {
 	self->dev = i2c;
 	self->status = 0; 
 	
-	ASYNC_INIT(&self->task); 
+	ASYNC_PROCESS_INIT(&self->process, hmc5883_task); 
+	ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, &self->process); 
 	
-	libk_create_thread(&self->kthread, _hmc5883l_thread, "hmc5883l"); 
+	//ASYNC_INIT(&self->task); 
+	
+	//libk_create_thread(&self->kthread, _hmc5883l_thread, "hmc5883l"); 
 	
 	switch(HMC5883L_SCALE) {
 		case HMC5883L_SCALE088: 

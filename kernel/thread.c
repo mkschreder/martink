@@ -1,6 +1,7 @@
 #include <arch/soc.h>
 #include "thread.h"
 
+/*
 LIST_HEAD(_running); 
 LIST_HEAD(_idle); 
 
@@ -31,14 +32,7 @@ void libk_unlink_thread(struct libk_thread *self){
 	#endif
 	list_del_init(&self->list); 
 }
-/*
-void libk_schedule_thread(struct pt *thread, void (*proc)(void *arg), void *arg){
-	struct pt *pt = _current_thread; 
-	_current_thread = thread; 
-	proc(arg); 
-	_current_thread = pt; 
-}
-*/
+
 struct pt *libk_current_thread(void){
 	return _current_thread; 
 }
@@ -100,7 +94,7 @@ uint32_t libk_get_fps(void){
 
 void libk_print_info(void){
 	#ifdef LIBK_DEBUG
-	/*	struct list_head *ptr, *n; 
+		struct list_head *ptr, *n; 
 		printf("Running threads: \n"); 
 		uint16_t count = 0; 
 		long unsigned int ustotal = 0; 
@@ -113,10 +107,10 @@ void libk_print_info(void){
 		}
 		printf("TOTAL: %d threads, %lu us\n", count, ustotal); 
 		printf("FPS: %lu\n", (unsigned long)libk_get_fps()); 
-	*/
+	
 	#endif
 }
-/*
+
 LIBK_THREAD(fps_count){
 	static timestamp_t time = 0; 
 	_bfps++; 

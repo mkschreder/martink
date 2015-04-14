@@ -103,7 +103,7 @@ void async_queue_process(async_queue_t *queue, struct async_process *self);
 uint8_t async_queue_run_parallel(async_queue_t *queue); 
 uint8_t async_queue_run_series(async_queue_t *queue); 
 
-#define __ASYNC_PROCESS(c, func) _ASYNC(int, async_process_t, func, task)
+#define __ASYNC_PROCESS(c, func) static _ASYNC(int, async_process_t, func, task)
 	
 #define _ASYNC_PROCESS(c, func) __ASYNC_PROCESS(c, func)
 #define ASYNC_PROCESS(func) _ASYNC_PROCESS(__COUNTER__, func)

@@ -106,7 +106,7 @@ int main(void){
 	ASYNC_PROCESS_INIT(&app.process, app_task); 
 	ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, &app.process); 
 	
-	while(ASYNC_RUN_QUEUE(&ASYNC_GLOBAL_QUEUE)); 
+	while(ASYNC_RUN_PARALLEL(&ASYNC_GLOBAL_QUEUE)); 
 	//libk_run(); 
 	/*while(1){
 		app_thread(&app); 

@@ -162,11 +162,6 @@ ASYNC_PROCESS(bmp085_task){
 static long bmp085_getrawtemperature(struct bmp085 *self) {
 	long x1,x2;
 
-	//calculate raw temperature
-	/*
-	x1 = ((int32_t)self->ut - self->regac6) * self->regac5 >> 15;
-	x2 = ((long)self->regmc << 11) / (x1 + self->regmd);
-	*/
 	x1 = ((int32_t)self->ut - self->calib_data[BMP085_RAC6]) * self->calib_data[BMP085_RAC5] >> 15;
 	x2 = ((long)self->calib_data[BMP085_RMC] << 11) / (x1 + self->calib_data[BMP085_RMD]);
 	

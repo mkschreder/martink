@@ -25,7 +25,7 @@
 #include "spi.h"
 
 #include <kernel/dev/serial.h>
-
+/*
 struct spi_dev {
 	uint8_t id;
 	struct serial_if *serial;
@@ -102,41 +102,6 @@ serial_dev_t spi_get_serial_interface(uint8_t dev){
 	return &_spi[dev].serial; 
 }
 
-/*
-void _init(struct device_meta *meta){
-	
-}
-
-struct serial_device_ops {
-	uint16_t (*put)(serial_dev_t dev, uint8_t ch); 
-	struct device_ops_meta meta; 
-}; 
-
-static struct serial_device_ops _spi_serial SECTION_DEVICE_META = {
-	.put = _spi_putc,
-}; 
-
-static struct device_ops _spi_ops2 SECTION_DEVICE_META = {
-	.type = DEV_SERIAL, 
-	.meta = &_spi_serial.meta,
-	.next = 0
-}; 
-
-static struct device_ops _spi_ops SECTION_DEVICE_META = {
-	.type = DEV_SERIAL, 
-	.meta = &_spi_serial.meta,
-	.next = &_spi_ops2
-}; 
-
-DEVICE_INFO(spi[]) = {
-	{
-		.name = "spi0", 
-		.init = _init, 
-		.ops = &_spi_ops, 
-		.meta = &_spi[0].meta
-	}
-}; 
-*/
 void initproc spi_init(void){
 	int c; 
 	static struct serial_if _if;
@@ -166,3 +131,4 @@ void initproc spi_init(void){
 	}
 	//kdebug("\n");
 }
+*/

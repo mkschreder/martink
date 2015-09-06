@@ -83,3 +83,6 @@ struct pio_if {
 //static inline uint8_t pio_read_word(pio_dev_t self, uint16_t addr, uint32_t *output){
 //	return (*self)->read_word(self, addr, output);
 //}
+
+#define pio_set_pin(dev, pin) pio_write_pin(dev, pin, 1)
+#define pio_clear_pin(dev, pin) pio_write_pin(dev, pin, 0)

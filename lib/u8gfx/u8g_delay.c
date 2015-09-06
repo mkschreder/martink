@@ -279,8 +279,9 @@ void u8g_10MicroDelay(void)
 
 /*== Any other systems: Dummy Delay ==*/
 #if defined(USE_DUMMY_DELAY)
-void u8g_Delay(uint16_t val)
+void u8g_Delay(uint16_t __attribute__((unused)) val)
 {
+	//printf("u8g: dummy delay %d\n", val); 
 	/* do not know how to delay... */
 }
 void u8g_MicroDelay(void)

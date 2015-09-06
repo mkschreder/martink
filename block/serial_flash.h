@@ -80,11 +80,12 @@ struct serial_flash_props {
 
 struct serial_flash {
 	serial_dev_t 	port; 
+	pio_dev_t 		gpio; 
 	gpio_pin_t 		cs_pin; 
 	struct serial_flash_props props; 
 }; 
 
-void serial_flash_init(struct serial_flash *self, serial_dev_t port, gpio_pin_t cs_pin); 
+void serial_flash_init(struct serial_flash *self, serial_dev_t port, pio_dev_t gpio, gpio_pin_t cs_pin); 
 uint32_t serial_flash_write(struct serial_flash *self, uint32_t addr, const uint8_t *data, uint32_t count); 
 uint32_t serial_flash_read(struct serial_flash *self, uint32_t addr, uint8_t *data, uint32_t count); 
 void serial_flash_sector_erase(struct serial_flash *self, uint8_t s); 

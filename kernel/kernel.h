@@ -27,7 +27,6 @@ extern "C" {
 
 #include "config.h"
 
-
 #include <inttypes.h>
 #include <stddef.h>
 //#include <sys/types.h>

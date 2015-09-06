@@ -26,7 +26,7 @@
 #include <stdio.h>
 
 //#define UART_DEFAULT_BAUDRATE 38400
-
+/*
 struct uart_device {
 	uint8_t id; 
 	struct serial_if *serial; 
@@ -89,7 +89,7 @@ static int16_t _uart_end(serial_dev_t self){
 	return 0; 
 }
 
-serial_dev_t /*@null@*/ uart_get_serial_interface(uint8_t dev_id){
+serial_dev_t uart_get_serial_interface(uint8_t dev_id){
 	static const uint8_t count = sizeof(_uart) / sizeof(_uart[0]); 
 	
 	static struct serial_if _if;
@@ -112,8 +112,4 @@ serial_dev_t /*@null@*/ uart_get_serial_interface(uint8_t dev_id){
 	_uart[dev_id].id = dev_id; 
 	return &_uart[dev_id].serial; 
 }
-
-/*
-size_t uart0_putn(const char *buf, size_t size){
-	return serial_putn(uart_get_serial_interface(0), (uint8_t*)buf, size); 
-}*/
+*/

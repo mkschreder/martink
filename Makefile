@@ -10,17 +10,24 @@ VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty
 # define defaults that can be added to in submakefiles
 INCLUDES := -I. -Iinclude -Iinclude/c++ -Ikernel
 COMMON_FLAGS := -MD -ffunction-sections -fdata-sections -Wall -Werror -Os
-CFLAGS := -Wall -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
+CFLAGS += -Wall -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wshadow -Wcast-align -Wchar-subscripts -Winline \
 -Wnested-externs -Wredundant-decls -Wmissing-field-initializers -Wextra \
 -Wformat=2 -Wno-format-nonliteral -Wpointer-arith -Wno-missing-braces 
 #-Wpedantic
-CXXFLAGS := -Wall -Wno-format-y2k -W \
+CXXFLAGS += -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wcast-align -Wchar-subscripts -Wredundant-decls
 LDFLAGS := -Wl,--relax,--gc-sections
 EXTRALIBS := 
+
+ifneq ($(BUILD),)
+include configs/$(BUILD).config
+else
+include .config
+endif
+
 BUILD_DIR := build/$(BUILD)
 CONFIG := configs/$(BUILD).config
 CONFIG_H := include/configs/$(BUILD).h
@@ -29,12 +36,6 @@ CPU = $(word 2,$(subst -, ,$(BUILD)))
 
 ktree := martink
 #$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-
-ifdef BUILD
-	include configs/$(BUILD).config
-else
-	include .config
-endif
 
 include Makefile.build 
 
@@ -79,7 +80,7 @@ export quiet Q KBUILD_VERBOSE
 all: build; 
 
 # Basic helpers built in scripts/
-PHONY += scripts_basic
+PHONY += scripts_basic defconfig
 scripts_basic:
 	$(Q)$(MAKE) $(build)=scripts/basic
 

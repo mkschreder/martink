@@ -142,8 +142,8 @@ float   mpu6000Temperature;
 int16andUint8_t rawMPU6000Temperature;
 */
 
-#define MPU6000_CS_Hi gpio_set(self->cs_pin)
-#define MPU6000_CS_Lo gpio_clear(self->cs_pin)
+#define MPU6000_CS_Hi pio_set_pin(self->gpio, self->cs_pin)
+#define MPU6000_CS_Lo pio_clear_pin(self->gpio, self->cs_pin)
 
 static void mpu6000_write_reg(struct mpu6000 *self, uint8_t reg, uint8_t data){
 	MPU6000_CS_Lo; 
@@ -169,7 +169,8 @@ void mpu6000_init(struct mpu6000 *self, serial_dev_t port, pio_dev_t gpio, gpio_
 	self->cs_pin = cs_pin; 
 	self->gofs_x = self->gofs_y = self->gofs_z; 
 	self->aofs_x = self->aofs_y = self->aofs_z; 
-	gpio_configure(cs_pin, GP_OUTPUT); 
+	
+	pio_configure_pin(gpio, cs_pin, GP_OUTPUT); 
 	
 	mpu6000_write_reg(self, MPU6000_PWR_MGMT_1, BIT_H_RESET);          // Device Reset
   

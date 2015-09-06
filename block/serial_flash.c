@@ -32,8 +32,8 @@
 #include <arch/soc.h>
 #include "serial_flash.h"
 
-#define select() (gpio_clear(self->cs_pin), serial_begin(self->port))
-#define deselect() (gpio_set(self->cs_pin), serial_end(self->port))
+#define select() { pio_write_pin(self->gpio, self->cs_pin, 0); serial_begin(self->port); }
+#define deselect() { pio_write_pin(self->gpio, self->cs_pin, 1); serial_end(self->port); }
 #define write_byte(byte) serial_putc(self->port, (byte) & 0xff)
 #define read_status() 
 #define write_enabled() (_read_status(self) & M25P16_SR_WEL)
@@ -67,13 +67,14 @@ void _flash_wrdi(struct serial_flash *self) {
 }
 */
 
-void serial_flash_init(struct serial_flash *self, serial_dev_t port, gpio_pin_t cs_pin) {
+void serial_flash_init(struct serial_flash *self, serial_dev_t port, pio_dev_t gpio, gpio_pin_t cs_pin) {
   uint8_t i;
 
 	self->port = port; 
 	self->cs_pin = cs_pin; 
+	self->gpio = gpio; 
 	
-	gpio_configure(cs_pin, GP_OUTPUT); 
+	pio_configure_pin(gpio, cs_pin, GP_OUTPUT); 
 	
   select();
   write_byte(M25P16_I_RDID);

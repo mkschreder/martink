@@ -21,7 +21,6 @@ typedef enum {
 struct i2c_interface;
 typedef struct i2c_interface **i2c_dev_t;
 
-
 /**
  * I2C device interface used for reading and writing i2c devices.
  */

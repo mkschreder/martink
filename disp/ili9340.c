@@ -31,12 +31,12 @@
 
 #include "ili9340.h"
 
-#define CS_HI 		gpio_set(self->cs_pin)
-#define CS_LO 		gpio_clear(self->cs_pin)
-#define RST_HI 		gpio_set(self->rst_pin)
-#define RST_LO 		gpio_clear(self->rst_pin)
-#define DC_HI 		gpio_set(self->dc_pin)
-#define DC_LO 		gpio_clear(self->dc_pin)
+#define CS_HI 		pio_set_pin(self->gpio, self->cs_pin)
+#define CS_LO 		pio_clear_pin(self->gpio, self->cs_pin)
+#define RST_HI 		pio_set_pin(self->gpio, self->rst_pin)
+#define RST_LO 		pio_clear_pin(self->gpio, self->rst_pin)
+#define DC_HI 		pio_set_pin(self->gpio, self->dc_pin)
+#define DC_LO 		pio_clear_pin(self->gpio, self->dc_pin)
 
 static const unsigned char font[] PROGMEM = {
 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -341,15 +341,16 @@ static uint16_t _wr_data16(struct ili9340 *self, uint16_t c){
 // than the equivalent code.  Companion function follows.
 #define DELAY 0x80
 
-void ili9340_init(struct ili9340 *self, serial_dev_t spi, gpio_pin_t cs_pin, gpio_pin_t dc_pin, gpio_pin_t rst_pin) {
+void ili9340_init(struct ili9340 *self, serial_dev_t spi, pio_dev_t gpio, gpio_pin_t cs_pin, gpio_pin_t dc_pin, gpio_pin_t rst_pin) {
 	self->sdev = spi;
+	self->gpio = gpio; 
 	self->cs_pin = cs_pin;
 	self->dc_pin = dc_pin;
 	self->rst_pin = rst_pin;
 	
-	gpio_configure(cs_pin, GP_OUTPUT); 
-	gpio_configure(rst_pin, GP_OUTPUT); 
-	gpio_configure(dc_pin, GP_OUTPUT);
+	pio_configure_pin(gpio, cs_pin, GP_OUTPUT); 
+	pio_configure_pin(gpio, rst_pin, GP_OUTPUT); 
+	pio_configure_pin(gpio, dc_pin, GP_OUTPUT);
 	
 	RST_LO; 
 

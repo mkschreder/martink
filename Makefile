@@ -48,7 +48,7 @@ CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
 LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS)
 OUTDIRS := build build/crypto/aes
-APPNAME := libk-$(ARCH)-$(CPU).a
+APPNAME := libk-$(BUILD).a
 
 # SHELL used by kbuild
 CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
@@ -171,6 +171,9 @@ clean:
 PHONY += FORCE
 FORCE:
 
+install: 
+	mkdir -p $(DESTDIR)/usr/lib/
+	cp -Rp $(APPNAME) $(DESTDIR)/usr/lib/
 
 # Declare the contents of the .PHONY variable as phony.  We keep that
 # information in a variable se we can use it in if_changed and friends.

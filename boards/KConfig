@@ -9,6 +9,10 @@ choice
 		select BMP085
 		bool "Multiwii V2.5 Flight Controller"
 	
+	config BOARD_IMX233
+		depends on NATIVE
+		bool "IMX233 Board"
+	
 	config BOARD_PROMINI
 		depends on ATMEGA328P
 		bool "Arduino Pro-Mini module"

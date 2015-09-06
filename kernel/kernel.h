@@ -59,4 +59,8 @@ extern "C" void __cxa_pure_virtual(void);
 	typedef int __guard; 
 #endif
 
+#define libk_init_process(async_proc_struct_ptr, method) ASYNC_PROCESS_INIT(async_proc_struct_ptr, method)
+#define libk_register_process(async_proc_struct_ptr) ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, async_proc_struct_ptr)
+#define libk_loop() while(ASYNC_RUN_PARALLEL(&ASYNC_GLOBAL_QUEUE))
+
 //#include "wiinunchuck.h"

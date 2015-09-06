@@ -23,6 +23,8 @@
 #ifndef HCSR04_H
 #define HCSR04_H
 
+#include <kernel/dev/parallel.h>
+
 struct hcsr04 {
 	pio_dev_t gpio;
 	gpio_pin_t trigger_pin, echo_pin;

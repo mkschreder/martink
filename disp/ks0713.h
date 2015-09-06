@@ -18,7 +18,9 @@
 
 #include <inttypes.h>
 
-#include "interface.h"
+#include <kernel/dev/framebuffer.h>
+#include <kernel/dev/tty.h>
+#include <kernel/thread.h>
 
 #define KS0713_WIDTH		128
 #define KS0713_HEIGHT		64
@@ -37,6 +39,10 @@
 
 #define KS0713_COMMAND_BUFFER_SIZE (KS0713_WIDTH / 8 * 2)
 
+struct ks0713_thread_data {
+	unsigned int row; 
+}; 
+
 struct ks0713 {
 	uint16_t port_state; 
 	uint8_t contrast;
@@ -45,7 +51,11 @@ struct ks0713 {
 	
 	void (*putn)(struct ks0713 *self, uint16_t *data, size_t size); 
 	
+	struct async_process process; 
+	struct ks0713_thread_data tr; 
+	
 	struct tty_device *tty; 
+	struct fbuf_device *fbuf; 
 }; 
 
 typedef enum {
@@ -68,5 +78,6 @@ void ks0713_draw_line(struct ks0713 *self, int8_t x1, int8_t y1, int8_t x2, int8
 void ks0713_draw_rect(struct ks0713 *self, int8_t x1, int8_t y1, int8_t x2, int8_t y2, ks0713_pixel_op_t op);
 
 tty_dev_t ks0713_get_tty_interface(struct ks0713 *self); 
+fbuf_dev_t ks0713_get_framebuffer_interface(struct ks0713 *self); 
 
 #endif // _LCD_H

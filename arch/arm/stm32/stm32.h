@@ -10,6 +10,7 @@
 #include "f10x/stm32f10x_tim.h"
 #include "f10x/stm32f10x_adc.h"
 #include "f10x/stm32f10x_dma.h"
+#include "f10x/stm32f10x_exti.h"
 #include "f10x/misc.h"
 #endif
 
@@ -21,6 +22,8 @@
 #include "pwm.h"
 #include "adc.h"
 #include "clock.h"
+
+void EnterFlashUpgrade(void); 
 
 //#define eeprom_update_block(a, b, c) {}
 //#define eeprom_read_block(a, b, c) {}

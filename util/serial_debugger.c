@@ -21,7 +21,7 @@
 
 #include <arch/soc.h>
 
-#include "../util.h"
+#include <kernel/util.h>
 #include "serial_debugger.h"
 
 #define DEVICE_CAST(from, to) struct serial_debugger *to = container_of(from, struct serial_debugger, _ex_serial);  

@@ -25,7 +25,7 @@
 #ifndef LEDMATRIX88_H_
 #define LEDMATRIX88_H_
 
-#include <arch/interface.h>
+#include <kernel/dev/parallel.h>
 
 struct ledmatrix88 {
 	pio_dev_t port;

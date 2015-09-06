@@ -23,6 +23,8 @@
 
 #include "config.h"
 
+#include <kernel/dev/serial.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -46,7 +48,7 @@ extern "C" {
 #define UART_COUNT 0
 #endif
 
-serial_dev_t uart_get_serial_interface(uint8_t dev);
+serial_dev_t /*@null@*/ uart_get_serial_interface(uint8_t dev);
 
 #ifdef __cplusplus
 }

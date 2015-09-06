@@ -1,5 +1,10 @@
 srctree		:= $(CURDIR)
 
+Q:=@
+ifneq ($(V),)
+	Q:=
+endif
+
 VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty
 
 # define defaults that can be added to in submakefiles
@@ -8,7 +13,9 @@ COMMON_FLAGS := -MD -ffunction-sections -fdata-sections -Wall -Werror -Os
 CFLAGS := -Wall -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wshadow -Wcast-align -Wchar-subscripts -Winline \
--Wnested-externs -Wredundant-decls 
+-Wnested-externs -Wredundant-decls -Wmissing-field-initializers -Wextra \
+-Wformat=2 -Wno-format-nonliteral -Wpointer-arith -Wno-missing-braces 
+#-Wpedantic
 CXXFLAGS := -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wcast-align -Wchar-subscripts -Wredundant-decls
@@ -83,21 +90,22 @@ scripts/basic/%: scripts_basic ;
 
 # needed for menuconfig
 %config: scripts_basic FORCE 	
-	if [ ! -e .config ]; then cp $(CONFIG) .config; fi
-	make $(build)=scripts/kconfig $@
-	if [ $(SAVECONFIG) ]; then cp .config $(CONFIG); fi
+	$(Q)if [ ! -e .config ]; then cp $(CONFIG) .config; fi
+	$(Q)make $(build)=scripts/kconfig $@
+	$(Q)if [ $(SAVECONFIG) ]; then cp .config $(CONFIG); fi
 
 config: 
-	if [ ! -f $(CONFIG) ]; then echo "Unknown config $(CONFIG)!"; exit 1; fi
-	if [ ! -e .config ]; then cp $(CONFIG) .config; fi
-	echo "CC: $(CC)"
+	$(Q)if [ ! -f $(CONFIG) ]; then echo "Unknown config $(CONFIG)!"; exit 1; fi
+	$(Q)if [ ! -e .config ]; then cp $(CONFIG) .config; fi
+	@echo "toolchain: $(CC)"
 	
 fixdep: 
-	find build -type f -iname '*.d' -exec sh -c 'scripts/basic/fixdep "$${1%.*}.d" "$${1%.*}.o" "" > $${1%.*}.cmd' convert {} \;
-	#echo "#include \"include/configs/$(BUILD).h\"">config.h
-	
+	$(Q)find build -type f -iname '*.d' -exec sh -c 'scripts/basic/fixdep "$${1%.*}.d" "$${1%.*}.o" "" > $${1%.*}.cmd' convert {} \;
+
+#echo "#include \"include/configs/$(BUILD).h\"">config.h
+
 fixdirs: 
-	mkdir -p build
+	@mkdir -p build
 
 saveconfig: 
 ifdef BUILD
@@ -106,11 +114,13 @@ ifdef BUILD
 else
 		echo "Please specify BUILD you want to save to!"
 endif
-	
+
 build: config fixdirs fixdep check $(obj-y)
-	rm -f $(APPNAME)
-	ar rs $(APPNAME) $(obj-y) 
-	#$(patsubst %, $(BUILD_DIR)/%, $(obj-y))
+	@echo $$'\e[32;40mLinking target $(APPNAME)\e[m'
+	$(Q)rm -f $(APPNAME)
+	$(Q)ar rs $(APPNAME) $(obj-y) 
+
+#$(patsubst %, $(BUILD_DIR)/%, $(obj-y))
 
 buildall: 
 	make -C . BUILD=arm-stm32f100mdvl
@@ -119,19 +129,27 @@ buildall:
 	make -C . BUILD=arm-stm32f100mdvl build-fst6-demo
 	make -C . BUILD=arm-stm32f103 build-cc3d-demo
 	make -C . BUILD=avr-atmega328p build-mwii-demo
-
+	make -C . docs 
+	
+docs: 
+	@cat README-intro.md $(docs-y) > README.md
+	@pandoc -V geometry:margin=1in --toc README.md -o Reference-Manual.pdf
 	
 $(BUILD_DIR)/%.o: %.cpp .config 
-	mkdir -p `dirname $@`
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(Q)mkdir -p `dirname $@`
+	$(Q)$(CXX) -c $(CXXFLAGS) $< -o $@
+
+#splint -unrecogcomments -predboolint -exportlocal -noeffect -fcnuse +matchanyintegral -boolops +boolint -D__GNUC__ -DBUILD_arm_stm32f103 -DSTM32F10X_MD -Iarch/arm/stm32/CMSIS -I./ -I./include $<
+#scan-build -enable-checker alpha.core.BoolAssignment -enable-checker alpha.core.CastToStruct -enable-checker alpha.core.IdenticalExpr -enable-checker alpha.core.PointerArithm -enable-checker alpha.core.PointerSub -enable-checker alpha.core.SizeofPtr -enable-checker alpha.core.TestAfterDivZero -enable-checker alpha.security.ArrayBoundV2 -enable-checker alpha.security.ReturnPtrRange -enable-checker security.FloatLoopCounter -enable-checker security.insecureAPI.strcpy --use-cc=$(CC) $(CC) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/%.o: %.c .config 
-	mkdir -p `dirname $@`
-	$(CC) -c $(CFLAGS) $< -o $@
-
+	@echo $$'\e[33;40m$(subst $(BUILD_DIR)/,,$@)\e[m'
+	$(Q)mkdir -p `dirname $@`
+	$(Q)$(CC) -c $(CFLAGS) $< -o $@
+	
 $(BUILD_DIR)/%.o: %.S .config 
-	mkdir -p `dirname $@`
-	$(AS) -c  $< -o $@
+	$(Q)mkdir -p `dirname $@`
+	$(Q)$(AS) -c  $< -o $@
 
 check: GCC-exists
 	

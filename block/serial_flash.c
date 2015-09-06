@@ -30,7 +30,7 @@
  */
 
 #include <arch/soc.h>
-#include <block/serial_flash.h>
+#include "serial_flash.h"
 
 #define select() (gpio_clear(self->cs_pin), serial_begin(self->port))
 #define deselect() (gpio_set(self->cs_pin), serial_end(self->port))

@@ -36,11 +36,11 @@ static uint8_t _gpio_configure_pin(pio_dev_t self, uint16_t pin, uint16_t flags)
 	gpio_configure(pin, flags);
 	return 0; 
 }
-
+/*
 static uint8_t _gpio_get_pin_status(pio_dev_t self, uint16_t pin, timestamp_t *t_up, timestamp_t *t_down){
 	(void)(self); 
 	return gpio_get_status(pin, t_up, t_down);
-}
+}*/
 
 static uint8_t _gpio_write_word(pio_dev_t self, uint16_t addr, uint32_t value){
 	(void)(self); 
@@ -62,7 +62,7 @@ pio_dev_t gpio_get_parallel_interface(void){
 			.read_pin = 		_gpio_read_pin,
 			.write_word = 	_gpio_write_word,
 			.read_word = 		_gpio_read_word,
-			.get_pin_status = _gpio_get_pin_status
+			//.get_pin_status = _gpio_get_pin_status
 		};
 		_pio = &pio; 
 	}

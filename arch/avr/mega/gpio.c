@@ -30,9 +30,70 @@ const struct pin_decl gPinPorts[4] = {
 	{&PORTD, &PIND, &DDRD},
 };
 
+volatile struct pin_state *_pin_states[GPIO_COUNT - GPIO_PB0] = {0}; 
+//static volatile uint8_t _pins_enabled[4] = {0}; 
+
+uint8_t gpio_pin_busy(gpio_pin_t pin){
+	if(pin < GPIO_PB0 || pin > GPIO_PD7) return 0; 
+	pin = (pin - GPIO_PB0); 
+	return _pin_states[pin] != 0; //_pins_enabled[(pin >> 3) & 0x3] & (1 << (pin & 0x07)); 
+}
+
+int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t flags){
+	if(pin < GPIO_PB0 || pin > GPIO_PD7 || gpio_pin_busy(pin)) return -1; 
+	pin = pin - GPIO_PB0; 
+	// reset state flags
+	state->status = 0; 
+	state->flags = flags;
+	// enable pin for ISR
+	_pin_states[pin] = state; 
+	// mark pin as enabled for the ISR
+	//_pins_enabled[(pin >> 3)] |= (1 << (pin & 0x07)); 
+	 
+	return 0; 
+}
+
+static void PCINT_vect(void){
+	timestamp_t time = timestamp_now(); 
+	static uint8_t prev[3] = {0xff, 0xff, 0xff}; 
+	uint8_t current[3] = {PINB, PINC, PIND}; 
+	uint8_t changed[3] = {
+		prev[0] ^ current[0], 
+		prev[1] ^ current[1], 
+		prev[2] ^ current[2]
+	}; 
+	prev[0] = current[0]; prev[1] = current[1]; prev[2] = current[2]; 
+	uint8_t pin_id = 0; 
+	for(int reg = 0; reg < 3; reg++){
+		for(int bit = 0; bit < 8; bit++){
+			if(	_pin_states[pin_id] != 0 && (changed[reg] & _BV(bit)) ){
+				volatile struct pin_state *st = _pin_states[pin_id]; 
+				if(current[reg] & _BV(bit)){ // if pin went high
+					st->t_up = time; 
+					st->status |= GP_READ_EDGE_P; 
+					// we are done if measuring neg pulse and got neg edge
+					if(	(st->status & GP_READ_EDGE_N && st->flags & GP_READ_PULSE_N) || 
+						(st->flags & GP_READ_EDGE_P && !(st->flags & GP_READ_PULSE_P))){
+						_pin_states[pin_id] = 0; 
+					}
+				} else { // if bit went low
+					st->t_down = time; 
+					st->status |= GP_READ_EDGE_N; 
+					// check if we are done
+					if(	(st->status & GP_READ_EDGE_P && st->flags & GP_READ_PULSE_P) ||
+						(st->flags & GP_READ_EDGE_N && !(st->flags & GP_READ_PULSE_N))){
+						_pin_states[pin_id] = 0; 
+					}
+				}
+			}
+			pin_id++; 
+		}
+	}
+}
+
 #if defined(CONFIG_GPIO_PIN_STATES)
 	// PIN state recording for gpio pins
-	volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0] = {{0}}; 
+	/*volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0] = {{0}}; 
 
 	uint8_t gpio_get_status(gpio_pin_t pin, 
 		timestamp_t *ch_up, timestamp_t *ch_down){
@@ -75,7 +136,7 @@ const struct pin_decl gPinPorts[4] = {
 			}
 		}
 	}
-	
+	*/
 	ISR(PCINT0_vect){
 		PCINT_vect(); 
 	}
@@ -95,13 +156,6 @@ void gpio_configure(gpio_pin_t pin, uint16_t fun){
 	if(fun & GP_PULLUP) RSET(OREG(pin), PIDX(pin)); 
 	else RCLR(OREG(pin), PIDX(pin)); 
 	if((fun) & GP_PCINT) gpio_enable_pcint(pin); 
-	/*((fun) & GP_OUTPUT)
-		?RSET(DREG(pin), PIDX(pin))
-		:RCLR(DREG(pin), PIDX(pin)), 
-	(((fun) & GP_PULL) && ((fun) & GP_PULLUP))
-		?RSET(OREG(pin), PIDX(pin))
-		:RCLR(OREG(pin), PIDX(pin)), 
-	((fun) & GP_PCINT)?gpio_enable_pcint(pin):(0); */
 }
 
 void gpio_enable_pcint(gpio_pin_t pin){

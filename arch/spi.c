@@ -23,9 +23,8 @@
 
 #include "gpio.h"
 #include "spi.h"
-#include "interface.h"
 
-#include <kernel/device.h>
+#include <kernel/dev/serial.h>
 
 struct spi_dev {
 	uint8_t id;
@@ -157,28 +156,13 @@ void initproc spi_init(void){
 	}
 	
 	int count = sizeof(_spi) / sizeof(struct spi_dev);
-	kdebug("SPI: starting interfaces: ");
+	//kdebug("SPI: starting interfaces: ");
 	
 	for(c = 0; c < count; c++){
 		if(spi_init_device(c) == -1) continue; 
-		kdebug("%d ", c); 
+		//kdebug("%d ", c); 
 		_spi[c].id = c; 
 		_spi[c].serial = i;
 	}
-	kdebug("\n");
-	/*
-	for(int c = 0; c < 4; c++){
-		_spi[c].id = c; 
-		_spi[c].serial = 0; 
-	}
-#ifdef CONFIG_HAVE_SPI0
-	spi0_init_default(); kdebug("spi0 "); 
-#endif
-#ifdef CONFIG_HAVE_SPI1
-	spi1_init_default(); kdebug("spi1 "); 
-#endif
-#ifdef CONFIG_HAVE_SPI2
-	spi2_init_default(); kdebug("spi2 "); 
-#endif
-*/
+	//kdebug("\n");
 }

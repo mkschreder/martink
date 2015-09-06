@@ -25,7 +25,7 @@
 
 #include "types.h"
 
-#include "../util.h"
+#include <kernel/util.h>
 
 #include <inttypes.h>
 #include <stddef.h>
@@ -42,7 +42,7 @@ extern "C" {
 
 // these should be moved somewhere. This is the way to do configurable
 // c interfaces using macros. It is used by all generic interface headers. 
-
+/*
 // used for generating references to static methods
 #define PFNAME2(P, F) __##P##_##F##__
 #define PFNAME(P, F) PFNAME2(P, F)
@@ -53,6 +53,7 @@ extern "C" {
 
 // used for declaring driver functions
 #define PFDECL(P, F, args...) PFCALL(P, F, args )
+*/
 
 #define initproc //__attribute__((constructor))
 
@@ -66,8 +67,10 @@ extern "C" {
 #error "You have not chosen an architecture!"
 #endif
 
-#include "interface.h"
-#include "static_cbuf.h"
+//#include "static_cbuf.h"
+#include <kernel/list.h>
+#include <kernel/thread.h>
+#include <kernel/io_device.h>
 
 #include "time.h"
 #include "uart.h"
@@ -96,6 +99,7 @@ extern "C" {
 /// the implementation needs to be implemented separately because of 
 /// differences in libc. Look in arch/syscalls.c
 uint16_t serial_printf(serial_dev_t port, const char *fmt, ...);
+
 
 #ifdef __cplusplus
 }

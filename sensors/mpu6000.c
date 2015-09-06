@@ -167,7 +167,8 @@ void mpu6000_init(struct mpu6000 *self, serial_dev_t port, pio_dev_t gpio, gpio_
 	self->port = port; 
 	self->gpio = gpio; 
 	self->cs_pin = cs_pin; 
-	
+	self->gofs_x = self->gofs_y = self->gofs_z; 
+	self->aofs_x = self->aofs_y = self->aofs_z; 
 	gpio_configure(cs_pin, GP_OUTPUT); 
 	
 	mpu6000_write_reg(self, MPU6000_PWR_MGMT_1, BIT_H_RESET);          // Device Reset
@@ -192,8 +193,28 @@ void mpu6000_init(struct mpu6000 *self, serial_dev_t port, pio_dev_t gpio, gpio_
 	}
 	
 	delay_ms(100); 
+	
+	mpu6000_calibrate(self); 
 }
 
+void mpu6000_calibrate(struct mpu6000 *self){
+	int32_t aax = 0, aay= 0, aaz = 0, ggx = 0, ggy = 0, ggz = 0; 
+	static const int iterations = 200; 
+	for(int c = 0; c < iterations; c++){
+		int16_t ax, ay, az, gx, gy, gz; 
+		mpu6000_readRawAcc(self, &ax, &ay, &az); 
+		mpu6000_readRawGyr(self, &gx, &gy, &gz); 
+		aax += ax; aay += ay; aaz += az; 
+		ggx += gx; ggy += gy; ggz += gz; 
+		delay_us(10); 
+	}
+	self->gofs_x = ggx / iterations; 
+	self->gofs_y = ggy / iterations; 
+	self->gofs_z = ggz / iterations; 
+	self->aofs_x = aax / iterations; 
+	self->aofs_y = aay / iterations; 
+	self->aofs_z = (aaz / iterations) + 16384; 
+}
 
 void mpu6000_readRawAcc(struct mpu6000 *self, int16_t* ax, int16_t* ay, int16_t* az){
 	uint8_t buffer[16]; 
@@ -215,16 +236,16 @@ void mpu6000_readRawGyr(struct mpu6000 *self, int16_t* gx, int16_t* gy, int16_t*
 
 void mpu6000_convertAcc(struct mpu6000 *self, int16_t ax, int16_t ay, int16_t az, float *axg, float *ayg, float *azg){
 	(void)(self); 
-	*axg = (float)(ax-MPU6000_AXOFFSET)/MPU6000_AXGAIN;
-	*ayg = (float)(ay-MPU6000_AYOFFSET)/MPU6000_AYGAIN;
-	*azg = (float)(az-MPU6000_AZOFFSET)/MPU6000_AZGAIN;
+	*axg = (float)(ax)/MPU6000_AXGAIN;
+	*ayg = (float)(ay-self->aofs_y)/MPU6000_AYGAIN;
+	*azg = (float)(az-self->aofs_z)/MPU6000_AZGAIN;
 }
 
 void mpu6000_convertGyr(struct mpu6000 *self, int16_t gx, int16_t gy, int16_t gz, float *gxd, float *gyd, float *gzd){
 	(void)(self); 
-	*gxd = (float)(gx-MPU6000_GXOFFSET)/MPU6000_GXGAIN;
-	*gyd = (float)(gy-MPU6000_GYOFFSET)/MPU6000_GYGAIN;
-	*gzd = (float)(gz-MPU6000_GZOFFSET)/MPU6000_GZGAIN;
+	*gxd = (float)(gx-self->gofs_x)/MPU6000_GXGAIN;
+	*gyd = (float)(gy-self->gofs_y)/MPU6000_GYGAIN;
+	*gzd = (float)(gz-self->gofs_z)/MPU6000_GZGAIN;
 }
 /*
 void mpu6000_getRawData(struct mpu6000 *self, int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz) {

@@ -25,25 +25,20 @@
 extern "C" {
 #endif
 
-#include <disp/interface.h>
+#include <kernel/dev/tty.h>
+#include <kernel/dev/serial.h>
 
 #define VT100_CHAR_WIDTH 6
 #define VT100_CHAR_HEIGHT 8
 
 #define VT100_MAX_COMMAND_ARGS 4
 
+#define VT100_FLAG_CURSOR_WRAP (1 << 0)
+#define VT100_FLAG_SCROLL_MODE (1 << 1)
+#define VT100_FLAG_ORIGIN_MODE (1 << 2)
 
 struct vt100 {
-	union flags {
-		uint8_t val;
-		struct {
-			// 0 = cursor remains on last column when it gets there
-			// 1 = lines wrap after last column to next line
-			uint8_t cursor_wrap : 1; 
-			uint8_t scroll_mode : 1;
-			uint8_t origin_mode : 1; 
-		}; 
-	} flags;
+	uint8_t flags;
 
 	tty_dev_t display;
 	
@@ -70,8 +65,6 @@ struct vt100 {
 	
 	struct serial_if *serial; 
 };
-
-#include "../arch/interface.h"
 
 //void vt100_init(void (*send_response)(char *str));
 void vt100_init(struct vt100 *self, tty_dev_t display); 

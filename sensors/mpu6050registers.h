@@ -147,7 +147,7 @@
 #define MPU6050_CFG_EXT_SYNC_SET_LENGTH 3
 #define MPU6050_CFG_DLPF_CFG_BIT    2
 #define MPU6050_CFG_DLPF_CFG_LENGTH 3
-
+/*
 #define MPU6050_EXT_SYNC_DISABLED       0x0
 #define MPU6050_EXT_SYNC_TEMP_OUT_L     0x1
 #define MPU6050_EXT_SYNC_GYRO_XOUT_L    0x2
@@ -156,22 +156,40 @@
 #define MPU6050_EXT_SYNC_ACCEL_XOUT_L   0x5
 #define MPU6050_EXT_SYNC_ACCEL_YOUT_L   0x6
 #define MPU6050_EXT_SYNC_ACCEL_ZOUT_L   0x7
+*/
+// CONFIG REGISTER
+#define MPU6050_CFG_ES_DISABLED       (0x0 << 3)
+#define MPU6050_CFG_ES_TEMP_OUT_L     (0x1 << 3)
+#define MPU6050_CFG_ES_GYRO_XOUT_L    (0x2 << 3)
+#define MPU6050_CFG_ES_GYRO_YOUT_L    (0x3 << 3)
+#define MPU6050_CFG_ES_GYRO_ZOUT_L    (0x4 << 3)
+#define MPU6050_CFG_ES_ACCEL_XOUT_L   (0x5 << 3)
+#define MPU6050_CFG_ES_ACCEL_YOUT_L   (0x6 << 3)
+#define MPU6050_CFG_ES_ACCEL_ZOUT_L   (0x7 << 3)
 
-#define MPU6050_DLPF_BW_256         0x00
-#define MPU6050_DLPF_BW_188         0x01
-#define MPU6050_DLPF_BW_98          0x02
-#define MPU6050_DLPF_BW_42          0x03
-#define MPU6050_DLPF_BW_20          0x04
-#define MPU6050_DLPF_BW_10          0x05
-#define MPU6050_DLPF_BW_5           0x06
+#define MPU6050_CFG_DLPF_BW_256         0x00
+#define MPU6050_CFG_DLPF_BW_188         0x01
+#define MPU6050_CFG_DLPF_BW_98          0x02
+#define MPU6050_CFG_DLPF_BW_42          0x03
+#define MPU6050_CFG_DLPF_BW_20          0x04
+#define MPU6050_CFG_DLPF_BW_10          0x05
+#define MPU6050_CFG_DLPF_BW_5           0x06
 
 #define MPU6050_GCONFIG_FS_SEL_BIT      4
 #define MPU6050_GCONFIG_FS_SEL_LENGTH   2
 
+// gyro config register
+#define MPU6050_GYRO_CONFIG_FS_250         (0x00 << 3)
+#define MPU6050_GYRO_CONFIG_FS_500         (0x01 << 3)
+#define MPU6050_GYRO_CONFIG_FS_1000        (0x02 << 3)
+#define MPU6050_GYRO_CONFIG_FS_2000        (0x03 << 3)
+
+/*
 #define MPU6050_GYRO_FS_250         0x00
 #define MPU6050_GYRO_FS_500         0x01
 #define MPU6050_GYRO_FS_1000        0x02
 #define MPU6050_GYRO_FS_2000        0x03
+*/
 
 #define MPU6050_ACONFIG_XA_ST_BIT           7
 #define MPU6050_ACONFIG_YA_ST_BIT           6
@@ -181,10 +199,17 @@
 #define MPU6050_ACONFIG_ACCEL_HPF_BIT       2
 #define MPU6050_ACONFIG_ACCEL_HPF_LENGTH    3
 
+#define MPU6050_ACCEL_CONFIG_FS_2          (0x00 << 3)
+#define MPU6050_ACCEL_CONFIG_FS_4          (0x01 << 3)
+#define MPU6050_ACCEL_CONFIG_FS_8          (0x02 << 3)
+#define MPU6050_ACCEL_CONFIG_FS_16         (0x03 << 3)
+
+/*
 #define MPU6050_ACCEL_FS_2          0x00
 #define MPU6050_ACCEL_FS_4          0x01
 #define MPU6050_ACCEL_FS_8          0x02
 #define MPU6050_ACCEL_FS_16         0x03
+*/
 
 #define MPU6050_DHPF_RESET          0x00
 #define MPU6050_DHPF_5              0x01
@@ -254,14 +279,14 @@
 #define MPU6050_MST_I2C_SLV1_NACK_BIT   1
 #define MPU6050_MST_I2C_SLV0_NACK_BIT   0
 
-#define MPU6050_INTCFG_INT_LEVEL_BIT        7
-#define MPU6050_INTCFG_INT_OPEN_BIT         6
-#define MPU6050_INTCFG_LATCH_INT_EN_BIT     5
-#define MPU6050_INTCFG_INT_RD_CLEAR_BIT     4
-#define MPU6050_INTCFG_FSYNC_INT_LEVEL_BIT  3
-#define MPU6050_INTCFG_FSYNC_INT_EN_BIT     2
-#define MPU6050_INTCFG_I2C_BYPASS_EN_BIT    1
-#define MPU6050_INTCFG_CLKOUT_EN_BIT        0
+#define MPU6050_INTCFG_INT_LEVEL        (1 << 7)
+#define MPU6050_INTCFG_INT_OPEN         (1 << 6)
+#define MPU6050_INTCFG_LATCH_INT_EN     (1 << 5)
+#define MPU6050_INTCFG_INT_RD_CLEAR     (1 << 4)
+#define MPU6050_INTCFG_FSYNC_INT_LEVEL  (1 << 3)
+#define MPU6050_INTCFG_FSYNC_INT_EN     (1 << 2)
+#define MPU6050_INTCFG_I2C_BYPASS_EN    (1 << 1)
+#define MPU6050_INTCFG_CLKOUT_EN        (1 << 0)
 
 #define MPU6050_INTMODE_ACTIVEHIGH  0x00
 #define MPU6050_INTMODE_ACTIVELOW   0x01
@@ -333,6 +358,19 @@
 #define MPU6050_USERCTRL_I2C_MST_RESET_BIT      1
 #define MPU6050_USERCTRL_SIG_COND_RESET_BIT     0
 
+// POWER MGMT REGISTER 1 
+#define MPU6050_PWR1_RESET						(1 << 7)
+#define MPU6050_PWR1_SLEEP						(1 << 6)
+#define MPU6050_PWR1_CYCLE						(1 << 5)
+#define MPU6050_PWR1_TEMP_DIS					(1 << 3)
+#define MPU6050_PWR1_CLOCK_INTERNAL          0x00
+#define MPU6050_PWR1_CLOCK_PLL_XGYRO         0x01
+#define MPU6050_PWR1_CLOCK_PLL_YGYRO         0x02
+#define MPU6050_PWR1_CLOCK_PLL_ZGYRO         0x03
+#define MPU6050_PWR1_CLOCK_PLL_EXT32K        0x04
+#define MPU6050_PWR1_CLOCK_PLL_EXT19M        0x05
+#define MPU6050_PWR1_CLOCK_KEEP_RESET        0x07
+/*
 #define MPU6050_PWR1_DEVICE_RESET_BIT   7
 #define MPU6050_PWR1_SLEEP_BIT          6
 #define MPU6050_PWR1_CYCLE_BIT          5
@@ -347,6 +385,7 @@
 #define MPU6050_CLOCK_PLL_EXT32K        0x04
 #define MPU6050_CLOCK_PLL_EXT19M        0x05
 #define MPU6050_CLOCK_KEEP_RESET        0x07
+*/
 
 #define MPU6050_PWR2_LP_WAKE_CTRL_BIT       7
 #define MPU6050_PWR2_LP_WAKE_CTRL_LENGTH    2

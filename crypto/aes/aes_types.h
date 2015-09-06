@@ -48,7 +48,8 @@ typedef struct{
 } aes256_ctx_t;
 
 typedef struct{
-	aes_roundkey_t key[1]; /* just to avoid the warning */
+	//aes_roundkey_t key[1]; // removed due to static analysis warning
+	aes_roundkey_t key[14+1]; /* just to avoid the warning */
 } aes_genctx_t;
 
 typedef struct{

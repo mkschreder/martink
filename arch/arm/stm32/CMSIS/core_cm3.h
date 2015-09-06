@@ -198,17 +198,17 @@ typedef union
   struct
   {
 #if (__CORTEX_M != 0x04)
-    uint32_t _reserved0:27;              /*!< bit:  0..26  Reserved                           */
+    unsigned int _reserved0:27;              /*!< bit:  0..26  Reserved                           */
 #else
-    uint32_t _reserved0:16;              /*!< bit:  0..15  Reserved                           */
-    uint32_t GE:4;                       /*!< bit: 16..19  Greater than or Equal flags        */
-    uint32_t _reserved1:7;               /*!< bit: 20..26  Reserved                           */
+    unsigned int _reserved0:16;              /*!< bit:  0..15  Reserved                           */
+    unsigned int GE:4;                       /*!< bit: 16..19  Greater than or Equal flags        */
+    unsigned int _reserved1:7;               /*!< bit: 20..26  Reserved                           */
 #endif
-    uint32_t Q:1;                        /*!< bit:     27  Saturation condition flag          */
-    uint32_t V:1;                        /*!< bit:     28  Overflow condition code flag       */
-    uint32_t C:1;                        /*!< bit:     29  Carry condition code flag          */
-    uint32_t Z:1;                        /*!< bit:     30  Zero condition code flag           */
-    uint32_t N:1;                        /*!< bit:     31  Negative condition code flag       */
+    unsigned int Q:1;                        /*!< bit:     27  Saturation condition flag          */
+    unsigned int V:1;                        /*!< bit:     28  Overflow condition code flag       */
+    unsigned int C:1;                        /*!< bit:     29  Carry condition code flag          */
+    unsigned int Z:1;                        /*!< bit:     30  Zero condition code flag           */
+    unsigned int N:1;                        /*!< bit:     31  Negative condition code flag       */
   } b;                                   /*!< Structure used for bit  access                  */
   uint32_t w;                            /*!< Type      used for word access                  */
 } APSR_Type;
@@ -220,8 +220,8 @@ typedef union
 {
   struct
   {
-    uint32_t ISR:9;                      /*!< bit:  0.. 8  Exception number                   */
-    uint32_t _reserved0:23;              /*!< bit:  9..31  Reserved                           */
+    unsigned int ISR:9;                      /*!< bit:  0.. 8  Exception number                   */
+    unsigned int _reserved0:23;              /*!< bit:  9..31  Reserved                           */
   } b;                                   /*!< Structure used for bit  access                  */
   uint32_t w;                            /*!< Type      used for word access                  */
 } IPSR_Type;
@@ -233,21 +233,21 @@ typedef union
 {
   struct
   {
-    uint32_t ISR:9;                      /*!< bit:  0.. 8  Exception number                   */
+    unsigned int ISR:9;                      /*!< bit:  0.. 8  Exception number                   */
 #if (__CORTEX_M != 0x04)
-    uint32_t _reserved0:15;              /*!< bit:  9..23  Reserved                           */
+    unsigned int _reserved0:15;              /*!< bit:  9..23  Reserved                           */
 #else
-    uint32_t _reserved0:7;               /*!< bit:  9..15  Reserved                           */
-    uint32_t GE:4;                       /*!< bit: 16..19  Greater than or Equal flags        */
-    uint32_t _reserved1:4;               /*!< bit: 20..23  Reserved                           */
+    unsigned int _reserved0:7;               /*!< bit:  9..15  Reserved                           */
+    unsigned int GE:4;                       /*!< bit: 16..19  Greater than or Equal flags        */
+    unsigned int _reserved1:4;               /*!< bit: 20..23  Reserved                           */
 #endif
-    uint32_t T:1;                        /*!< bit:     24  Thumb bit        (read 0)          */
-    uint32_t IT:2;                       /*!< bit: 25..26  saved IT state   (read 0)          */
-    uint32_t Q:1;                        /*!< bit:     27  Saturation condition flag          */
-    uint32_t V:1;                        /*!< bit:     28  Overflow condition code flag       */
-    uint32_t C:1;                        /*!< bit:     29  Carry condition code flag          */
-    uint32_t Z:1;                        /*!< bit:     30  Zero condition code flag           */
-    uint32_t N:1;                        /*!< bit:     31  Negative condition code flag       */
+    unsigned int T:1;                        /*!< bit:     24  Thumb bit        (read 0)          */
+    unsigned int IT:2;                       /*!< bit: 25..26  saved IT state   (read 0)          */
+    unsigned int Q:1;                        /*!< bit:     27  Saturation condition flag          */
+    unsigned int V:1;                        /*!< bit:     28  Overflow condition code flag       */
+    unsigned int C:1;                        /*!< bit:     29  Carry condition code flag          */
+    unsigned int Z:1;                        /*!< bit:     30  Zero condition code flag           */
+    unsigned int N:1;                        /*!< bit:     31  Negative condition code flag       */
   } b;                                   /*!< Structure used for bit  access                  */
   uint32_t w;                            /*!< Type      used for word access                  */
 } xPSR_Type;
@@ -259,10 +259,10 @@ typedef union
 {
   struct
   {
-    uint32_t nPRIV:1;                    /*!< bit:      0  Execution privilege in Thread mode */
-    uint32_t SPSEL:1;                    /*!< bit:      1  Stack to be used                   */
-    uint32_t FPCA:1;                     /*!< bit:      2  FP extension active flag           */
-    uint32_t _reserved0:29;              /*!< bit:  3..31  Reserved                           */
+    unsigned int nPRIV:1;                    /*!< bit:      0  Execution privilege in Thread mode */
+    unsigned int SPSEL:1;                    /*!< bit:      1  Stack to be used                   */
+    unsigned int FPCA:1;                     /*!< bit:      2  FP extension active flag           */
+    unsigned int _reserved0:29;              /*!< bit:  3..31  Reserved                           */
   } b;                                   /*!< Structure used for bit  access                  */
   uint32_t w;                            /*!< Type      used for word access                  */
 } CONTROL_Type;
@@ -1295,7 +1295,7 @@ __STATIC_INLINE void NVIC_SetPriorityGrouping(uint32_t PriorityGroup)
  */
 __STATIC_INLINE uint32_t NVIC_GetPriorityGrouping(void)
 {
-  return ((SCB->AIRCR & SCB_AIRCR_PRIGROUP_Msk) >> SCB_AIRCR_PRIGROUP_Pos);   /* read priority grouping field */
+  return (uint32_t)((SCB->AIRCR & SCB_AIRCR_PRIGROUP_Msk) >> SCB_AIRCR_PRIGROUP_Pos);   /* read priority grouping field */
 }
 
 
@@ -1307,7 +1307,7 @@ __STATIC_INLINE uint32_t NVIC_GetPriorityGrouping(void)
  */
 __STATIC_INLINE void NVIC_EnableIRQ(IRQn_Type IRQn)
 {
-  NVIC->ISER[((uint32_t)(IRQn) >> 5)] = (1 << ((uint32_t)(IRQn) & 0x1F)); /* enable interrupt */
+  NVIC->ISER[((uint32_t)(IRQn) >> 5)] = (uint32_t)(1 << ((uint32_t)(IRQn) & 0x1F)); /* enable interrupt */
 }
 
 
@@ -1319,7 +1319,7 @@ __STATIC_INLINE void NVIC_EnableIRQ(IRQn_Type IRQn)
  */
 __STATIC_INLINE void NVIC_DisableIRQ(IRQn_Type IRQn)
 {
-  NVIC->ICER[((uint32_t)(IRQn) >> 5)] = (1 << ((uint32_t)(IRQn) & 0x1F)); /* disable interrupt */
+  NVIC->ICER[((uint32_t)(IRQn) >> 5)] = (uint32_t)(1 << ((uint32_t)(IRQn) & 0x1F)); /* disable interrupt */
 }
 
 
@@ -1335,7 +1335,7 @@ __STATIC_INLINE void NVIC_DisableIRQ(IRQn_Type IRQn)
  */
 __STATIC_INLINE uint32_t NVIC_GetPendingIRQ(IRQn_Type IRQn)
 {
-  return((uint32_t) ((NVIC->ISPR[(uint32_t)(IRQn) >> 5] & (1 << ((uint32_t)(IRQn) & 0x1F)))?1:0)); /* Return 1 if pending else 0 */
+  return((uint32_t) (((NVIC->ISPR[(uint32_t)(IRQn) >> 5] & (1 << ((uint32_t)(IRQn) & 0x1F))) != 0)?1:0)); /* Return 1 if pending else 0 */
 }
 
 
@@ -1347,7 +1347,7 @@ __STATIC_INLINE uint32_t NVIC_GetPendingIRQ(IRQn_Type IRQn)
  */
 __STATIC_INLINE void NVIC_SetPendingIRQ(IRQn_Type IRQn)
 {
-  NVIC->ISPR[((uint32_t)(IRQn) >> 5)] = (1 << ((uint32_t)(IRQn) & 0x1F)); /* set interrupt pending */
+  NVIC->ISPR[((uint32_t)(IRQn) >> 5)] = (uint32_t)(1 << ((uint32_t)(IRQn) & 0x1F)); /* set interrupt pending */
 }
 
 
@@ -1359,7 +1359,7 @@ __STATIC_INLINE void NVIC_SetPendingIRQ(IRQn_Type IRQn)
  */
 __STATIC_INLINE void NVIC_ClearPendingIRQ(IRQn_Type IRQn)
 {
-  NVIC->ICPR[((uint32_t)(IRQn) >> 5)] = (1 << ((uint32_t)(IRQn) & 0x1F)); /* Clear pending interrupt */
+  NVIC->ICPR[((uint32_t)(IRQn) >> 5)] = (uint32_t)(1 << ((uint32_t)(IRQn) & 0x1F)); /* Clear pending interrupt */
 }
 
 
@@ -1374,7 +1374,7 @@ __STATIC_INLINE void NVIC_ClearPendingIRQ(IRQn_Type IRQn)
  */
 __STATIC_INLINE uint32_t NVIC_GetActive(IRQn_Type IRQn)
 {
-  return((uint32_t)((NVIC->IABR[(uint32_t)(IRQn) >> 5] & (1 << ((uint32_t)(IRQn) & 0x1F)))?1:0)); /* Return 1 if active else 0 */
+  return((uint32_t)(((NVIC->IABR[(uint32_t)(IRQn) >> 5] & (1 << ((uint32_t)(IRQn) & 0x1F))) != 0)?1:0)); /* Return 1 if active else 0 */
 }
 
 
@@ -1390,9 +1390,9 @@ __STATIC_INLINE uint32_t NVIC_GetActive(IRQn_Type IRQn)
 __STATIC_INLINE void NVIC_SetPriority(IRQn_Type IRQn, uint32_t priority)
 {
   if(IRQn < 0) {
-    SCB->SHP[((uint32_t)(IRQn) & 0xF)-4] = ((priority << (8 - __NVIC_PRIO_BITS)) & 0xff); } /* set Priority for Cortex-M  System Interrupts */
+    SCB->SHP[((uint32_t)(IRQn) & 0xF)-4] = (uint32_t)((priority << (8 - __NVIC_PRIO_BITS)) & 0xff); } /* set Priority for Cortex-M  System Interrupts */
   else {
-    NVIC->IP[(uint32_t)(IRQn)] = ((priority << (8 - __NVIC_PRIO_BITS)) & 0xff);    }        /* set Priority for device specific Interrupts  */
+    NVIC->IP[(uint32_t)(IRQn)] = (uint32_t)((priority << (8 - __NVIC_PRIO_BITS)) & 0xff);    }        /* set Priority for device specific Interrupts  */
 }
 
 
@@ -1435,8 +1435,8 @@ __STATIC_INLINE uint32_t NVIC_EncodePriority (uint32_t PriorityGroup, uint32_t P
   uint32_t PreemptPriorityBits;
   uint32_t SubPriorityBits;
 
-  PreemptPriorityBits = ((7 - PriorityGroupTmp) > __NVIC_PRIO_BITS) ? __NVIC_PRIO_BITS : 7 - PriorityGroupTmp;
-  SubPriorityBits     = ((PriorityGroupTmp + __NVIC_PRIO_BITS) < 7) ? 0 : PriorityGroupTmp - 7 + __NVIC_PRIO_BITS;
+  PreemptPriorityBits = (uint32_t)((7 - PriorityGroupTmp) > __NVIC_PRIO_BITS) ? __NVIC_PRIO_BITS : 7 - PriorityGroupTmp;
+  SubPriorityBits     = (uint32_t)((PriorityGroupTmp + __NVIC_PRIO_BITS) < 7) ? 0 : PriorityGroupTmp - 7 + __NVIC_PRIO_BITS;
 
   return (
            ((PreemptPriority & ((1 << (PreemptPriorityBits)) - 1)) << SubPriorityBits) |
@@ -1463,8 +1463,8 @@ __STATIC_INLINE void NVIC_DecodePriority (uint32_t Priority, uint32_t PriorityGr
   uint32_t PreemptPriorityBits;
   uint32_t SubPriorityBits;
 
-  PreemptPriorityBits = ((7 - PriorityGroupTmp) > __NVIC_PRIO_BITS) ? __NVIC_PRIO_BITS : 7 - PriorityGroupTmp;
-  SubPriorityBits     = ((PriorityGroupTmp + __NVIC_PRIO_BITS) < 7) ? 0 : PriorityGroupTmp - 7 + __NVIC_PRIO_BITS;
+  PreemptPriorityBits = (uint32_t)(((7 - PriorityGroupTmp) > __NVIC_PRIO_BITS) ? __NVIC_PRIO_BITS : 7 - PriorityGroupTmp);
+  SubPriorityBits     = (uint32_t)(((PriorityGroupTmp + __NVIC_PRIO_BITS) < 7) ? 0 : PriorityGroupTmp - 7 + __NVIC_PRIO_BITS);
 
   *pPreemptPriority = (Priority >> SubPriorityBits) & ((1 << (PreemptPriorityBits)) - 1);
   *pSubPriority     = (Priority                   ) & ((1 << (SubPriorityBits    )) - 1);
@@ -1479,7 +1479,7 @@ __STATIC_INLINE void NVIC_SystemReset(void)
 {
   __DSB();                                                     /* Ensure all outstanding memory accesses included
                                                                   buffered write are completed before reset */
-  SCB->AIRCR  = ((0x5FA << SCB_AIRCR_VECTKEY_Pos)      |
+  SCB->AIRCR  = (uint32_t)((0x5FA << SCB_AIRCR_VECTKEY_Pos)      |
                  (SCB->AIRCR & SCB_AIRCR_PRIGROUP_Msk) |
                  SCB_AIRCR_SYSRESETREQ_Msk);                   /* Keep priority group unchanged */
   __DSB();                                                     /* Ensure completion of memory access */
@@ -1516,14 +1516,14 @@ __STATIC_INLINE void NVIC_SystemReset(void)
  */
 __STATIC_INLINE uint32_t SysTick_Config(uint32_t ticks)
 {
-  if (ticks > SysTick_LOAD_RELOAD_Msk)  return (1);            /* Reload value impossible */
+  if ((unsigned long int)ticks > SysTick_LOAD_RELOAD_Msk)  return (1);            /* Reload value impossible */
 
-  SysTick->LOAD  = (ticks & SysTick_LOAD_RELOAD_Msk) - 1;      /* set reload register */
-  NVIC_SetPriority (SysTick_IRQn, (1<<__NVIC_PRIO_BITS) - 1);  /* set Priority for Systick Interrupt */
+  SysTick->LOAD  = (uint32_t)(ticks & SysTick_LOAD_RELOAD_Msk) - 1;      /* set reload register */
+  NVIC_SetPriority (SysTick_IRQn, (uint32_t)(1<<__NVIC_PRIO_BITS) - 1);  /* set Priority for Systick Interrupt */
   SysTick->VAL   = 0;                                          /* Load the SysTick Counter Value */
-  SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk |
+  SysTick->CTRL  = (uint32_t)(SysTick_CTRL_CLKSOURCE_Msk |
                    SysTick_CTRL_TICKINT_Msk   |
-                   SysTick_CTRL_ENABLE_Msk;                    /* Enable SysTick IRQ and SysTick Timer */
+                   SysTick_CTRL_ENABLE_Msk);                    /* Enable SysTick IRQ and SysTick Timer */
   return (0);                                                  /* Function successful */
 }
 

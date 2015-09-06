@@ -97,6 +97,8 @@
 float l3g4200d_gtemp = 0; //temperature used for compensation
 #endif*/
 
+#pragma message("Not compiling l3g driver")
+#if 0 
 /*
  * set reference temperature
  */
@@ -203,3 +205,4 @@ void l3g4200d_init(struct l3g4200d *self, i2c_dev_t i2c, uint8_t addr) {
 */
 	l3g4200d_settemperatureref(self);
 }
+#endif

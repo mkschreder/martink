@@ -39,6 +39,11 @@ extern "C" {
 */
 
 #include <inttypes.h>
+#include <stdint.h>
+#include <kernel/dev/serial.h>
+#include <kernel/dev/i2c.h>
+#include <block/i2cblk.h>
+
 #include "../interface.h"
 
 typedef enum {
@@ -88,6 +93,11 @@ uint16_t mwii_read_pwm(mwii_in_pwm_channel_t chan);
 i2c_dev_t mwii_get_i2c_interface(void); 
 /// gets main usart interface
 serial_dev_t mwii_get_uart_interface(void); 
+/// reads receiver input
+void mwii_read_receiver(
+		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
+		uint16_t *rc_aux0, uint16_t *rc_aux1); 
+void mwii_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right); 
 
 //**********************
 // READING SENSOR DATA
@@ -102,6 +112,8 @@ void mwii_read_magnetic_field(float *mx, float *my, float *mz);
 float mwii_read_temperature_c(void); 
 /// reads pressure in pascal
 float mwii_read_pressure_pa(void); 
+/// reads all sensors
+void mwii_read_sensors(struct fc_data *data); 
 
 //************************
 // CONFIG 
@@ -121,7 +133,7 @@ void mwii_calibrate_escs_on_reboot(void);
 #define mwii_read_pin(mwii_pin) gpio_read(mwii_pin); 
 #define mwii_write_pin(mwii_pin, val) gpio_write(mwii_pin, val)
 #define mwii_configure_pin(mwii_pin, flags) gpio_configure(mwii_pin, flags)
-#define mwii_read_adc(mwii_pin) (uint16_t)adc0_read_cached(((mwii_pin - MWII_GPIO_A0) & 0x3))
+//#define mwii_read_adc(mwii_pin) (uint16_t)adc0_read_cached(((mwii_pin - MWII_GPIO_A0) & 0x3))
 
 //************************
 // PROCESSING FRAME EVENTS

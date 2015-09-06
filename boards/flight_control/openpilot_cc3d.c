@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include <kernel.h>
+#include <kernel/dev/parallel.h>
 #include <sensors/mpu6000.h>
 #include <block/serial_flash.h>
 #include <fs/cfs/cfs.h>
@@ -14,11 +15,14 @@
 #define CC3D_FLEXIPORT_I2C_ID 1
 #define CC3D_DEFAULT_UART_BAUDRATE 38400
 
+#define CC3D_UART_BUFFER_SIZE 128
+
 static struct cc3d {
 	struct serial_flash flash; 
 	struct mpu6000 mpu; 
 	serial_dev_t spi0, spi1; 
-	serial_dev_t uart0; 
+	serial_dev_t uart0;
+	uint8_t uart_buffers[2][2][CC3D_UART_BUFFER_SIZE];  
 } cc3d; 
 
 	
@@ -44,13 +48,31 @@ void cc3d_init(void){
 	time_init(); 
 	timestamp_init(); 
 	gpio_init(); 
-	
-	cc3d_led_off(); 
 	gpio_configure(GPIO_PB3, GP_OUTPUT); 
 	
+	pwm_configure(CC3D_OUT_PWM1, MINCOMMAND, 4000); 
+	pwm_configure(CC3D_OUT_PWM2, MINCOMMAND, 4000); 
+	pwm_configure(CC3D_OUT_PWM3, MINCOMMAND, 4000); 
+	pwm_configure(CC3D_OUT_PWM4, MINCOMMAND, 4000); 
+	pwm_configure(CC3D_OUT_PWM5, MINCOMMAND, 4000); 
+	pwm_configure(CC3D_OUT_PWM6, MINCOMMAND, 4000); 
+	
+	pwm_configure_capture(CC3D_IN_PWM1, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM2, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM3, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM4, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM5, 1000); 
+	pwm_configure_capture(CC3D_IN_PWM6, 1000); 
+	
 	cc3d_led_on(); 
-	uart_init(CC3D_MAINPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE); 
-	uart_init(CC3D_FLEXIPORT_UART_ID, 57600); 
+	uart_init(CC3D_MAINPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE, 
+		cc3d.uart_buffers[0][0], CC3D_UART_BUFFER_SIZE, 
+		cc3d.uart_buffers[0][1], CC3D_UART_BUFFER_SIZE
+	); 
+	uart_init(CC3D_FLEXIPORT_UART_ID, 57600, 
+		cc3d.uart_buffers[1][0], CC3D_UART_BUFFER_SIZE, 
+		cc3d.uart_buffers[1][1], CC3D_UART_BUFFER_SIZE
+	); 
 	/*serial_dev_t sp = uart_get_serial_interface(CC3D_FLEXIPORT_UART_ID); 
 	serial_printf(sp, "AT"); 
 	delay_ms(500); 
@@ -60,7 +82,6 @@ void cc3d_init(void){
 	delay_ms(500); 
 	uart_set_baudrate(CC3D_FLEXIPORT_UART_ID, 38400); */
 	
-	cc3d_led_off(); 
 	/*while(1){
 		serial_printf(uart_get_serial_interface(0), "Running!\n"); 
 		serial_printf(sp, "Hello World!\n"); 
@@ -69,6 +90,7 @@ void cc3d_init(void){
 	//twi_init(); 
 	spi_init(); 
 	
+	/*
 	cc3d_led_on(); 
 	delay_ms(500); 
 	cc3d_led_off(); 
@@ -76,6 +98,7 @@ void cc3d_init(void){
 	cc3d_led_on(); 
 	delay_ms(500); 
 	cc3d_led_off(); 
+	*/
 	
 	//i2c_dev_t i2c = twi_get_interface(0); 
 	cc3d.uart0 = uart_get_serial_interface(0); 
@@ -97,20 +120,7 @@ void cc3d_init(void){
 	
 	//printf("Flash. ID: %x, Type: %x, Size: %x\n", cc3d.flash.props.id, cc3d.flash.props.type, cc3d.flash.props.size); 
 	
-	pwm_configure(CC3D_OUT_PWM1, 950, 4000); 
-	pwm_configure(CC3D_OUT_PWM2, 950, 4000); 
-	pwm_configure(CC3D_OUT_PWM3, 950, 4000); 
-	pwm_configure(CC3D_OUT_PWM4, 950, 4000); 
-	pwm_configure(CC3D_OUT_PWM5, 950, 4000); 
-	pwm_configure(CC3D_OUT_PWM6, 950, 4000); 
-	
-	pwm_configure_capture(CC3D_IN_PWM1, 1000); 
-	pwm_configure_capture(CC3D_IN_PWM2, 1000); 
-	pwm_configure_capture(CC3D_IN_PWM3, 1000); 
-	pwm_configure_capture(CC3D_IN_PWM4, 1000); 
-	pwm_configure_capture(CC3D_IN_PWM5, 1000); 
-	pwm_configure_capture(CC3D_IN_PWM6, 1000); 
-	
+	cc3d_led_off(); 
 }
 
 
@@ -147,12 +157,15 @@ void cc3d_write_pwm(cc3d_output_pwm_id_t ch, uint16_t data){
 void cc3d_configure_flexiport(cc3d_flexi_port_mode_t mode){
 	switch(mode){
 		case CC3D_FLEXIPORT_UART: 
-			twi_deinit(CC3D_FLEXIPORT_I2C_ID); 
-			uart_init(CC3D_FLEXIPORT_UART_ID, CC3D_DEFAULT_UART_BAUDRATE); 
+			i2cdev_deinit(CC3D_FLEXIPORT_I2C_ID); 
+			uart_init(CC3D_FLEXIPORT_UART_ID, 57600, 
+				cc3d.uart_buffers[1][0], CC3D_UART_BUFFER_SIZE, 
+				cc3d.uart_buffers[1][1], CC3D_UART_BUFFER_SIZE
+			); 
 			break; 
 		case CC3D_FLEXIPORT_I2C: 
 			uart_deinit(CC3D_FLEXIPORT_UART_ID); 
-			twi_init(CC3D_FLEXIPORT_UART_ID); 
+			i2cdev_init(CC3D_FLEXIPORT_UART_ID); 
 			break; 
 	};
 }
@@ -183,7 +196,7 @@ void cc3d_read_angular_velocity_dps(float *gyrx, float *gyry, float *gyrz){
 	mpu6000_convertGyr(&cc3d.mpu, x, y, z, gyrx, gyry, gyrz); 
 } 
 
-static int8_t cc3d_read_sensors(struct fc_data *data){
+void cc3d_read_sensors(struct fc_data *data){
 	data->flags = HAVE_ACC | HAVE_GYR; 
 	memset(data, 0, sizeof(struct fc_data)); 
 	
@@ -205,7 +218,7 @@ static int8_t cc3d_read_sensors(struct fc_data *data){
 		&data->raw_gyr.y, 
 		&data->raw_gyr.z
 	); 
-	mpu6000_convertAcc(&cc3d.mpu, 
+	mpu6000_convertGyr(&cc3d.mpu, 
 		data->raw_gyr.x, 
 		data->raw_gyr.y, 
 		data->raw_gyr.z, 
@@ -213,7 +226,6 @@ static int8_t cc3d_read_sensors(struct fc_data *data){
 		&data->gyr_deg.y,
 		&data->gyr_deg.z
 	); 
-	return 0; 
 }
 
 int8_t cc3d_write_config(const uint8_t *data, uint16_t size){
@@ -235,7 +247,7 @@ int8_t cc3d_write_config(const uint8_t *data, uint16_t size){
 	
 	if(addr == -1) return -1; 
 	
-	printf("Found free sector %x at %x\n", (int)sect, (int)addr); 
+	//printf("Found free sector %x at %x\n", (int)sect, (int)addr); 
 	
 	unsigned c = 0; 
 	do {
@@ -245,7 +257,7 @@ int8_t cc3d_write_config(const uint8_t *data, uint16_t size){
 		serial_flash_read(&cc3d.flash, sect / 8, &flags, 1); 
 		flags |= (1 << (sect % 8)); 
 		serial_flash_write(&cc3d.flash, (sect / 8), &flags, 1); 
-		printf("Wrote block to sector %x\n", sect); 
+		//printf("Wrote block to sector %x\n", sect); 
 		sect++; 
 		c += 512; 
 	} while(c < size); 
@@ -282,7 +294,7 @@ int8_t cc3d_read_config(uint8_t *data, uint16_t size){
 	}
 	if(addr < 0) return -1; 
 	
-	printf("Found data at sector %x\n", sect); 
+	//printf("Found data at sector %x\n", sect); 
 	serial_flash_read(&cc3d.flash, addr, data, size); 
 	
 	return 0; 
@@ -297,13 +309,32 @@ int8_t cc3d_read_config(uint8_t *data, uint16_t size){
 	return 0; */
 }
 
+void cc3d_read_receiver(
+		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
+		uint16_t *rc_aux0, uint16_t *rc_aux1){
+	(void)rc_aux0; 
+	(void)rc_aux1; 
+	*rc_thr = cc3d_read_pwm(CC3D_IN_PWM1); 
+	*rc_yaw = cc3d_read_pwm(CC3D_IN_PWM2); 
+	*rc_pitch = cc3d_read_pwm(CC3D_IN_PWM3); 
+	*rc_roll = cc3d_read_pwm(CC3D_IN_PWM4); 
+}
+
+void cc3d_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right){
+	cc3d_write_pwm(CC3D_OUT_PWM1, front); 
+	cc3d_write_pwm(CC3D_OUT_PWM2, back); 
+	cc3d_write_pwm(CC3D_OUT_PWM3, left); 
+	cc3d_write_pwm(CC3D_OUT_PWM4, right); 
+}
+
 void cc3d_process_events(void){
 	
 }
 
 static int8_t _cc3d_read_sensors(fc_board_t self, struct fc_data *data){
 	(void)(self); 
-	return cc3d_read_sensors(data); 
+	cc3d_read_sensors(data); 
+	return 0; 
 }
 
 static int8_t _cc3d_write_motors(fc_board_t self,

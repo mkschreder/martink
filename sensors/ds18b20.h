@@ -54,6 +54,8 @@
 #define DS18B20_DECIMALSTEPS_12BIT 625  //0.0625
 #define DS18B20_DECIMALSTEPS DS18B20_DECIMALSTEPS_12BIT
 
+#include <kernel/dev/parallel.h>
+
 struct ds18b20 {
 	pio_dev_t gpio;
 	gpio_pin_t data_pin;

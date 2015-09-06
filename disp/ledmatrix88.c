@@ -22,6 +22,7 @@
 	* Davide Gironi, original implementation
 */
 
+#include <arch/soc.h>
 #include <stdio.h>
 #include <string.h>
 

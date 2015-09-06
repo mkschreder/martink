@@ -24,6 +24,8 @@
 */
 #pragma once
 
+#include <kernel/dev/parallel.h>
+
 // GPIO pin functions
 enum {
 	/// configures a gpio pin as input

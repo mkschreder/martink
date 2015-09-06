@@ -1,6 +1,8 @@
 #include <arch/soc.h>
 #include "eeprom.h"
 
+#pragma message("avr eeprom driver not built!")
+/*
 //#ifdef CONFIG_HAVE_EEPROM
 static size_t	_ee_write(memory_dev_t self, size_t address, const uint8_t *data, size_t max_sz){
 	(void)(self); 
@@ -19,7 +21,7 @@ static void 		_ee_readInfo(uint16_t *block_size, size_t *device_size){
 	*device_size = 0; 
 }
 
-memory_dev_t eeprom_get_memory_interface(void){
+block_dev_t eeprom_get_memory_interface(void){
 	static struct memory_if _i; 
 	static struct memory_if *i = 0; 
 	if(!i){
@@ -30,4 +32,5 @@ memory_dev_t eeprom_get_memory_interface(void){
 	}
 	return &i; 
 }
+*/
 //#endif

@@ -22,6 +22,8 @@
 
 #include "config.h"
 
+#include <kernel/dev/serial.h>
+
 uint8_t spi_putc(uint8_t dev, uint8_t ch);
 
 void spi_init(void); 

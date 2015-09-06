@@ -21,7 +21,7 @@
 
 #include <arch/soc.h>
 
-
+/*
 static uint16_t 		_pwm_set_channel_duty(struct pwm_interface *self, uint8_t channel, uint16_t value_us){
 	(void)(self); 
 	switch(channel){
@@ -49,6 +49,7 @@ struct pwm_interface pwm_get_interface(void){
 		.set_channel_period = _pwm_set_channel_period
 	}; 
 }
+*/
 
 void initproc pwm_init(void){
 	kdebug("PWM: starting channels: ");

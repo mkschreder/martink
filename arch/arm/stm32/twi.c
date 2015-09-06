@@ -1,53 +1,26 @@
 #include <arch/soc.h>
+
+#include <kernel/cbuf.h>
+#include <kernel/thread.h>
+
+#include <inttypes.h>
+
 #include "twi.h"
 
-/*
-#define EEPROM_PAGE_SIZE 32
-#define EEPROM_PAGE_MASK 0xFFE0
-
-#define I2C_PINS	(1 << 6 | 1 << 7)
 #define I2C_SPEED 100000UL
 
-#define EEPROM_ADDR 0xA0
+#define I2C_DEBUG(...) {} //printf(__VA_ARGS__)
 
-typedef enum _state {
-	STATE_IDLE,
-	STATE_START,
-	STATE_ADDRESSED1,
-	STATE_ADDRESSED2,
-	STATE_RESTART,
-	STATE_TRANSFER_START,
-	STATE_TRANSFERRING,
-	STATE_COMPLETING,
-	STATE_COMPLETE,
-	STATE_ERROR
-} STATE;
-
-#define PAGE_ALIGN 1
-*/
-
-#define I2C_SPEED 100000UL
-
-struct twi_device {
+struct i2c_device {
 	I2C_TypeDef *dev; 
 	GPIO_TypeDef *gpio; 
 	int rcc_gpio; 
 	int rcc_id; 
 	int apb_id; 
 	int pins; 
-	/*
-	DMA_InitTypeDef dma;
-	uint8_t read_write; 
-	uint16_t addr; 
-} _twi_dev[] = {
-	{
-		.dma = {0}, 
-		.read_write = 1, 
-		.addr = 0
-	}*/
 }; 
 
-static const struct twi_device _devices[] = {
+static const struct i2c_device _devices[] = {
 	{
 		.dev = I2C1, 
 		.gpio = GPIOB, 
@@ -66,178 +39,262 @@ static const struct twi_device _devices[] = {
 	}
 }; 
 
-#define WAIT(expr) do {} while(expr) //{uint32_t timeout = 10; while((expr) && timeout--) delay_ms(1);}
+struct i2c_device_data {
+	uint8_t dev_id; 
+	uint8_t addr; 
+	async_mutex_t lock, buffer_lock; 
+	uint8_t flags; 
+	ssize_t offset; 
+	struct io_device io; 
+}; 
 
-static I2C_InitTypeDef  I2C_InitStructure; 
+#define I2C_FLAG_SEND_STOP (1)
 
-int8_t twi_init(uint8_t dev_id){
+#define I2C_DEV_COUNT (sizeof(_devices) / sizeof(_devices[0]))
+
+static struct i2c_device_data _data[I2C_DEV_COUNT]; 
+
+int8_t i2cdev_init(uint8_t dev_id){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
 	if(dev_id >= count) return -1; 
-	const struct twi_device *conf = &_devices[dev_id]; 
-
-	RCC_APB2PeriphClockCmd ( conf->rcc_gpio, ENABLE); 
+	const struct i2c_device *conf = &_devices[dev_id]; 
+	struct i2c_device_data *data = &_data[dev_id]; 
+	
+	data->dev_id = dev_id; 
+	data->offset = 0; 
+	data->flags = 0; 
+	ASYNC_MUTEX_INIT(data->buffer_lock, 1); 
+	ASYNC_MUTEX_INIT(data->lock, 1); 
+	
+	RCC_APB2PeriphClockCmd (conf->rcc_gpio, ENABLE); 
 	RCC_APB1PeriphClockCmd(conf->rcc_id, ENABLE);
 	
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 	
-  GPIO_InitTypeDef  GPIO_InitStructure; 
+	GPIO_InitTypeDef  GPIO_InitStructure; 
+	I2C_InitTypeDef  I2C_InitStructure; 
 
-  /* Configure I2C1 pins: SCL and SDA */
-  GPIO_InitStructure.GPIO_Pin =  conf->pins;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
-  GPIO_Init(conf->gpio, &GPIO_InitStructure);
+	/* Configure I2C1 pins: SCL and SDA */
+	GPIO_InitStructure.GPIO_Pin =  conf->pins;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+	GPIO_Init(conf->gpio, &GPIO_InitStructure);
 
-  /* I2C configuration */
-  I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
-  I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
-  I2C_InitStructure.I2C_OwnAddress1 = 0xa0;
-  I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
-  I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-  I2C_InitStructure.I2C_ClockSpeed = I2C_SPEED;
-  
-  /* I2C Peripheral Enable */
-  I2C_Cmd(conf->dev, ENABLE);
-  /* Apply I2C configuration after enabling it */
-  I2C_Init(conf->dev, &I2C_InitStructure);
-  
-  return 0; 
-}
+	/* I2C configuration */
+	I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
+	I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
+	I2C_InitStructure.I2C_OwnAddress1 = 0xa0;
+	I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
+	I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+	I2C_InitStructure.I2C_ClockSpeed = I2C_SPEED;
 
-void twi_deinit(uint8_t dev_id){
-	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
-	if(dev_id >= count) return; 
-	const struct twi_device *conf = &_devices[dev_id]; 
-	I2C_DeInit(conf->dev); 
-}
-
-int8_t twi_start_write(uint8_t dev_id, uint8_t adr, const uint8_t *data, uint8_t bytes_to_send){
-	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
-	if(dev_id >= count) return -1; 
-	const struct twi_device *conf = &_devices[dev_id]; 
-
-	/* While the bus is busy */
-	WAIT(I2C_GetFlagStatus(conf->dev, I2C_FLAG_BUSY));
-	/* Send START condition */
-	I2C_GenerateSTART(conf->dev, ENABLE);
-
-	/* Test on EV5 and clear it */
-	WAIT(!I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_MODE_SELECT));
-	/* Send EEPROM address for write */
-	I2C_Send7bitAddress(conf->dev, adr, I2C_Direction_Transmitter);
-
-	/* Test on EV6 and clear it */
-	WAIT(!I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
-	/* Clear EV6 by setting again the PE bit */
+	/* I2C Peripheral Enable */
 	I2C_Cmd(conf->dev, ENABLE);
+	/* Apply I2C configuration after enabling it */
+	I2C_Init(conf->dev, &I2C_InitStructure);
 
-	for(unsigned c = 0; c < bytes_to_send; c++){
-		/* Send the EEPROM's internal address to write to */
-		I2C_SendData(conf->dev, *data);  
-		
-		data++; 
-		
-		/* Test on EV8 and clear it */
-		WAIT(!I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
-	}
-	return 0; 
-}
-
-int8_t twi_start_read(uint8_t dev_id, uint8_t adr, uint8_t *data, uint8_t bytes_to_read){
-	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
-	if(dev_id >= count) return -1; 
-	I2C_TypeDef *dev = _devices[dev_id].dev; 
-	
-	/* Send STRAT condition a second time */  
-	I2C_GenerateSTART(dev, ENABLE);
-
-	/* Test on EV5 and clear it */
-	WAIT(!I2C_CheckEvent(dev, I2C_EVENT_MASTER_MODE_SELECT));
-
-	/* Send EEPROM address for read */
-	I2C_Send7bitAddress(dev, adr, I2C_Direction_Receiver);
-
-	/* Test on EV6 and clear it */
-	WAIT(!I2C_CheckEvent(dev, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
-	/* Clear EV6 by setting again the PE bit */
-	I2C_Cmd(dev, ENABLE);
-
-	/* While there is data to be read */
-	//uint32_t timeout = 10; 
-	while(bytes_to_read){
-		if(bytes_to_read == 1)
-		{
-			/* Disable Acknowledgement */
-			I2C_AcknowledgeConfig(dev, DISABLE);
-			
-			/* Send STOP Condition */
-			I2C_GenerateSTOP(dev, ENABLE);
-		}
-
-		/* Test on EV7 and clear it */
-		if(I2C_CheckEvent(dev, I2C_EVENT_MASTER_BYTE_RECEIVED))  
-		{      
-			/* Read a byte from the EEPROM */
-			*data = I2C_ReceiveData(dev);
-
-			/* Point to the next location where the byte read will be saved */
-			data++; 
-			
-			/* Decrement the read bytes counter */
-			bytes_to_read--;  
-			
-			//timeout = 10;       
-		} else {
-			/*delay_ms(1); 
-			
-			timeout--; 
-			
-			if(timeout == 0) {
-				I2C_GenerateSTOP(I2C1, ENABLE);
-				break; 
-			}*/
-		} 
-	}
-
-	/* Enable Acknowledgement to be ready for another reception */
-	I2C_AcknowledgeConfig(dev, ENABLE);
-	
-	return 0; 
-}
-
-int8_t twi_stop(uint8_t dev_id){
-	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
-	if(dev_id >= count) return -1; 
-	I2C_TypeDef *dev = _devices[dev_id].dev; 
-
-	I2C_GenerateSTOP(dev, ENABLE);
-	//I2C_Cmd(I2C1, DISABLE);
-	
+	// register device threads
+	//libk_create_thread(&data->thread, _i2c_thread, "i2c"); 
   return 0; 
 }
 
-void twi_wait(uint8_t dev_id, uint8_t addr){
-	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
-	if(dev_id >= count) return; 
-	I2C_TypeDef *dev = _devices[dev_id].dev; 
+static void i2cdev_wait(I2C_TypeDef *dev, uint8_t addr){
 
 	__IO uint16_t SR1_Tmp = 0;
 
 	do
 	{
-		/* Send START condition */
 		I2C_GenerateSTART(dev, ENABLE);
-		/* Read I2C1 SR1 register */
 		SR1_Tmp = I2C_ReadRegister(dev, I2C_Register_SR1); 
-		/* Send EEPROM address for write */
 		I2C_Send7bitAddress(dev, addr, I2C_Direction_Transmitter);
 	}while(!(I2C_ReadRegister(dev, I2C_Register_SR1) & 0x0002));
 
 	(void)(SR1_Tmp); 
 
-	/* Clear AF flag */
 	I2C_ClearFlag(dev, I2C_FLAG_AF);
 
-	/* STOP condition */    
 	I2C_GenerateSTOP(dev, ENABLE);  
+}
+
+void i2cdev_deinit(uint8_t dev_id){
+	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
+	if(dev_id >= count) return; 
+	const struct i2c_device *conf = &_devices[dev_id]; 
+	I2C_DeInit(conf->dev); 
+	
+  _data[dev_id].flags = 0; 
+}
+
+static ASYNC(io_result_t, io_device_t, vopen){
+	struct i2c_device_data *data = container_of(self, struct i2c_device_data, io); 
+	
+	ASYNC_BEGIN(); 
+	
+	ASYNC_MUTEX_LOCK(data->lock); 
+	
+	data->offset = 0; 
+	
+	ASYNC_END(0); 
+}
+
+static ASYNC(io_result_t, io_device_t, vclose){
+	struct i2c_device_data *data = container_of(self, struct i2c_device_data, io); 
+	
+	ASYNC_BEGIN(); 
+	
+	ASYNC_MUTEX_UNLOCK(data->lock); 
+	
+	ASYNC_END(0); 
+}
+
+static ASYNC(io_result_t, io_device_t, vwrite, const uint8_t *buffer, ssize_t bytes_to_send){
+	struct i2c_device_data *data = container_of(self, struct i2c_device_data, io); 
+	const struct i2c_device *conf = &_devices[data->dev_id]; 
+	
+	ASYNC_BEGIN(); 
+	
+	ASYNC_MUTEX_LOCK(data->buffer_lock); 
+	
+	I2C_DEBUG("I2C: write\n"); 
+	
+	I2C_GenerateSTART(conf->dev, ENABLE);
+	AWAIT(I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_MODE_SELECT));
+	
+	I2C_Send7bitAddress(conf->dev, data->addr, I2C_Direction_Transmitter);
+	AWAIT(I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)); 
+	
+	I2C_Cmd(conf->dev, ENABLE);
+	
+	I2C_DEBUG("I2C: transmitting %d bytes\n", bytes_to_send); 
+	while(data->offset < bytes_to_send){
+		I2C_SendData(conf->dev, buffer[data->offset++]);  
+		while(!I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_BYTE_TRANSMITTED)); 
+	}
+	I2C_DEBUG("I2C: tx completed!\n"); 
+	
+	if(data->flags & I2C_FLAG_SEND_STOP) {
+		I2C_DEBUG("I2C: stop\n"); 
+		I2C_GenerateSTOP(conf->dev, ENABLE);
+		AWAIT(!I2C_GetFlagStatus(conf->dev, I2C_FLAG_BUSY)); 
+		i2cdev_wait(conf->dev, data->addr);
+	}
+	
+	data->offset = 0;
+	
+	ASYNC_MUTEX_UNLOCK(data->buffer_lock); 
+	
+	ASYNC_END(bytes_to_send); 
+}
+
+static ASYNC(io_result_t, io_device_t, vread, uint8_t *buffer, ssize_t size){
+	//if(dev_id >= I2C_DEV_COUNT) return -1; 
+	//const struct i2c_device *conf = &_devices[dev_id]; 
+	struct i2c_device_data *data = container_of(self, struct i2c_device_data, io); 
+	const struct i2c_device *conf = &_devices[data->dev_id]; 
+	
+	ASYNC_BEGIN(); 
+	
+	ASYNC_MUTEX_LOCK(data->buffer_lock); 
+	
+	I2C_DEBUG("I2C: read %d to %d\n", size, data->offset); 
+	//i2cdev_wait(conf->dev, data->addr); 
+	
+	//PT_WAIT_WHILE(pt, I2C_GetFlagStatus(conf->dev, I2C_FLAG_BUSY)); 
+	I2C_GenerateSTART(conf->dev, ENABLE);
+	AWAIT(I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_MODE_SELECT));
+	
+	I2C_Send7bitAddress(conf->dev, data->addr, I2C_Direction_Receiver);
+	AWAIT(I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
+	
+	I2C_Cmd(conf->dev, ENABLE);
+			
+	I2C_DEBUG("I2C: reading %d bytes\n", size); 
+	
+	//i2cdev_wait(conf->dev, data->addr); 
+	
+	// read op
+	while(data->offset < size){
+		// this is necessary evil because if we don't busy wait, we lose data here because
+		// we are not interrupt driven :/ .. yet :)
+		while(!I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_BYTE_RECEIVED)); 
+		buffer[data->offset++] = I2C_ReceiveData(conf->dev);
+		
+		if(data->offset == (size - 1)){
+			// last byte: disable ack and send stop
+			I2C_AcknowledgeConfig(conf->dev, DISABLE);
+			//I2C_GenerateSTOP(conf->dev, ENABLE);
+		} 
+	}
+	
+	// reenable ack
+	I2C_AcknowledgeConfig(conf->dev, ENABLE);
+	
+	if(data->flags & I2C_FLAG_SEND_STOP) {
+		I2C_DEBUG("I2C: stop\n"); 
+		I2C_GenerateSTOP(conf->dev, ENABLE);
+		AWAIT(!I2C_GetFlagStatus(conf->dev, I2C_FLAG_BUSY)); 
+	}
+	
+	data->offset = 0;
+	
+	I2C_DEBUG("I2C: read completed\n"); 
+	
+	ASYNC_MUTEX_UNLOCK(data->buffer_lock); 
+	
+	ASYNC_END(size); 
+}
+
+static ASYNC(io_result_t, io_device_t, vseek, ssize_t pos, int whence){
+	struct i2c_device_data *data = container_of(self, struct i2c_device_data, io); 
+	
+	ASYNC_BEGIN();
+	
+	(void)whence; 
+	
+	I2C_DEBUG("i2c: seek %d\n", pos); 
+	data->addr = pos; 
+	
+	ASYNC_END(pos); 
+}
+
+
+static ASYNC(io_result_t, io_device_t, vioctl, ioctl_req_t req, va_list vl){
+	struct i2c_device_data *data = container_of(self, struct i2c_device_data, io); 
+	
+	ASYNC_BEGIN(); 
+	
+	if(req == I2C_SEND_STOP){
+		uint8_t en = va_arg(vl, int); 
+		I2C_DEBUG("I2C: sendstop: %d\n", en); 
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+			if(en)
+				data->flags |= I2C_FLAG_SEND_STOP; 
+			else
+				data->flags &= ~I2C_FLAG_SEND_STOP; 
+		}
+		ASYNC_EXIT(0); 
+	} 
+	
+	ASYNC_END(-1); 
+}
+
+io_dev_t i2cdev_get_interface(uint8_t dev_id){
+	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
+	if(dev_id >= count) return 0; 
+	//const struct i2c_device *conf = &_devices[dev_id]; 
+	struct i2c_device_data *data = &_data[dev_id]; 
+	
+	static struct io_device_ops _if;
+	if(!data->io.api){
+		_if = (struct io_device_ops) {
+			.open = __io_device_t_vopen__, 
+			.close = __io_device_t_vclose__, 
+			.read = 	__io_device_t_vread__,
+			.write = 	__io_device_t_vwrite__,
+			.seek = __io_device_t_vseek__, 
+			.ioctl = __io_device_t_vioctl__, 
+		};
+		data->io.api = &_if; 
+	}
+	return &data->io; 
 }

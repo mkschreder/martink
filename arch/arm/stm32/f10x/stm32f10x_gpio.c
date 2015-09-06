@@ -452,8 +452,11 @@ void GPIO_PinLockConfig(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
   GPIOx->LCKR = tmp;
   /* Read LCKK bit*/
   tmp = GPIOx->LCKR;
+  (void)tmp; 
+  
   /* Read LCKK bit*/
   tmp = GPIOx->LCKR;
+  (void)tmp; 
 }
 
 /**

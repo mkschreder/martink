@@ -99,13 +99,21 @@ extern const struct pin_decl {
 	volatile uint8_t *ddr_reg;
 } gPinPorts[4];
 
+enum {
+	GP_READ_PULSE_P = (1 << 0), 
+	GP_READ_PULSE_N = (1 << 1), 
+	GP_READ_EDGE_P 	= (1 << 2), 
+	GP_READ_EDGE_N 	= (1 << 3) 
+}; 
+
 struct pin_state {
 	volatile timestamp_t t_up; 
 	volatile timestamp_t t_down; 
 	volatile uint8_t status; 
+	volatile uint8_t flags; 
 }; 
 
-extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0]; 
+//extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0]; 
 
 #define RIDX(pin) 	((pin > 0)?(((pin - 1) & 0xf8) >> 3):0)
 #define PIDX(pin) 	((pin > 0)?((pin - 1) & 0x07):0)
@@ -131,6 +139,9 @@ uint8_t gpio_read_word(uint8_t addr, uint32_t *value);
 void gpio_write_pin(gpio_pin_t pin, uint8_t val);
 uint8_t gpio_read_pin(gpio_pin_t pin);
 
+uint8_t gpio_pin_busy(gpio_pin_t pin);
+int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t flags);
+
 #define gpio_clear(pin) gpio_write_pin(pin, 0)
 #define gpio_set(pin) gpio_write_pin(pin, 1)
 
@@ -148,8 +159,8 @@ void gpio_enable_pcint(gpio_pin_t pin);
 )
 
 #if defined(CONFIG_GPIO_PIN_STATES)
-	extern uint8_t gpio_get_status(gpio_pin_t pin, 
-		timestamp_t *ch_up, timestamp_t *ch_down);
+	//extern uint8_t gpio_get_status(gpio_pin_t pin, 
+	//	timestamp_t *ch_up, timestamp_t *ch_down);
 #endif
 
 // attempt to gather entropy from floating gpio pin

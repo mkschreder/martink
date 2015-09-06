@@ -22,24 +22,6 @@ extern "C" {
 
 #include "config.h"
 
-
-struct _avr_twi_op {
-  volatile uint8_t address;
-  volatile uint8_t buflen;
-  volatile uint8_t bufpos;
-  volatile uint8_t *buf;
-};
-
-typedef struct _avr_twi_op avr_twi_op;
-
-struct _avr_twi_device {
-	volatile struct _avr_twi_op op; 
-	//volatile uint8_t status;
-};
-
-extern volatile struct _avr_twi_device _twi0;
-extern volatile uint8_t _twi0_status; 
-
 #define hwtwi0_init(speed) ({\
 	TWSR = 0;\
   TWBR = (uint8_t)(((F_CPU/speed)-16)/2);\
@@ -60,21 +42,13 @@ extern volatile uint8_t _twi0_status;
 #define TWI_NO_RESPONSE 2
 #define TWI_REP_START_SENT 4
 
-int8_t twi_init(uint8_t dev_id); 
-void twi_deinit(uint8_t dev_id); 
-int8_t twi_start_write(uint8_t dev_id, uint8_t addr, const uint8_t *data, uint8_t sz); 
-int8_t twi_start_read(uint8_t dev_id, uint8_t addr, uint8_t *data, uint8_t sz); 
-int8_t twi_stop(uint8_t dev_id); 
-void twi_wait(uint8_t dev_id, uint8_t addr); 
+#include <kernel/dev/i2c.h>
+#include <kernel/dev/block.h>
+#include <kernel/io_device.h>
 
-/*
-void twi0_slave_init(uint8_t addr);
-uint8_t twi0_slave_data_available(void);
-// read received data from buffer
-void twi0_slave_read(uint8_t *data, uint8_t max_size);
-// write response to a slave request or will fail if slave interface is not in response state
-void twi0_slave_write(uint8_t *data, uint8_t data_size); 
-*/
+int8_t avr_i2c_init(uint8_t dev_id); 
+void avr_i2c_deinit(uint8_t dev_id); 
+io_dev_t avr_i2c_get_interface(uint8_t dev_id); 
 
 #ifdef __cplusplus
 }

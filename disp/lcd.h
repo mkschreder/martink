@@ -19,14 +19,14 @@ References:
 
 #include <inttypes.h>
 
-#include <arch/interface.h>
+#include <kernel/dev/parallel.h>
 
 struct lcd {
 	pio_dev_t port; 
 	uint8_t dataport; 
 };
 
-extern void lcd_init(struct lcd *self, pio_dev_t port, uint8_t dispAttr);
+extern void lcd_init(struct lcd *self, pio_dev_t port, uint8_t flags);
 extern void lcd_clrscr(struct lcd *self);
 extern void lcd_home(struct lcd *self);
 extern void lcd_gotoxy(struct lcd *self, uint8_t x, uint8_t y);

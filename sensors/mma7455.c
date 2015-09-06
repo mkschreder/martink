@@ -73,6 +73,10 @@
 #include <string.h>
 #endif
 
+#pragma message("Not compiling mma driver")
+#if 0 
+
+
 #if MMA7455_LOWPASSENABLED == 1
 static float axold = 0;
 static float ayold = 0;
@@ -186,5 +190,5 @@ void mma7455_getdata(struct mma7455 *self, float *ax, float *ay, float *az) {
 	firstread = 0;
 	#endif
 }
-
+#endif
 

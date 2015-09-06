@@ -27,11 +27,13 @@
 
 #include <arch/soc.h>
 
-#include <static_cbuf.h>
+#include <kernel/cbuf.h>
 
 #include "uart.h"
 
 #define UART_RX_BUFFER_SIZE 64
+#define UART_TX_BUFFER_SIZE 128
+#define DEV_COUNT sizeof(_devices)/sizeof(struct uart_device)
 
 struct uart_device {
 	USART_TypeDef *dev; 
@@ -76,14 +78,13 @@ static const struct uart_device _devices[] = {
 	}
 }; 
 
-DECLARE_STATIC_CBUF(uart0_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-DECLARE_STATIC_CBUF(uart1_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-DECLARE_STATIC_CBUF(uart2_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-DECLARE_STATIC_CBUF(uart3_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-DECLARE_STATIC_CBUF(uart4_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
-DECLARE_STATIC_CBUF(uart5_rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
+static struct cbuf rx_buffers[DEV_COUNT]; 
+//static uint8_t rx_data[DEV_COUNT][UART_RX_BUFFER_SIZE]; 
+static struct cbuf tx_buffers[DEV_COUNT]; 
+//static uint8_t tx_data[DEV_COUNT][UART_TX_BUFFER_SIZE]; 
 
-int8_t uart_init(uint8_t dev_id, uint32_t baud){
+
+int8_t uart_init(uint8_t dev_id, uint32_t baud, uint8_t *tx_buffer, uint8_t tx_size, uint8_t *rx_buffer, uint8_t rx_size){
 	USART_InitTypeDef usartConfig;
 	
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
@@ -92,6 +93,9 @@ int8_t uart_init(uint8_t dev_id, uint32_t baud){
 	
 	const struct uart_device *conf = &_devices[dev_id]; 
 	USART_TypeDef *dev = _devices[dev_id].dev; 
+	
+	cbuf_init(&rx_buffers[dev_id], rx_buffer, rx_size); 
+	cbuf_init(&tx_buffers[dev_id], tx_buffer, tx_size); 
 	
 	USART_DeInit(dev); 
 	
@@ -139,6 +143,7 @@ int8_t uart_init(uint8_t dev_id, uint32_t baud){
   NVIC_Init(&NVIC_InitStructure);
   
 	USART_ITConfig(dev, USART_IT_RXNE, ENABLE);
+	USART_ITConfig(dev, USART_IT_TXE, ENABLE);
 	
 	return 0; 
 }
@@ -176,33 +181,14 @@ int8_t		uart_set_baudrate(uint8_t dev_id, uint32_t baud){
 uint16_t uart_getc(uint8_t dev_id){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
 	if(dev_id >= count) return SERIAL_NO_DATA; 
-	
 	USART_TypeDef *dev = _devices[dev_id].dev; 
 
 	uint16_t ret = SERIAL_NO_DATA; 
 	USART_ITConfig(dev, USART_IT_RXNE, DISABLE);
 	
-	// TODO: can probably be done better, but for now cbuf works this way..
-	switch(dev_id){
-		case 0: 
-			if(!cbuf_is_empty(&uart0_rx_buf)) { ret = cbuf_get(&uart0_rx_buf); }
-			break;
-		case 1: 
-			if(!cbuf_is_empty(&uart1_rx_buf)) { ret = cbuf_get(&uart1_rx_buf); }
-			break;
-		case 2: 
-			if(!cbuf_is_empty(&uart2_rx_buf)) { ret = cbuf_get(&uart2_rx_buf); }
-			break;
-		case 3: 
-			if(!cbuf_is_empty(&uart3_rx_buf)) { ret = cbuf_get(&uart3_rx_buf); }
-			break;
-		case 4: 
-			if(!cbuf_is_empty(&uart4_rx_buf)) { ret = cbuf_get(&uart4_rx_buf); }
-			break;
-		case 5: 
-			if(!cbuf_is_empty(&uart5_rx_buf)) { ret = cbuf_get(&uart5_rx_buf); }
-			break; 
-	}
+	// no need for critical section because cbuffer is threadsafe
+	if(cbuf_get_waiting(&rx_buffers[dev_id]) > 0) { ret = cbuf_get(&rx_buffers[dev_id]); }
+	
 	USART_ITConfig(dev, USART_IT_RXNE, ENABLE);
 	return ret; 
 }
@@ -213,62 +199,79 @@ int8_t uart_putc(uint8_t dev_id, uint8_t ch){
 	
 	USART_TypeDef *dev = _devices[dev_id].dev; 
 	
-	while(!(dev->SR & USART_SR_TXE));
-	dev->DR = ch;  
+	// ok so the policy is currently to block and wait
+	while(cbuf_is_full(&tx_buffers[dev_id])); 
+	
+	USART_ITConfig(dev, USART_IT_TXE, DISABLE);
+	cbuf_put(&tx_buffers[dev_id], ch);
+	USART_ITConfig(dev, USART_IT_TXE, ENABLE);
+	
+	//while(!(dev->SR & USART_SR_TXE));
+	//dev->DR = ch;  
 	return 0; 
+}
+
+static void USART_Handler(USART_TypeDef *dev, struct cbuf *rx_buf, struct cbuf *tx_buf){
+	if(USART_GetITStatus(dev, USART_IT_RXNE) != RESET){
+		USART_ClearITPendingBit(dev, USART_IT_RXNE);
+		unsigned char ch = USART_ReceiveData(dev) & 0xff;
+		cbuf_put_isr(rx_buf, ch); 
+	}
+	if(USART_GetITStatus(dev, USART_IT_TXE) != RESET){
+		USART_ClearITPendingBit(dev, USART_IT_TXE);
+		if(!cbuf_is_empty(tx_buf))
+			USART_SendData(dev, cbuf_get(tx_buf)); 
+		else
+			USART_ITConfig(dev, USART_IT_TXE, DISABLE);
+	}
 }
 
 void USART1_IRQHandler(void);
 void USART1_IRQHandler(void)
 {
-	if(USART1->SR & USART_FLAG_RXNE){
-		char ch = USART_ReceiveData(USART1);
-		if(!cbuf_is_full(&uart0_rx_buf)){ 
-			cbuf_put(&uart0_rx_buf, ch); 
-		} 
+	USART_Handler(USART1, &rx_buffers[0], &tx_buffers[0]); 
+	/*
+	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET){
+		USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+		unsigned char ch = USART_ReceiveData(USART1) & 0xff;
+		cbuf_put_isr(&rx_buffers[0], ch); 
 	}
+	if(USART_GetITStatus(USART1, USART_IT_TXE) != RESET){
+		USART_ClearITPendingBit(USART1, USART_IT_TXE);
+		if(!cbuf_is_empty(&tx_buffers[0]))
+			UART1->DR = cbuf_get(&tx_buffers[0]); 
+		else
+			USART_ITConfig(dev, USART_IT_TXE, DISABLE);
+	}*/
 }
 
 
 void USART2_IRQHandler(void);
 void USART2_IRQHandler(void)
 {
-	if(USART2->SR & USART_FLAG_RXNE){
-		char ch = USART_ReceiveData(USART2);
-		if(!cbuf_is_full(&uart1_rx_buf)){ 
-			cbuf_put(&uart1_rx_buf, ch); 
-		} 
-	}
+	USART_Handler(USART2, &rx_buffers[1], &tx_buffers[1]); 
+	/*
+	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET){
+		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
+		unsigned char ch = USART_ReceiveData(USART2);
+		cbuf_put_isr(&rx_buffers[1], ch); 
+	}*/
 }
-
 
 void USART3_IRQHandler(void);
 void USART3_IRQHandler(void)
-{
-	if(USART3->SR & USART_FLAG_RXNE){
-		char ch = USART_ReceiveData(USART3);
-		if(!cbuf_is_full(&uart2_rx_buf)){ 
-			cbuf_put(&uart2_rx_buf, ch); 
-		} 
-	}
+{	
+	USART_Handler(USART3, &rx_buffers[2], &tx_buffers[2]); 
+	/*if(USART_GetITStatus(USART3, USART_IT_RXNE) != RESET){
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		unsigned char ch = USART_ReceiveData(USART3);
+		cbuf_put_isr(&rx_buffers[2], ch); 
+	}*/
 }
 
 uint16_t uart_waiting(uint8_t dev_id){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
 	if(dev_id >= count) return -1; 
 	
-	USART_TypeDef *dev = _devices[dev_id].dev; 
-	size_t cn = 0; 
-	
-	USART_ITConfig(dev, USART_IT_RXNE, DISABLE);
-	switch(dev_id){
-		case 0: cn = cbuf_get_data_count(&uart0_rx_buf); break; 
-		case 1: cn = cbuf_get_data_count(&uart1_rx_buf); break; 
-		case 2: cn = cbuf_get_data_count(&uart2_rx_buf); break; 
-		case 3: cn = cbuf_get_data_count(&uart3_rx_buf); break; 
-		case 4: cn = cbuf_get_data_count(&uart4_rx_buf); break; 
-		case 5: cn = cbuf_get_data_count(&uart5_rx_buf); break; 
-	}
-	USART_ITConfig(dev, USART_IT_RXNE, ENABLE);
-	return cn; 
+	return cbuf_get_waiting(&rx_buffers[dev_id]); 
 }

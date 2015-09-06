@@ -103,11 +103,11 @@
 #define ADC_CH_GND (15)
 #define ADC_CH_BITS (0x0f)
 
-#define adc0_set_channel(adc_chan) ({\
-	adc0_disable(); \
-	ADMUX = (ADMUX & ~ADC_CH_BITS) | ((adc_chan) & ADC_CH_BITS); \
-	adc0_enable(); \
-})
+static inline void adc0_set_channel(uint8_t adc_chan) {
+	adc0_disable(); 
+	ADMUX = (ADMUX & ~ADC_CH_BITS) | ((adc_chan) & ADC_CH_BITS); 
+	adc0_enable(); 
+}
 
 #define adc0_get_channel() (ADMUX & 0x07)
 
@@ -144,9 +144,9 @@ extern uint8_t _adc_mode;
 
 //#if defined(CONFIG_ADC_MODE_AUTOMATIC)
 
-	extern uint16_t _adc_values[8];
+	//extern uint16_t _adc_values[8];
 
-	#define adc0_read_cached(chan) (_adc_values[(chan) & 0x07])
+	//#define adc0_read_cached(chan) (_adc_values[(chan) & 0x07])
 //#endif
 
 #define adc0_set_mode(adc_mode) (\
@@ -156,4 +156,39 @@ extern uint8_t _adc_mode;
 		:(0)) \
 )
 
+#include <kernel/thread.h>
+
+typedef struct avr_adc {
+	struct async_task avr_adc_open, avr_adc_close, avr_adc_read; 
+} adc_t; 
+
+void avr_adc_init(struct avr_adc *self); 
+
+ASYNC_PROTOTYPE(int, adc_t, avr_adc_open); 
+ASYNC_PROTOTYPE(int, adc_t, avr_adc_close); 
+ASYNC_PROTOTYPE(uint16_t, adc_t, avr_adc_read, uint8_t channel); 
+
+/*
+uint8_t adc_aquire(uint8_t chan); 
+void adc_release(void); 
+uint8_t adc_busy(void);
+void adc_start_read(uint8_t channel, volatile uint16_t *value); 
+*/
+/*
+#include <util/list.h>
+#include <util/pipe.h>
+
+#define ADC_EV_CONV_COMPLETED 1
+
+struct adc_connection {
+	struct pipe pipe; 
+	int8_t (*on_event)(struct adc_connection *self, uint16_t ev); 
+	struct list_head list; 
+}; 
+
+int8_t adc_read_ev_conv_completed(struct adc_connection *self, 
+	timestamp_t *time, uint8_t *chan, uint16_t *value); 
+void adc_connect(struct adc_connection *con, uint8_t *rxbuf, uint8_t *txbuf, uint8_t size, int8_t (*on_event)(struct adc_connection *self, uint16_t ev));
+void adc_process_events(void); 
+*/
 #endif

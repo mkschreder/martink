@@ -66,7 +66,7 @@ void hcsr04_init(struct hcsr04 *self, pio_dev_t gpio,
 
 static uint8_t hcsr04_check_response(struct hcsr04 *self){
 	timestamp_t t_up, t_down; 
-	uint8_t status = pio_get_pin_status(self->gpio, self->echo_pin, &t_up, &t_down);
+	uint8_t status = 0; //pio_get_pin_status(self->gpio, self->echo_pin, &t_up, &t_down);
 	if(status == GP_WENT_LOW){
 		timestamp_t us = timestamp_ticks_to_us(t_down - t_up);
 		// convert to cm 

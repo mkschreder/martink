@@ -26,6 +26,7 @@
 
 #include <arch/soc.h>
 #include "hmc5883l.h"
+#include <block/i2cblk.h>
 
 
 //registers
@@ -66,7 +67,7 @@
 #define HMC5883L_SCALE47 5 //4.7
 #define HMC5883L_SCALE56 6 //5.6
 #define HMC5883L_SCALE81 7 //8.1
-#define HMC5883L_SCALE HMC5883L_SCALE88
+#define HMC5883L_SCALE HMC5883L_SCALE13
 
 #define HMC5883L_CALIBRATED 1 //enable this if this magn is calibrated
 
@@ -86,31 +87,84 @@
 #define HMC5883L_GAINZ3 0.995365
 #endif
 
-/*
-static uint8_t hmc5883l_read_reg(struct hmc5883l *self, uint8_t reg){
-	uint8_t res = 0; 
-	i2c_start_write(self->i2c, self->addr, &reg, 1);
-	//delay_us(5000); 
-	i2c_stop(self->i2c);
-	i2c_start_read(self->i2c, self->addr, &res, 1);
-	//delay_us(5000); 
-	i2c_stop(self->i2c); 
-	return res; 
-}*/
-/*
- * init the hmc5883l
- */
-void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr) {
-	self->i2c = i2c;
-	self->addr = addr;
+#define HMC5883L_STATUS_READY 1
+
+#define STORE_VEC3_16(target) target[0] = READ_INT16(self->buf); target[1] = READ_INT16(self->buf + 2); target[2] = READ_INT16(self->buf + 4);
+
+typedef struct hmc5883l hmc5883l_t; 
+
+ASYNC_PROCESS(hmc5883_task){
+	struct hmc5883l *self = container_of(__self, struct hmc5883l, process); 
+	ASYNC_BEGIN(); 
 	
-	delay_us(50000L); 
+	// wait for the compass to start
+	AWAIT_DELAY(self->time, 50000L); 
 	
-	//set scale
-	//self->scale = 0;
-	// todo: move out
-	uint8_t scale = HMC5883L_SCALE13; 
-	switch(scale) {
+	IO_OPEN(self->dev); 
+	
+	//IO_IOCTL(self->dev, I2CBLK_SEND_STOP_AFTER_ADDR, 1); 
+	
+	self->buf[0] = HMC5883L_NUM_SAMPLES4 | HMC5883L_RATE30; 
+	IO_SEEK(self->dev, HMC5883L_CONFREGA, SEEK_SET); 
+	IO_WRITE(self->dev, self->buf, 1);
+	
+	self->buf[0] = HMC5883L_SCALE << 5; 
+	IO_SEEK(self->dev, HMC5883L_CONFREGB, SEEK_SET); 
+	IO_WRITE(self->dev, self->buf, 1);
+	
+	self->buf[0] = HMC5883L_MEASUREMODE; 
+	IO_SEEK(self->dev, HMC5883L_MODEREG, SEEK_SET); 
+	IO_WRITE(self->dev, self->buf, 1);
+	
+	// TODO: requires stop between write address and read
+	//IO_READ(pt, &self->tr, self->dev, HMC5883L_REG_IDA, self->buf, 3); 
+	//self->sensor_id = READ_INT24(self->buf); 
+	
+	IO_CLOSE(self->dev); 
+	
+	AWAIT_DELAY(self->time, 7000L); 
+	
+	self->status |= HMC5883L_STATUS_READY; 
+	
+	while(1){
+		IO_OPEN(self->dev); 
+		//IO_IOCTL(self->dev, I2CBLK_SEND_STOP_AFTER_ADDR, 1); 
+		
+		IO_SEEK(self->dev, HMC5883L_DATAREGBEGIN, SEEK_SET); 
+		IO_READ(self->dev, self->buf, 6);
+		STORE_VEC3_16(self->raw_mag); 
+		
+		IO_CLOSE(self->dev); 
+	
+		static timestamp_t tfps = 0; 
+		static int fps = 0; 
+		if(timestamp_expired(tfps)){
+			printf("HMC FPS: %d\n", fps); 
+			fps = 0; 
+			tfps = timestamp_from_now_us(1000000); 
+		} fps++; 
+		
+		ASYNC_YIELD(); 
+		//TIMEOUT(10000); 
+		
+		//printf("HMC: %d %d %d\n", self->raw_mag[0], self->raw_mag[1], self->raw_mag[2]); 
+	}
+	
+	ASYNC_END(0); 
+}
+
+void hmc5883l_init(struct hmc5883l *self, io_dev_t i2c) {
+	self->dev = i2c;
+	self->status = 0; 
+	
+	ASYNC_PROCESS_INIT(&self->process, hmc5883_task); 
+	ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, &self->process); 
+	
+	//ASYNC_INIT(&self->task); 
+	
+	//libk_create_thread(&self->kthread, _hmc5883l_thread, "hmc5883l"); 
+	
+	switch(HMC5883L_SCALE) {
 		case HMC5883L_SCALE088: 
 			self->scale = 0.73;
 			break; 
@@ -136,66 +190,12 @@ void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr) {
 			self->scale = 4.35;
 			break;
 	}
-	
-  delay_us(50000L);  //Wait before start
-  /*
-	uint8_t buf[] = {
-		HMC5883L_CONFREGA,
-		0x70, //Configuration Register A -- 0 11 100 00 num samples: 8 ; output rate: 15Hz ; normal measurement mode
-		HMC5883L_CONFREGB,
-		0x20, //Configuration Register B -- 001 00000 configuration gain 1.3Ga
-		HMC5883L_MODEREG,
-		0x00 //Mode register -- 000000 00 continuous Conversion Mode
-	};
-	i2c_start_write(i2c, addr, buf, sizeof(buf));
-	i2c_stop(i2c);
-  */
-  uint8_t buf[2]; 
-  
-	buf[0] = HMC5883L_CONFREGA; 
-	buf[1] = HMC5883L_NUM_SAMPLES4 | HMC5883L_RATE30; 
-	i2c_start_write(i2c, addr, buf, 2);
-	i2c_stop(i2c);
-	
-	buf[0] = HMC5883L_CONFREGB; 
-	buf[1] = scale << 5; 
-	i2c_start_write(i2c, addr, buf, 2);
-	i2c_stop(i2c);
-	
-	//set measurement mode
-	buf[0] = HMC5883L_MODEREG; 
-	buf[1] = HMC5883L_MEASUREMODE; 
-	i2c_start_write(i2c, addr, buf, 2);
-	i2c_stop(i2c);
-	
-  delay_us(7000L);
-}
-
-uint32_t hmc5883l_read_id(struct hmc5883l *self){
-	uint8_t reg = HMC5883L_REG_IDA; 
-	uint8_t buf[3] = {0}; /* = {
-		hmc5883l_read_reg(self, HMC5883L_REG_IDA), 
-		hmc5883l_read_reg(self, HMC5883L_REG_IDB), 
-		hmc5883l_read_reg(self, HMC5883L_REG_IDC) 
-	}; */
-	i2c_start_write(self->i2c, self->addr, &reg, 1);
-	if(i2c_stop(self->i2c) != 1) return -1; // sensor needs a stop
-	i2c_start_read(self->i2c, self->addr, buf, 3);
-	i2c_stop(self->i2c);
-	return ((uint32_t)buf[0] << 16) | ((uint32_t)buf[1] << 8) | buf[2]; 
 }
 
 void hmc5883l_readRawMag(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, int16_t *mzraw) {
-	uint8_t buff[6] = {HMC5883L_DATAREGBEGIN};
-	i2c_start_write(self->i2c, self->addr, buff, 1);
-	i2c_stop(self->i2c); // sensor needs a stop
-	memset(buff, 0, sizeof(buff)); 
-	i2c_start_read(self->i2c, self->addr, buff, 6);
-	i2c_stop(self->i2c);
-	
-	*mxraw = (int16_t)((buff[0] << 8) | buff[1]);
-	*mzraw = (int16_t)((buff[2] << 8) | buff[3]);
-	*myraw = (int16_t)((buff[4] << 8) | buff[5]);
+	*mxraw = self->raw_mag[0];
+	*mzraw = self->raw_mag[1];
+	*myraw = self->raw_mag[2];
 }
 
 void hmc5883l_convertMag(struct hmc5883l *self, 

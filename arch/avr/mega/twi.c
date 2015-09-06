@@ -41,8 +41,14 @@ Revision Info:  $Id: twi_master.c 117 2010-06-24 20:21:28Z pieterconradie $
 #include <compat/twi.h>
 
 #include <arch/soc.h>
+#include <string.h>
+#include <kernel/dev/i2c.h>
+#include <kernel/cbuf.h>
 
 #include "twi.h"
+
+#define AVR_I2C_ADDR_SIZE 1
+#define AVR_I2C_BUFFER_SIZE (8 + AVR_I2C_ADDR_SIZE)
 
 #define TWI_FREQ 100000
 
@@ -53,16 +59,33 @@ Revision Info:  $Id: twi_master.c 117 2010-06-24 20:21:28Z pieterconradie $
 #define TWI_BR_VALUE ((DIV_ROUND(F_CPU,TWI_FREQUENCY_HZ)-16ul)/(2ul*TWI_PRESCALER_VALUE))
 
 /// TWI State machine value when finished
-#define TWI_STATUS_DONE 0xff
+//#define TWI_STATUS_DONE 0xff
+#define AVR_I2C_FLAG_DONE (1 << 0) // the device is ready to accept more data
+#define AVR_I2C_FLAG_DATA_READY (1 << 1) // read data in buffer
+#define AVR_I2C_FLAG_ENABLED (1 << 2) 
+#define AVR_I2C_FLAG_LOCKED (1 << 3)
+#define AVR_I2C_FLAG_SEND_STOP (1 << 4)
 
-/* _____LOCAL VARIABLES______________________________________________________ */
-static volatile uint8_t twi_adr;
-static volatile uint8_t *twi_rd_data;
-static volatile const uint8_t *twi_wr_data; 
-static volatile uint8_t twi_data_counter;
-static volatile uint8_t twi_status;
+#define I2C_DEBUG(...) {} //printf(__VA_ARGS__)
 
-/* _____PRIVATE FUNCTIONS____________________________________________________ */
+struct avr_i2c_device {
+	uint8_t dev_id; 
+	
+	struct io_device io; 
+	struct cbuf buffer; 
+	
+	uint8_t _buffer[AVR_I2C_BUFFER_SIZE]; 
+	
+	volatile uint8_t addr; // current i2c address
+	volatile ssize_t rx_left; 
+	volatile ssize_t queued_count; 
+	volatile uint8_t status; 
+	
+	async_mutex_t lock, buffer_lock; 
+}; 
+
+static struct avr_i2c_device _device; 
+
 /// TWI state machine interrupt handler
 ISR(TWI_vect)
 {
@@ -75,9 +98,10 @@ ISR(TWI_vect)
 
 	case TW_REP_START:
 		// REPEATED START has been transmitted
-
+		//_device.cur = 0; 
+		
 		// Load data register with TWI slave address
-		TWDR = twi_adr;
+		TWDR = _device.addr;
 		// TWI Interrupt enabled and clear flag to send next byte
 		TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 		break;
@@ -88,46 +112,43 @@ ISR(TWI_vect)
 
 	case TW_MT_DATA_ACK:
 		// Data byte has been tramsmitted and ACK received
-		if(twi_data_counter != 0)
+		if(cbuf_get_waiting_isr(&_device.buffer))
 		{
-			// Decrement counter
-			twi_data_counter--;
 			// Load data register with next byte
-			TWDR = *twi_wr_data++;
+			TWDR = cbuf_get_isr(&_device.buffer);
+			
 			// TWI Interrupt enabled and clear flag to send next byte
 			TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 		}
 		else
 		{
-			// Allow rep start! Disable TWI Interrupt
-			TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
-
-			// Initiate STOP condition after last byte; TWI Interrupt disabled
-			//TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(1<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
-
 			// Transfer finished
-			twi_status = TWI_STATUS_DONE;
+			_device.status |= AVR_I2C_FLAG_DONE;
+			
+			if(_device.status & AVR_I2C_FLAG_SEND_STOP)
+				// Initiate STOP condition after last byte; TWI Interrupt disabled
+				TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(1<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
+			else
+				// allow rep start
+				TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
+			
 		}
 		break;
 
 	case TW_MR_DATA_ACK:
 		// Data byte has been received and ACK tramsmitted
 		// Buffer received byte
-		*twi_rd_data++ = TWDR;
-		// Decrement counter
-		twi_data_counter--;
+		cbuf_put_isr(&_device.buffer, TWDR);
+		_device.rx_left--; 
 		// Fall through...
 
 	case TW_MR_SLA_ACK:
 		// SLA+R has been transmitted and ACK received
 		// See if last expected byte will be received ...
-		if(twi_data_counter > 1)
-		{
+		if(_device.rx_left > 1) {
 			// Send ACK after reception
 			TWCR = (1<<TWINT)|(1<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
-		}
-		else
-		{
+		} else {
 			// Send NACK after next reception
 			TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 		}
@@ -136,18 +157,20 @@ ISR(TWI_vect)
 	case TW_MR_DATA_NACK:
 		// Data byte has been received and NACK tramsmitted
 		// Buffer received byte
-		*twi_rd_data++ = TWDR;
+		cbuf_put_isr(&_device.buffer, TWDR);
 		// Decrement counter
-		twi_data_counter--;
+		_device.rx_left--;
+		
+		// Transfer finished (number of received bytes is in cur) 
+		_device.status |= AVR_I2C_FLAG_DONE | AVR_I2C_FLAG_DATA_READY;
+		
+		if(_device.status & AVR_I2C_FLAG_SEND_STOP)
+			// Initiate STOP condition after last byte; TWI Interrupt disabled
+			TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(1<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
+		else 
+			// Allow repeated start! Disable TWI Interrupt
+			TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
 
-		// Allow repeated start! Disable TWI Interrupt
-		TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
-
-		// Initiate STOP condition after last byte; TWI Interrupt disabled
-		//TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(1<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
-
-		// Transfer finished
-		twi_status = TWI_STATUS_DONE;
 		break;
 
 	case TW_MT_ARB_LOST:
@@ -158,33 +181,38 @@ ISR(TWI_vect)
 
 	default:
 		// Error condition; save status
-		twi_status = TWSR;
+		//_device.status = TWSR;
 		// Reset TWI Interface; disable interrupt
 		TWCR = (0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
 	}
 }
 
-static uint8_t twi_busy(void){
-	// IF TWI Interrupt is enabled then the peripheral is busy
-	if(TWCR & _BV(TWIE))
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
+/* _____FUNCTIONS_____________________________________________________ */
+
+
+static uint8_t _avr_i2c_busy(uint8_t dev_id){
+	if(dev_id >= 1) return 1; 
+	if(((TWCR & _BV(TWIE)) != 0) || (TWCR & _BV(TWSTO))) return 1; 
+	return 0; 
 }
 
-/* _____FUNCTIONS_____________________________________________________ */
-int8_t twi_init(uint8_t dev_id)
-{
+int8_t avr_i2c_init(uint8_t dev_id) {
 	// only one twi interface for now
 	if(dev_id >= 1) return -1; 
 	
+	struct avr_i2c_device *self = &_device; 
+	
+	io_init(&self->io); 
+	cbuf_init(&self->buffer, self->_buffer, AVR_I2C_BUFFER_SIZE); 
+	
+	ASYNC_MUTEX_INIT(self->lock, 1); 
+	ASYNC_MUTEX_INIT(self->buffer_lock, 1); 
+	
 	// Initialise variable
-	twi_data_counter = 0;
-
+	self->rx_left = 0; 
+	self->status = AVR_I2C_FLAG_ENABLED; 
+	self->status &= ~AVR_I2C_FLAG_SEND_STOP; 
+	
 	// Initialize TWI clock
 	TWSR = TWI_PRESCALER;
 	TWBR = ((F_CPU / TWI_FREQ) - 16) / (2 * 1);
@@ -201,119 +229,197 @@ int8_t twi_init(uint8_t dev_id)
 	return 0; 
 }
 
-void twi_deinit(uint8_t dev_id){
+void avr_i2c_deinit(uint8_t dev_id){
 	(void)(dev_id); 
 	// TODO
 }
 
-int8_t twi_start_write(uint8_t dev_id, uint8_t adr, const uint8_t *data, uint8_t bytes_to_send)
-{
-	if(dev_id >= 1) return -1; 
+
+static ASYNC(io_result_t, io_device_t, vopen){
+	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
 	
-	// Wait for previous transaction to finish
-	while(twi_busy())
-	{
-		;
-	}
-
-	// Copy address; clear R/~W bit in SLA+R/W address field
-	twi_adr = adr & ~I2C_READ;
-
-	// Save pointer to data and number of bytes to send
-	twi_wr_data		= data;
-	twi_data_counter = bytes_to_send;
-
-	// Initiate a START condition; Interrupt enabled and flag cleared
-	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
-	return 0; 
+	ASYNC_BEGIN(); 
+	
+	ASYNC_MUTEX_LOCK(dev->lock); 
+	
+	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+	
+	I2C_DEBUG("i2c: open\n"); 
+	ASYNC_END(0); 
 }
 
-int8_t twi_start_read(uint8_t dev_id, uint8_t adr, uint8_t *data, uint8_t bytes_to_receive)
-{
-	if(dev_id >= 1) return -1; 
+static ASYNC(io_result_t, io_device_t, vclose){
+	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
 	
-	// Wait for previous transaction to finish
-	while(twi_busy())
-	{
-		;
-	}
-
-	// Copy address; set R/~W bit in SLA+R/W address field
-	twi_adr = adr | I2C_READ;
-
-	// Save pointer to data and number of bytes to receive
-	twi_rd_data		 = data;
-	twi_data_counter = bytes_to_receive;
-
-	// Initiate a START condition; Interrupt enabled and flag cleared
-	TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
-	return 0; 
+	ASYNC_BEGIN(); 
+	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+	
+	ASYNC_MUTEX_UNLOCK(dev->lock); 
+	
+	I2C_DEBUG("I2C: closed\n"); 
+	ASYNC_END(0); 
 }
+
+static ASYNC(io_result_t, io_device_t, vseek, ssize_t pos, int whence){
+	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
+	
+	ASYNC_BEGIN();
+	
+	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+	(void)whence; 
+	
+	I2C_DEBUG("i2c: seek %d\n", pos); 
+	dev->addr = pos; 
+	
+	ASYNC_END(pos); 
+}
+
+static ASYNC(io_result_t, io_device_t, vwrite, const uint8_t *data, ssize_t size){
+	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
+	
+	ASYNC_BEGIN();
+		// lock the buffer so that read can not start using it
+		ASYNC_MUTEX_LOCK(dev->buffer_lock); 
+		
+		// wait for previous transaction to complete
+		AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+		
+		// set address. clear R/~W bit in SLA+R/W address field
+		dev->addr &= ~I2C_READ;
+		
+		// clear buffer
+		cbuf_clear(&dev->buffer); 
+		dev->queued_count = 0; 
+		
+		I2C_DEBUG("I2C: wstart %x %d: ", dev->addr, (int)size); 
+		for(int c = 0; c < size; c++) I2C_DEBUG("%x ", data[c]);
+		I2C_DEBUG("\n"); 
+		
+		// we do a busy loop here for pushing data as quickly as possible
+		// into the cache. This is because it is tricky to make i2c isr wait
+		// for more data. Instead it is better to busy loop until all data is
+		// in cache and then do an async wait until transaction completes. 
+		// this means that i2c transactions < cache size are async. All others
+		// are blocking for as long as necessary to make sure that data gets
+		// cached properly. 
+		while(dev->queued_count < size){
+			// we try to write to the data queue 
+			ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+				dev->queued_count += cbuf_putn(&dev->buffer, 
+					data + dev->queued_count, size - dev->queued_count); 
+			}
+			I2C_DEBUG("i2c: wrote %d\n", dev->queued_count); 
+			// start transmission if it has not been started yet
+			if(!_avr_i2c_busy(dev->dev_id))
+				TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
+		}
+		
+		// here we can yield because now all data is in the buffer 
+		AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+		
+		ASYNC_MUTEX_UNLOCK(dev->buffer_lock); 
+	ASYNC_END(size); 
+}
+
+static ASYNC(io_result_t, io_device_t, vread, uint8_t *data, ssize_t size){
+	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
+	
+	ASYNC_BEGIN(); 
+		// lock the buffer so that read can not start using it
+		// must always lock mutex first before checking for busy device
+		ASYNC_MUTEX_LOCK(dev->buffer_lock); 
+		
+		AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+			
+		dev->addr |= I2C_READ;
+
+		// clear buffer
+		cbuf_clear(&dev->buffer); 
+		dev->queued_count = 0; 
+		dev->rx_left = size; 
+		
+		I2C_DEBUG("I2C: readstart: %x %d\n", dev->addr, (int)size); 
+		
+		// Initiate a START condition; Interrupt enabled and flag cleared
+		TWCR = (1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
+		
+		// here we make sure that we receive the whole buffer before returning
+		// if the buffer becomes full before we are able to copy data, data will
+		// be lost. This means that we can only reliably receive one i2c block
+		// at a time. 
+		while(dev->queued_count < size){
+			AWAIT(!cbuf_is_empty(&dev->buffer)); 
+			
+			ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+				dev->queued_count += cbuf_getn(&dev->buffer, 
+					data + dev->queued_count, size - dev->queued_count); 
+			}
+		}
+		
+		// always for safety make sure that everything is done
+		AWAIT(!_avr_i2c_busy(dev->dev_id)); 
+		
+		I2C_DEBUG("I2C: readready: %x %d: ", dev->addr, (int)size); 
+		for(int c = 0; c < size; c++) I2C_DEBUG("%x ", data[c]);
+		I2C_DEBUG("\n"); 
+		
+		ASYNC_MUTEX_UNLOCK(dev->buffer_lock); 
+		
+	ASYNC_END(size); 
+}
+
+static ASYNC(io_result_t, io_device_t, vioctl, ioctl_req_t req, va_list vl){
+	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
+	
+	ASYNC_BEGIN(); 
+	
+	// wait for the device to not be busy since changing settings on a busy
+	// device is dangerous
+	AWAIT(!_avr_i2c_busy(dev->dev_id));
+	
+	if(req == I2C_SEND_STOP){
+		uint8_t en = va_arg(vl, int); 
+		I2C_DEBUG("I2C: sendstop: %d\n", en); 
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+			if(en)
+				dev->status |= AVR_I2C_FLAG_SEND_STOP; 
+			else
+				dev->status &= ~AVR_I2C_FLAG_SEND_STOP; 
+		}
+		ASYNC_EXIT(0); 
+	} 
+	
+	ASYNC_END(-1); 
+}
+
+io_dev_t avr_i2c_get_interface(uint8_t dev_id){
+	if(dev_id > 0) return 0; 
+	
+	static struct io_device_ops _if;
+	if(!_device.io.api){
+		_if = (struct io_device_ops) {
+			.open = __io_device_t_vopen__, 
+			.close = __io_device_t_vclose__, 
+			.read = 	__io_device_t_vread__,
+			.write = 	__io_device_t_vwrite__,
+			.seek = __io_device_t_vseek__, 
+			.ioctl = __io_device_t_vioctl__, 
+		};
+		_device.io.api = &_if; 
+	}
+	return &_device.io; 
+}
+
 /*
-uint8_t twi0_busy(void){
-	// IF TWI Interrupt is enabled then the peripheral is busy
-	if(TWCR & _BV(TWIE))
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
-}
-
-uint8_t twi0_success(void)
-{
-	if(twi_status == TWI_STATUS_DONE)
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
-}
-
-uint8_t twi0_get_status(void)
-{
-	return twi_status;
-}*/
-
-int8_t twi_stop(uint8_t dev_id)
-{
-	if(dev_id >= 1) return -1; 
-	
-	// Wait for transaction to finish
-	while(twi_busy())
-	{
-		;
-	}
-
-	// Make sure transaction was succesful
-	if(twi_status != TWI_STATUS_DONE)
-	{
-		return 0;
-	}
-
-	// Initiate a STOP condition
-	TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(1<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(0<<TWIE);
-
-	// Wait until STOP has finished
-	while(TWCR & _BV(TWSTO));
-	
-	return twi_status == TWI_STATUS_DONE; 
-}
-
 void twi_wait(uint8_t dev_id, uint8_t addr){
 	// not implemented
 	(void)(dev_id); 
 	(void)(addr); 
 }
-
+*/
 /*
 void twi0_slave_init(uint8_t addr){
 	TWAR = addr; 
   TWCR = (1<<TWEN)|(0<<TWIE)|(0<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC); 
   //TWI_busy = 0;
 }*/
-

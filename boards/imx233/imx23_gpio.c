@@ -11,9 +11,9 @@
 
 #define GPIO_BASE 0x80018000
 #define GPIO_WRITE_PIN(gpio,value) GPIO_WRITE((gpio)>>5, (gpio)&31, value)
-#define GPIO_WRITE(bank,pin,value) (gpio_mmap[0x140+((bank)<<2)+((value)?1:2)] = 1<<(pin))
+#define GPIO_WRITE(bank,pin,value) (self->mmap[0x140+((bank)<<2)+((value)?1:2)] = 1<<(pin))
 #define GPIO_READ_PIN(gpio) GPIO_READ((gpio)>>5, (gpio)&31)
-#define GPIO_READ(bank,pin) ((gpio_mmap[0x180+((bank)<<2)] >> (pin)) & 1)
+#define GPIO_READ(bank,pin) ((self->mmap[0x180+((bank)<<2)] >> (pin)) & 1)
 
 void imx23_gpio_init(struct imx23_gpio *self) {
 	int fd;
@@ -53,13 +53,15 @@ void gpio_input(int bank, int pin) {
 static void _gpio_write_pin(pio_dev_t dev, uint16_t pin, uint8_t value){
 	struct imx23_gpio *self = container_of(dev, struct imx23_gpio, api); 
 	if(!self->mmap) return; 
-	self->mmap[pin/4] = value;
+	GPIO_WRITE_PIN(pin, value); 
+	//self->mmap[pin/4] = value;
 }
 
 static uint8_t _gpio_read_pin(pio_dev_t dev, uint16_t pin){
 	struct imx23_gpio *self = container_of(dev, struct imx23_gpio, api); 
 	if(!self->mmap) return 0; 
-	return self->mmap[pin/4];
+	return GPIO_READ_PIN(pin); 
+	//return self->mmap[pin/4];
 }
 
 static uint8_t _gpio_configure_pin(pio_dev_t dev, uint16_t pin, uint16_t flags){

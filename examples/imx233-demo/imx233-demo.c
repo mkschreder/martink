@@ -16,8 +16,10 @@ ASYNC_PROCESS(_main_process){
 	struct application *appl = container_of(__self, struct application, process); 
 	ASYNC_BEGIN(); 
 	while(1){
+		serial_printf(app.console, "HIGH\n"); 
 		pio_set_pin(appl->gpio, 50); 
 		AWAIT_DELAY(appl->timeout, 1000000L); 
+		serial_printf(app.console, "LOW\n"); 
 		pio_clear_pin(appl->gpio, 50); 
 		AWAIT_DELAY(appl->timeout, 1000000L); 
 	}
@@ -30,6 +32,8 @@ int main(void){
 	
 	app.gpio = imx23_gpio_get_parallel_interface(&gpio); 
 	app.console = stdio_get_serial_interface(); 
+	
+	serial_printf(app.console, "Will set bank %d pin %d\n", 50 >> 5, 50 & 0x1f); 
 	
 	pio_configure_pin(app.gpio, 50, GP_OUTPUT); 
 	

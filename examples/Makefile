@@ -6,3 +6,4 @@ docs-y += examples/README.md
 #include examples/fst6-gui/Makefile
 #include examples/cc3d-demo/Makefile
 #include examples/mwii-demo/Makefile
+include examples/native-demo/Makefile

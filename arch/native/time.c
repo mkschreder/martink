@@ -4,6 +4,7 @@
  * 
  * 	info@fortmax.se
  */
+#include <arch/soc.h>
 
 #include <stdint.h>
 #include <time.h>
@@ -33,13 +34,4 @@ timestamp_t tsc_read(void){
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
 	return (timestamp_t)ts.tv_sec * 1000000LL + (timestamp_t)ts.tv_nsec / 1000LL;
-	/*unsigned a, d; 
-	asm volatile("rdtsc" : "=a" (a), "=d" (d)); 
-	return (((unsigned long long)a) | (((unsigned long long)d) << 32)); */
-	//return TCNT1 + _timer1_ovf * 65535;
 }
-
-/*
-timestamp_t time_clock_since(timestamp_t clock){
-	return time_get_clock() - clock; 
-}*/

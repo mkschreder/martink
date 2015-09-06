@@ -10,6 +10,8 @@ struct fd_serial {
 	struct serial_if *api; // serial device api
 }; 
 
+typedef struct fd_serial * fd_serial_t; 
+
 void fd_serial_init(struct fd_serial *self, int in_fd, int out_fd); 
 serial_dev_t fd_serial_get_interface(struct fd_serial *self); 
 

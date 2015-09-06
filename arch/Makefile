@@ -8,18 +8,18 @@ obj-y += arch/pwm.o
 
 docs-y += arch/README.md
 
-ifeq ($(CONFIG_AVR), y)
+ifeq ($(CONFIG_AVR),y)
 	include $(srctree)/arch/avr/Makefile
 endif
 
-ifeq ($(CONFIG_NATIVE), y)
+ifeq ($(CONFIG_NATIVE),y)
 	include $(srctree)/arch/native/Makefile
 endif
 
-ifeq ($(CONFIG_ARM), y)
+ifeq ($(CONFIG_ARM),y)
 	include $(srctree)/arch/arm/Makefile
 endif
 
-ifeq ($(CONFIG_AT91SAM3), y)
+ifeq ($(CONFIG_AT91SAM3),y)
 	include $(srctree)/arch/arm/sam3/Makefile
 endif

@@ -33,6 +33,7 @@ void soc_init(void){
 	pwm_init(); 
 }
 */
+#include <stdio.h>
 uint16_t serial_printf(serial_dev_t port, const char *fmt, ...){
 	char buffer[64]; 
 	uint16_t n; 

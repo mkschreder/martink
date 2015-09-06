@@ -1,6 +1,11 @@
+#include <arch/soc.h>
+
 #include "fd_serial.h"
 
 #include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <memory.h>
 
 void fd_serial_init(struct fd_serial *self, int in_fd, int out_fd){
 	self->in_fd = in_fd; 
@@ -9,7 +14,8 @@ void fd_serial_init(struct fd_serial *self, int in_fd, int out_fd){
 
 static uint16_t _fd_serial_putc(serial_dev_t dev, uint8_t ch){
 	struct fd_serial *self = container_of(dev, struct fd_serial, api); 
-	write(self->out_fd, &ch, 1); 
+	int ret = write(self->out_fd, &ch, 1); 
+	if(ret < 0) return SERIAL_BUFFER_FULL; 
 	return 1; 
 }
 
@@ -17,6 +23,7 @@ static uint16_t _fd_serial_getc(serial_dev_t dev) {
 	struct fd_serial *self = container_of(dev, struct fd_serial, api); 
 	uint8_t ch; 
 	int ret = read(self->in_fd, &ch, 1); 
+	if(ret < 0) return SERIAL_NO_DATA; 
 	//printf("read: %d %c\n", ret, ch); 
 	return ch; 
 }
@@ -105,6 +112,7 @@ static uint16_t _fd_stdin_getc(serial_dev_t dev) {
 }
 
 static size_t _fd_stdin_getn(serial_dev_t dev, uint8_t *data, size_t sz){
+	(void)dev; 
 	size_t count = sz; 
 	while(count){
 		int ret = getkey(); 

@@ -4,4 +4,7 @@ CC := gcc
 CXX := g++
 LD := gcc
 
-obj-$(CONFIG_NATIVE) += native.o time.o
+obj-$(CONFIG_NATIVE) += \
+	arch/native/fd_serial.o \
+	arch/native/native.o \
+	arch/native/time.o

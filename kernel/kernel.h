@@ -71,6 +71,8 @@ static initcall_t __initcall_##fn __init_call = fn
 
 #define MODULE_INIT(func) static void __attribute__((constructor)) __##func##_ctor(void){ func(); }
 #define MODULE_EXIT(func) static void __attribute__((destructor)) __##func##_ctor(void){ func(); }
+#define MODULE_AUTHOR(name)
+#define MODULE_NAME(name)
 
 #define libk_init_process(async_proc_struct_ptr, method) ASYNC_PROCESS_INIT(async_proc_struct_ptr, method)
 #define libk_register_process(async_proc_struct_ptr) ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, async_proc_struct_ptr)

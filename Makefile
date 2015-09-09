@@ -5,7 +5,7 @@ ifneq ($(V),)
 	Q:=
 endif
 
-#include scripts/include/module.mk
+include scripts/include/target.mk
 
 VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty
 
@@ -46,7 +46,7 @@ else
 	include .config
 endif
 
-$(eval $(call BuildDir,block))
+#$(eval $(call BuildDir,block))
 
 # append flags defined in arch/
 BUILD_DEFINE := $(subst -,_,$(BUILD))
@@ -57,7 +57,7 @@ CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
 LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS)
 OUTDIRS := build build/crypto/aes
-TARGET := kernel-$(BUILD)
+#TARGET := kernel-$(BUILD)
 
 # SHELL used by kbuild
 CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
@@ -86,8 +86,9 @@ MAKEFLAGS += -rR
 export ktree srctree CONFIG_SHELL HOSTCC HOSTCFLAGS HOSTCXX HOSTCXXFLAGS 
 export quiet Q KBUILD_VERBOSE
 
-all: build; 
-
+all: config fixdirs fixdep check $(obj-y) default_target
+	@echo $$'\e[32;40mLinking target $(TARGET)\e[m'
+	
 # Basic helpers built in scripts/
 PHONY += scripts_basic defconfig
 scripts_basic:
@@ -125,10 +126,10 @@ else
 		echo "Please specify BUILD you want to save to!"
 endif
 
-build: config fixdirs fixdep check $(obj-y)
-	@echo $$'\e[32;40mLinking target $(TARGET)\e[m'
+default_target: 
 	$(Q)rm -f $(TARGET)
 	$(Q)$(CC) -o $(TARGET) $(LDFLAGS) $(obj-y) 
+	
 
 #$(patsubst %, $(BUILD_DIR)/%, $(obj-y))
 
@@ -166,6 +167,7 @@ check: GCC-exists
 GCC-exists: ; @which $(CC) > /dev/null
 
 clean: 
+	rm -rf build
 	@find . \( -name '*.o' -o -name '*.ko' -o -name '*.cmd' \
 		-o -name '*.d' -o -name '.*.tmp'  \) \
 		-type f -print | xargs rm -f	
@@ -187,3 +189,5 @@ install:
 # Declare the contents of the .PHONY variable as phony.  We keep that
 # information in a variable se we can use it in if_changed and friends.
 .PHONY: $(PHONY) directories
+
+$(eval $(call add-target,target/linux))

@@ -1,10 +1,6 @@
 VPATH += arch/native
 
-CC := gcc
-CXX := g++
-LD := gcc
-
 obj-$(CONFIG_NATIVE) += \
-	arch/native/fd_serial.o \
-	arch/native/native.o \
-	arch/native/time.o
+	arch/linux/fd_serial.o \
+	arch/linux/native.o \
+	arch/linux/time.o

@@ -5,6 +5,8 @@ ifneq ($(V),)
 	Q:=
 endif
 
+include scripts/include/module.mk
+
 VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty
 
 # define defaults that can be added to in submakefiles
@@ -37,7 +39,14 @@ CPU = $(word 2,$(subst -, ,$(BUILD)))
 ktree := martink
 #$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-include Makefile.build 
+#include Makefile.build 
+ifdef BUILD
+	include configs/$(BUILD).config
+else
+	include .config
+endif
+
+$(eval $(call BuildDir,block))
 
 # append flags defined in arch/
 BUILD_DEFINE := $(subst -,_,$(BUILD))

@@ -9,10 +9,13 @@ extern "C" {
 #include <inttypes.h>
 #include <sys/types.h>
 #include <arch/soc.h>
+#include <unistd.h>
 
 #include "time.h"
 
 #define ATOMIC_BLOCK(type) if(1)
+
+#define NATIVE_USLEEP(us) usleep(us)
 /*
 #define MINCOMMAND 800
 

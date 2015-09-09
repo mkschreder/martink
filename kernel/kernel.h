@@ -59,6 +59,16 @@ extern "C" void __cxa_pure_virtual(void);
 	typedef int __guard; 
 #endif
 
+typedef int (*initcall_t)(void);
+extern initcall_t __initcall_start, __initcall_end;
+
+#define __initcall(fn) \
+static initcall_t __initcall_##fn __init_call = fn
+#define __init_call     __attribute__ ((unused,__section__ ("function_ptrs")))
+#define module_init(x)  __initcall(x);
+
+#define __init __attribute__ ((__section__ ("code_segment")))
+
 #define MODULE_INIT(func) static void __attribute__((constructor)) __##func##_ctor(void){ func(); }
 #define MODULE_EXIT(func) static void __attribute__((destructor)) __##func##_ctor(void){ func(); }
 

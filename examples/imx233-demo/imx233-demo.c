@@ -1,7 +1,7 @@
 #include <kernel.h>
 #include <kernel/thread.h>
 #include <boards/imx233/imx23.h>
-#include <arch/native/fd_serial.h>
+#include <arch/linux/fd_serial.h>
 
 struct application {
 	pio_dev_t gpio; 

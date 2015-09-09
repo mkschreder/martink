@@ -57,8 +57,7 @@ CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
 LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS)
 OUTDIRS := build build/crypto/aes
-LIBNAME := libk-$(BUILD).a
-SHLIBNAME := libk-$(BUILD).so
+TARGET := kernel-$(BUILD)
 
 # SHELL used by kbuild
 CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
@@ -127,10 +126,9 @@ else
 endif
 
 build: config fixdirs fixdep check $(obj-y)
-	@echo $$'\e[32;40mLinking target $(LIBNAME)\e[m'
-	$(Q)rm -f $(LIBNAME)
-	$(Q)ar rs $(LIBNAME) $(obj-y) 
-	$(Q)gcc -shared -o $(SHLIBNAME) $(obj-y)
+	@echo $$'\e[32;40mLinking target $(TARGET)\e[m'
+	$(Q)rm -f $(TARGET)
+	$(Q)$(CC) -o $(TARGET) $(LDFLAGS) $(obj-y) 
 
 #$(patsubst %, $(BUILD_DIR)/%, $(obj-y))
 
@@ -184,7 +182,7 @@ FORCE:
 
 install: 
 	mkdir -p $(DESTDIR)/usr/lib/
-	cp -Rp $(LIBNAME) $(DESTDIR)/usr/lib/
+	cp -Rp $(TARGET) $(DESTDIR)/usr/lib/
 
 # Declare the contents of the .PHONY variable as phony.  We keep that
 # information in a variable se we can use it in if_changed and friends.

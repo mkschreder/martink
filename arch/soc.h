@@ -62,7 +62,7 @@ extern "C" {
 #elif CONFIG_ARM
 #include "arm/arm.h"
 #elif CONFIG_NATIVE
-#include "native/native.h"
+#include "linux/native.h"
 #else 
 #error "You have not chosen an architecture!"
 #endif

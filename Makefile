@@ -10,7 +10,7 @@ VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty
 # define defaults that can be added to in submakefiles
 INCLUDES := -I. -Iinclude -Iinclude/c++ -Ikernel
 COMMON_FLAGS := -MD -ffunction-sections -fdata-sections -Wall -Werror -Os
-CFLAGS += -Wall -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
+CFLAGS += -Wall -fPIC -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wshadow -Wcast-align -Wchar-subscripts -Winline \
 -Wnested-externs -Wredundant-decls -Wmissing-field-initializers -Wextra \
@@ -19,7 +19,7 @@ CFLAGS += -Wall -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
 CXXFLAGS += -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wcast-align -Wchar-subscripts -Wredundant-decls
-LDFLAGS := -Wl,--relax,--gc-sections
+LDFLAGS := -Wl,--relax,--gc-sections 
 EXTRALIBS := 
 
 ifneq ($(BUILD),)
@@ -48,7 +48,8 @@ CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
 LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS)
 OUTDIRS := build build/crypto/aes
-APPNAME := libk-$(BUILD).a
+LIBNAME := libk-$(BUILD).a
+SHLIBNAME := libk-$(BUILD).so
 
 # SHELL used by kbuild
 CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
@@ -117,9 +118,10 @@ else
 endif
 
 build: config fixdirs fixdep check $(obj-y)
-	@echo $$'\e[32;40mLinking target $(APPNAME)\e[m'
-	$(Q)rm -f $(APPNAME)
-	$(Q)ar rs $(APPNAME) $(obj-y) 
+	@echo $$'\e[32;40mLinking target $(LIBNAME)\e[m'
+	$(Q)rm -f $(LIBNAME)
+	$(Q)ar rs $(LIBNAME) $(obj-y) 
+	$(Q)gcc -shared -o $(SHLIBNAME) $(obj-y)
 
 #$(patsubst %, $(BUILD_DIR)/%, $(obj-y))
 
@@ -173,7 +175,7 @@ FORCE:
 
 install: 
 	mkdir -p $(DESTDIR)/usr/lib/
-	cp -Rp $(APPNAME) $(DESTDIR)/usr/lib/
+	cp -Rp $(LIBNAME) $(DESTDIR)/usr/lib/
 
 # Declare the contents of the .PHONY variable as phony.  We keep that
 # information in a variable se we can use it in if_changed and friends.

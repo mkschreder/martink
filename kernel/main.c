@@ -61,3 +61,33 @@ int __cxa_guard_acquire(__guard *g) {return !*(char *)(g);}
 void __cxa_guard_release (__guard *g) {*(char *)g = (char)1;}
 void __cxa_guard_abort (__guard *g) {*(char*)g = (char)0;}
 void __cxa_pure_virtual(void) {}
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <dlfcn.h>
+
+void libk_do_init(void); 
+void libk_do_init(void){
+	
+}
+static void __attribute__((constructor)) _init_libk(void){
+	// init code
+	printf("Libk INIT\n"); 
+	void *handle;
+	void (*modinit)(void);
+	handle = dlopen("./test.so", RTLD_LAZY);
+	if (!handle) {
+		fprintf(stderr, "%s\n", dlerror());
+		exit(EXIT_FAILURE);
+	}
+
+	dlerror();    /* Clear any existing error */
+
+	modinit = (void (*)(void)) dlsym(handle, "test_init");
+	if(modinit){
+		modinit(); 
+	} else {
+		printf("Could not resolve modinit!\n"); 
+	}
+	dlclose(handle); 
+}

@@ -13,7 +13,7 @@ ifeq ($(CONFIG_AVR),y)
 endif
 
 ifeq ($(CONFIG_NATIVE),y)
-	include $(srctree)/arch/native/Makefile
+	include $(srctree)/arch/linux/Makefile
 endif
 
 ifeq ($(CONFIG_ARM),y)

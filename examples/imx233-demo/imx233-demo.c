@@ -7,30 +7,30 @@ struct application {
 	pio_dev_t gpio; 
 	serial_dev_t console; 
 	struct async_process process; 
+	struct imx23_gpio imx_gpio; 
 	timestamp_t timeout; 
 }; 
 
-struct application app; 
+static struct application app; 
 
 ASYNC_PROCESS(_main_process){
-	struct application *appl = container_of(__self, struct application, process); 
+	struct application *self = container_of(__self, struct application, process); 
 	ASYNC_BEGIN(); 
 	while(1){
-		serial_printf(app.console, "HIGH\n"); 
-		pio_set_pin(appl->gpio, 50); 
-		AWAIT_DELAY(appl->timeout, 1000000L); 
-		serial_printf(app.console, "LOW\n"); 
-		pio_clear_pin(appl->gpio, 50); 
-		AWAIT_DELAY(appl->timeout, 1000000L); 
+		serial_printf(self->console, "HIGH\n"); 
+		pio_set_pin(self->gpio, 50); 
+		AWAIT_DELAY(self->timeout, 1000000L); 
+		serial_printf(self->console, "LOW\n"); 
+		pio_clear_pin(self->gpio, 50); 
+		AWAIT_DELAY(self->timeout, 1000000L); 
 	}
 	ASYNC_END(0); 
 }
 
-int main(void){
-	struct imx23_gpio gpio; 
-	imx23_gpio_init(&gpio); 
+static void imx23_demo_init(void){
+	imx23_gpio_init(&app.imx_gpio); 
 	
-	app.gpio = imx23_gpio_get_parallel_interface(&gpio); 
+	app.gpio = imx23_gpio_get_parallel_interface(&app.imx_gpio); 
 	app.console = stdio_get_serial_interface(); 
 	
 	serial_printf(app.console, "Will set bank %d pin %d\n", 50 >> 5, 50 & 0x1f); 
@@ -39,6 +39,11 @@ int main(void){
 	
 	libk_init_process(&app.process, _main_process); 
 	libk_register_process(&app.process); 
-	
-	libk_loop(); 
 }
+
+static void imx23_demo_exit(void){
+	
+}
+
+MODULE_INIT(imx23_demo_init); 
+MODULE_EXIT(imx23_demo_exit); 

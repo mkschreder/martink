@@ -26,7 +26,7 @@ void imx23_gpio_init(struct imx23_gpio *self) {
 	}
 
 	self->mmap = mmap(0, 0xfff, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_BASE);
-	if( -1 == (int)self->mmap) {
+	if( (void*)-1 == self->mmap) {
 		perror("Unable to mmap file");
 		self->mmap = 0;
 	}

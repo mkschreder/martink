@@ -52,6 +52,10 @@
 
 #include <setjmp.h>
 
+int main(void){	
+	libk_loop(); 
+}
+
 extern int __cxa_guard_acquire(__guard *g);
 extern void __cxa_guard_release (__guard *g); 
 extern void __cxa_guard_abort (__guard *g); 

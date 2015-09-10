@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <inttypes.h>
 
+#include <arch/soc.h>
 #include "native.h"
 
 /*

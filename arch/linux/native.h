@@ -7,6 +7,7 @@ extern "C" {
 #define sei() {}
 
 #include <sys/types.h>
+#include <kernel/dev/serial.h>
 #include "fd_serial.h"
 
 #include "time.h"

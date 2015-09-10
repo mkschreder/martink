@@ -14,6 +14,7 @@ void async_process_init(struct async_process *self, ASYNC_PTR(int, async_process
 	ASYNC_INIT(&self->task); 
 	INIT_LIST_HEAD(&self->list); 
 	self->ASYNC_NAME(int, async_process_t, proc) = ASYNC_NAME(int, async_process_t, func); 
+	self->name = name; 
 	ASYNC_DEBUG("Proc: %p\n", self->ASYNC_NAME(int, async_process_t, proc)); 
 }
 

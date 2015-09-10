@@ -1,3 +1,10 @@
+build
+scripts/kconfig/lxdialog/lxdialog
+scripts/kconfig/mconf
+tmp
+include/autoconf.h
+.config.old
+.config.in
 *.o
 *.bak
 *.d

@@ -27,7 +27,7 @@ ASYNC_PROCESS(_main_process){
 	ASYNC_END(0); 
 }
 
-static void imx23_demo_init(void){
+static void __init imx23_demo_init(void){
 	imx23_gpio_init(&app.imx_gpio); 
 	
 	app.gpio = imx23_gpio_get_parallel_interface(&app.imx_gpio); 
@@ -41,9 +41,3 @@ static void imx23_demo_init(void){
 	libk_register_process(&app.process); 
 }
 
-static void imx23_demo_exit(void){
-	
-}
-
-MODULE_INIT(imx23_demo_init); 
-MODULE_EXIT(imx23_demo_exit); 

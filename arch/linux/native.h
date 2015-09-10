@@ -6,16 +6,17 @@ extern "C" {
 
 #define sei() {}
 
-#include <inttypes.h>
 #include <sys/types.h>
-#include <arch/soc.h>
-#include <unistd.h>
+#include "fd_serial.h"
 
 #include "time.h"
 
 #define ATOMIC_BLOCK(type) if(1)
 
 #define NATIVE_USLEEP(us) usleep(us)
+#define DEBUG(...) serial_printf(stdio_get_serial_interface(), ##__VA_ARGS__)
+#define ERROR(...) serial_printf(stdio_get_serial_interface(), ##__VA_ARGS__)
+
 /*
 #define MINCOMMAND 800
 

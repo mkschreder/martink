@@ -59,6 +59,18 @@ extern "C" void __cxa_pure_virtual(void);
 	typedef int __guard; 
 #endif
 
+
+struct libk_device {
+	timestamp_t timeout; 
+	struct async_process process; 
+}; 
+
+#define DEVICE_CLOCK_PTR(name) ASYNC_NAME(int, async_process_t, name)
+#define DEVICE_CLOCK_GET_DEVICE() container_of(__self, struct libk_device, process)
+#define DEVICE_CLOCK(name) ASYNC_PROCESS(name)
+#define DEVICE_DELAY(delay) AWAIT_DELAY(DEVICE_CLOCK_GET_DEVICE()->timeout, delay); 
+
+/*
 typedef int (*initcall_t)(void);
 extern initcall_t __initcall_start, __initcall_end;
 
@@ -67,15 +79,16 @@ static initcall_t __initcall_##fn __init_call = fn
 #define __init_call     __attribute__ ((unused,__section__ ("function_ptrs")))
 #define module_init(x)  __initcall(x);
 
-#define __init __attribute__ ((__section__ ("code_segment")))
+#define __init __attribute__ ((__section__ (".text")))
+*/
 
-#define MODULE_INIT(func) static void __attribute__((constructor)) __##func##_ctor(void){ func(); }
-#define MODULE_EXIT(func) static void __attribute__((destructor)) __##func##_ctor(void){ func(); }
+#define __init __attribute__ ((constructor))
+
 #define MODULE_AUTHOR(name)
 #define MODULE_NAME(name)
 
 #define libk_init_process(async_proc_struct_ptr, method) ASYNC_PROCESS_INIT(async_proc_struct_ptr, method)
 #define libk_register_process(async_proc_struct_ptr) ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, async_proc_struct_ptr)
 #define libk_loop() while(ASYNC_RUN_PARALLEL(&ASYNC_GLOBAL_QUEUE)) { NATIVE_USLEEP(10000); }
-
+void libk_register_device(struct libk_device *self, ASYNC_PTR(int, async_process_t, proc), const char *name);
 //#include "wiinunchuck.h"

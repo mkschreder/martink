@@ -1,3 +1,4 @@
+#include <kernel.h>
 #include <arch/soc.h>
 
 #include "fd_serial.h"
@@ -136,4 +137,8 @@ serial_dev_t stdio_get_serial_interface(void){
 	
 	console.api = &_fd_stdio_if; 
 	return &console.api; 
+}
+
+static void __init linux_serial_init(void){
+	DEBUG("linux-fd-serial: init\n"); 
 }

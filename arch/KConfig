@@ -35,8 +35,8 @@ menu "Hardware"
 		bool
 		
 	choice 
-		prompt "Processor family"
-	
+		prompt "Target Architechture"
+		
 		config AVR
 			bool "Atmel AVR"
 		
@@ -44,16 +44,16 @@ menu "Hardware"
 			bool "ARM"
 			
 		config NATIVE
-			bool "Native"
+			bool "Linux"
 			help 
-				Attmept to compile code that will run on your current build system
+				Compile for linux
 			
 	endchoice 
 		
-	menu "Processor type"
-		source arch/avr/mega/KConfig
+	menu "Target Options"
+		source arch/avr/KConfig
 		source arch/arm/KConfig
-		source arch/native/KConfig
+		source arch/linux/KConfig
 	endmenu
 
 		

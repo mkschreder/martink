@@ -1,0 +1,3 @@
+config APP_print_hello
+	depends on LINUX
+	bool "Print Hello APP"

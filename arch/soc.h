@@ -57,17 +57,11 @@ extern "C" {
 
 #define initproc //__attribute__((constructor))
 
-#ifdef CONFIG_AVR
-#include "avr/mega.h"
-#elif CONFIG_ARM
-#include "arm/arm.h"
-#elif CONFIG_NATIVE
-#include "linux/native.h"
-#else 
-#error "You have not chosen an architecture!"
-#endif
-
 //#include "static_cbuf.h"
+
+#include <inttypes.h>
+#include <unistd.h>
+
 #include <kernel/list.h>
 #include <kernel/thread.h>
 #include <kernel/io_device.h>
@@ -78,6 +72,16 @@ extern "C" {
 #include "spi.h"
 #include "gpio.h"
 #include "pwm.h"
+
+#ifdef CONFIG_AVR
+#include "avr/mega.h"
+#elif CONFIG_ARM
+#include "arm/arm.h"
+#elif CONFIG_NATIVE
+#include "linux/native.h"
+#else 
+#error "You have not chosen an architecture!"
+#endif
 
 #ifndef PROGMEM
 #define PROGMEM

@@ -21,7 +21,7 @@ CFLAGS += -Wall -fPIC -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototype
 CXXFLAGS += -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wcast-align -Wchar-subscripts -Wredundant-decls
-LDFLAGS := -Wl,--relax,--gc-sections 
+LDFLAGS := -Wl,--relax,--gc-sections
 EXTRALIBS := 
 
 ifneq ($(BUILD),)

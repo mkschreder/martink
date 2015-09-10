@@ -1,5 +1,7 @@
 choice 
 	prompt "AVR Model" 
+	depends on AVR_MEGA
+	
 	default ATMEGA328P
 
 	config AVRMEGA

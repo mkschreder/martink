@@ -4,6 +4,10 @@ menu "Board support"
 	source boards/KConfig
 endmenu
 
+menu "Application Configuration"
+	source apps/KConfig
+endmenu
+
 menu "Device driver support"
 	source crypto/KConfig
 	source disp/KConfig
@@ -16,6 +20,3 @@ menu "Device driver support"
 	source tty/KConfig
 endmenu
 
-menu "Application Configuration"
-	source KConfig.app
-endmenu

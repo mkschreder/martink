@@ -51,23 +51,25 @@
 #include "kernel.h"
 
 #include <setjmp.h>
-
 /*
-void
-do_initcalls (void)
-{
-	initcall_t *call_p;
-
-	call_p = &__initcall_start;
-	do {
+static void do_initcalls (void) {
+	printf("init start: %p, init end: %p\n", &__initcall_start, &__initcall_end); 
+	for(initcall_t *call_p = &__initcall_start; call_p < &__initcall_end; call_p++){
 		fprintf (stderr, "call_p: %p\n", call_p);
 		(*call_p)();
-		++call_p;
-	} while (call_p < &__initcall_end);
-}*/
-
+		fprintf (stderr, "call_p: done\n");
+	}
+} 
+*/
 int main(void){	
+	//do_initcalls(); 
 	libk_loop(); 
+}
+
+void libk_register_device(struct libk_device *self, ASYNC_PTR(int, async_process_t, proc), const char *name){
+	//struct libk_device *self = (struct libk_device*)container_of(__self, struct libk_device, process); 
+	async_process_init(&self->process, ASYNC_NAME(int, async_process_t, proc), name); 
+	libk_register_process(&self->process); 
 }
 
 extern int __cxa_guard_acquire(__guard *g);

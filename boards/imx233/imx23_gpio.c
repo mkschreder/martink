@@ -21,17 +21,17 @@ void imx23_gpio_init(struct imx23_gpio *self) {
 	
 	fd = open("/dev/mem", O_RDWR);
 	if( fd < 0 ) {
-		perror("Unable to open /dev/mem");
+		ERROR("Unable to open /dev/mem\n");
 		fd = 0;
 	}
 
 	self->mmap = mmap(0, 0xfff, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_BASE);
 	if( (void*)-1 == self->mmap) {
-		perror("Unable to mmap file");
+		ERROR("Unable to mmap file\n");
 		self->mmap = 0;
 	}
 	if( -1 == close(fd))
-		perror("Couldn't close file");
+		ERROR("Couldn't close file\n");
 }
 /*
 int gpio_rd(long offset) {

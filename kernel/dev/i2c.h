@@ -25,16 +25,16 @@ typedef struct i2c_interface **i2c_dev_t;
  * I2C device interface used for reading and writing i2c devices.
  */
 struct i2c_interface {
-	uint32_t (*write)(i2c_dev_t self, const uint8_t *data, uint16_t max_sz);
-	uint32_t (*read)(i2c_dev_t self, uint8_t *data, uint16_t max_sz);
+	int (*write)(i2c_dev_t self, const uint8_t *data, uint16_t max_sz);
+	int (*read)(i2c_dev_t self, uint8_t *data, uint16_t max_sz);
 	/// returns -1 on fail and 1 on success
 	//int16_t 			(*stop)(i2c_dev_t self); 
 	uint8_t (*status)(i2c_dev_t self); 
-	int		(*open)(i2c_dev_t self, uint8_t address); 
+	int		(*open)(i2c_dev_t self); 
 	int 	(*close)(i2c_dev_t self); 
 };
 
-#define i2cdev_open(dev, addr) (*dev)->open(dev, addr)
+#define i2cdev_open(dev) (*dev)->open(dev)
 #define i2cdev_close(dev) (*dev)->close(dev)
 #define i2cdev_write(dev, data, size) (*dev)->write(dev, data, size)
 #define i2cdev_read(dev, data, size) (*dev)->read(dev, data, size)

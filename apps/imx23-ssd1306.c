@@ -15,12 +15,12 @@ DEVICE_CLOCK(app_clock){
 	const char *buffer = "---:::---:::---:::---:::---"; 
 	ASYNC_BEGIN();
 	while(1){
-		DEBUG("ssd: start\n"); 
+		//DEBUG("ssd: start\n"); 
 		AWAIT(fbdev_open(self->fb)); 
 		fbdev_seek(self->fb, 0, 0); 
 		fbdev_write(self->fb, (const uint8_t*)buffer, 10); 
 		fbdev_close(self->fb); 
-		DEBUG("ssd: done!\n"); 
+		//DEBUG("ssd: done!\n"); 
 		ASYNC_YIELD(); 
 	}
 	ASYNC_END(0); 
@@ -30,7 +30,8 @@ static void __init app_init(void){
 	static struct app app;
 	static struct linux_i2c_device i2c_dev; 
 	static struct ssd1306 ssd1306; 
-	linux_i2c_device_init(&i2c_dev);
+	DEBUG("imx23-app: init\n"); 
+	linux_i2c_device_init(&i2c_dev, SSD1306_I2C_ADDR);
 	ssd1306_init(&ssd1306, linux_i2c_device_get_interface(&i2c_dev)); 
 	app.fb = ssd1306_get_framebuffer_interface(&ssd1306); 
 	libk_register_device(&app.device, DEVICE_CLOCK_PTR(app_clock), "imx23-ssd1306"); 	

@@ -16,7 +16,8 @@ CFLAGS += -Wall -fPIC -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototype
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wshadow -Wcast-align -Wchar-subscripts -Winline \
 -Wnested-externs -Wredundant-decls -Wmissing-field-initializers -Wextra \
--Wformat=2 -Wno-format-nonliteral -Wpointer-arith -Wno-missing-braces 
+-Wformat=2 -Wno-format-nonliteral -Wpointer-arith -Wno-missing-braces \
+-Wno-unused-parameter
 #-Wpedantic
 CXXFLAGS += -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \

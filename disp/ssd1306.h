@@ -2,11 +2,13 @@
 
 #include <kernel/dev/framebuffer.h>
 #include <kernel/cbuf.h>
+#include <kernel.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#define SSD1306_I2C_ADDR 0x78
 #define SSD1306_128_64
 // #define SSD1306_128_32
 
@@ -19,6 +21,7 @@ typedef struct ssd1306 {
 	struct cbuf buffer; 
 	uint8_t i2c_buf[2];
 	uint8_t lock; 
+	struct fb_device *api; 
 } ssd1306_t;
 
 void ssd1306_init(ssd1306_t *dev, i2c_dev_t i2c);

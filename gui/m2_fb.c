@@ -51,7 +51,8 @@ static void _m2_fb_set_pixel8(struct m2_fb *self, u8g_dev_arg_pixel_t *arg_pixel
 	do {
 		if ( pixel & 128 ) {
 			//printf("8pix %d %d %d\n", arg_pixel->x, arg_pixel->y, arg_pixel->color); 
-			fbuf_set_pixel(self->fbuf, arg_pixel->x, arg_pixel->y, arg_pixel->color); 
+			fbdev_seek(self->fbuf, arg_pixel->x, arg_pixel->y); 
+			fbdev_write(self->fbuf, &arg_pixel->color, 3); 
 			//u8g_pb8v1_SetPixel(b, arg_pixel);
 		}
 		switch( arg_pixel->dir ) {
@@ -135,14 +136,15 @@ static uint8_t _m2_fb_u8g_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *
 			break;
 		case U8G_DEV_MSG_SET_PIXEL: {
 			u8g_dev_arg_pixel_t *pix = (u8g_dev_arg_pixel_t *)arg; 
-			fbuf_set_pixel(self->fbuf, pix->x, pix->y, pix->color); 
+			fbdev_seek(self->fbuf, pix->x, pix->y); 
+			fbdev_write(self->fbuf, &pix->color, 3); 
 		} break;
 		case U8G_DEV_MSG_INIT:
 			break;
 		case U8G_DEV_MSG_STOP:
 			break;
 		case U8G_DEV_MSG_PAGE_FIRST:
-			fbuf_clear(self->fbuf);
+			//fbuf_clear(self->fbuf);
 			break;
 		case U8G_DEV_MSG_PAGE_NEXT: {
 			return 0; 
@@ -178,11 +180,11 @@ static u8g_dev_t u8g_dev_libk_framebuffer = {
 	.com_fn = u8g_com_null_fn
 }; 
 
-void m2_fb_init(fbuf_dev_t _fb, m2_rom_void_p element){
+void m2_fb_init(fb_dev_t _fb, m2_rom_void_p element){
 	struct m2_fb *self = &_m2fb; 
 	
 	self->fbuf = _fb; 
-	fbuf_get_size(self->fbuf, &self->width, &self->height); 
+	fbdev_get_size(self->fbuf, &self->width, &self->height); 
 
 	u8g_Init(&self->u8g, &u8g_dev_libk_framebuffer); 
   

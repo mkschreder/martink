@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 struct m2_fb {
-	fbuf_dev_t 	fbuf; 
+	fb_dev_t 	fbuf; 
 	u8g_t 			u8g; 
 	uint16_t		width, height; 
 	struct cbuf	key_buffer; 
@@ -21,7 +21,7 @@ struct m2_fb {
 	timestamp_t time; 
 }; 
 
-void m2_fb_init(fbuf_dev_t _screen, m2_rom_void_p element); 
+void m2_fb_init(fb_dev_t _screen, m2_rom_void_p element); 
 void m2_fb_put_key(uint8_t key); 
 
 #ifdef __cplusplus

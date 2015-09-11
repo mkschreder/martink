@@ -23,9 +23,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-#pragma message("SSD1306 driver is not built..")
-
-#if 0 
 
 #define ABS(x) ((x >= 0) ? x : -x)
 
@@ -80,7 +77,7 @@
 #define FRAGMENT_WIDTH 128
 #define FRAGMENT_HEIGHT 8
 
-#define DISPLAY_ADDRESS 0x78
+#define SSD1306_I2C_ADDR 0x78
 
 #define TEXT_W (21)
 #define TEXT_H (8)
@@ -138,11 +135,23 @@
 #define SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL 0x29
 #define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
 
-static void ssd1306_command(ssd1306_t *self, uint8_t cmd){
+static int ssd1306_command(ssd1306_t *self, uint8_t cmd){
+	if(cbuf_get_free(&self->buffer) < 2) return 0; 
+	cbuf_putc(&self->buffer, 0); 
+	cbuf_putc(&self->buffer, cmd); 
+	return 1; 
+}
+static int ssd1306_data(struct ssd1306 *self, uint8_t data){
+	if(cbuf_get_free(&self->buffer) < 2) return 0; 
+	cbuf_putc(&self->buffer, 0x40); 
+	cbuf_putc(&self->buffer, data);
+	return 1; 
+}
+/*static void ssd1306_command(ssd1306_t *self, uint8_t cmd){
 	uint8_t buf[2] = {0, cmd};
 	i2c_start_write(self->i2c, DISPLAY_ADDRESS, buf, 2);
 	i2c_stop(self->i2c); 
-}
+}*/
 /*
 static void ssd1306_data(ssd1306_t *self, uint8_t data){
 	uint8_t buf[2] = {0x40, data};
@@ -150,57 +159,21 @@ static void ssd1306_data(ssd1306_t *self, uint8_t data){
 	i2c_stop(self->i2c); 
 }*/
 
-static void ssd1306_data_buffer(ssd1306_t *self, uint8_t *data, uint16_t size){
+/*static void ssd1306_data_buffer(ssd1306_t *self, uint8_t *data, uint16_t size){
 	i2c_start_write(self->i2c, DISPLAY_ADDRESS, data, size);
 	i2c_stop(self->i2c); 
-}
+}*/
 
-void ssd1306_init(ssd1306_t *dev, i2c_dev_t i2c){
-	dev->i2c = i2c;
-	
-	for(unsigned c = 0; c < sizeof(cmd_init); c++){
-		ssd1306_command(dev, pgm_read_byte(&cmd_init[c]));
-		delay_us(10); 
-	}
-}
 
-void ssd1306_gotoChar(ssd1306_t *dev, uint8_t x, uint8_t y){
-	uint8_t col = x * 6; 
-	uint8_t row = y; 
-	uint8_t home[] = {
-		U8G_ESC_ADR(0),           // instruction mode 
-		U8G_ESC_CS(1),             // enable chip 
-		0x00 | (col & 0x0f),		// set lower 4 bit of the col adr to 0 
-		0x10 | ((col >> 4) & 0x0f),		// set higher 4 bit of the col adr to 0 
-		0xb0 | (row & 0x07),  	// page address
-		
-		0x021, col, 0x7f, // (7d for 125 col screen!) column addressing mode
-		0x022, row, 0x07,		
-	
-		U8G_ESC_END,                // end of sequence 
-	}; 
-	for(unsigned c = 0; c < sizeof(home); c++){
-		ssd1306_command(dev, home[c]); 
-	}
-}
 
-void ssd1306_clear(ssd1306_t *dev){
-	//ssd1306_gotoChar(dev, 0, 0); 
-	ssd1306_command(dev, SSD1306_COLUMNADDR);
-  ssd1306_command(dev, 0);   // Column start address (0 = reset)
-  ssd1306_command(dev, 127); // Column end address (127 = reset)
+static void ssd1306_clear(ssd1306_t *dev){
+	//ssd1306_gotoChar(dev, 0, 0); ssd1306_command(dev, SSD1306_COLUMNADDR);
+	ssd1306_command(dev, 0);   // Column start address (0 = reset)
+	ssd1306_command(dev, 127); // Column end address (127 = reset)
 
-  ssd1306_command(dev, SSD1306_PAGEADDR);
-  ssd1306_command(dev, 0); // Page start address (0 = reset)
-  ssd1306_command(dev, (SSD1306_LCDHEIGHT == 64) ? 7 : 3); // Page end address
-	
-	/*
-	i2c_start_wait(DISPLAY_ADDRESS | I2C_WRITE);
-	i2c_write(0x40);
-	for(int c = 0; c < (128 * 8); c++){
-		i2c_write(0); 
-	}
-	i2c_stop();*/
+	ssd1306_command(dev, SSD1306_PAGEADDR);
+	ssd1306_command(dev, 0); // Page start address (0 = reset)
+	ssd1306_command(dev, (SSD1306_LCDHEIGHT == 64) ? 7 : 3); // Page end address
 }
 
 /*
@@ -221,18 +194,18 @@ int16_t ssd1306_puts(ssd1306_t *dev, const char *str, uint8_t col){
 	return 1; 
 }
 */
-void ssd1306_set_region(ssd1306_t *dev, uint16_t x0, uint16_t y0, uint16_t w, uint16_t h){
+static void ssd1306_set_region(ssd1306_t *dev, uint16_t x0, uint16_t y0, uint16_t w, uint16_t h){
 	ssd1306_command(dev, SSD1306_SETLOWCOLUMN | (x0 & 0x0f)); 
 	ssd1306_command(dev, SSD1306_SETHIGHCOLUMN | ((x0 >> 4) & 0x0f)); 
 	ssd1306_command(dev, SSD1306_SETSTARTPAGE | ((y0 >> 3) & 0x07)); 
 	
 	ssd1306_command(dev, SSD1306_COLUMNADDR);
-  ssd1306_command(dev, x0);   // Column start address (0 = reset)
-  ssd1306_command(dev, x0 + w + 1); // Column end address (127 = reset)
+	ssd1306_command(dev, x0);   // Column start address (0 = reset)
+	ssd1306_command(dev, x0 + w + 1); // Column end address (127 = reset)
 
-  ssd1306_command(dev, SSD1306_PAGEADDR);
-  ssd1306_command(dev, y0 >> 3); // Page start address (0 = reset)
-  ssd1306_command(dev, ((y0 + h) >> 3) + 1); // Page end address
+	ssd1306_command(dev, SSD1306_PAGEADDR);
+	ssd1306_command(dev, y0 >> 3); // Page start address (0 = reset)
+	ssd1306_command(dev, ((y0 + h) >> 3) + 1); // Page end address
   
 	/*
 	uint8_t col = x0; 
@@ -321,4 +294,92 @@ int16_t ssd1306_printf(ssd1306_t *dev, uint8_t col, const char *fmt, ...){
 	
 	return n; 
 }*/
-#endif
+
+static int _ssd1306_open(fb_dev_t dev){
+	struct ssd1306 *self = container_of(dev, struct ssd1306, dev); 
+	if(self->lock) return EAGAIN; 
+	self->lock = 1; 
+	return 0; 
+}
+
+static int _ssd1306_close(fb_dev_t dev){
+	struct ssd1306 *self = container_of(dev, struct ssd1306, dev); 
+	self->lock = 0; 
+}
+
+static int _ssd1306_write(fb_dev_t dev, const uint8_t *data, size_t count){
+	struct ssd1306 *self = container_of(dev, struct ssd1306, dev); 
+	for(size_t c = 0; c < count; c++){
+		if(ssd1306_data(self, data[c]) != 1) return c; 
+	}
+	return (int)count; 
+}
+
+static int _ssd1306_read(fb_dev_t dev, uint8_t *data, size_t count){
+	return 0; 
+}
+
+static void _ssd1306_get_size(fb_dev_t dev, uint16_t *w, uint16_t *h){
+	*w = 128; 
+	*h = 64; 
+}
+
+static void _ssd1306_seek(fb_dev_t dev, uint8_t x, uint8_t y){
+	struct ssd1306 *self = container_of(dev, struct ssd1306, api); 
+	uint8_t col = x * 6; 
+	uint8_t row = y; 
+	uint8_t home[] = {
+		U8G_ESC_ADR(0),           // instruction mode 
+		U8G_ESC_CS(1),             // enable chip 
+		0x00 | (col & 0x0f),		// set lower 4 bit of the col adr to 0 
+		0x10 | ((col >> 4) & 0x0f),		// set higher 4 bit of the col adr to 0 
+		0xb0 | (row & 0x07),  	// page address
+		
+		0x021, col, 0x7f, // (7d for 125 col screen!) column addressing mode
+		0x022, row, 0x07,		
+	
+		U8G_ESC_END,                // end of sequence 
+	}; 
+	for(unsigned c = 0; c < sizeof(home); c++){
+		ssd1306_command(self, home[c]); 
+	}
+}
+
+DEVICE_CLOCK(ssd1306_clock){
+	struct libk_device *dev = DEVICE_CLOCK_GET_DEVICE(); 
+	struct ssd1306 *self = container_of(dev, struct ssd1306, device); 
+	ASYNC_BEGIN(); 
+	for(unsigned c = 0; c < sizeof(cmd_init); c++){
+		ssd1306_command(self, pgm_read_byte(&cmd_init[c]));
+	}
+	while(1){
+		if(cbuf_get_waiting(&self->cbuf) >= sizeof(self->i2c_buf)){
+			cbuf_getn(&self->cbuf, self->i2c_buf, sizeof(self->i2c_buf)); 
+			AWAIT(i2cdev_open(self->i2c, SSD1306_I2C_ADDR)); 
+			i2cdev_write(self->i2c, self->i2c_buf, sizeof(i2c_buf)); 
+			AWAIT(i2cdev_status(self->i2c) == I2C_READY); 
+			DEVICE_DELAY(10); 
+		}
+		ASYNC_YIELD(); 
+	}
+	ASYNC_END(0); 
+}
+
+void ssd1306_init(ssd1306_t *self, i2c_dev_t i2c){
+	self->i2c = i2c;
+	self->api = 0; 
+	libk_register_device(&self->device, DEVICE_CLOCK_PTR(ssd1306_clock), "ssd1306"); 	
+}
+
+fb_dev_t ssd1306_get_framebuffer_interface(struct ssd1306 *self){
+	static struct fb_device api = {
+		.open = _ssd1306_open, 
+		.close = _ssd1306_close, 
+		.seek = _ssd1306_seek, 
+		.write = _ssd1306_write, 
+		.read = _ssd1306_read, 
+		.get_size = _ssd1306_get_size
+	}; 
+	self->api = &api; 
+	return &self->api; 
+}

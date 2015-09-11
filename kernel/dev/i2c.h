@@ -25,23 +25,22 @@ typedef struct i2c_interface **i2c_dev_t;
  * I2C device interface used for reading and writing i2c devices.
  */
 struct i2c_interface {
-	uint32_t			(*write)(i2c_dev_t self,
-		uint8_t address, const uint8_t *data, uint16_t max_sz);
-
-	uint32_t			(*read)(i2c_dev_t self,
-		uint8_t address, uint8_t *data, uint16_t max_sz);
-
+	uint32_t (*write)(i2c_dev_t self, const uint8_t *data, uint16_t max_sz);
+	uint32_t (*read)(i2c_dev_t self, uint8_t *data, uint16_t max_sz);
 	/// returns -1 on fail and 1 on success
-	int16_t 			(*stop)(i2c_dev_t self); 
-	
-	//void	(*wait)(i2c_dev_t self, uint8_t addr); 
-	
-	uint8_t (*status)(i2c_dev_t self, uint16_t flags); 
-	uint8_t (*open)(i2c_dev_t self); 
-	void 		(*close)(i2c_dev_t self); 
+	//int16_t 			(*stop)(i2c_dev_t self); 
+	uint8_t (*status)(i2c_dev_t self); 
+	int		(*open)(i2c_dev_t self, uint8_t address); 
+	int 	(*close)(i2c_dev_t self); 
 };
 
-uint32_t i2c_write(i2c_dev_t dev,
+#define i2cdev_open(dev, addr) (*dev)->open(dev, addr)
+#define i2cdev_close(dev) (*dev)->close(dev)
+#define i2cdev_write(dev, data, size) (*dev)->write(dev, data, size)
+#define i2cdev_read(dev, data, size) (*dev)->read(dev, data, size)
+#define i2cdev_status(dev) (*dev)->status(dev)
+
+/*uint32_t i2c_write(i2c_dev_t dev,
 	uint8_t address, const uint8_t *data, uint16_t max_sz);
 
 uint32_t	i2c_read(i2c_dev_t dev,
@@ -55,4 +54,4 @@ uint8_t i2c_status(i2c_dev_t dev, uint16_t status);
 
 uint8_t i2c_open(i2c_dev_t dev); 
 
-void i2c_close(i2c_dev_t dev); 
+void i2c_close(i2c_dev_t dev); */

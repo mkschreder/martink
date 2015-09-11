@@ -27,17 +27,26 @@ typedef struct {
 #define RGBA(r, g, b, a) (fb_color_t){r, g, b, a}
 */
 
-typedef struct fbuf_device **fbuf_dev_t; 
+typedef struct fb_device **fb_dev_t; 
 
-struct fbuf_device {
+struct fb_device {
+	/// open the device or return error if it is already open
+	int (*open)(fb_dev_t dev); 
+	/// close the device and release it for others to use
+	int (*close)(fb_dev_t dev); 
 	/// return the size of the pixel buffer of this device
-	void (*get_size)(fbuf_dev_t dev, uint16_t *width, uint16_t *height);
-	/// set a pixel in the framebuffer. Should check bounds! 
-	void (*set_pixel)(fbuf_dev_t dev, uint16_t x, uint16_t y, uint16_t color); 
-	/// clear the framebuffer (usually means all bits are zeroed)
-	void (*clear)(fbuf_dev_t dev); 
+	void (*get_size)(fb_dev_t dev, uint16_t *width, uint16_t *height);
+	/// seek to an x,y position
+	void (*seek)(fb_dev_t dev, uint16_t x, uint16_t y); 
+	/// write to the framebuffer at position and increment position 
+	int (*write)(fb_dev_t dev, const uint8_t *data, size_t count);
+	/// read framebuffer 
+	int (*read)(fb_dev_t dev, uint8_t *data, size_t count); 
 }; 
 
-#define fbuf_get_size(dev, w, h) (*dev)->get_size(dev, w, h); 
-#define fbuf_set_pixel(dev, x, y, color) (*dev)->set_pixel(dev, x, y, color)
-#define fbuf_clear(dev) (*dev)->clear(dev)
+#define fbdev_get_size(dev, w, h) (*dev)->get_size(dev, w, h)
+#define fbdev_write(dev, data, len) (*dev)->write(dev, data, len)
+#define fbdev_read(dev, data, len) (*dev)->read(dev, data, len)
+#define fbdev_seek(dev, x, y) (*dev)->seek(dev, x, y)
+#define fbdev_open(dev) (*dev)->open(dev)
+#define fbdev_close(dev) (*dev)->close(dev)

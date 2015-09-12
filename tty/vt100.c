@@ -805,18 +805,16 @@ static int16_t _vt100_serial_end(serial_dev_t self){
 	return 0; 
 }
 
-// todo: should be const 
-static struct serial_if _vt100_if = {
-	.put = _vt100_serial_putc,
-	.get = _vt100_serial_getc,
-	.putn = _vt100_serial_putn,
-	.getn = _vt100_serial_getn,
-	.begin = _vt100_serial_begin,
-	.end = _vt100_serial_end,
-	.waiting = _vt100_serial_waiting
-}; 
-
-serial_dev_t vt100_get_serial_interface(struct vt100 *self){
+serial_dev_t vt100_to_serial_device(struct vt100 *self){
+	static struct serial_if _vt100_if = {
+		.put = _vt100_serial_putc,
+		.get = _vt100_serial_getc,
+		.putn = _vt100_serial_putn,
+		.getn = _vt100_serial_getn,
+		.begin = _vt100_serial_begin,
+		.end = _vt100_serial_end,
+		.waiting = _vt100_serial_waiting
+	}; 
 	self->serial = &_vt100_if;
 	return &self->serial; 
 }

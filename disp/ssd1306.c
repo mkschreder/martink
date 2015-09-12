@@ -13,7 +13,7 @@
 
 #include "ssd1306.h"
 #include "ssd1306_priv.h"
-#include "lcd_font_5x7.h"
+//#include "lcd_font_5x7.h"
 
 #include <string.h>
 
@@ -134,7 +134,7 @@
 #define SSD1306_LEFT_HORIZONTAL_SCROLL 0x27
 #define SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL 0x29
 #define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
-
+/*j
 static int ssd1306_command(ssd1306_t *self, uint8_t cmd){
 	if(cbuf_get_free(&self->buffer) < 2) return 0; 
 	cbuf_put(&self->buffer, 0); 
@@ -146,7 +146,7 @@ static int ssd1306_data(struct ssd1306 *self, uint8_t data){
 	cbuf_put(&self->buffer, 0x40); 
 	cbuf_put(&self->buffer, data);
 	return 1; 
-}
+}*/
 /*static void ssd1306_command(ssd1306_t *self, uint8_t cmd){
 	uint8_t buf[2] = {0, cmd};
 	i2c_start_write(self->i2c, DISPLAY_ADDRESS, buf, 2);
@@ -290,9 +290,12 @@ static int _ssd1306_close(fb_dev_t dev){
 
 static int _ssd1306_write(fb_dev_t dev, const uint8_t *data, size_t count){
 	struct ssd1306 *self = container_of(dev, struct ssd1306, api); 
-	for(size_t c = 0; c < count; c++){
-		if(ssd1306_data(self, data[c]) != 1) return c; 
-	}
+	if(self->cursor + count >= sizeof(self->framebuffer)) count = sizeof(self->framebuffer) - self->cursor; 
+	memcpy(self->framebuffer + self->cursor, data, count);
+	self->cursor += count;  
+	//for(size_t c = 0; c < count; c++){
+		//if(ssd1306_data(self, data[c]) != 1) return c; 
+	//}
 	return (int)count; 
 }
 
@@ -311,7 +314,8 @@ static void _ssd1306_get_size(fb_dev_t dev, uint16_t *w, uint16_t *h){
 
 static void _ssd1306_seek(fb_dev_t dev, uint16_t x, uint16_t y){
 	struct ssd1306 *self = container_of(dev, struct ssd1306, api); 
-	uint8_t col = x * 6; 
+	self->cursor = 0; 
+	/*uint8_t col = x * 6; 
 	uint8_t row = y; 
 	uint8_t home[] = {
 		U8G_ESC_ADR(0),           // instruction mode 
@@ -327,25 +331,85 @@ static void _ssd1306_seek(fb_dev_t dev, uint16_t x, uint16_t y){
 	}; 
 	for(unsigned c = 0; c < sizeof(home); c++){
 		ssd1306_command(self, home[c]); 
+	}*/
+}
+/*
+static void _ssd1306_clear(fb_dev_t dev){
+	struct ssd1306 *self = container_of(dev, struct ssd1306, api); 
+	_ssd1306_seek(dev, 0, 0); 
+	for(int c = 0; c < 128*64; c+=32) {
+		uint8_t buf[32] = {0}; 
+		_ssd1306_write(dev, buf, 32); 
 	}
 }
+*/
 
 DEVICE_CLOCK(ssd1306_clock){
 	struct libk_device *dev = DEVICE_CLOCK_GET_DEVICE(); 
 	struct ssd1306 *self = container_of(dev, struct ssd1306, device); 
-	ASYNC_BEGIN(); 
+	uint8_t col = 0; 
+	uint8_t row = 0; 
+	uint8_t home[] = {
+		U8G_ESC_ADR(0),           // instruction mode 
+		U8G_ESC_CS(1),             // enable chip 
+		0x00 | (col & 0x0f),		// set lower 4 bit of the col adr to 0 
+		0x10 | ((col >> 4) & 0x0f),		// set higher 4 bit of the col adr to 0 
+		0xb0 | (row & 0x07),  	// page address
+		
+		0x021, col, 0x7f, // (7d for 125 col screen!) column addressing mode
+		0x022, row, 0x07,		
+	
+		U8G_ESC_END,                // end of sequence 
+	}; 
+	ASYNC_BEGIN();
+	AWAIT(i2cdev_open(self->i2c) == 0); 
+	 
 	for(unsigned c = 0; c < sizeof(cmd_init); c++){
-		ssd1306_command(self, pgm_read_byte(&cmd_init[c]));
+		//ssd1306_command(self, pgm_read_byte(&cmd_init[c]));
+		uint8_t buf[2] = {0, pgm_read_byte(&cmd_init[c])}; 
+		i2cdev_write(self->i2c, buf, 2); 
 	}
+	i2cdev_close(self->i2c); 
+
 	while(1){
-		if(cbuf_get_waiting(&self->buffer) >= sizeof(self->i2c_buf)){
+		//if(cbuf_get_waiting(&self->buffer) >= sizeof(self->i2c_buf)){
 			//DEBUG("ssd1306: fetch byte\n"); 
-			cbuf_getn(&self->buffer, self->i2c_buf, sizeof(self->i2c_buf)); 
-			AWAIT(i2cdev_open(self->i2c) == 0); 
-			i2cdev_write(self->i2c, self->i2c_buf, sizeof(self->i2c_buf)); 
-			AWAIT(i2cdev_status(self->i2c) == I2CDEV_READY); 
-			DEVICE_DELAY(10); 
-		}
+			AWAIT(i2cdev_open(self->i2c) == 0);
+			/*while(cbuf_get_waiting(&self->buffer) > 0){
+				size_t size = cbuf_getn(&self->buffer, self->i2c_buf, sizeof(self->i2c_buf)); 
+				for(size_t c = 0; c < size; c+=2)
+					i2cdev_write(self->i2c, self->i2c_buf + c, 2); 
+				AWAIT(i2cdev_status(self->i2c) == I2CDEV_READY); 
+				DEVICE_DELAY(10); 
+			}*/
+
+			for(self->c = 0; self->c < sizeof(home); self->c++){
+				self->i2c_buf[0] = 0; 
+				self->i2c_buf[1] = home[self->c]; 
+				i2cdev_write(self->i2c, self->i2c_buf, 2);
+
+				AWAIT(i2cdev_status(self->i2c) == I2CDEV_READY);  
+			} 
+			
+			// apparently we need to transfer 1 byte at a time because 
+			// otherwise we seem to get i2c faults at least with linux i2c 
+			for(self->c = 0; self->c < sizeof(self->framebuffer); self->c++){
+				self->i2c_buf[0] = 0x40; // data
+				self->i2c_buf[1] = self->framebuffer[self->c];
+				
+				i2cdev_write(self->i2c, self->i2c_buf, 2); 
+				
+				AWAIT(i2cdev_status(self->i2c) == I2CDEV_READY);  
+			}
+			/*while(cbuf_get_waiting(&self->buffer) > 0){
+				size_t size = cbuf_getn(&self->buffer, self->i2c_buf, sizeof(self->i2c_buf)); 
+				for(size_t c = 0; c < size; c+=2)
+					i2cdev_write(self->i2c, self->i2c_buf + c, 2); 
+				AWAIT(i2cdev_status(self->i2c) == I2CDEV_READY); 
+				DEVICE_DELAY(10); 
+			}*/
+			i2cdev_close(self->i2c); 
+		//}
 		ASYNC_YIELD(); 
 	}
 	ASYNC_END(0); 
@@ -354,7 +418,9 @@ DEVICE_CLOCK(ssd1306_clock){
 void ssd1306_init(ssd1306_t *self, i2c_dev_t i2c){
 	self->i2c = i2c;
 	self->api = 0;
-	cbuf_init(&self->buffer, self->cmd_buffer, sizeof(self->cmd_buffer)); 
+	//self->cursor = 0; 
+	//cbuf_init(&self->buffer, self->cmd_buffer, sizeof(self->cmd_buffer)); 
+	gbuf_init(&self->gbuf, self->framebuffer, sizeof(self->framebuffer), 128, 64, GBUF_FORMAT_MONOCHROME); 
 	libk_register_device(&self->device, DEVICE_CLOCK_PTR(ssd1306_clock), "ssd1306"); 	
 }
 
@@ -366,7 +432,9 @@ fb_dev_t ssd1306_get_framebuffer_interface(struct ssd1306 *self){
 		.write = _ssd1306_write, 
 		.read = _ssd1306_read, 
 		.get_size = _ssd1306_get_size
+		//.clear = _ssd1306_clear
 	}; 
 	self->api = &api; 
 	return &self->api; 
 }
+

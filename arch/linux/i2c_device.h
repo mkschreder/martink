@@ -9,7 +9,7 @@ struct linux_i2c_device {
 	struct i2c_interface *api; 
 }; 
 
-void linux_i2c_device_init(struct linux_i2c_device *self, uint8_t adapter); 
+void linux_i2c_device_init(struct linux_i2c_device *self, uint8_t adapter, uint8_t address); 
 int linux_i2c_device_open(struct linux_i2c_device *self, int adapter); 
 int linux_i2c_device_close(struct linux_i2c_device *self); 
 int linux_i2c_device_read(struct linux_i2c_device *self, 

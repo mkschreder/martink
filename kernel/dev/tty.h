@@ -1,6 +1,6 @@
- 
 #pragma once
 
+#include <inttypes.h>
 
 typedef struct tty_device **tty_dev_t;
 typedef uint16_t tty_color_t;

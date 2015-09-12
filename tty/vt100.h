@@ -71,7 +71,7 @@ void vt100_init(struct vt100 *self, tty_dev_t display);
 void vt100_putc(struct vt100 *self, uint8_t ch);
 void vt100_puts(struct vt100 *self, const char *str);
 
-serial_dev_t vt100_get_serial_interface(struct vt100 *self); 
+serial_dev_t vt100_to_serial_device(struct vt100 *self); 
 
 #ifdef __cplusplus
 }

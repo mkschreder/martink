@@ -8,18 +8,27 @@
 extern "C" {
 #endif
 
-#define SSD1306_I2C_ADDR 0x78
+//#define SSD1306_I2C_ADDR 0x78
+// normal i2c address on linux is 3c, shifted is 78
+#define SSD1306_I2C_ADDR 0x3c
 #define SSD1306_128_64
 // #define SSD1306_128_32
+
+#include <kernel/gbuf.h>
 
 typedef struct ssd1306 {
 	struct libk_device device; 
 	i2c_dev_t i2c; 
-	uint8_t r_row_start, r_row_end;
+	//uint8_t r_row_start, r_row_end;
 	// private variables 
-	uint8_t cmd_buffer[128*64*2]; 
-	struct cbuf buffer; 
-	uint8_t i2c_buf[2];
+	//uint8_t cmd_buffer[128*64*2];
+	size_t cursor;
+	
+	size_t c;  
+	uint8_t framebuffer[128*8];  
+	struct gbuf gbuf; 
+	//struct cbuf buffer; 
+	uint8_t i2c_buf[2]; 
 	uint8_t lock; 
 	struct fb_device *api; 
 } ssd1306_t;
@@ -34,6 +43,7 @@ void ssd1306_init(ssd1306_t *dev, i2c_dev_t i2c);
 //int16_t ssd1306_printf(ssd1306_t *dev, uint8_t col, const char *str, ...); 
 //void ssd1306_reset(ssd1306_t *dev);
 fb_dev_t ssd1306_get_framebuffer_interface(struct ssd1306 *self); 
+static inline struct gbuf *ssd1306_get_gbuf(struct ssd1306 *self) { return &self->gbuf; }
 
 #ifdef __cplusplus
 }

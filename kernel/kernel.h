@@ -89,6 +89,6 @@ static initcall_t __initcall_##fn __init_call = fn
 
 #define libk_init_process(async_proc_struct_ptr, method) ASYNC_PROCESS_INIT(async_proc_struct_ptr, method)
 #define libk_register_process(async_proc_struct_ptr) ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, async_proc_struct_ptr)
-#define libk_loop() while(ASYNC_RUN_PARALLEL(&ASYNC_GLOBAL_QUEUE)) { NATIVE_USLEEP(10000); }
+#define libk_loop() while(ASYNC_RUN_PARALLEL(&ASYNC_GLOBAL_QUEUE)) {  }
 void libk_register_device(struct libk_device *self, ASYNC_PTR(int, async_process_t, proc), const char *name);
 //#include "wiinunchuck.h"

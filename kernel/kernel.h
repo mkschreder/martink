@@ -61,14 +61,13 @@ extern "C" void __cxa_pure_virtual(void);
 
 
 struct libk_device {
-	timestamp_t timeout; 
 	struct async_process process; 
 }; 
 
 #define DEVICE_CLOCK_PTR(name) ASYNC_NAME(int, async_process_t, name)
 #define DEVICE_CLOCK_GET_DEVICE() container_of(__self, struct libk_device, process)
 #define DEVICE_CLOCK(name) ASYNC_PROCESS(name)
-#define DEVICE_DELAY(delay) AWAIT_DELAY(DEVICE_CLOCK_GET_DEVICE()->timeout, delay); 
+#define DEVICE_DELAY(delay) ASYNC_PROCESS_SLEEP(delay) 
 
 /*
 typedef int (*initcall_t)(void);
@@ -89,6 +88,7 @@ static initcall_t __initcall_##fn __init_call = fn
 
 #define libk_init_process(async_proc_struct_ptr, method) ASYNC_PROCESS_INIT(async_proc_struct_ptr, method)
 #define libk_register_process(async_proc_struct_ptr) ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, async_proc_struct_ptr)
-#define libk_loop() while(ASYNC_RUN_PARALLEL(&ASYNC_GLOBAL_QUEUE)) {  }
+void libk_loop(void); 
+
 void libk_register_device(struct libk_device *self, ASYNC_PTR(int, async_process_t, proc), const char *name);
 //#include "wiinunchuck.h"

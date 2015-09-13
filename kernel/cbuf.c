@@ -97,7 +97,8 @@ uint16_t cbuf_getn(struct cbuf *self, uint8_t *data, uint16_t size){
 uint16_t cbuf_putn(struct cbuf *self, const uint8_t *data, uint16_t size){
 	uint16_t s = 0; 
 	for(s = 0; s < size; ++s){
-		if(!cbuf_put(self, *data++)) break;  
+		if(!cbuf_put(self, *data)) break;  
+		data++; 
 	}
 	return s; 
 }

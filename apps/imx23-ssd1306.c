@@ -3,6 +3,7 @@
 #include <tty/fb_tty.h>
 #include <tty/vt100.h>
 #include <arch/linux/i2c_device.h>
+#include <arch/linux/pipe.h>
 #include <kernel/dev/framebuffer.h>
 
 struct app {
@@ -11,12 +12,13 @@ struct app {
 	fb_dev_t fb; 
 	tty_dev_t tty; 
 	serial_dev_t console; 
+	serial_dev_t input; 
 }; 
 
 DEVICE_CLOCK(app_clock){
 	struct libk_device *device = DEVICE_CLOCK_GET_DEVICE(); 
 	struct app *self = container_of(device, struct app, device); 
-	//static char buffer[128*8];
+	static uint8_t buffer[128];
 	
 	ASYNC_BEGIN();
 	while(1){
@@ -33,22 +35,45 @@ DEVICE_CLOCK(app_clock){
 		DEVICE_DELAY(1000000);  
 		//DEBUG("ssd: done!\n");
 		*/
-		//tty_move_cursor(self->tty, 0, 0); 
-		//tty_put(self->tty, 'A', 1, 0);  
+		//AWAIT(serial_get_waiting(app.input) > 0); 
+		if(serial_waiting(self->input)){
+			size_t ret = serial_getn(self->input, buffer, sizeof(buffer)); 
+			if(ret > 0){
+				DEBUG("in: %s\n", buffer); 
+				serial_putn(self->console, buffer, ret); 
+			}
+		}
+		/*
+		tty_move_cursor(self->tty, 0, 0); 
+		tty_put(self->tty, 'A', 1, 0);  
 		//tty_move_cursor(self->tty, 4, 0); 
 		//tty_put(self->tty, 'B', 1, 0); 
+		//serial_printf(self->console, "\x1b[2J\x1b[HWorld is ours! %d\n", 10); 
+		DEVICE_DELAY(500000);  
+		tty_move_cursor(self->tty, 0, 0); 
+		tty_put(self->tty, 'B', 1, 0);  
+		DEVICE_DELAY(500000); 
 		serial_printf(self->console, "\x1b[2J\x1b[HHello World %d\n", 10); 
-		ASYNC_YIELD(); 
+		DEVICE_DELAY(500000);  
+		*/
+		DEVICE_DELAY(100000); 
 	}
 	ASYNC_END(0); 
 }
-
+/*
+DEVICE_EVENT(pipe_input){
+	ASYNC_BEGIN();
+	while(serial_get_waiting(app.input) > 0) serial_put(app.console, serial_get(app.input)); 
+	ASYNC_END(0); 
+}
+*/
 static void __init app_init(void){
 	static struct app app;
 	static struct linux_i2c_device i2c_dev; 
 	static struct ssd1306 ssd1306; 
 	static struct fb_tty fbtty;
 	static struct vt100 vt100;  
+	static struct linux_pipe pipe; 
 	DEBUG("imx23-app: init\n"); 
 	linux_i2c_device_init(&i2c_dev, 0, SSD1306_I2C_ADDR);
 	ssd1306_init(&ssd1306, linux_i2c_device_get_interface(&i2c_dev)); 
@@ -56,5 +81,9 @@ static void __init app_init(void){
 	app.tty = fb_tty_to_tty_device(&fbtty); 
 	vt100_init(&vt100, app.tty); 
 	app.console = vt100_to_serial_device(&vt100); 
+	linux_pipe_init(&pipe);
+	linux_pipe_open(&pipe, "/var/ssd1306", LINUX_PIPE_DIR_INPUT);  
+	//linux_pipe_register_event(LINUX_PIPE_EV_INPUT_READY, pipe_event); 
+	app.input = linux_pipe_to_serial_device(&pipe); 
 	libk_register_device(&app.device, DEVICE_CLOCK_PTR(app_clock), "imx23-ssd1306"); 	
 }

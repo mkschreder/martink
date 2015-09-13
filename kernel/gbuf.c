@@ -29,10 +29,11 @@ void gbuf_draw_pixel(struct gbuf *self, uint16_t x, uint16_t y, gbuf_color_t col
 	switch(self->format){
 		case GBUF_FORMAT_MONOCHROME: {
 			uint32_t i = (y >> 3) * self->width + x;
-			if(i > self->memsize) break; 
+			if(x >= self->width || y >= self->height || i >= self->memsize) break; 
 			uint8_t *byte = &self->memory[(y >> 3) * self->width + x]; 
 			if(color) *byte |= 1 << (y & 7); 
-			else *byte &= ~(1 << ( y & 7)); 
+			else *byte &= ~(1 << ( y & 7));
+			self->dirty = 1; 
 		} break;
 	}
 }

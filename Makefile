@@ -17,7 +17,7 @@ CFLAGS += -Wall -fPIC -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototype
 -Wshadow -Wcast-align -Wchar-subscripts -Winline \
 -Wnested-externs -Wredundant-decls -Wmissing-field-initializers -Wextra \
 -Wformat=2 -Wno-format-nonliteral -Wpointer-arith -Wno-missing-braces \
--Wno-unused-parameter
+-Wno-unused-parameter -Wno-inline
 #-Wpedantic
 CXXFLAGS += -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
@@ -56,7 +56,7 @@ COMMON_FLAGS += -I$(srctree) -I$(srctree)/include -DBUILD_$(BUILD_DEFINE) $(CPU_
 # add includes to the make
 CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
-LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS)
+LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS) $(LDFLAGS-y)
 OUTDIRS := build build/crypto/aes
 #TARGET := kernel-$(BUILD)
 

@@ -72,6 +72,23 @@ void libk_register_device(struct libk_device *self, ASYNC_PTR(int, async_process
 	libk_register_process(&self->process); 
 }
 
+void libk_loop() {
+	while(1){
+		//timestamp_t start = timestamp_now(); 
+		//uint8_t pcount = 
+		ASYNC_RUN_PARALLEL(&ASYNC_GLOBAL_QUEUE); 
+		timestamp_t now = timestamp_now(); 
+		//DEBUG("loop: %lu\n", timestamp_ticks_to_us(now - start)); 
+		if(now >= ASYNC_GLOBAL_QUEUE.sleep_until) {
+			if(0) DEBUG("no sleep! %d\n", (int)(ASYNC_GLOBAL_QUEUE.sleep_until - now)); 
+		} else {
+			timestamp_t us = timestamp_ticks_to_us(ASYNC_GLOBAL_QUEUE.sleep_until - now);
+			NATIVE_USLEEP(us); 
+			//DEBUG("pc: %d s: %lu u: %ld, T: %ld \n", pcount, us, ASYNC_GLOBAL_QUEUE.sleep_until, timestamp_now()); 
+		}
+	}
+}
+
 extern int __cxa_guard_acquire(__guard *g);
 extern void __cxa_guard_release (__guard *g); 
 extern void __cxa_guard_abort (__guard *g); 

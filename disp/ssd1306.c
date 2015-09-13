@@ -366,14 +366,15 @@ DEVICE_CLOCK(ssd1306_clock){
 	 
 	for(unsigned c = 0; c < sizeof(cmd_init); c++){
 		//ssd1306_command(self, pgm_read_byte(&cmd_init[c]));
-		uint8_t buf[2] = {0, pgm_read_byte(&cmd_init[c])}; 
-		i2cdev_write(self->i2c, buf, 2); 
+		self->i2c_buf[0] = 0; 
+		self->i2c_buf[1] = pgm_read_byte(&cmd_init[c]); 
+		i2cdev_write(self->i2c, self->i2c_buf, 2); 
 	}
 	i2cdev_close(self->i2c); 
 
 	while(1){
-		//if(cbuf_get_waiting(&self->buffer) >= sizeof(self->i2c_buf)){
-			//DEBUG("ssd1306: fetch byte\n"); 
+		if(gbuf_is_dirty(&self->gbuf)){
+			//DEBUG("ssd1306: refresh\n"); 
 			AWAIT(i2cdev_open(self->i2c) == 0);
 			/*while(cbuf_get_waiting(&self->buffer) > 0){
 				size_t size = cbuf_getn(&self->buffer, self->i2c_buf, sizeof(self->i2c_buf)); 
@@ -389,6 +390,7 @@ DEVICE_CLOCK(ssd1306_clock){
 				i2cdev_write(self->i2c, self->i2c_buf, 2);
 
 				AWAIT(i2cdev_status(self->i2c) == I2CDEV_READY);  
+				//DEVICE_DELAY(0); 
 			} 
 			
 			// apparently we need to transfer 1 byte at a time because 
@@ -400,6 +402,7 @@ DEVICE_CLOCK(ssd1306_clock){
 				i2cdev_write(self->i2c, self->i2c_buf, 2); 
 				
 				AWAIT(i2cdev_status(self->i2c) == I2CDEV_READY);  
+				////DEVICE_DELAY(0); 
 			}
 			/*while(cbuf_get_waiting(&self->buffer) > 0){
 				size_t size = cbuf_getn(&self->buffer, self->i2c_buf, sizeof(self->i2c_buf)); 
@@ -409,8 +412,10 @@ DEVICE_CLOCK(ssd1306_clock){
 				DEVICE_DELAY(10); 
 			}*/
 			i2cdev_close(self->i2c); 
-		//}
-		ASYNC_YIELD(); 
+			self->gbuf.dirty = 0; 
+		}
+		DEVICE_DELAY(100000); 
+		//ASYNC_YIELD(); 
 	}
 	ASYNC_END(0); 
 }

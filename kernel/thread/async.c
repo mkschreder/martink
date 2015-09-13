@@ -15,6 +15,7 @@ void async_process_init(struct async_process *self, ASYNC_PTR(int, async_process
 	INIT_LIST_HEAD(&self->list); 
 	self->ASYNC_NAME(int, async_process_t, proc) = ASYNC_NAME(int, async_process_t, func); 
 	self->name = name; 
+	self->sleep_until = 0; 
 	ASYNC_DEBUG("Proc: %p\n", self->ASYNC_NAME(int, async_process_t, proc)); 
 }
 
@@ -51,7 +52,8 @@ uint8_t async_queue_run_series(async_queue_t *queue){
 uint8_t async_queue_run_parallel(async_queue_t *queue){
 	uint8_t active = 0; 
 	struct list_head *ptr, *n; 
-	if(list_empty(&queue->list)) return 0; 
+	if(list_empty(&queue->list)) return 0;
+	timestamp_t min_sleep = 0x0fffffff; 
 	list_for_each_safe(ptr, n, &queue->list){
 		struct async_process *p = container_of(ptr, struct async_process, list); 
 		int ret = 0; 
@@ -62,9 +64,16 @@ uint8_t async_queue_run_parallel(async_queue_t *queue){
 			ASYNC_DEBUG("Removing %s from task list\n", p->name); 
 			list_del_init(ptr); 
 		}
+		//if(p->sleep_until < queue->sleep_until && !timestamp_expired(p->sleep_until)) queue->sleep_until = p->sleep_until; 
+		//else queue->sleep_until = timestamp_now(); 
+		timestamp_t sleep = p->sleep_until - timestamp_now(); 
+		if(sleep > 0 && sleep < min_sleep) min_sleep = sleep; 
 		__current_process = 0; 
+		//DEBUG("p %s: %d\n", p->name, p->sleep_until - timestamp_now()); 
 		
 		active++; 
 	}
+	//DEBUG("min sleep: %lu\n", min_sleep); 
+	queue->sleep_until = timestamp_from_now_us(min_sleep); 
 	return active; 
 }

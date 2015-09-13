@@ -3,8 +3,8 @@
 #include "lc.h"
 #include "../list.h"
 
-#define ASYNC_WAITING 0
-#define ASYNC_ENDED   3
+#define ASYNC_WAITING 	0
+#define ASYNC_ENDED   	3
 
 typedef char async_return_t; 
 typedef uint8_t async_mutex_t; 
@@ -83,7 +83,8 @@ struct async_task {
 typedef struct async_process async_process_t; 
 
 struct async_queue {
-	struct list_head list; 
+	struct list_head list;
+	timestamp_t sleep_until; // this will be calculated as each process is run and enters sleep
 }; 
 
 typedef struct async_queue async_queue_t; 
@@ -96,6 +97,7 @@ struct async_process {
 	ASYNC_PTR(int, async_process_t, proc); 
 	struct async_task task; 
 	const char *name; 
+	timestamp_t sleep_until; // sleep is so common that we put this variable as part of process struct itself. 
 }; 
 
 void async_process_init(struct async_process *self, ASYNC_PTR(int, async_process_t, func), const char *name); 
@@ -107,9 +109,11 @@ uint8_t async_queue_run_series(async_queue_t *queue);
 	
 #define _ASYNC_PROCESS(c, func) __ASYNC_PROCESS(c, func)
 #define ASYNC_PROCESS(func) _ASYNC_PROCESS(__COUNTER__, func)
+#define ASYNC_PROCESS_SLEEP(delay) AWAIT_DELAY(__self->sleep_until, delay)
 
 #define ASYNC_QUEUE(queue) static struct async_queue queue; static void __attribute__((constructor)) __init_queue_##queue##__(void){\
 	INIT_LIST_HEAD(&queue.list); \
+	queue.sleep_until = 0;\
 }
 #define ASYNC_PROCESS_INIT(ptr, func) async_process_init((ptr), ASYNC_NAME(int, async_process_t, func), #func)
 #define ASYNC_RUN_PARALLEL(queue) async_queue_run_parallel(queue)

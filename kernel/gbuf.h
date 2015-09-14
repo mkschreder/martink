@@ -6,7 +6,7 @@ typedef enum {
 	GBUF_FORMAT_MONOCHROME
 } gbuf_format_t; 
 
-typedef uint32_t gbuf_color_t; 
+typedef uint16_t gbuf_color_t; 
 
 struct gbuf {
 	uint8_t *memory;

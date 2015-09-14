@@ -26,8 +26,8 @@ timestamp_t tsc_us_to_ticks(timestamp_t us){
 	return TICKS_PER_US * us; 
 }
 
-timestamp_t tsc_ticks_to_us(timestamp_t clock){
-	return clock / TICKS_PER_US; 
+timestamp_t tsc_ticks_to_us(timestamp_t cl){
+	return cl / TICKS_PER_US; 
 }
 
 timestamp_t tsc_read(void){

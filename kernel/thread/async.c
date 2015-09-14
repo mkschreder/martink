@@ -1,12 +1,18 @@
 #include <arch/soc.h>
 #include "async.h"
 
-#define ASYNC_DEBUG(...) {}
+#define ASYNC_DEBUG(...) {printf(__VA_ARGS__);}
 
 static struct async_process *__current_process = 0; 
-struct async_queue ASYNC_GLOBAL_QUEUE; 
+struct async_queue ASYNC_GLOBAL_QUEUE;  
+
+void async_queue_init(struct async_queue *self){
+	INIT_LIST_HEAD(&self->list); 
+}
+
 static void __attribute__((constructor)) _init_global_queue(void){
-	INIT_LIST_HEAD(&ASYNC_GLOBAL_QUEUE.list); 
+	ASYNC_DEBUG("async: init\n"); 
+	//async_queue_init(&ASYNC_GLOBAL_QUEUE); 
 }
 
 void async_process_init(struct async_process *self, ASYNC_PTR(int, async_process_t, func), const char *name){
@@ -66,8 +72,8 @@ uint8_t async_queue_run_parallel(async_queue_t *queue){
 		}
 		//if(p->sleep_until < queue->sleep_until && !timestamp_expired(p->sleep_until)) queue->sleep_until = p->sleep_until; 
 		//else queue->sleep_until = timestamp_now(); 
-		timestamp_t sleep = p->sleep_until - timestamp_now(); 
-		if(sleep > 0 && sleep < min_sleep) min_sleep = sleep; 
+		timestamp_t s = p->sleep_until - timestamp_now(); 
+		if(s > 0 && s < min_sleep) min_sleep = s; 
 		__current_process = 0; 
 		//DEBUG("p %s: %d\n", p->name, p->sleep_until - timestamp_now()); 
 		

@@ -67,13 +67,14 @@ DEVICE_EVENT(pipe_input){
 	ASYNC_END(0); 
 }
 */
-static void __init app_init(void){
+static void __init _z_app_init(void){
 	static struct app app;
 	static struct linux_i2c_device i2c_dev; 
 	static struct ssd1306 ssd1306; 
 	static struct fb_tty fbtty;
 	static struct vt100 vt100;  
-	static struct linux_pipe pipe; 
+	static struct linux_pipe lpipe; 
+	async_queue_init(&ASYNC_GLOBAL_QUEUE); 
 	DEBUG("imx23-app: init\n"); 
 	linux_i2c_device_init(&i2c_dev, 0, SSD1306_I2C_ADDR);
 	ssd1306_init(&ssd1306, linux_i2c_device_get_interface(&i2c_dev)); 
@@ -81,9 +82,9 @@ static void __init app_init(void){
 	app.tty = fb_tty_to_tty_device(&fbtty); 
 	vt100_init(&vt100, app.tty); 
 	app.console = vt100_to_serial_device(&vt100); 
-	linux_pipe_init(&pipe);
-	linux_pipe_open(&pipe, "/var/ssd1306", LINUX_PIPE_DIR_INPUT);  
+	linux_pipe_init(&lpipe);
+	linux_pipe_open(&lpipe, "/var/ssd1306", LINUX_PIPE_DIR_INPUT);  
 	//linux_pipe_register_event(LINUX_PIPE_EV_INPUT_READY, pipe_event); 
-	app.input = linux_pipe_to_serial_device(&pipe); 
+	app.input = linux_pipe_to_serial_device(&lpipe); 
 	libk_register_device(&app.device, DEVICE_CLOCK_PTR(app_clock), "imx23-ssd1306"); 	
 }

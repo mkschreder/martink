@@ -9,10 +9,14 @@ static void _fb_tty_put(tty_dev_t dev, uint8_t ch, tty_color_t fg, tty_color_t b
 	uint16_t x = self->cursor_x * 6; 
 	uint16_t y = self->cursor_y * 8; 
 	for(unsigned j = 0; j < 5; j++){
-		uint8_t bits = (fg != 0)?glyph[j]:~glyph[j];
-		for(unsigned k = 0; k < 8; k++){
+		uint8_t bits = glyph[j];
+		for(unsigned k = 0; k < 7; k++){
 			gbuf_draw_pixel(self->gbuf, x + j, y + k, (bits >> k & 1)?fg:bg); 
 		}
+		gbuf_draw_pixel(self->gbuf, x + j, y + 7, bg); 
+	}
+	for(unsigned k = 0; k < 8; k++){
+		gbuf_draw_pixel(self->gbuf, x + 5, y + k, bg); 
 	}
 }
 

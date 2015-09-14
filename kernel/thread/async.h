@@ -100,6 +100,7 @@ struct async_process {
 	timestamp_t sleep_until; // sleep is so common that we put this variable as part of process struct itself. 
 }; 
 
+void async_queue_init(struct async_queue *self); 
 void async_process_init(struct async_process *self, ASYNC_PTR(int, async_process_t, func), const char *name); 
 void async_queue_process(async_queue_t *queue, struct async_process *self); 
 uint8_t async_queue_run_parallel(async_queue_t *queue); 

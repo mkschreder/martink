@@ -62,6 +62,7 @@ static void do_initcalls (void) {
 } 
 */
 int main(void){	
+	//async_queue_init(&ASYNC_GLOBAL_QUEUE); 
 	//do_initcalls(); 
 	libk_loop(); 
 }

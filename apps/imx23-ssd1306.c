@@ -1,9 +1,11 @@
 #include <kernel.h>
 #include <disp/ssd1306.h>
+#include <disp/ili9340.h>
 #include <tty/fb_tty.h>
 #include <tty/vt100.h>
 #include <arch/linux/i2c_device.h>
 #include <arch/linux/pipe.h>
+#include <arch/linux/spidev.h>
 #include <kernel/dev/framebuffer.h>
 
 struct app {
@@ -13,6 +15,7 @@ struct app {
 	tty_dev_t tty; 
 	serial_dev_t console; 
 	serial_dev_t input; 
+	spi_dev_t spi; 
 }; 
 
 DEVICE_CLOCK(app_clock){
@@ -43,6 +46,8 @@ DEVICE_CLOCK(app_clock){
 				serial_putn(self->console, buffer, ret); 
 			}
 		}
+		uint8_t buf[2] = {0xaa, 0}; 
+		spi_transfer(self->spi, buf, buf+1, 1); 
 		/*
 		tty_move_cursor(self->tty, 0, 0); 
 		tty_put(self->tty, 'A', 1, 0);  
@@ -75,6 +80,7 @@ static void __init _z_app_init(void){
 	static struct vt100 vt100;  
 	static struct linux_pipe lpipe; 
 	async_queue_init(&ASYNC_GLOBAL_QUEUE); 
+	static struct linux_spidev spi; 
 	DEBUG("imx23-app: init\n"); 
 	linux_i2c_device_init(&i2c_dev, 0, SSD1306_I2C_ADDR);
 	ssd1306_init(&ssd1306, linux_i2c_device_get_interface(&i2c_dev)); 
@@ -84,6 +90,10 @@ static void __init _z_app_init(void){
 	app.console = vt100_to_serial_device(&vt100); 
 	linux_pipe_init(&lpipe);
 	linux_pipe_open(&lpipe, "/var/ssd1306", LINUX_PIPE_DIR_INPUT);  
+	linux_spidev_init(&spi); 
+	app.spi = linux_spidev_to_interface(&spi); 
+//void ili9340_init(struct ili9340 *self, spi_dev_t spi, pio_dev_t gpio, gpio_pin_t cs_pin, gpio_pin_t dc_pin, gpio_pin_t rst_pin) {
+	 
 	//linux_pipe_register_event(LINUX_PIPE_EV_INPUT_READY, pipe_event); 
 	app.input = linux_pipe_to_serial_device(&lpipe); 
 	libk_register_device(&app.device, DEVICE_CLOCK_PTR(app_clock), "imx23-ssd1306"); 	

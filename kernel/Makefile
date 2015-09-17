@@ -4,6 +4,7 @@ obj-y += kernel/thread.o
 obj-y += kernel/cbuf.o
 obj-y += kernel/io_device.o
 obj-y += kernel/gbuf.o
+obj-y += kernel/sbuf.o 
 
 docs-y += kernel/README.md
 

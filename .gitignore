@@ -13,3 +13,4 @@ include/autoconf.h
 *.a
 *.so
 *.a
+*.swp

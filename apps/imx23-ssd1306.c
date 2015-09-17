@@ -79,7 +79,7 @@ static void __init _z_app_init(void){
 	static struct fb_tty fbtty;
 	static struct vt100 vt100;  
 	static struct linux_pipe lpipe; 
-	async_queue_init(&ASYNC_GLOBAL_QUEUE); 
+//	async_queue_init(&ASYNC_GLOBAL_QUEUE); 
 	static struct linux_spidev spi; 
 	DEBUG("imx23-app: init\n"); 
 	linux_i2c_device_init(&i2c_dev, 0, SSD1306_I2C_ADDR);

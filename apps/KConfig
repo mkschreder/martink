@@ -5,3 +5,7 @@ config APP_print_hello
 config APP_imx23_ssd1306
 	depends on NATIVE
 	bool "ssd1306 example on imx233 board"
+
+config APP_test 
+	depends on NATIVE
+	bool "simple test app"

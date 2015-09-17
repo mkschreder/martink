@@ -12,7 +12,7 @@ void async_queue_init(struct async_queue *self){
 
 static void __attribute__((constructor)) _init_global_queue(void){
 	ASYNC_DEBUG("async: init\n"); 
-	//async_queue_init(&ASYNC_GLOBAL_QUEUE); 
+	async_queue_init(&ASYNC_GLOBAL_QUEUE); 
 }
 
 void async_process_init(struct async_process *self, ASYNC_PTR(int, async_process_t, func), const char *name){

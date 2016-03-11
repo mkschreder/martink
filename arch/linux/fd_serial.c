@@ -8,7 +8,17 @@
 #include <stdio.h>
 #include <memory.h>
 
-void fd_serial_init(struct fd_serial *self, int in_fd, int out_fd){
+#include <kernel/dev/serial.h>
+
+struct fd_serial {
+	int in_fd, out_fd; // file descriptor
+	struct serial_device_ops *api;
+}; 
+
+typedef struct fd_serial * fd_serial_t; 
+
+
+static void fd_serial_init(struct fd_serial *self, int in_fd, int out_fd){
 	self->in_fd = in_fd; 
 	self->out_fd = out_fd; 
 }
@@ -66,7 +76,7 @@ static int16_t _fd_serial_end(serial_dev_t self){
 	return 0; 
 }
 
-static struct serial_if _fd_serial_if = {
+static struct serial_device_ops _fd_serial_if = {
 	.put = _fd_serial_putc,
 	.get = _fd_serial_getc,
 	.putn = _fd_serial_putn,
@@ -75,11 +85,6 @@ static struct serial_if _fd_serial_if = {
 	.end = _fd_serial_end,
 	.waiting = _fd_serial_waiting
 }; 
-
-serial_dev_t fd_serial_get_interface(struct fd_serial *self){
-	self->api = &_fd_serial_if; 
-	return &self->api; 
-}
 
 static int getkey(void) {
 	int character;
@@ -124,21 +129,28 @@ static size_t _fd_stdin_getn(serial_dev_t dev, uint8_t *data, size_t sz){
 	return sz; 
 }
 
-serial_dev_t stdio_get_serial_interface(void){
+static int fd_serial_probe(void){
 	static struct fd_serial console; 
-	static struct serial_if _fd_stdio_if; 
+	static struct serial_device_ops _fd_stdio_if; 
 	// create bridge for native stdin/stdout
 	fd_serial_init(&console, STDIN_FILENO, STDOUT_FILENO); 
 	
 	// replace some methods in the interface
-	memcpy(&_fd_stdio_if, &_fd_serial_if, sizeof(struct serial_if)); 
+	memcpy(&_fd_stdio_if, &_fd_serial_if, sizeof(struct serial_device_ops)); 
 	_fd_stdio_if.get = _fd_stdin_getc; 
 	_fd_stdio_if.getn = _fd_stdin_getn; 
 	
 	console.api = &_fd_stdio_if; 
-	return &console.api; 
+	
+	//serial_add_interface(&console.api); 
+
+	return 0; 
 }
 
-static void __init linux_serial_init(void){
-	DEBUG("linux-fd-serial: init\n"); 
-}
+static struct serial_driver fd_serial = {
+	.name = "fd_serial", 
+	.probe = &fd_serial_probe
+}; 
+
+module_serial_driver(fd_serial); 
+

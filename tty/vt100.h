@@ -63,7 +63,7 @@ struct vt100 {
 	//void (*send_response)(char *str);
 	void (*ret_state)(struct vt100 *term, uint8_t ev, uint16_t arg);
 	
-	struct serial_if *serial; 
+	struct serial_device_ops *serial; 
 };
 
 //void vt100_init(void (*send_response)(char *str));

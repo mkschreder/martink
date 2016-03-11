@@ -1,39 +1,4 @@
 menu "Hardware"
-	config HAVE_ADC
-		bool
-	config HAVE_UART 
-		bool
-	config HAVE_UART0
-		bool
-	config HAVE_UART1
-		bool
-	config HAVE_SPI 
-		bool
-	config HAVE_SPI0
-		bool
-	config HAVE_SPI1 
-		bool
-	config HAVE_TWI
-		bool
-	config HAVE_TWI0
-		bool
-	config HAVE_TWI1
-		bool
-	config HAVE_TWI2
-		bool
-	config HAVE_TIMER0
-		bool
-	config HAVE_TIMER1
-		bool
-	config HAVE_TIMER2
-		bool
-	config HAVE_PWM0
-		bool
-	config HAVE_PWM1
-		bool
-	config HAVE_PWM2
-		bool
-		
 	choice 
 		prompt "Target Architechture"
 		
@@ -42,7 +7,10 @@ menu "Hardware"
 		
 		config ARM
 			bool "ARM"
-			
+		
+		config XTENSA
+			bool "Xtensa" 
+
 		config NATIVE
 			bool "Linux"
 			help 
@@ -53,6 +21,7 @@ menu "Hardware"
 	menu "Target Options"
 		source arch/avr/KConfig
 		source arch/arm/KConfig
+		source arch/xtensa/KConfig
 		source arch/linux/KConfig
 	endmenu
 

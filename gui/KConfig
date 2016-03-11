@@ -1,0 +1,4 @@
+config M2TTY
+	bool "M2 TTY support"
+config M2FB 
+	bool "M2 Framebuffer support"

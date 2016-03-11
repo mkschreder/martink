@@ -15,8 +15,10 @@ extern "C" {
 #define ATOMIC_BLOCK(type) if(1)
 
 #define NATIVE_USLEEP(us) usleep(us)
-#define DEBUG(...) serial_printf(stdio_get_serial_interface(), ##__VA_ARGS__)
-#define ERROR(...) serial_printf(stdio_get_serial_interface(), ##__VA_ARGS__)
+#define DEBUG(...) printf( __VA_ARGS__ )
+//serial_printf(stdio_get_serial_interface(), ##__VA_ARGS__)
+#define ERROR(...) fprintf(stderr, ##__VA_ARGS__)
+//serial_printf(stdio_get_serial_interface(), ##__VA_ARGS__)
 
 /*
 #define MINCOMMAND 800

@@ -82,6 +82,9 @@ static initcall_t __initcall_##fn __init_call = fn
 */
 
 #define __init __attribute__ ((constructor))
+#define __exit __attribute__ ((destructor))
+
+#define __unused __attribute__((unused))
 
 #define MODULE_AUTHOR(name)
 #define MODULE_NAME(name)

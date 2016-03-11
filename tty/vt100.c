@@ -806,7 +806,7 @@ static int16_t _vt100_serial_end(serial_dev_t self){
 }
 
 serial_dev_t vt100_to_serial_device(struct vt100 *self){
-	static struct serial_if _vt100_if = {
+	static struct serial_device_ops _vt100_if = {
 		.put = _vt100_serial_putc,
 		.get = _vt100_serial_getc,
 		.putn = _vt100_serial_putn,

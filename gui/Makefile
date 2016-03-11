@@ -1,2 +1,2 @@
-obj-y += gui/m2_tty.o
-obj-y += gui/m2_fb.o
+obj-$(CONFIG_M2TTY) += gui/m2_tty.o
+obj-$(CONFIG_M2FB) += gui/m2_fb.o

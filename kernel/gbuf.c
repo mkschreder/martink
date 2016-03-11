@@ -1,5 +1,7 @@
 #include <arch/soc.h>
-#include <memory.h>
+//#include <stdlib.h>
+//#include <memory.h>
+#include <string.h>
 
 #include "gbuf.h"
 

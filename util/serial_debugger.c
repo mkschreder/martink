@@ -21,12 +21,12 @@
 
 #include <arch/soc.h>
 
+#include <kernel/kernel.h>
 #include <kernel/util.h>
 #include "serial_debugger.h"
 
 #define DEVICE_CAST(from, to) struct serial_debugger *to = container_of(from, struct serial_debugger, _ex_serial);  
 
-static struct serial_if sdbg;
 
 uint16_t 	serial_debugger_getc(serial_dev_t self);
 uint16_t 	serial_debugger_putc(serial_dev_t self, uint8_t ch);
@@ -48,7 +48,7 @@ void serial_debugger_init(
 }
 
 serial_dev_t serial_debugger_get_serial_interface(struct serial_debugger *self){
-	sdbg = (struct serial_if){
+	static struct serial_device_ops sdbg = {
 		.get = serial_debugger_getc, 
 		.put = serial_debugger_putc, 
 		.getn = serial_debugger_getn, 
@@ -72,7 +72,7 @@ static void _do_flush(struct serial_debugger *dbg){
 		printf("%02x ", dbg->buffer[c]); 
 	}
 	for(int c = 0; c < dbg->buf_ptr; c++){
-		uint8_t i = dbg->buffer[c]; 
+		uint8_t __unused i = dbg->buffer[c]; 
 		printf("%c ", (i > 0x20 && i < 0x70)?i:'.'); 
 	}
 	printf("\n"); 

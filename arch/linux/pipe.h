@@ -20,7 +20,7 @@ struct linux_pipe {
 	uint8_t _buffer_data[1024]; 
 	struct cbuf buffer; 
 	uint8_t running; 
-	struct serial_if *api; 
+	struct serial_device_ops *api; 
 }; 
 
 void linux_pipe_init(struct linux_pipe *self); 

@@ -14,11 +14,29 @@
  */
 #pragma once
 
+#include <inttypes.h>
+#include <kernel/list.h>
+#include <kernel/driver.h>
 
-struct serial_if;
-typedef struct serial_if **serial_dev_t;
+struct serial_device_ops;
+typedef struct serial_device_ops **serial_dev_t;
 
-struct serial_if {
+struct serial_driver {
+	struct list_head list; 
+	struct device_driver driver; 
+	const char *name; 
+	int (*probe)(void); 
+}; 
+
+int serial_add_driver(struct serial_driver *driver); 
+int serial_remove_driver(struct serial_driver *driver); 
+
+extern struct list_head _serial_drivers; 
+#define serial_for_each_driver(sdrv) list_for_each_entry(sdrv, &_serial_drivers, list) 
+
+#define module_serial_driver(descriptor) module_driver(descriptor, serial_add_driver, serial_remove_driver)
+
+struct serial_device_ops {
 	/// getc reads one character from the interface
 	/// returns UART_NO_DATA if none available
 	uint16_t 			(*get)(serial_dev_t self); 

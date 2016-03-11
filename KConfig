@@ -10,6 +10,7 @@ endmenu
 
 menu "Device driver support"
 	source crypto/KConfig
+	source gui/KConfig
 	source disp/KConfig
 	source hid/KConfig
 	source io/KConfig

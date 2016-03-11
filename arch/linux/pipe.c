@@ -135,7 +135,7 @@ static size_t 	_linux_pipe_waiting(serial_dev_t dev){
 }
 
 serial_dev_t linux_pipe_to_serial_device(struct linux_pipe *self){
-	static struct serial_if api = {
+	static struct serial_device_ops api = {
 		.get = _linux_pipe_get, 
 		.put = _linux_pipe_put, 
 		.getn = _linux_pipe_getn, 

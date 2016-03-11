@@ -1,5 +1,5 @@
 #include <inttypes.h>
-#include <memory.h>
+#include <string.h>
 
 #include "sbuf.h"
 

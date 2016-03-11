@@ -71,12 +71,13 @@ extern "C" {
 #include "twi.h"
 #include "spi.h"
 #include "gpio.h"
-#include "pwm.h"
 
 #ifdef CONFIG_AVR
 #include "avr/mega.h"
 #elif CONFIG_ARM
 #include "arm/arm.h"
+#elif CONFIG_XTENSA
+#include "xtensa/xtensa.h"
 #elif CONFIG_NATIVE
 #include "linux/native.h"
 #else 

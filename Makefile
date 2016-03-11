@@ -22,30 +22,29 @@ CFLAGS += -Wall -fPIC -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototype
 CXXFLAGS += -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wcast-align -Wchar-subscripts -Wredundant-decls
-LDFLAGS := -Wl,--relax,--gc-sections
-EXTRALIBS := 
+LDFLAGS += -Wl,--relax,--gc-sections
 
-ifneq ($(BUILD),)
-include configs/$(BUILD).config
-else
-include .config
-endif
+-include .config
+include Makefile.build 
 
-BUILD_DIR := build/$(BUILD)
-CONFIG := configs/$(BUILD).config
-CONFIG_H := include/configs/$(BUILD).h
-ARCH := $(firstword $(subst -, ,$(BUILD)))
-CPU = $(word 2,$(subst -, ,$(BUILD)))
+define check-set 
+$(if $(value $1),,$(error $1 is not set correctly!))
+endef 
+
+$(call check-set,ARCH)
+$(call check-set,CPU)
+$(call check-set,BOARD)
+
+BUILD_DIR := build/$(ARCH)-$(CPU)-$(BOARD)
+CONFIG := .config
+CONFIG_H := include/configs/$(ARCH).h
+
+obj-y := $(patsubst %, $(BUILD_DIR)/%, $(obj-y))
+TARGET:=$(ARCH)-$(CPU)-$(BOARD)
 
 ktree := martink
 #$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-include Makefile.build 
-ifdef BUILD
-	include configs/$(BUILD).config
-else
-	include .config
-endif
 
 #$(eval $(call BuildDir,block))
 
@@ -54,7 +53,7 @@ BUILD_DEFINE := $(subst -,_,$(BUILD))
 COMMON_FLAGS += -I$(srctree) -I$(srctree)/include -DBUILD_$(BUILD_DEFINE) $(CPU_FLAGS) 
 
 # add includes to the make
-CFLAGS 		+= $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
+CFLAGS 		+= $(CFLAGS-y) $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
 LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS) $(LDFLAGS-y)
 OUTDIRS := build build/crypto/aes
@@ -88,14 +87,13 @@ export ktree srctree CONFIG_SHELL HOSTCC HOSTCFLAGS HOSTCXX HOSTCXXFLAGS
 export quiet Q KBUILD_VERBOSE
 
 all: config fixdirs fixdep check $(obj-y) default_target
-	@echo $$'\e[32;40mLinking target $(TARGET)\e[m'
+	@echo "\033[32;40m [LD] $(ARCH)-$(CPU)-$(BOARD)\033[m"
 	
 # Basic helpers built in scripts/
 PHONY += scripts_basic defconfig
 scripts_basic:
 	$(Q)$(MAKE) $(build)=scripts/basic
 
-obj-y := $(patsubst %, $(BUILD_DIR)/%, $(obj-y))
 
 # To avoid any implicit rule to kick in, define an empty command.
 scripts/basic/%: scripts_basic ;
@@ -129,7 +127,7 @@ endif
 
 default_target: 
 	$(Q)rm -f $(TARGET)
-	$(Q)$(CC) -o $(TARGET) $(LDFLAGS) $(obj-y) 
+	$(Q)$(CC) -o $(TARGET) $(obj-y) $(LDFLAGS) 
 	
 
 #$(patsubst %, $(BUILD_DIR)/%, $(obj-y))
@@ -155,7 +153,7 @@ $(BUILD_DIR)/%.o: %.cpp .config
 #scan-build -enable-checker alpha.core.BoolAssignment -enable-checker alpha.core.CastToStruct -enable-checker alpha.core.IdenticalExpr -enable-checker alpha.core.PointerArithm -enable-checker alpha.core.PointerSub -enable-checker alpha.core.SizeofPtr -enable-checker alpha.core.TestAfterDivZero -enable-checker alpha.security.ArrayBoundV2 -enable-checker alpha.security.ReturnPtrRange -enable-checker security.FloatLoopCounter -enable-checker security.insecureAPI.strcpy --use-cc=$(CC) $(CC) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/%.o: %.c .config 
-	@echo $$'\e[33;40m$(subst $(BUILD_DIR)/,,$@)\e[m'
+	@echo "\033[33;40m [CC] $(subst $(BUILD_DIR)/,,$@)\033[m"
 	$(Q)mkdir -p `dirname $@`
 	$(Q)$(CC) -c $(CFLAGS) $< -o $@
 	
@@ -191,4 +189,3 @@ install:
 # information in a variable se we can use it in if_changed and friends.
 .PHONY: $(PHONY) directories
 
-$(eval $(call add-target,target/linux))

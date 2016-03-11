@@ -1,10 +1,8 @@
 obj-y += arch/time.o
 obj-y += arch/uart.o
-obj-y += arch/gpio.o
 obj-y += arch/spi.o 
 obj-y += arch/twi.o
 obj-y += arch/soc.o
-obj-y += arch/pwm.o
 
 docs-y += arch/README.md
 
@@ -18,6 +16,10 @@ endif
 
 ifeq ($(CONFIG_ARM),y)
 	include $(srctree)/arch/arm/Makefile
+endif
+
+ifeq ($(CONFIG_XTENSA),y)
+	include $(srctree)/arch/xtensa/Makefile
 endif
 
 ifeq ($(CONFIG_AT91SAM3),y)

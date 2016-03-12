@@ -4,12 +4,16 @@ menu "Board support"
 	source boards/KConfig
 endmenu
 
+source kernel/KConfig
+
 menu "Application Configuration"
 	source apps/KConfig
 endmenu
 
 menu "Device driver support"
 	source crypto/KConfig
+	source bus/KConfig
+	source eeprom/KConfig
 	source gui/KConfig
 	source disp/KConfig
 	source hid/KConfig

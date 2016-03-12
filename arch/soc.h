@@ -72,13 +72,13 @@ extern "C" {
 #include "spi.h"
 #include "gpio.h"
 
-#ifdef CONFIG_AVR
+#ifdef CONFIG_ARCH_AVR
 #include "avr/mega.h"
-#elif CONFIG_ARM
+#elif CONFIG_ARCH_ARM
 #include "arm/arm.h"
-#elif CONFIG_XTENSA
+#elif CONFIG_ARCH_XTENSA
 #include "xtensa/xtensa.h"
-#elif CONFIG_NATIVE
+#elif CONFIG_ARCH_LINUX
 #include "linux/native.h"
 #else 
 #error "You have not chosen an architecture!"

@@ -1,9 +1,1 @@
-choice 
-	prompt "AVR Model"
-	depends on AVR 
-	
-	config AVR_MEGA
-		bool "ATMegaXXX"
-endchoice
-
 source arch/avr/mega/KConfig

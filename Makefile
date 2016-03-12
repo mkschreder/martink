@@ -5,6 +5,10 @@ ifneq ($(V),)
 	Q:=
 endif
 
+#ARCH:=linux
+#CPU:=generic
+#BOARD:=native 
+
 include scripts/include/target.mk
 
 VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty
@@ -45,6 +49,7 @@ TARGET:=$(ARCH)-$(CPU)-$(BOARD)
 ktree := martink
 #$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
+#include $(obj-y:.o=.d)
 
 #$(eval $(call BuildDir,block))
 
@@ -56,7 +61,6 @@ COMMON_FLAGS += -I$(srctree) -I$(srctree)/include -DBUILD_$(BUILD_DEFINE) $(CPU_
 CFLAGS 		+= $(CFLAGS-y) $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
 LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS) $(LDFLAGS-y)
-OUTDIRS := build build/crypto/aes
 #TARGET := kernel-$(BUILD)
 
 # SHELL used by kbuild
@@ -86,7 +90,7 @@ MAKEFLAGS += -rR
 export ktree srctree CONFIG_SHELL HOSTCC HOSTCFLAGS HOSTCXX HOSTCXXFLAGS 
 export quiet Q KBUILD_VERBOSE
 
-all: config fixdirs fixdep check $(obj-y) default_target
+all: config fixdirs check default_target
 	@echo "\033[32;40m [LD] $(ARCH)-$(CPU)-$(BOARD)\033[m"
 	
 # Basic helpers built in scripts/
@@ -109,8 +113,8 @@ config:
 	$(Q)if [ ! -e .config ]; then cp $(CONFIG) .config; fi
 	@echo "toolchain: $(CC)"
 	
-fixdep: 
-	$(Q)find build -type f -iname '*.d' -exec sh -c 'scripts/basic/fixdep "$${1%.*}.d" "$${1%.*}.o" "" > $${1%.*}.cmd' convert {} \;
+#fixdep: 
+#	$(Q)find build -type f -iname '*.d' -exec sh -c 'scripts/basic/fixdep "$${1%.*}.d" "$${1%.*}.o" "" > $${1%.*}.cmd' convert {} \;
 
 #echo "#include \"include/configs/$(BUILD).h\"">config.h
 
@@ -125,11 +129,12 @@ else
 		echo "Please specify BUILD you want to save to!"
 endif
 
-default_target: 
-	$(Q)rm -f $(TARGET)
+$(TARGET): $(obj-y)
 	$(Q)$(CC) -o $(TARGET) $(obj-y) $(LDFLAGS) 
-	
-
+ 
+default_target: $(TARGET)
+	@echo ""
+		
 #$(patsubst %, $(BUILD_DIR)/%, $(obj-y))
 
 buildall: 
@@ -161,6 +166,13 @@ $(BUILD_DIR)/%.o: %.S .config
 	$(Q)mkdir -p `dirname $@`
 	$(Q)$(AS) -c  $< -o $@
 
+$(BUILD_DIR)/%.d: %.c
+	@mkdir -p `dirname $@`
+	@set -e; rm -f $@; \
+	 $(CC) -M $(CFLAGS) $< > $@.$$$$; \
+	 sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	 rm -f $@.$$$$
+
 check: GCC-exists
 	
 GCC-exists: ; @which $(CC) > /dev/null
@@ -176,7 +188,7 @@ clean:
 		-o -name 'mconf' -o -name 'conf' -o -name 'lxdialog' \) \
 		-type f -print | xargs rm -f	
 
--include $(obj-y:%.o=$(BUILD_DIR)/%.d)
+-include $(obj-y:%.o=%.d)
 
 PHONY += FORCE
 FORCE:

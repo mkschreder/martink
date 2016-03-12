@@ -1,7 +1,12 @@
 #pragma once
 
+#include <inttypes.h>
+
+#include <kernel/list.h>
 // ioctl
 #define I2C_SEND_STOP 1000
+
+#define I2C_NAME_SIZE 16
 
 typedef enum {
 	I2CDEV_BUSY = (1 << 0), 
@@ -15,6 +20,25 @@ typedef enum {
 	//I2CDEV_RX_NOT_EMPTY = (1 << 6)
 } i2cdev_status_t; 
 
+struct i2c_device_id {
+	const char *name; 
+	uint16_t magic; 
+}; 
+
+struct i2c_client {
+	unsigned short flags;
+	unsigned short addr;
+	char name[I2C_NAME_SIZE];
+	//struct i2c_adapter * adapter;
+	//struct device dev;
+	int irq;
+	struct list_head detected;
+	//#if IS_ENABLED(CONFIG_I2C_SLAVE)
+	//i2c_slave_cb_t slave_cb;
+	//#endif
+};  
+
+#define I2C_SMBUS_BLOCK_MAX 32
 // combines i2c device address and block address into a block device address. 
 #define I2C_REG_ADDRESS(dev_addr, reg_addr) ((((uint32_t)reg_addr << 8) | (uint8_t)dev_addr) << 8)
 

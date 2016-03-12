@@ -10,3 +10,4 @@ obj-y += kernel/sbuf.o
 docs-y += kernel/README.md
 
 include kernel/dev/Makefile
+include kernel/freertos/Makefile

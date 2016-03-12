@@ -1,5 +1,4 @@
 #include <arch/soc.h>
-#include "i2c_device.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -8,6 +7,8 @@
 #include <linux/i2c.h>
 #include <errno.h>
 #include <memory.h>
+
+#include "i2c_device.h"
 
 void linux_i2c_device_init(struct linux_i2c_device *self, uint8_t adapter_id, uint8_t address){
 	memset(self, 0, sizeof(struct linux_i2c_device)); 

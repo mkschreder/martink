@@ -116,7 +116,7 @@ process_start(struct process *p, process_data_t data)
   PRINTF("process: starting '%s'\n", PROCESS_NAME_STRING(p));
 
   /* Post a synchronous initialization event to the process. */
-  process_post_synch(p, PROCESS_EVENT_INIT, data);
+  process_post_sync(p, PROCESS_EVENT_INIT, data);
 }
 /*---------------------------------------------------------------------------*/
 static void
@@ -358,7 +358,7 @@ process_post(struct process *p, process_event_t ev, process_data_t data)
 }
 /*---------------------------------------------------------------------------*/
 void
-process_post_synch(struct process *p, process_event_t ev, process_data_t data)
+process_post_sync(struct process *p, process_event_t ev, process_data_t data)
 {
   struct process *caller = process_current;
 

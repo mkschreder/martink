@@ -1,11 +1,14 @@
 config APP_print_hello
-	depends on NATIVE
+	depends on ARCH_LINUX
 	bool "Print Hello APP"
 
 config APP_imx23_ssd1306
-	depends on NATIVE
+	depends on ARCH_LINUX
 	bool "ssd1306 example on imx233 board"
 
 config APP_test 
-	depends on NATIVE
+	depends on ARCH_LINUX
 	bool "simple test app"
+
+config APP_RTOS_TEST
+	bool "simple rtos test"

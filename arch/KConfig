@@ -2,16 +2,16 @@ menu "Hardware"
 	choice 
 		prompt "Target Architechture"
 		
-		config AVR
+		config ARCH_AVR
 			bool "Atmel AVR"
 		
-		config ARM
+		config ARCH_ARM
 			bool "ARM"
 		
-		config XTENSA
+		config ARCH_XTENSA
 			bool "Xtensa" 
 
-		config NATIVE
+		config ARCH_LINUX
 			bool "Linux"
 			help 
 				Compile for linux

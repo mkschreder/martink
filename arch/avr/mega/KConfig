@@ -1,138 +1,42 @@
 choice 
 	prompt "AVR Model" 
-	depends on AVR_MEGA
-	
-	default ATMEGA328P
+	depends on CPU_AVR_MEGA
 
-	config AVRMEGA
-		bool
-		
-	config ATMEGA328P
-		depends on AVR
-		select HAVE_ADC
-		select HAVE_UART
-		select HAVE_UART0
-		select HAVE_I2C
-		select HAVE_TWI
-		select HAVE_TWI0
-		select HAVE_SPI
-		select HAVE_SPI0
-		select HAVE_TIMER0
-		select HAVE_TIMER1
-		select HAVE_TIMER2
+	config CPU_ATMEGA328P
+		depends on CPU_AVR
 		bool "AVR ATMega328P"
 
-	config ATMEGA103
-		depends on AVR
-		select HAVE_ADC
-		select HAVE_UART
-		select HAVE_UART0
-		select HAVE_I2C
-		select HAVE_TWI
-		select HAVE_TWI0
-		select HAVE_SPI
-		select HAVE_SPI0
-		select HAVE_TIMER0
-		select HAVE_TIMER1
-		select HAVE_TIMER2
+	config CPU_ATMEGA103
+		depends on CPU_AVR
 		bool "AVR ATMega103"
 		
-	config ATMEGA88
-		depends on AVR
-		select HAVE_ADC
-		select HAVE_UART
-		select HAVE_UART0
-		select HAVE_I2C
-		select HAVE_TWI
-		select HAVE_TWI0
-		select HAVE_SPI
-		select HAVE_SPI0
-		select HAVE_TIMER0
-		select HAVE_TIMER1
-		select HAVE_TIMER2
+	config CPU_ATMEGA88
+		depends on CPU_AVR
 		bool "AVR ATMega88"
 
-	config ATMEGA128
-		depends on AVR
-		select HAVE_ADC
-		select HAVE_UART
-		select HAVE_UART0
-		select HAVE_I2C
-		select HAVE_TWI
-		select HAVE_TWI0
-		select HAVE_SPI
-		select HAVE_SPI0
-		select HAVE_TIMER0
-		select HAVE_TIMER1
-		select HAVE_TIMER2
+	config CPU_ATMEGA128
+		depends on CPU_AVR
 		bool "AVR ATMega128"
 
-	config ATMEGA168
-		depends on AVR
-		select HAVE_ADC
-		select HAVE_UART
-		select HAVE_UART0
-		select HAVE_I2C
-		select HAVE_TWI
-		select HAVE_TWI0
-		select HAVE_SPI
-		select HAVE_SPI0
-		select HAVE_TIMER0
-		select HAVE_TIMER1
-		select HAVE_TIMER2
+	config CPU_ATMEGA168
+		depends on CPU_AVR
 		bool "AVR ATMega168"
 
-	config ATMEGA2560
-		depends on AVR
-		select HAVE_ADC
-		select HAVE_UART
-		select HAVE_UART0
-		select HAVE_UART1
-		select HAVE_UART2
-		select HAVE_I2C
-		select HAVE_TWI
-		select HAVE_TWI0
-		select HAVE_SPI
-		select HAVE_SPI0
-		select HAVE_TIMER0
-		select HAVE_TIMER1
-		select HAVE_TIMER2
+	config CPU_ATMEGA2560
+		depends on CPU_AVR
 		bool "AVR ATMega2560"
 
-	config ATMEGA644
-		depends on AVR
-		select HAVE_ADC
-		select HAVE_UART
-		select HAVE_UART0
-		select HAVE_UART1
-		select HAVE_I2C
-		select HAVE_TWI
-		select HAVE_TWI0
-		select HAVE_SPI
-		select HAVE_SPI0
-		select HAVE_TIMER0
-		select HAVE_TIMER1
-		select HAVE_TIMER2
+	config CPU_ATMEGA644
+		depends on CPU_AVR
 		bool "AVR ATMega644"
 
-	config ATMEGA48
-		depends on AVR
-		select HAVE_ADC
-		select HAVE_UART
-		select HAVE_UART0
-		select HAVE_I2C
-		select HAVE_TWI
-		select HAVE_TWI0
-		select HAVE_SPI
-		select HAVE_SPI0
-		select HAVE_TIMER0
-		select HAVE_TIMER1
-		select HAVE_TIMER2
+	config CPU_ATMEGA48
+		depends on CPU_AVR
 		bool "AVR ATMega48"
 endchoice 
 
 menu "Configure ATMega328P driver"
-	depends on ATMEGA328P
+	depends on CPU_ATMEGA328P
 	comment "ATmega328P general options"
 	
 	config TIMESTAMP_COUNTER

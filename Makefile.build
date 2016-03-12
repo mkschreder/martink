@@ -1,7 +1,9 @@
-include kernel/Makefile
-include boards/Makefile
 include arch/Makefile
+include bus/Makefile
 include block/Makefile
+include boards/Makefile
+include eeprom/Makefile
+include kernel/Makefile
 include fs/Makefile
 include disp/Makefile
 include gui/Makefile

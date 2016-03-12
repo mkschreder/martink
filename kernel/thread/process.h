@@ -327,8 +327,9 @@ struct process {
 };
 
 #define PROCESS_SLEEP(time_us) do { \
-	PROCESS_CURRENT()->sleep_until = timestamp_from_now_us(time_us); PROCESS_WAIT_UNTIL(timestamp_expired(PROCESS_CURRENT()->sleep_until)); \
-	process_post(PROCESS_CURRENT(), PROCESS_EVENT_TIMER, 0); \
+	PROCESS_CURRENT()->sleep_until = timestamp_from_now_us(time_us); \
+  	process_post(PROCESS_CURRENT(), PROCESS_EVENT_TIMER, NULL);	\
+	PROCESS_WAIT_UNTIL(timestamp_expired(PROCESS_CURRENT()->sleep_until)); \
 } while(0)
 
 /**
@@ -380,7 +381,7 @@ int process_post(struct process *p, process_event_t ev, process_data_t data);
  * \param data A pointer to additional data that is posted together
  * with the event.
  */
-void process_post_synch(struct process *p,
+void process_post_sync(struct process *p,
 			     process_event_t ev, process_data_t data);
 
 /**

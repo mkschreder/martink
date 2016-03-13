@@ -5,5 +5,6 @@ obj-$(CONFIG_FREERTOS) += \
 	kernel/freertos/queue.o \
 	kernel/freertos/tasks.o \
 	kernel/freertos/timers.o \
-	kernel/freertos/heap_3.o \
-	kernel/freertos/port.o 
+	kernel/freertos/memory/heap_1.o 
+
+include kernel/freertos/portable/Makefile

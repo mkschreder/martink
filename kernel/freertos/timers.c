@@ -251,6 +251,7 @@ static void prvProcessTimerOrBlockTask( const TickType_t xNextExpireTime, BaseTy
 
 /*-----------------------------------------------------------*/
 
+#include <avr/io.h>
 BaseType_t xTimerCreateTimerTask( void )
 {
 BaseType_t xReturn = pdFAIL;

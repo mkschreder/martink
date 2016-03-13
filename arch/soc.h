@@ -30,6 +30,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+typedef long ssize_t; 
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,11 +61,9 @@ extern "C" {
 //#include "static_cbuf.h"
 
 #include <inttypes.h>
-#include <unistd.h>
 
 #include <kernel/list.h>
 #include <kernel/thread.h>
-#include <kernel/io_device.h>
 
 #include "time.h"
 #include "uart.h"

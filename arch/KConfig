@@ -18,12 +18,8 @@ menu "Hardware"
 			
 	endchoice 
 		
-	menu "Target Options"
-		source arch/avr/KConfig
-		source arch/arm/KConfig
-		source arch/xtensa/KConfig
-		source arch/linux/KConfig
-	endmenu
-
-		
+	source arch/avr/KConfig
+	source arch/arm/KConfig
+	source arch/xtensa/KConfig
+	source arch/linux/KConfig
 endmenu

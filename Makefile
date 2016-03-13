@@ -21,7 +21,7 @@ CFLAGS += -Wall -fPIC -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototype
 -Wshadow -Wcast-align -Wchar-subscripts -Winline \
 -Wnested-externs -Wredundant-decls -Wmissing-field-initializers -Wextra \
 -Wformat=2 -Wno-format-nonliteral -Wpointer-arith -Wno-missing-braces \
--Wno-unused-parameter -Wno-inline
+-Wno-unused-parameter -Wno-unused-variable -Wno-inline
 #-Wpedantic
 CXXFLAGS += -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
@@ -60,7 +60,7 @@ COMMON_FLAGS += -I$(srctree) -I$(srctree)/include -DBUILD_$(BUILD_DEFINE) $(CPU_
 # add includes to the make
 CFLAGS 		+= $(CFLAGS-y) $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
-LDFLAGS 	:= $(COMMON_FLAGS) $(LDFLAGS) $(LDFLAGS-y)
+LDFLAGS 	+= $(LDFLAGS-y)
 #TARGET := kernel-$(BUILD)
 
 # SHELL used by kbuild
@@ -130,7 +130,9 @@ else
 endif
 
 $(TARGET): $(obj-y)
-	$(Q)$(CC) -o $(TARGET) $(obj-y) $(LDFLAGS) 
+	$(Q)$(CC) -o $@.elf $(LDFLAGS) $(obj-y) -Wl,-Map,$@.map
+	@echo "Finalizing image.."
+	$(call target/image/finalize,$(TARGET).elf,$(TARGET))
  
 default_target: $(TARGET)
 	@echo ""
@@ -169,9 +171,9 @@ $(BUILD_DIR)/%.o: %.S .config
 $(BUILD_DIR)/%.d: %.c
 	@mkdir -p `dirname $@`
 	@set -e; rm -f $@; \
-	 $(CC) -M $(CFLAGS) $< > $@.$$$$; \
-	 sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-	 rm -f $@.$$$$
+	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
 
 check: GCC-exists
 	

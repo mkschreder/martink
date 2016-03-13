@@ -31,6 +31,8 @@ extern "C" {
 #include <stddef.h>
 //#include <sys/types.h>
 
+typedef long ssize_t; 
+
 #include <string.h>
 
 #include <arch/soc.h>
@@ -58,7 +60,6 @@ extern "C" void __cxa_pure_virtual(void);
 #else 
 	typedef int __guard; 
 #endif
-
 
 struct libk_device {
 	struct async_process process; 

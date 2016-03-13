@@ -1,37 +1,29 @@
 choice 
 	prompt "AVR Model" 
-	depends on CPU_AVR_MEGA
+	depends on ARCH_AVR
 
 	config CPU_ATMEGA328P
-		depends on CPU_AVR
 		bool "AVR ATMega328P"
 
 	config CPU_ATMEGA103
-		depends on CPU_AVR
 		bool "AVR ATMega103"
 		
 	config CPU_ATMEGA88
-		depends on CPU_AVR
 		bool "AVR ATMega88"
 
 	config CPU_ATMEGA128
-		depends on CPU_AVR
 		bool "AVR ATMega128"
 
 	config CPU_ATMEGA168
-		depends on CPU_AVR
 		bool "AVR ATMega168"
 
 	config CPU_ATMEGA2560
-		depends on CPU_AVR
 		bool "AVR ATMega2560"
 
 	config CPU_ATMEGA644
-		depends on CPU_AVR
 		bool "AVR ATMega644"
 
 	config CPU_ATMEGA48
-		depends on CPU_AVR
 		bool "AVR ATMega48"
 endchoice 
 

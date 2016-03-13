@@ -82,10 +82,12 @@ void libk_loop() {
 		timestamp_t now = timestamp_now(); 
 		//DEBUG("loop: %lu\n", timestamp_ticks_to_us(now - start)); 
 		if(now >= ASYNC_GLOBAL_QUEUE.sleep_until) {
-			if(0) DEBUG("no sleep! %d\n", (int)(ASYNC_GLOBAL_QUEUE.sleep_until - now)); 
+			#if 0
+			DEBUG("no sleep! %d\n", (int)(ASYNC_GLOBAL_QUEUE.sleep_until - now)); 
+			#endif
 		} else {
 			timestamp_t us = timestamp_ticks_to_us(ASYNC_GLOBAL_QUEUE.sleep_until - now);
-			NATIVE_USLEEP(us); 
+			udelay(us); 
 			//DEBUG("pc: %d s: %lu u: %ld, T: %ld \n", pcount, us, ASYNC_GLOBAL_QUEUE.sleep_until, timestamp_now()); 
 		}
 	}

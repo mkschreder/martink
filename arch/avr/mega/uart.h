@@ -156,12 +156,12 @@ static inline uint8_t uart0_getc_direct(void) {
 	UDR0))); 
 }
 
-#if defined(CONFIG_BUFFERED_UART)
-	extern size_t 		uart0_waiting(void); 
-	extern void 			uart0_flush(void);
-	extern uint16_t 	uart0_getc(void);
-	extern uint16_t 	uart0_putc(uint8_t data);
-#else
+extern size_t 		uart0_waiting(void); 
+extern void 			uart0_flush(void);
+extern uint16_t 	uart0_getc(void);
+extern uint16_t 	uart0_putc(uint8_t data);
+
+#if 0
 	#define uart0_waiting() ((UCSR0A & _BV(RXC0))?1:0)
 	#define uart0_flush() (0)
 	#define uart0_getc() ((uart0_waiting())?UDR0:UART_NO_DATA)

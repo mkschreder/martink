@@ -6,6 +6,7 @@ extern "C" {
 
 #define sei() {}
 
+#include <unistd.h>
 #include <sys/types.h>
 #include <kernel/dev/serial.h>
 #include "fd_serial.h"

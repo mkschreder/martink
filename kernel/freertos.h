@@ -7,6 +7,7 @@
 #include "freertos/croutine.h"
 #include "freertos/timers.h"
 #include "freertos/semphr.h"
+#include "freertos/port.h"
 #else
 #error "You need to enable FreeRTOS support in the config before including this header!"
 #endif

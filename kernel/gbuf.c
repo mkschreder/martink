@@ -13,11 +13,11 @@ void gbuf_init(struct gbuf *self, uint8_t *memory, uint32_t memsize, uint16_t wi
 			size = width * height >> 3; 
 			break;
 		default: 
-			DEBUG("gbuf: unknown pixel format!\n"); 
+			//DEBUG("gbuf: unknown pixel format!\n"); 
 			break; 
 	}
 	if(size != memsize) {
-		DEBUG("gbuf: wrong memsize (%d), should be %d\n", memsize, size); 
+		//DEBUG("gbuf: wrong memsize (%d), should be %d\n", memsize, size); 
 		return; 
 	}
 	self->width = width; 

@@ -1529,7 +1529,7 @@ StackType_t *pxTopOfStack;
 
 #endif /* ( ( INCLUDE_xTaskResumeFromISR == 1 ) && ( INCLUDE_vTaskSuspend == 1 ) ) */
 /*-----------------------------------------------------------*/
-
+#include <avr/io.h>
 void vTaskStartScheduler( void )
 {
 BaseType_t xReturn;
@@ -1558,7 +1558,6 @@ uint16_t usIdleTaskStackSize = tskIDLE_STACK_SIZE;
 		}
 	}
 	#endif /* configUSE_TIMERS */
-
 	if( xReturn == pdPASS )
 	{
 		/* Interrupts are turned off here, to ensure a tick does not occur

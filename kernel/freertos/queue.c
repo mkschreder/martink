@@ -331,7 +331,6 @@ Queue_t * const pxQueue = ( Queue_t * ) xQueue;
 	return pdPASS;
 }
 /*-----------------------------------------------------------*/
-
 static Queue_t *prvAllocateQueueMemory( const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, uint8_t **ppucQueueStorage, StaticQueue_t *pxStaticQueue )
 {
 Queue_t *pxNewQueue;
@@ -433,6 +432,7 @@ size_t xQueueSizeInBytes;
 		}
 	}
 	#endif
+	
 
 	return pxNewQueue;
 }

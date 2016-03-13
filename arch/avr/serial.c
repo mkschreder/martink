@@ -1,5 +1,6 @@
 #include <arch/soc.h>
 
+#if 0
 static void _serial_fd_putc(int c, FILE *stream){
 	serial_dev_t dev = fdev_get_udata(stream); 
 	serial_putc(dev, c); 
@@ -23,3 +24,4 @@ uint16_t serial_printf(serial_dev_t port, const char *fmt, ...){
 	va_end(vl);
 	return n; 
 }
+#endif

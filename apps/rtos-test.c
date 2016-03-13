@@ -40,28 +40,27 @@ meaning the send task should always find the queue empty. */
  * this file.
  */
 static void prvQueueReceiveTask( void *pvParameters );
-static void prvQueueSendTask( void *pvParameters );
-
+static void prvQueueSendTask(void *pvParameters); 
 /*
  * The callback function assigned to the example software timer as described at
  * the top of this file.
  */
-static void vExampleTimerCallback( TimerHandle_t xTimer );
+//static void vExampleTimerCallback( TimerHandle_t xTimer );
 
 /*
  * The event semaphore task as described at the top of this file.
  */
-static void prvEventSemaphoreTask( void *pvParameters );
+//static void prvEventSemaphoreTask( void *pvParameters );
 
 /*-----------------------------------------------------------*/
 
 /* The queue used by the queue send and queue receive tasks. */
-static QueueHandle_t xQueue = NULL;
+//static QueueHandle_t xQueue = NULL;
 
 /* The semaphore (in this case binary) that is used by the FreeRTOS tick hook
  * function and the event semaphore task.
  */
-static SemaphoreHandle_t xEventSemaphore = NULL;
+//static SemaphoreHandle_t xEventSemaphore = NULL;
 
 /* The counters used by the various examples.  The usage is described in the
  * comments at the top of this file.
@@ -74,20 +73,32 @@ static volatile uint32_t ulCountOfReceivedSemaphores = 0;
 
 TaskHandle_t rx_task, tx_task; 
 
-int main(void){
-	TimerHandle_t xExampleSoftwareTimer = NULL;
+static void init_blink(void){
+	DDRB |= (1 << 5); 
+	for(int c = 0; c < 5; c++){
+		PORTB |= (1 << 5); 
+		_delay_ms(50); 
+		PORTB &= ~(1 << 5); 
+		_delay_ms(50); 
+	}
+}
 
+int main(void){
+	_delay_ms(1000); 	
+	init_blink(); 
+TimerHandle_t xExampleSoftwareTimer = NULL;
+#if 0
     /* Create the queue used by the queue send and queue receive tasks. */
     xQueue = xQueueCreate(     /* The number of items the queue can hold. */
                             mainQUEUE_LENGTH,
                             /* The size of each item the queue holds. */
                             sizeof( uint32_t ) );
 
-
+#endif
     /* Create the semaphore used by the FreeRTOS tick hook function and the
     event semaphore task.  NOTE: A semaphore is used for example purposes,
     using a direct to task notification will be faster! */
-    xEventSemaphore = xSemaphoreCreateBinary();
+    //xEventSemaphore = xSemaphoreCreateBinary();
 
     /* Create the queue receive task as described in the comments at the top
     of this file. */
@@ -109,7 +120,6 @@ int main(void){
                     this simple demo, so set to NULL. */
                     &rx_task);
 
-
     /* Create the queue send task in exactly the same way.  Again, this is
     described in the comments at the top of the file. */
     xTaskCreate(     prvQueueSendTask,
@@ -118,18 +128,7 @@ int main(void){
                     NULL,
                     mainQUEUE_SEND_TASK_PRIORITY,
                     &tx_task );
-
-
-    /* Create the task that is synchronised with an interrupt using the
-    xEventSemaphore semaphore. */
-    xTaskCreate(     prvEventSemaphoreTask,
-                    "Sem",
-                    configMINIMAL_STACK_SIZE,
-                    NULL,
-                    mainEVENT_SEMAPHORE_TASK_PRIORITY,
-                    NULL );
-
-
+#if 0
     /* Create the software timer as described in the comments at the top of
     this file. */
     xExampleSoftwareTimer = xTimerCreate(     /* A text name, purely to help
@@ -153,8 +152,9 @@ int main(void){
     command queue cannot possibly be full here (this is the first timer to
     be created, and it is not yet running). */
     xTimerStart( xExampleSoftwareTimer, 0 );
-
+#endif
     /* Start the tasks and timer running. */
+
     vTaskStartScheduler();
 
     /* If all is well, the scheduler will now be running, and the following line
@@ -165,38 +165,41 @@ int main(void){
     for( ;; );
 }
 /*-----------------------------------------------------------*/
-
+#if 0
 static void some_driver_op(void){
 	//printf("driver op called from %p\n", xTaskGetCurrentTaskHandle()); 
 	printf("delay..\n"); 
 	vTaskDelay(pdMS_TO_TICKS(500)); 
 	//printf("driver yield called from %p\n", xTaskGetCurrentTaskHandle()); 
 }
-
+#endif
 #include <stdio.h>
+#if 0
 static void vExampleTimerCallback( TimerHandle_t xTimer )
 {
     /* The timer has expired.  Count the number of times this happens.  The
     tIMEr that calls this function is an auto re-load timer, so it will
     execute periodically. */
-	printf("timer tick\n"); 
+	//printf("timer tick\n"); 
     ulCountOfTimerCallbackExecutions++;
 }
+#endif
 /*-----------------------------------------------------------*/
-
-static void prvQueueSendTask( void *pvParameters )
-{
-	//TickType_t xNextWakeTime;
-	const uint32_t ulValueToSend = 100UL;
-
+static void prvQueueSendTask( void *pvParameters ){
     /* Initialise xNextWakeTime - this only needs to be done once. */
-    TickType_t xNextWakeTime = xTaskGetTickCount();
-
     for( ;; )
     {
-		printf("tx task\n"); 
-		some_driver_op(); 
-		vTaskResume(rx_task); 
+		PORTB |= (1 << 5); 
+		vTaskDelay(pdMS_TO_TICKS(500)); 
+		PORTB &= ~(1 << 5); 
+		_delay_ms(500); 
+		vTaskDelay(pdMS_TO_TICKS(500)); 
+
+
+		//vTaskSuspend(NULL); 
+			//printf("tx task\n"); 
+		//some_driver_op(); 
+		//vTaskResume(rx_task); 
         /* Place this task in the blocked state until it is time to run again.
         The block time is specified in ticks, the constant used converts ticks
         to ms.  The task will not consume any CPU time while it is in the
@@ -212,14 +215,18 @@ static void prvQueueSendTask( void *pvParameters )
 }
 /*-----------------------------------------------------------*/
 
-static void prvQueueReceiveTask( void *pvParameters )
-{
-uint32_t ulReceivedValue;
-
+static void prvQueueReceiveTask( void *pvParameters ){
     for( ;; )
     {
-		vTaskSuspend(NULL); 
-		printf("rx task\n"); 
+		for(int c = 0; c < 5; c++){
+			PORTB |= (1 << 5); 
+			vTaskDelay(pdMS_TO_TICKS(50)); 
+			PORTB &= ~(1 << 5); 
+			vTaskDelay(pdMS_TO_TICKS(50)); 
+		}
+		vTaskDelay(pdMS_TO_TICKS(2000)); 
+		//vTaskSuspend(NULL); 
+		//printf("rx task\n"); 
         /* Wait until something arrives in the queue - this task will block
         indefinitely provided INCLUDE_vTaskSuspend is set to 1 in
         FreeRTOSConfig.h. */
@@ -234,7 +241,7 @@ uint32_t ulReceivedValue;
     }
 }
 /*-----------------------------------------------------------*/
-
+#if 0
 static void prvEventSemaphoreTask( void *pvParameters )
 {
     for( ;; )
@@ -250,13 +257,14 @@ static void prvEventSemaphoreTask( void *pvParameters )
         ulCountOfReceivedSemaphores++;
     }
 }
+#endif
 /*-----------------------------------------------------------*/
 
 void vApplicationTickHook( void ); 
 void vApplicationTickHook( void )
 {
-BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-static uint32_t ulCount = 0;
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	static uint32_t ulCount = 0;
 
     /* The RTOS tick hook function is enabled by setting configUSE_TICK_HOOK to
     1 in FreeRTOSConfig.h.
@@ -303,7 +311,12 @@ void vApplicationMallocFailedHook( void )
     internally by FreeRTOS API functions that create tasks, queues, software
     timers, and semaphores.  The size of the FreeRTOS heap is set by the
     configTOTAL_HEAP_SIZE configuration constant in FreeRTOSConfig.h. */
-    for( ;; );
+    for( ;; ){
+		PORTB |= (1<<5); 
+		_delay_ms(100); 
+		PORTB &= ~(1<<5); 
+		_delay_ms(100); 
+	}
 }
 /*-----------------------------------------------------------*/
 

@@ -1,36 +1,26 @@
 #include <arch/soc.h>
 #include "eeprom.h"
 
-#pragma message("avr eeprom driver not built!")
-/*
-//#ifdef CONFIG_HAVE_EEPROM
-static size_t	_ee_write(memory_dev_t self, size_t address, const uint8_t *data, size_t max_sz){
+#if 0
+struct avr_eeprom {
+	size_t address; 
+	struct device dev; 
+}; 
+
+static size_t	_ee_write(struct device *dev, const uint8_t *data, size_t max_sz){
 	(void)(self); 
 	eeprom_update_block(data, (uint8_t*)address, max_sz); 
 	return max_sz; 
 }
 
-static size_t	_ee_read(memory_dev_t self, size_t address, uint8_t *data, size_t max_sz){
+static size_t	_ee_read(struct device *dev, uint8_t *data, size_t max_sz){
 	(void)(self); 
 	eeprom_read_block(data, (uint8_t*)address, max_sz); 
 	return max_sz; 
 }
 	
-static void 		_ee_readInfo(uint16_t *block_size, size_t *device_size){
+static void _ee_readInfo(uint16_t *block_size, size_t *device_size){
 	*block_size = 1; 
 	*device_size = 0; 
 }
-
-block_dev_t eeprom_get_memory_interface(void){
-	static struct memory_if _i; 
-	static struct memory_if *i = 0; 
-	if(!i){
-		_i.read = _ee_read; 
-		_i.write = _ee_write; 
-		_i.readInfo = _ee_readInfo; 
-		i = &_i; 
-	}
-	return &i; 
-}
-*/
-//#endif
+#endif

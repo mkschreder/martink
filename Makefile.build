@@ -1,3 +1,4 @@
+include apps/Makefile
 include arch/Makefile
 include bus/Makefile
 include block/Makefile
@@ -17,5 +18,4 @@ include tty/Makefile
 include util/Makefile
 include crypto/Makefile
 include lib/Makefile
-include apps/Makefile
 include examples/Makefile

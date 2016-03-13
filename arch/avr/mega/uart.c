@@ -21,6 +21,8 @@
 
 #include <arch/soc.h>
 #include <kernel/cbuf.h>
+#include "uart.h"
+
 //#if defined(CONFIG_BUFFERED_UART)
 
 static struct cbuf uart0_tx_buf, uart0_rx_buf; 

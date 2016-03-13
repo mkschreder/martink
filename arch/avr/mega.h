@@ -21,9 +21,6 @@
 
 #pragma once 
 
-typedef int16_t ssize_t; 
-typedef uint16_t size_t; 
-
 #include "errno.h"
 
 #include <avr/io.h>

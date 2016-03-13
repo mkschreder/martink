@@ -71,7 +71,6 @@ Revision Info:  $Id: twi_master.c 117 2010-06-24 20:21:28Z pieterconradie $
 struct avr_i2c_device {
 	uint8_t dev_id; 
 	
-	struct io_device io; 
 	struct cbuf buffer; 
 	
 	uint8_t _buffer[AVR_I2C_BUFFER_SIZE]; 
@@ -189,12 +188,13 @@ ISR(TWI_vect)
 
 /* _____FUNCTIONS_____________________________________________________ */
 
-
+#if 0
 static uint8_t _avr_i2c_busy(uint8_t dev_id){
 	if(dev_id >= 1) return 1; 
 	if(((TWCR & _BV(TWIE)) != 0) || (TWCR & _BV(TWSTO))) return 1; 
 	return 0; 
 }
+#endif
 
 int8_t avr_i2c_init(uint8_t dev_id) {
 	// only one twi interface for now
@@ -202,11 +202,7 @@ int8_t avr_i2c_init(uint8_t dev_id) {
 	
 	struct avr_i2c_device *self = &_device; 
 	
-	io_init(&self->io); 
 	cbuf_init(&self->buffer, self->_buffer, AVR_I2C_BUFFER_SIZE); 
-	
-	ASYNC_MUTEX_INIT(self->lock, 1); 
-	ASYNC_MUTEX_INIT(self->buffer_lock, 1); 
 	
 	// Initialise variable
 	self->rx_left = 0; 
@@ -234,46 +230,7 @@ void avr_i2c_deinit(uint8_t dev_id){
 	// TODO
 }
 
-
-static ASYNC(io_result_t, io_device_t, vopen){
-	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
-	
-	ASYNC_BEGIN(); 
-	
-	ASYNC_MUTEX_LOCK(dev->lock); 
-	
-	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
-	
-	I2C_DEBUG("i2c: open\n"); 
-	ASYNC_END(0); 
-}
-
-static ASYNC(io_result_t, io_device_t, vclose){
-	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
-	
-	ASYNC_BEGIN(); 
-	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
-	
-	ASYNC_MUTEX_UNLOCK(dev->lock); 
-	
-	I2C_DEBUG("I2C: closed\n"); 
-	ASYNC_END(0); 
-}
-
-static ASYNC(io_result_t, io_device_t, vseek, ssize_t pos, int whence){
-	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
-	
-	ASYNC_BEGIN();
-	
-	AWAIT(!_avr_i2c_busy(dev->dev_id)); 
-	(void)whence; 
-	
-	I2C_DEBUG("i2c: seek %d\n", pos); 
-	dev->addr = pos; 
-	
-	ASYNC_END(pos); 
-}
-
+#if 0
 static ASYNC(io_result_t, io_device_t, vwrite, const uint8_t *data, ssize_t size){
 	struct avr_i2c_device *dev = container_of(__self, struct avr_i2c_device, io); 
 	
@@ -409,6 +366,8 @@ io_dev_t avr_i2c_get_interface(uint8_t dev_id){
 	}
 	return &_device.io; 
 }
+
+#endif
 
 /*
 void twi_wait(uint8_t dev_id, uint8_t addr){

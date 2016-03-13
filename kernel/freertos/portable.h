@@ -91,7 +91,7 @@ did not result in a portmacro.h header file being included - and it should be
 included here.  In this case the path to the correct portmacro.h header file
 must be set in the compiler's include path. */
 #ifndef portENTER_CRITICAL
-	#include "portmacro.h"
+	#include "port.h"
 #endif
 
 #if portBYTE_ALIGNMENT == 32

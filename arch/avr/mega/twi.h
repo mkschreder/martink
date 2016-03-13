@@ -44,11 +44,12 @@ extern "C" {
 
 #include <kernel/dev/i2c.h>
 #include <kernel/dev/block.h>
-#include <kernel/io_device.h>
 
 int8_t avr_i2c_init(uint8_t dev_id); 
 void avr_i2c_deinit(uint8_t dev_id); 
+#if 0
 io_dev_t avr_i2c_get_interface(uint8_t dev_id); 
+#endif 
 
 #ifdef __cplusplus
 }

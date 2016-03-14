@@ -1,0 +1,8 @@
+menu "GPIO Support"
+	config GPIO
+		bool "Enable GPIO support"
+
+	config ATMEGA_GPIO
+		depends on GPIO && CPU_ATMEGA328P
+		bool "ATMega328p GPIO Support"
+endmenu

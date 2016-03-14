@@ -1,5 +1,6 @@
 include apps/Makefile
 include arch/Makefile
+include gpio/Makefile
 include bus/Makefile
 include adc/Makefile
 include block/Makefile
@@ -18,6 +19,7 @@ include sensors/Makefile
 include tty/Makefile
 include util/Makefile
 include serial/Makefile
+include spi/Makefile
 include crypto/Makefile
 include lib/Makefile
 include examples/Makefile

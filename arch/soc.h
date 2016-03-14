@@ -67,8 +67,6 @@ extern "C" {
 
 #include "time.h"
 #include "twi.h"
-#include "spi.h"
-#include "gpio.h"
 
 #ifdef CONFIG_ARCH_AVR
 #include "avr/mega.h"

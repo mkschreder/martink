@@ -1,6 +1,8 @@
 /**
 	Fast macro based SPI interface for AVR Mega 328P
 
+	Copyright (c) 2016 Martin Schröder <mkschreder.uk@gmail.com>
+
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
@@ -15,17 +17,18 @@
 	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
 	Author: Martin K. Schröder
-	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
 */
 
-#ifndef _SPI_H_
-#define _SPI_H_
-
 #include <avr/io.h>
-#include <arch/gpio.h>
+#include <arch/soc.h>
 
-#include "gpio.h"
+#include "spi.h"
+
+#include <gpio/gpio.h>
+#include <gpio/atmega_gpio.h>
+
+#include <kernel/mt.h>
 
 #include "config.h"
 
@@ -58,8 +61,8 @@ static inline void spi0_set_clock(uint16_t spi_rate) {
 #define spi0_slave() 						(SPCR &= ~_BV(MSTR))
 #define spi0_order_lsb_first() 	(SPCR |= _BV(DORD))
 #define spi0_order_msb_first() 	(SPCR &= ~_BV(DORD))
-#define spi0_interrupt_enable() (SPCR |= _BV(SPIE))
-#define spi0_interrupt_disable() (SPCR &= ~_BV(SPIE))
+#define spi0_interrupt_on() (SPCR |= _BV(SPIE))
+#define spi0_interrupt_off() (SPCR &= ~_BV(SPIE))
 #define spi0_enable() 					(SPCR |= _BV(SPE))
 #define spi0_disable() 					(SPCR &= ~_BV(SPE))
 static inline void spi0_config_gpio(void)			{
@@ -74,30 +77,65 @@ static inline void spi0_config_gpio(void)			{
 static inline void spi0_init_default(void) {
 	spi0_set_mode(SPI_MODE0);
 	spi0_config_gpio();
-	spi0_interrupt_disable(); 
+	spi0_interrupt_off(); 
 	spi0_order_msb_first();
 	spi0_master();
 	spi0_set_clock(SPI_CLOCK_DIV16);
 	spi0_enable();
 }
 
-static inline void spi0_putc(uint8_t ch) {
-	spi0_wait_for_transmit_complete(); 
-	SPDR = ch; 
+struct atmega_spi {
+	struct spi_adapter device; 
+	mutex_t lock; 
+	mutex_t ready; 
+	char *data; 
+	uint16_t size; 
+	uint16_t count; 
+}; 
+
+static struct atmega_spi spi0; 
+
+ISR(SPI_STC_vect){
+	if(spi0.data && spi0.count <= spi0.size)	{
+		// store received byte in the previous position
+		if(spi0.count > 0) spi0.data[spi0.count - 1] = SPDR; 
+		// send current position, but only if not done yet
+		if(spi0.count != spi0.size) SPDR = spi0.data[spi0.count]; 
+		// signal completed transaction
+		if(spi0.count == spi0.size) {
+			spi0.data = 0; 
+			spi0.size = 0; 
+			mutex_unlock_from_isr(&spi0.ready); 
+			return; 
+		}
+		spi0.count++; 
+	} 
 }
 
-static inline uint8_t spi0_getc(void){
-	spi0_wait_for_transmit_complete(); 
-	return SPDR; 
+static int atmega_transfer(struct spi_adapter *dev, char *data, size_t size){
+	mutex_lock(&spi0.lock); 
+	spi0_interrupt_off(); 
+	spi0.data = data; 
+	spi0.size = size; 
+	spi0.count = 0; 	
+	spi0_interrupt_on(); 
+	mutex_lock(&spi0.ready); 
+	mutex_unlock(&spi0.lock); 
+	return spi0.count; 
 }
 
-static inline uint8_t spi0_transfer(uint8_t ch) {
-	SPDR = ch; 
-	spi0_wait_for_transmit_complete();
-	return SPDR; 
+static struct spi_adapter_ops atmega_spi_ops = {
+	.transfer = atmega_transfer
+}; 
+
+static void __init atmega_spi_init(void){
+	memset(&spi0, 0, sizeof(spi0)); 
+	mutex_init(&spi0.lock); 
+	mutex_init(&spi0.ready); 
+	mutex_lock(&spi0.ready); 
+	spi0.device.ops = &atmega_spi_ops; 
+	spi0_init_default(); 
+	spi0_interrupt_on(); 
+
+	spi_register_adapter(&spi0.device); 
 }
-
-int16_t spi_init_device(uint8_t dev);
-uint16_t spi_transfer(uint8_t dev, uint8_t byte);
-
-#endif

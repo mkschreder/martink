@@ -15,7 +15,7 @@ VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty
 
 # define defaults that can be added to in submakefiles
 INCLUDES := -I. -Iinclude -Iinclude/c++ -Ikernel
-COMMON_FLAGS := -MD -ffunction-sections -fdata-sections -Wall -Werror -Os
+COMMON_FLAGS := -ffunction-sections -fdata-sections -Wall -Werror -Os
 CFLAGS += -Wall -fPIC -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wshadow -Wcast-align -Wchar-subscripts -Winline \

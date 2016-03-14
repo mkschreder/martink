@@ -1,5 +1,7 @@
 /**
-	This file is part of martink project.
+	Fast macro based SPI interface for AVR Mega 328P
+
+	Copyright (c) 2016 Martin Schröder <mkschreder.uk@gmail.com>
 
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,18 +17,24 @@
 	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
 	Author: Martin K. Schröder
-	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
 */
-#pragma once
 
-#include "config.h"
+#include <kernel/list.h>
+#include "spi.h"
 
-#include <kernel/dev/serial.h>
+static LIST_HEAD(_spi_adapters); 
 
-uint8_t spi_putc(uint8_t dev, uint8_t ch);
+void spi_register_adapter(struct spi_adapter *dev){
+	list_add_tail(&dev->list, &_spi_adapters); 
+}
 
-void spi_init(void); 
-//serial_dev_t spi_get_serial_interface(uint8_t dev);
-
-#define spi0_init() PFCALL(CONFIG_SPI0_NAME, init)
+struct spi_adapter *spi_get_adapter(int number){
+	// TODO: slow method
+	struct spi_adapter *dev = NULL, *item; 
+	list_for_each_entry(item, &_spi_adapters, list){
+		if(!number) { dev = item; break; }
+		number--; 
+	}
+	return dev; 
+}

@@ -463,5 +463,21 @@ uint8_t ucHighByte, ucLowByte;
 	}
 #endif
 
+#include <kernel/time.h>
 
-	
+long long tsc_ticks_to_us(long long ticks){
+	uint16_t div = OCR1A; 
+	if(!div) return 1; // Should not happen normally  
+	return (ticks / pdMS_TO_TICKS(1)) / div * 1000; 
+}
+
+long long tsc_us_to_ticks(long long us){
+	long long ticks_per_ms = pdMS_TO_TICKS(1) * OCR1A; 
+	// TODO: debug this
+	return (ticks_per_ms * us) / 1000; 
+}
+
+long long tsc_read(void){
+	uint16_t ticks = OCR1A; 
+	return (long long)xTaskGetTickCount() * ticks + TCNT1; 
+}

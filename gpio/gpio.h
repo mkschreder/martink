@@ -1,5 +1,7 @@
-/*
-	This file is part of martink project.
+/**
+	Fast macro based SPI interface for AVR Mega 328P
+
+	Copyright (c) 2016 Martin Schröder <mkschreder.uk@gmail.com>
 
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,16 +17,10 @@
 	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
 	Author: Martin K. Schröder
-	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
-
-	\file
-
-	Architecture independent GPIO driver
 */
-#pragma once
 
-#include <kernel/dev/parallel.h>
+#pragma once
 
 // GPIO pin functions
 enum {
@@ -69,4 +65,4 @@ enum {
 
 /// returns a standard parallel interface for the hardware gpio pins
 /// as a \ref struct parallel_interface
-pio_dev_t gpio_get_parallel_interface(void); 
+//pio_dev_t gpio_get_parallel_interface(void); 

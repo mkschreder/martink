@@ -29,3 +29,6 @@ typedef StaticSemaphore_t sem_t;
 #define sem_take_timeout(sem, timeout) xSemawhoreTake((sem), (timeout))
 #define sem_take(sem) xSemaphoreTake((sem), portMAX_DELAY)
 #define sem_count(sem) uxSemaphoreGetCount((sem))
+
+/* Threads and delays */
+#define msleep(ms) vTaskDelay(pdMS_TO_TICKS((ms))); 

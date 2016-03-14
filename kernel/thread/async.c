@@ -1,4 +1,6 @@
 #include <arch/soc.h>
+#include <kernel/time.h>
+
 #include "async.h"
 
 #define ASYNC_DEBUG(...) {}

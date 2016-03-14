@@ -276,11 +276,6 @@ static void atmega_uart_probe(void){
 	register_serial_device(&self->serial); 
 }
 
-static struct device_driver mega_uart = {
-	.name = "atmega_uart", 
-	.probe = atmega_uart_probe
-}; 
-
 static void __init _register_driver(void){
 	atmega_uart_probe(); 
 }

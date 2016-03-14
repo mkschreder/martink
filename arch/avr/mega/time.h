@@ -269,8 +269,8 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 	)
 #endif
 
-	timestamp_t tsc_read(void);
-
+	//timestamp_t tsc_read(void);
+/*
 	static inline timestamp_t tsc_us_to_ticks(timestamp_t us) {
 		return ((timestamp_t)(TSC_TICKS_PER_US * ((timestamp_t)us)));
 	}
@@ -278,7 +278,7 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 	static inline timestamp_t tsc_ticks_to_us(timestamp_t ticks){
 		return (((timestamp_t)ticks) / TSC_TICKS_PER_US);
 	}
-
+*/
 	#define tsc_reset(void) (\
 		_tsc_ovf = 0,\
 	)

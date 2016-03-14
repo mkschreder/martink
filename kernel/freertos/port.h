@@ -1,5 +1,7 @@
 /* Copyright (c) 2016 Martin K. Schröder */
 
+#pragma once
+
 #include "../../config.h"
 
 #ifdef CONFIG_ARCH_LINUX

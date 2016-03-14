@@ -49,6 +49,7 @@
  
 */
 #include "kernel.h"
+#include "time.h"
 
 #include <setjmp.h>
 /*
@@ -79,7 +80,7 @@ void libk_loop() {
 		//timestamp_t start = timestamp_now(); 
 		//uint8_t pcount = 
 		ASYNC_RUN_PARALLEL(&ASYNC_GLOBAL_QUEUE); 
-		timestamp_t now = timestamp_now(); 
+		timestamp_t now = tsc_read(); 
 		//DEBUG("loop: %lu\n", timestamp_ticks_to_us(now - start)); 
 		if(now >= ASYNC_GLOBAL_QUEUE.sleep_until) {
 			#if 0

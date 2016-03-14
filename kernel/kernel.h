@@ -39,11 +39,10 @@ typedef long ssize_t;
 #include "util.h"
 #include "list.h"
 
+#include "mt.h"
 #include "dev/block.h"
 #include "dev/framebuffer.h"
 #include "dev/i2c.h"
-#include "dev/parallel.h"
-#include "dev/serial.h"
 #include "dev/tty.h"
 
 #ifdef __cplusplus

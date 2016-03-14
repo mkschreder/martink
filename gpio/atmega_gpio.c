@@ -20,6 +20,11 @@
 */
 
 #include <arch/soc.h>
+#include <kernel/mt.h>
+#include <kernel/time.h>
+
+#include "gpio.h"
+#include "atmega_gpio.h"
 #include <string.h>
 
 static uint8_t _dummyPR = 0; 
@@ -53,45 +58,46 @@ int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t
 	return 0; 
 }
 
-static void PCINT_vect(void){
-	timestamp_t time = timestamp_now(); 
-	static uint8_t prev[3] = {0xff, 0xff, 0xff}; 
-	uint8_t current[3] = {PINB, PINC, PIND}; 
-	uint8_t changed[3] = {
-		prev[0] ^ current[0], 
-		prev[1] ^ current[1], 
-		prev[2] ^ current[2]
-	}; 
-	prev[0] = current[0]; prev[1] = current[1]; prev[2] = current[2]; 
-	uint8_t pin_id = 0; 
-	for(int reg = 0; reg < 3; reg++){
-		for(int bit = 0; bit < 8; bit++){
-			if(	_pin_states[pin_id] != 0 && (changed[reg] & _BV(bit)) ){
-				volatile struct pin_state *st = _pin_states[pin_id]; 
-				if(current[reg] & _BV(bit)){ // if pin went high
-					st->t_up = time; 
-					st->status |= GP_READ_EDGE_P; 
-					// we are done if measuring neg pulse and got neg edge
-					if(	(st->status & GP_READ_EDGE_N && st->flags & GP_READ_PULSE_N) || 
-						(st->flags & GP_READ_EDGE_P && !(st->flags & GP_READ_PULSE_P))){
-						_pin_states[pin_id] = 0; 
-					}
-				} else { // if bit went low
-					st->t_down = time; 
-					st->status |= GP_READ_EDGE_N; 
-					// check if we are done
-					if(	(st->status & GP_READ_EDGE_P && st->flags & GP_READ_PULSE_P) ||
-						(st->flags & GP_READ_EDGE_N && !(st->flags & GP_READ_PULSE_N))){
-						_pin_states[pin_id] = 0; 
+#if defined(CONFIG_GPIO_PIN_STATES)
+	static void PCINT_vect(void){
+		timestamp_t time = timestamp_now(); 
+		static uint8_t prev[3] = {0xff, 0xff, 0xff}; 
+		uint8_t current[3] = {PINB, PINC, PIND}; 
+		uint8_t changed[3] = {
+			prev[0] ^ current[0], 
+			prev[1] ^ current[1], 
+			prev[2] ^ current[2]
+		}; 
+		prev[0] = current[0]; prev[1] = current[1]; prev[2] = current[2]; 
+		uint8_t pin_id = 0; 
+		for(int reg = 0; reg < 3; reg++){
+			for(int bit = 0; bit < 8; bit++){
+				if(	_pin_states[pin_id] != 0 && (changed[reg] & _BV(bit)) ){
+					volatile struct pin_state *st = _pin_states[pin_id]; 
+					if(current[reg] & _BV(bit)){ // if pin went high
+						st->t_up = time; 
+						st->status |= GP_READ_EDGE_P; 
+						// we are done if measuring neg pulse and got neg edge
+						if(	(st->status & GP_READ_EDGE_N && st->flags & GP_READ_PULSE_N) || 
+							(st->flags & GP_READ_EDGE_P && !(st->flags & GP_READ_PULSE_P))){
+							_pin_states[pin_id] = 0; 
+						}
+					} else { // if bit went low
+						st->t_down = time; 
+						st->status |= GP_READ_EDGE_N; 
+						// check if we are done
+						if(	(st->status & GP_READ_EDGE_P && st->flags & GP_READ_PULSE_P) ||
+							(st->flags & GP_READ_EDGE_N && !(st->flags & GP_READ_PULSE_N))){
+							_pin_states[pin_id] = 0; 
+						}
 					}
 				}
+				pin_id++; 
 			}
-			pin_id++; 
 		}
 	}
-}
 
-#if defined(CONFIG_GPIO_PIN_STATES)
+
 	// PIN state recording for gpio pins
 	/*volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0] = {{0}}; 
 

@@ -2,6 +2,8 @@
 */
 #pragma once
 
+#include "types.h"
+
 struct list_head {
 	struct list_head /*@dependent@*/ *prev; 
 	struct list_head /*@dependent@*/ *next;

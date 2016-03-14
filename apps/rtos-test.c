@@ -2,6 +2,8 @@
 #include <arch/soc.h>
 
 #include <kernel/mt.h>
+#include <kernel/time.h>
+
 #include <serial/serial.h>
 
 /* TODO Add any manufacture supplied header files can be included
@@ -187,6 +189,7 @@ static void vExampleTimerCallback( TimerHandle_t xTimer )
 #endif
 #include <stdlib.h>
 #include <adc/adc.h>
+
 /*-----------------------------------------------------------*/
 static void prvQueueSendTask( void *pvParameters ){
 	for( ;; ){
@@ -207,11 +210,9 @@ static void prvQueueSendTask( void *pvParameters ){
 
 static void prvQueueReceiveTask( void *pvParameters ){
 	for( ;; ){
-		char ch[2] = {0}; 
-		printk("enter number for rx: "); 	
-		serial_read(_default_system_console, ch, 1); 	
-		printk("rx got %d\r\n", atoi(ch)); 	
-
+		printk("rx ticks: %lu\r\n", (uint32_t)(tsc_ticks_to_us(timestamp_now()) / 1000)); 
+		printk("ticks_to_us(10): %lu\r\n", (uint32_t)tsc_ticks_to_us(tsc_us_to_ticks(10))); 
+		printk("us_to_ticks(10): %lu\r\n", (uint32_t)tsc_us_to_ticks(10)); 
 		for(int c = 0; c < 5; c++){
 			PORTB |= (1 << 5); 
 			vTaskDelay(pdMS_TO_TICKS(50)); 

@@ -1,5 +1,7 @@
 /**
-	This file is part of martink project.
+	Fast macro based SPI interface for AVR Mega 328P
+
+	Copyright (c) 2016 Martin Schröder <mkschreder.uk@gmail.com>
 
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,47 +17,21 @@
 	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
 	Author: Martin K. Schröder
-	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
 */
 
-#pragma once 
+#pragma once
 
-#include "errno.h"
+struct spi_adapter; 
+struct spi_adapter_ops {
+	int (*transfer)(struct spi_adapter *dev, char *data, size_t size); 
+}; 
 
-#include <avr/io.h>
-#include <avr/pgmspace.h>
-#include <avr/interrupt.h>
+struct spi_adapter {
+	struct list_head list; 
+	struct spi_adapter_ops *ops; 	
+}; 
 
-#include <util/crc16.h>
-#include <util/delay.h>
-#include <util/atomic.h>
+void spi_register_adapter(struct spi_adapter *dev); 
+struct spi_adapter *spi_get_adapter(int number); 
 
-//typedef char PROGMEM prog_char; 
-
-#include "config.h"
-
-#ifdef CONFIG_HAVE_ADC
-#include "mega/adc.h"
-#endif
-
-#ifdef CONFIG_HAVE_TWI
-#include "mega/twi.h"
-#include "mega/twi_slave.h"
-#include "mega/twi_slave.h"
-#endif
-
-#ifdef CONFIG_HAVE_SPI
-#include "mega/spi.h"
-#endif
-
-#ifdef CONFIG_HAVE_UART
-#include "mega/uart.h"
-#endif
-
-#include "mega/stack.h"
-#include "mega/time.h"
-#include "mega/pwm.h"
-#include "mega/eeprom.h"
-
-#include "eeprom.h"

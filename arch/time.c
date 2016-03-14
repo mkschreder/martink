@@ -23,6 +23,7 @@
 
 #include <arch/soc.h>
 
+#if 0
 void timestamp_delay_us(timestamp_t usec) {
 	volatile timestamp_t t = timestamp_from_now_us(usec); 
 	//printf("waiting.. %d %d\n", (int)t, (int)timestamp_now()); 
@@ -55,3 +56,4 @@ void initproc time_init(void){
 #endif
 	sei(); 
 }
+#endif

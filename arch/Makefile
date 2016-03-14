@@ -1,5 +1,4 @@
 obj-y += arch/time.o
-obj-y += arch/spi.o 
 obj-y += arch/twi.o
 obj-y += arch/soc.o
 

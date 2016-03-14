@@ -43,14 +43,6 @@ static struct atmega_adc adc0;
 ISR(ADC_vect){
 	adc0.value = ADC; 
 	mutex_unlock_from_isr(&adc0.ready); 
-	/*if(!_adc_data) return; 
-	*_adc_data = ADC; 
-	_adc_data = 0; */
-	/*_adc_values[adc0_get_channel() & 0x07] = adc;
-	if(_adc_mode == ADC_MODE_AUTOMATIC){
-		adc0_set_channel((adc0_get_channel() + 1) & 0x07); 
-		adc0_start_conversion(); 
-	}*/
 }
 
 static uint16_t atmega_adc_read(struct adc_device *dev, uint8_t chan){

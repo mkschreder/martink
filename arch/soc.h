@@ -66,7 +66,6 @@ extern "C" {
 #include <kernel/thread.h>
 
 #include "time.h"
-#include "uart.h"
 #include "twi.h"
 #include "spi.h"
 #include "gpio.h"
@@ -102,7 +101,7 @@ extern "C" {
 /// architecture specific implementation of serial_printf
 /// the implementation needs to be implemented separately because of 
 /// differences in libc. Look in arch/syscalls.c
-uint16_t serial_printf(serial_dev_t port, const char *fmt, ...);
+//uint16_t serial_printf(serial_dev_t port, const char *fmt, ...);
 
 
 #ifdef __cplusplus

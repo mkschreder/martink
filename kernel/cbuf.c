@@ -3,7 +3,7 @@
 
 #define _cbuf_hmt(name) ((int16_t)(name)->head - (int16_t)(name)->tail)
 
-void cbuf_init(struct cbuf *self, uint8_t *buffer, uint16_t size){
+void cbuf_init(struct cbuf *self, char *buffer, uint16_t size){
 	self->head = self->tail = 0; 
 	unsigned bit = 0; 
 	for(unsigned c = 0; c < sizeof(size) * 8; c++){
@@ -84,7 +84,7 @@ uint8_t cbuf_put(struct cbuf *self, uint8_t data){
 	return 0; 
 }
 
-uint16_t cbuf_getn(struct cbuf *self, uint8_t *data, uint16_t size){
+uint16_t cbuf_getn(struct cbuf *self, char *data, uint16_t size){
 	uint16_t s; 
 	for(s = 0; s < size; ++s){
 		uint16_t ch = cbuf_get(self); 
@@ -94,7 +94,7 @@ uint16_t cbuf_getn(struct cbuf *self, uint8_t *data, uint16_t size){
 	return s; 
 }
 
-uint16_t cbuf_putn(struct cbuf *self, const uint8_t *data, uint16_t size){
+uint16_t cbuf_putn(struct cbuf *self, const char *data, uint16_t size){
 	uint16_t s = 0; 
 	for(s = 0; s < size; ++s){
 		if(!cbuf_put(self, *data)) break;  

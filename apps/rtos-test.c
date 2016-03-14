@@ -1,7 +1,8 @@
 /* Kernel includes. */
 #include <arch/soc.h>
 
-#include <kernel/freertos.h>
+#include <kernel/mt.h>
+#include <serial/serial.h>
 
 /* TODO Add any manufacture supplied header files can be included
 here. */
@@ -108,7 +109,7 @@ TimerHandle_t xExampleSoftwareTimer = NULL;
                     "Rx",
                     /* The size (in words) of the stack that should be created
                     for the task. */
-                    configMINIMAL_STACK_SIZE,
+                    300,
                     /* A parameter that can be passed into the task.  Not used
                     in this simple demo. */
                     NULL,
@@ -124,7 +125,7 @@ TimerHandle_t xExampleSoftwareTimer = NULL;
     described in the comments at the top of the file. */
     xTaskCreate(     prvQueueSendTask,
                     "Tx",
-                    configMINIMAL_STACK_SIZE,
+                    300,
                     NULL,
                     mainQUEUE_SEND_TASK_PRIORITY,
                     &tx_task );
@@ -184,40 +185,33 @@ static void vExampleTimerCallback( TimerHandle_t xTimer )
     ulCountOfTimerCallbackExecutions++;
 }
 #endif
+#include <stdlib.h>
+#include <adc/adc.h>
 /*-----------------------------------------------------------*/
 static void prvQueueSendTask( void *pvParameters ){
-    /* Initialise xNextWakeTime - this only needs to be done once. */
-    for( ;; )
-    {
+	for( ;; ){
+		char ch[2] = {0}; 
+		printk("enter number for tx: "); 	
+		serial_read(_default_system_console, ch, 1); 	
+		printk("tx got %d\r\n", atoi(ch)); 	
+		uint16_t adc = adc_read_channel(adc_get_device(0), 0); 
+		printk("adc value: %d\r\n", adc); 
 		PORTB |= (1 << 5); 
 		vTaskDelay(pdMS_TO_TICKS(500)); 
 		PORTB &= ~(1 << 5); 
 		_delay_ms(500); 
 		vTaskDelay(pdMS_TO_TICKS(500)); 
-
-
-		//vTaskSuspend(NULL); 
-			//printf("tx task\n"); 
-		//some_driver_op(); 
-		//vTaskResume(rx_task); 
-        /* Place this task in the blocked state until it is time to run again.
-        The block time is specified in ticks, the constant used converts ticks
-        to ms.  The task will not consume any CPU time while it is in the
-        Blocked state. */
-        //vTaskDelayUntil( &xNextWakeTime, mainQUEUE_SEND_PERIOD_MS );
-
-        /* Send to the queue - causing the queue receive task to unblock and
-        increment its counter.  0 is used as the block time so the sending
-        operation will not block - it shouldn't need to block as the queue
-        should always be empty at this point in the code. */
-        //xQueueSend( xQueue, &ulValueToSend, 0 );
-    }
+	}
 }
 /*-----------------------------------------------------------*/
 
 static void prvQueueReceiveTask( void *pvParameters ){
-    for( ;; )
-    {
+	for( ;; ){
+		char ch[2] = {0}; 
+		printk("enter number for rx: "); 	
+		serial_read(_default_system_console, ch, 1); 	
+		printk("rx got %d\r\n", atoi(ch)); 	
+
 		for(int c = 0; c < 5; c++){
 			PORTB |= (1 << 5); 
 			vTaskDelay(pdMS_TO_TICKS(50)); 
@@ -225,39 +219,8 @@ static void prvQueueReceiveTask( void *pvParameters ){
 			vTaskDelay(pdMS_TO_TICKS(50)); 
 		}
 		vTaskDelay(pdMS_TO_TICKS(2000)); 
-		//vTaskSuspend(NULL); 
-		//printf("rx task\n"); 
-        /* Wait until something arrives in the queue - this task will block
-        indefinitely provided INCLUDE_vTaskSuspend is set to 1 in
-        FreeRTOSConfig.h. */
-        //xQueueReceive( xQueue, &ulReceivedValue, portMAX_DELAY );
-
-        /*  To get here something must have been received from the queue, but
-        is it the expected value?  If it is, increment the counter. */
-        /*if( ulReceivedValue == 100UL )
-        {
-            ulCountOfItemsReceivedOnQueue++;
-        }*/
-    }
+	}
 }
-/*-----------------------------------------------------------*/
-#if 0
-static void prvEventSemaphoreTask( void *pvParameters )
-{
-    for( ;; )
-    {
-		printf("sem task\n"); 
-        /* Block until the semaphore is 'given'.  NOTE:
-        A semaphore is used for example purposes.  In a real application it might
-        be preferable to use a direct to task notification, which will be faster
-        and use less RAM. */
-        xSemaphoreTake( xEventSemaphore, portMAX_DELAY );
-
-        /* Count the number of times the semaphore is received. */
-        ulCountOfReceivedSemaphores++;
-    }
-}
-#endif
 /*-----------------------------------------------------------*/
 
 void vApplicationTickHook( void ); 
@@ -330,7 +293,13 @@ void vApplicationStackOverflowHook( TaskHandle_t xTask, signed char *pcTaskName 
     function is called if a stack overflow is detected.  pxCurrentTCB can be
     inspected in the debugger if the task name passed into this function is
     corrupt. */
-    for( ;; );
+    for( ;; ){
+		PORTB |= (1<<5); 
+		_delay_ms(100); 
+		PORTB &= ~(1<<5); 
+		_delay_ms(100); 
+	}
+
 }
 /*-----------------------------------------------------------*/
 
@@ -338,9 +307,29 @@ void vApplicationIdleHook( void );
 void vApplicationIdleHook( void ){
 	static int idle_count = 0; 
 	if(idle_count % 100000000 == 0) {
-	//	printf("idle count %d\n", idle_count); 
+		//printk("idle %d\r\n", idle_count); 
+	//	kprintf("idle count %d\n", idle_count); 
 	}
 	idle_count++; 
+}
+
+void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,
+                                    StackType_t **ppxIdleTaskStackBuffer,
+                                    uint16_t *pusIdleTaskStackSize ); 
+void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,
+                                    StackType_t **ppxIdleTaskStackBuffer,
+                                    uint16_t *pusIdleTaskStackSize )
+{
+    /* Setting this parameter to NULL will result in the Idle task's TCB being
+    allocated dynamically. */
+    *ppxIdleTaskTCBBuffer = NULL;
+
+    /* Setting this parameter to NULL will result in the Idle task's stack being
+    allocated dynamically. */
+    *ppxIdleTaskStackBuffer = NULL;
+
+    /* The size of the stack to allocate - in words, NOT in bytes! */
+    *pusIdleTaskStackSize = configMINIMAL_STACK_SIZE;
 }
 /*-----------------------------------------------------------*/
 

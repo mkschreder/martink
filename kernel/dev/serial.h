@@ -18,6 +18,7 @@
 #include <kernel/list.h>
 #include <kernel/driver.h>
 
+#if 0
 struct serial_device_ops;
 typedef struct serial_device_ops **serial_dev_t;
 
@@ -118,3 +119,4 @@ struct serial_device_ops {
 #define SERIAL_BUFFER_FULL  		0x0200             
 /// returned by getc if no data is available
 #define SERIAL_NO_DATA          0x0100
+#endif

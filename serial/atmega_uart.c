@@ -1,6 +1,8 @@
 /**
 	Fast macro based uart implementation
 
+	Copyright (c) 2016 Martin Schröder <mkschreder.uk@gmail.com>
+
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
@@ -15,22 +17,20 @@
 	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
 	Author: Martin K. Schröder
-	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
 */
 
-#ifndef UART_H
-#define UART_H
+#include <arch/soc.h>
+#include <kernel/cbuf.h>
+#include <kernel/mt.h>
+#include <kernel/module.h>
+#include <string.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "serial.h"
 
 #if (__GNUC__ * 100 + __GNUC_MINOR__) < 304
 #error "This library requires AVR-GCC 3.4 or later, update to newer AVR-GCC compiler !"
 #endif
-
-#include <kernel/dev/serial.h>
 
 #define UART0_STATUS   UCSR0A
 #define UART0_CONTROL  UCSR0B
@@ -148,6 +148,7 @@ static inline void uart0_putc_direct(uint8_t ch){
 	UDR0 = ch;
 }
 
+/*
 static inline uint8_t uart0_getc_direct(void) {
 	uart0_wait_for_receive_complete(); 
 	return ((uart0_frame_error())?SERIAL_FRAME_ERROR:
@@ -155,27 +156,131 @@ static inline uint8_t uart0_getc_direct(void) {
 	((uart0_parity_error())?SERIAL_PARITY_ERROR:
 	UDR0))); 
 }
+*/
 
-extern size_t 		uart0_waiting(void); 
-extern void 			uart0_flush(void);
-extern uint16_t 	uart0_getc(void);
-extern uint16_t 	uart0_putc(uint8_t data);
+struct atmega_uart {
+	struct serial_device serial; 
+	struct cbuf rx_buf, tx_buf; 
+	char rx_buffer[16]; 
+	const char *tx_data; 
+	uint16_t tx_size, tx_count; 
+	mutex_t lock;  // used for synchronizing access to uart
+	sem_t rx_ready, tx_ready;
+}; 
 
-#if 0
-	#define uart0_waiting() ((UCSR0A & _BV(RXC0))?1:0)
-	#define uart0_flush() (0)
-	#define uart0_getc() ((uart0_waiting())?UDR0:UART_NO_DATA)
-	#define uart0_putc(data) uart0_putc_direct(data) 
-#endif
+static struct atmega_uart uart0; 
 
-int8_t 		uart_init(uint8_t dev_id, uint32_t baud, uint8_t *tx_buffer, uint8_t tx_size, uint8_t *rx_buffer, uint8_t rx_size);
-uint16_t 	uart_getc(uint8_t dev_id); 
-int8_t 		uart_putc(uint8_t dev_id, uint8_t ch);
-uint16_t 	uart_waiting(uint8_t dev_id);
+//DECLARE_STATIC_CBUF(uart0.tx_buf, uint8_t, UART_TX_BUFFER_SIZE);
+//DECLARE_STATIC_CBUF(uart0.rx_buf, uint8_t, UART_RX_BUFFER_SIZE);
 
-#ifdef __cplusplus
+ISR(USART_RX_vect) { 
+	uint8_t err = ( UART0_STATUS & (_BV(FE0)|_BV(DOR0))); 
+	uint8_t data = UDR0; 
+	if(err) return; 
+
+	if(!cbuf_is_full_isr(&uart0.rx_buf)){ 
+		cbuf_put_isr(&uart0.rx_buf, data); 
+	}
+	// always signal incoming, even if we were not able to place data into the buffer
+	BaseType_t yield = 0; 
+	xSemaphoreGiveFromISR(&uart0.rx_ready, &yield); 
+	//if(yield) taskYIELD(); 
+	//taskYIELD(); 
+	//mutex_unlock_from_isr(&uart0.rx_ready); 
 }
-#endif
 
-#endif // UART_H 
+ISR(USART_TX_vect) {
 
+}
+
+ISR(USART_UDRE_vect) {
+	if(uart0.tx_data && uart0.tx_count < uart0.tx_size){
+		UDR0 = uart0.tx_data[uart0.tx_count++]; 
+	} else {
+		uart0_interrupt_dre_off(); 
+		mutex_unlock_from_isr(&uart0.tx_ready); 
+	}
+	//taskYIELD(); 
+}
+
+static int atmega_uart_read(struct serial_device *dev, char *data, size_t size){
+	struct atmega_uart *self = container_of(dev, struct atmega_uart, serial); 
+
+	// if no characters are available then block until interrupt signals us
+	for(;;){
+		uart0_interrupt_rx_off(); 
+		int empty = cbuf_is_empty(&self->rx_buf); 
+		uart0_interrupt_rx_on(); 
+		if(!empty) break; 
+		// we will only attempt to block if we are empty
+		mutex_lock(&self->rx_ready); 
+	}
+
+	//mutex_lock(&self->lock); 
+
+	uart0_interrupt_rx_off(); 
+	int ret = cbuf_getn(&self->rx_buf, data, size); 
+	uart0_interrupt_rx_on(); 
+
+	//mutex_unlock(&self->lock); 
+	return ret; 
+}
+
+static int atmega_uart_write(struct serial_device *dev, const char *data, size_t size){
+	struct atmega_uart *self = container_of(dev, struct atmega_uart, serial); 
+	mutex_lock(&self->lock); 
+	uart0_interrupt_dre_off();
+	self->tx_count = 0; 
+	self->tx_data = data; 
+	self->tx_size = size; 
+	uart0_interrupt_dre_on();
+	mutex_lock_timeout(&self->tx_ready, 10); // wait for completion 
+	mutex_unlock(&self->lock); 
+	return 0; 
+}
+
+static void atmega_uart_init(uint32_t baud){
+	struct atmega_uart *self = &uart0; 
+	memset(self, 0, sizeof(struct atmega_uart)); 
+	cbuf_init(&self->rx_buf, self->rx_buffer, sizeof(self->rx_buffer)); 
+	uart0_init_default(baud);
+	mutex_init(&self->lock); 
+	mutex_init(&self->rx_ready); 
+	mutex_init(&self->tx_ready); 
+	// lock mutexes here because we will only be unlocking them from isr!
+	mutex_lock(&self->rx_ready); 
+	mutex_lock(&self->tx_ready);
+	uart0_init_default(baud);
+}
+
+static void atmega_uart_set_baud(struct serial_device *dev, uint32_t baud){
+	struct atmega_uart *self = container_of(dev, struct atmega_uart, serial); 
+	mutex_lock(&self->lock); 
+	uart0_set_baudrate_raw(BAUD_PRESCALE_ASYNC((uint32_t)baud)); 
+	mutex_unlock(&self->lock); 
+}
+
+static struct serial_device_ops atmega_uart_ops = {
+	.read = atmega_uart_read, 
+	.write = atmega_uart_write,
+	.set_baud = atmega_uart_set_baud
+}; 
+
+static void atmega_uart_probe(void){
+	struct atmega_uart *self = &uart0; 
+	atmega_uart_init(57600); 
+
+	self->serial.ops = &atmega_uart_ops; 
+	
+	//atmega_uart_write(&self->serial, "FOOBAR", 6); 
+	register_serial_device(&self->serial); 
+}
+
+static struct device_driver mega_uart = {
+	.name = "atmega_uart", 
+	.probe = atmega_uart_probe
+}; 
+
+static void __init _register_driver(void){
+	atmega_uart_probe(); 
+}

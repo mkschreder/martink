@@ -250,7 +250,7 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 /// CPU TIME STAMP COUNTER SETUP
 /// ****************************
 
-#include "../../types.h"
+#include <kernel/types.h>
 
 
 #if defined(CONFIG_TIMESTAMP_COUNTER)

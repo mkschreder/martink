@@ -1,7 +1,8 @@
 #include <arch/soc.h>
 #include "async.h"
 
-#define ASYNC_DEBUG(...) {printf(__VA_ARGS__);}
+#define ASYNC_DEBUG(...) {}
+//{printf(__VA_ARGS__);}
 
 static struct async_process *__current_process = 0; 
 struct async_queue ASYNC_GLOBAL_QUEUE;  
@@ -27,10 +28,10 @@ void async_process_init(struct async_process *self, ASYNC_PTR(int, async_process
 
 void async_queue_process(async_queue_t *queue, struct async_process *self){
 	if(self->ASYNC_NAME(int, async_process_t, proc) == 0) {
-		printf("NULL proc!\n"); return; // prevent invalid proc pointers..
+		ASYNC_DEBUG("NULL proc!\n"); return; // prevent invalid proc pointers..
 	}
 	if(self->list.prev != self->list.next) {
-		printf("ALREADY ADDED!\n"); 
+		ASYNC_DEBUG("ALREADY ADDED!\n"); 
 		return; // prevent adding to queue twice
 	}
 	ASYNC_DEBUG("Self: %p %s\n", self->ASYNC_NAME(int, async_process_t, proc), self->name); 

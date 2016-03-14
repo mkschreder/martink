@@ -1,7 +1,9 @@
 #pragma once
 
 struct device_driver {
-	struct device_driver *next; 	
+	struct list_head list; 
+	const char *name; 
+	void (*probe)(void); 
 }; 
 
 #define module_driver(__driver, __register, __unregister, ...) \

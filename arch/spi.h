@@ -27,6 +27,6 @@
 uint8_t spi_putc(uint8_t dev, uint8_t ch);
 
 void spi_init(void); 
-serial_dev_t spi_get_serial_interface(uint8_t dev);
+//serial_dev_t spi_get_serial_interface(uint8_t dev);
 
 #define spi0_init() PFCALL(CONFIG_SPI0_NAME, init)

@@ -1,0 +1,8 @@
+menu "Serial Device"
+	config UART
+		bool "UART Support"
+
+	config ATMEGA_UART
+		depends on UART && CPU_ATMEGA328P
+		bool "ATMegaXXX UART Driver"
+endmenu

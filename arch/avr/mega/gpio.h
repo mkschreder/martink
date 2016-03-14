@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "../../types.h"
+#include <kernel/types.h>
 
 enum {
 	GPIO_NONE = 0,

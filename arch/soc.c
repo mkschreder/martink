@@ -21,19 +21,9 @@
 
 #include "soc.h"
 #include <stdarg.h>
-/*
-void soc_init(void){
-	//clock_init(); 
-	timestamp_init(); 
-	time_init(); 
-	//uart_init(); 
-	gpio_init();
-	spi_init(); 
-	twi_init(); 
-	pwm_init(); 
-}
-*/
 #include <stdio.h>
+
+#if 0
 uint16_t serial_printf(serial_dev_t port, const char *fmt, ...){
 	char buffer[64]; 
 	uint16_t n; 
@@ -47,3 +37,4 @@ uint16_t serial_printf(serial_dev_t port, const char *fmt, ...){
 	serial_putn(port, (uint8_t*)buffer, n); 
 	return n; 
 }
+#endif

@@ -1,6 +1,8 @@
 /*
 	Fast ADC implementation using macros
 
+	Copyright (c) 2016 Martin Schröder <mkschreder.uk@gmail.com>
+
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
@@ -15,7 +17,6 @@
 	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
 	Author: Martin K. Schröder
-	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
 */
 /**
@@ -155,40 +156,4 @@ extern uint8_t _adc_mode;
 		?(adc0_interrupt_on(), adc0_start_conversion())\
 		:(0)) \
 )
-
-#include <kernel/thread.h>
-
-typedef struct avr_adc {
-	struct async_task avr_adc_open, avr_adc_close, avr_adc_read; 
-} adc_t; 
-
-void avr_adc_init(struct avr_adc *self); 
-
-ASYNC_PROTOTYPE(int, adc_t, avr_adc_open); 
-ASYNC_PROTOTYPE(int, adc_t, avr_adc_close); 
-ASYNC_PROTOTYPE(uint16_t, adc_t, avr_adc_read, uint8_t channel); 
-
-/*
-uint8_t adc_aquire(uint8_t chan); 
-void adc_release(void); 
-uint8_t adc_busy(void);
-void adc_start_read(uint8_t channel, volatile uint16_t *value); 
-*/
-/*
-#include <util/list.h>
-#include <util/pipe.h>
-
-#define ADC_EV_CONV_COMPLETED 1
-
-struct adc_connection {
-	struct pipe pipe; 
-	int8_t (*on_event)(struct adc_connection *self, uint16_t ev); 
-	struct list_head list; 
-}; 
-
-int8_t adc_read_ev_conv_completed(struct adc_connection *self, 
-	timestamp_t *time, uint8_t *chan, uint16_t *value); 
-void adc_connect(struct adc_connection *con, uint8_t *rxbuf, uint8_t *txbuf, uint8_t size, int8_t (*on_event)(struct adc_connection *self, uint16_t ev));
-void adc_process_events(void); 
-*/
 #endif

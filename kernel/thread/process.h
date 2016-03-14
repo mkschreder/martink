@@ -54,7 +54,7 @@
 #define PROCESS_H_
 
 #include "pt.h"
-#include <arch/types.h>
+#include <kernel/types.h>
 
 typedef unsigned char process_event_t;
 typedef void *        process_data_t;

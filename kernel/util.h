@@ -55,10 +55,6 @@ static inline float constrain_f(float x, float a, float b){
 })
 */
 
-#define container_of(ptr, type, member) __extension__ ({                      \
-        __typeof__( ((type *)0)->member ) *__mptr = (ptr);    \
-        (type *)(void*)( (char *)__mptr - offsetof(type,member) );})
-
 //#define __init //__attribute__((constructor))
 
 // wraps degrees around a circle

@@ -134,7 +134,8 @@
 #define SSD1306_LEFT_HORIZONTAL_SCROLL 0x27
 #define SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL 0x29
 #define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
-/*j
+
+/*
 static int ssd1306_command(ssd1306_t *self, uint8_t cmd){
 	if(cbuf_get_free(&self->buffer) < 2) return 0; 
 	cbuf_put(&self->buffer, 0); 

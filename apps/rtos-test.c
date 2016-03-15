@@ -189,6 +189,8 @@ static void vExampleTimerCallback( TimerHandle_t xTimer )
 #endif
 #include <stdlib.h>
 #include <adc/adc.h>
+#include <gpio/gpio.h>
+#include <gpio/atmega_gpio.h>
 
 /*-----------------------------------------------------------*/
 static void prvQueueSendTask( void *pvParameters ){
@@ -199,27 +201,45 @@ static void prvQueueSendTask( void *pvParameters ){
 		printk("tx got %d\r\n", atoi(ch)); 	
 		uint16_t adc = adc_read_channel(adc_get_device(0), 0); 
 		printk("adc value: %d\r\n", adc); 
-		PORTB |= (1 << 5); 
-		vTaskDelay(pdMS_TO_TICKS(500)); 
-		PORTB &= ~(1 << 5); 
-		_delay_ms(500); 
-		vTaskDelay(pdMS_TO_TICKS(500)); 
-	}
-}
-/*-----------------------------------------------------------*/
-
-static void prvQueueReceiveTask( void *pvParameters ){
-	for( ;; ){
-		printk("rx ticks: %lu\r\n", (uint32_t)(tsc_ticks_to_us(timestamp_now()) / 1000)); 
-		printk("ticks_to_us(10): %lu\r\n", (uint32_t)tsc_ticks_to_us(tsc_us_to_ticks(10))); 
-		printk("us_to_ticks(10): %lu\r\n", (uint32_t)tsc_us_to_ticks(10)); 
-		for(int c = 0; c < 5; c++){
+		for(int c = 0; c < atoi(ch); c++){
 			PORTB |= (1 << 5); 
 			vTaskDelay(pdMS_TO_TICKS(50)); 
 			PORTB &= ~(1 << 5); 
 			vTaskDelay(pdMS_TO_TICKS(50)); 
 		}
-		vTaskDelay(pdMS_TO_TICKS(2000)); 
+	}
+}
+/*-----------------------------------------------------------*/
+
+#include <pwm/pwm.h>
+#include <block/block.h>
+
+static void prvQueueReceiveTask( void *pvParameters ){
+	struct pwm_device *dev = pwm_get_device(0); 
+	gpio_configure(GPIO_PD6, GP_OUTPUT); 
+	for( ;; ){
+		//printk("rx ticks: %lu\r\n", (uint32_t)(tsc_ticks_to_us(timestamp_now()) / 1000)); 
+		//printk("ticks_to_us(10): %lu\r\n", (uint32_t)tsc_ticks_to_us(tsc_us_to_ticks(10))); 
+		//printk("us_to_ticks(10): %lu\r\n", (uint32_t)tsc_us_to_ticks(10)); 
+		struct block_device *eeprom = block_get_device(0); 
+		if(eeprom){
+			const char *data = "ABCDEF"; 
+			static char res[7] = {0}; 
+			block_write(eeprom, 0, data, strlen(data));
+			block_read(eeprom, 0, res, strlen(data)); 
+			for(int c = 0; c < 7; c++) printk("%c",res[c]); 
+		}
+		pwm_set_output(dev, 0, 1); 	
+		for(int c = 0; c < 10; c++){
+			pwm_set_period(dev, 0, 50 * c);  
+			vTaskDelay(pdMS_TO_TICKS(100)); 
+		}
+		for(int c = 10; c >= 0; c--){
+			pwm_set_period(dev, 0, 50 * c);  
+			vTaskDelay(pdMS_TO_TICKS(100)); 
+		}
+		pwm_set_period(dev, 0, 0);  
+		vTaskDelay(pdMS_TO_TICKS(1000)); 
 	}
 }
 /*-----------------------------------------------------------*/

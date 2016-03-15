@@ -1,5 +1,4 @@
 obj-y += arch/time.o
-obj-y += arch/twi.o
 obj-y += arch/soc.o
 
 docs-y += arch/README.md

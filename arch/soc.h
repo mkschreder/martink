@@ -63,10 +63,8 @@ extern "C" {
 #include <inttypes.h>
 
 #include <kernel/list.h>
-#include <kernel/thread.h>
 
 #include "time.h"
-#include "twi.h"
 
 #ifdef CONFIG_ARCH_AVR
 #include "avr/mega.h"

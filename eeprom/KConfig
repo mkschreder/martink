@@ -1,3 +1,0 @@
-config AT24
-	depends on BUS_I2C
-	bool "AT24 i2c eeprom support"

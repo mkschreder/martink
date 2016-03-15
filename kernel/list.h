@@ -514,3 +514,10 @@ static inline void list_splice_tail_init(struct list_head /*@dependent@*/ *list,
 #define list_foreach(LIST, ITEM) \
 	for(struct list_head *ITEM = LIST; ITEM != 0; ITEM = ITEM->next)
 */
+
+#define list_get_entry(head, n, type, member) ({\
+	type *ret = NULL, *item; \
+	list_for_each_entry(item, (head), member){ if(!number) { ret = item; break; } number--; } \
+	ret; \
+})
+	

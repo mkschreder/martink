@@ -27,6 +27,8 @@ extern "C" {
 #endif
 
 #include <arch/time.h>
+#include <avr/io.h>
+
 /*
 #define time_static_delay_us(us) _delay_us(us)
 

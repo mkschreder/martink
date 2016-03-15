@@ -39,10 +39,12 @@ static int _serial_fd_getc(FILE *stream){
 static mutex_t _printk_lock; 
 
 #include <string.h>
+#include <arch/soc.h>
+
 int serial_printf(struct serial_device *dev, const char *fmt, ...){
 	FILE fd; 
-		
-	if(!dev) return -EFAULT; 
+
+	if(!dev || !thread_self()) return -EFAULT; 
 
 	mutex_lock(&_printk_lock); 
 	fdev_setup_stream(&fd, _serial_fd_putc, _serial_fd_getc, _FDEV_SETUP_RW); 

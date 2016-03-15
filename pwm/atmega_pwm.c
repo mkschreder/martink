@@ -1,5 +1,7 @@
 /**
 	This file is part of martink project.
+	
+	Copyright (c) 2016 Martin Schröder <mkschreder.uk@gmail.com>
 
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,12 +17,10 @@
 	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
 	Author: Martin K. Schröder
-	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
 */
 
-#pragma once
-
+#include <kernel/types.h>
 #include <kernel/util.h>
 
 ///TODO: make it set prescaler values based on F_CPU
@@ -38,6 +38,8 @@
 	timer0_set_clock(TIM0_CLOCK_DIV256)\
 )
 
+#define pwm0_disable() timer0_outa_mode(TIM0_OUTA_MODE_NONE)
+
 #define pwm0_set(speed) (\
 	timer0_set_channel_a(map(speed, 0, 2000, 0, 127))\
 )
@@ -47,6 +49,8 @@
 	timer0_outb_mode(TIM0_OUTB_MODE_CLEAR),\
 	timer0_set_clock(TIM0_CLOCK_DIV256)\
 )
+
+#define pwm1_disable() timer0_outb_mode(TIM0_OUTB_MODE_NONE)
 
 #define pwm1_set(speed) (\
 	timer0_set_channel_b(map(speed, 0, 2000, 0, 127))\
@@ -81,6 +85,8 @@
 	timer2_set_clock(TIM2_CLOCK_DIV256)\
 )
 
+#define pwm4_disable() timer2_outa_mode(TIM2_OUTA_MODE_NONE)
+
 #define pwm4_set(speed) (\
 	timer2_set_channel_a(map(speed, 0, 2000, 0, 127))\
 )
@@ -91,6 +97,57 @@
 	timer2_set_clock(TIM2_CLOCK_DIV256)\
 )
 
+#define pwm5_disable() timer2_outb_mode(TIM2_OUTB_MODE_NONE)
+
 #define pwm5_set(speed) (\
 	timer2_set_channel_b(map(speed, 0, 2000, 0, 127))\
 )
+
+#include <arch/avr/mega/time.h>
+#include "pwm.h"
+
+struct atmega_pwm {
+	struct pwm_device device; 
+}; 
+
+static struct atmega_pwm mega_pwm; 
+
+static void atmega_pwm_set_output(struct pwm_device *dev, uint8_t chan, int enabled){
+	switch(chan){
+		case 0: if(enabled) pwm0_enable(); else pwm0_disable(); break;  
+		case 1: if(enabled) pwm1_enable(); else pwm1_disable(); break;  
+		//case 2: pwm2_enable(); break;  
+		//case 3: pwm3_enable(); break;  
+		case 4: if(enabled) pwm4_enable(); else pwm4_disable(); break;  
+		case 5: if(enabled) pwm5_enable(); else pwm5_disable(); break;  
+	}
+}; 
+
+static void atmega_pwm_set_period(struct pwm_device *dev, uint8_t chan, int period){
+	if(period == 0) { 
+		atmega_pwm_set_output(dev, chan, 0); 
+		return; 
+	}
+
+	atmega_pwm_set_output(dev, chan, 1); 
+
+	switch(chan){
+		case 0: pwm0_set(period); break;  
+		case 1: pwm1_set(period); break;  
+		//case 2: pwm2_set(period); break;  
+		//case 3: pwm3_set(period); break;  
+		case 4: pwm4_set(period); break;  
+		case 5: pwm5_set(period); break;  
+	}
+}
+
+static struct pwm_device_ops mega_pwm_ops = {
+	.set_output = atmega_pwm_set_output, 
+	.set_period = atmega_pwm_set_period
+}; 
+
+static void __init atmega_pwm_init(void){
+	mega_pwm.device.ops = &mega_pwm_ops; 
+	pwm_register_device(&mega_pwm.device); 
+}
+

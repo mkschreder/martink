@@ -1,5 +1,7 @@
-/*
-	EEPROM avr, generic macros
+/**
+	Micro Block Device System 
+	
+	Copyright (c) 2016 Martin Schröder <mkschreder.uk@gmail.com>
 
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,10 +17,20 @@
 	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
 	Author: Martin K. Schröder
-	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
 */
 
-#pragma once
+#include "block.h"
+#include <kernel/list.h>
 
-#include <avr/eeprom.h>
+static LIST_HEAD(_block_devices); 
+
+#include <serial/serial.h>
+void block_register_device(struct block_device *dev){
+	INIT_LIST_HEAD(&dev->list); 
+	list_add_tail(&dev->list, &_block_devices); 	
+}
+
+struct block_device *block_get_device(int number){
+	return list_get_entry(&_block_devices, number, struct block_device, list); 
+}

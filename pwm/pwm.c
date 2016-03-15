@@ -1,5 +1,7 @@
 /**
-	This file is part of martink project.
+	PWM Subsystem
+
+	Copyright (c) 2016 Martin Schröder <mkschreder.uk@gmail.com>
 
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,16 +17,19 @@
 	along with martink firmware.  If not, see <http://www.gnu.org/licenses/>.
 
 	Author: Martin K. Schröder
-	Email: info@fortmax.se
 	Github: https://github.com/mkschreder
 */
-#pragma once
 
-#include "config.h"
+#include <kernel/list.h>
+#include "pwm.h"
 
-#include <kernel/dev/i2c.h>
+static LIST_HEAD(_pwm_devices); 
 
-#define I2C_READ    1
-#define I2C_WRITE   0
+void pwm_register_device(struct pwm_device *dev){
+	list_add_tail(&dev->list, &_pwm_devices); 	
+}
 
-//i2c_dev_t i2c_get_interface(uint8_t id);
+struct pwm_device *pwm_get_device(int number){
+	return list_get_entry(&_pwm_devices, number, struct pwm_device, list); 
+}
+

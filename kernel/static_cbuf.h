@@ -1,6 +1,8 @@
 /**
 	Macro based circular buffer implementation
 
+	Copyright (c) 2015 Martin Schröder <mkschreder.uk@gmail.com>
+
 	martink firmware project is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or

@@ -1,1 +1,10 @@
- 
+menu "Persistent memory block devices"
+	config BLOCK
+		bool "Enable block device support"
+	config ATMEGA_EEPROM
+		depends on BLOCK && ARCH_AVR
+		bool "ATMega EEPROM support"
+	config AT24
+		depends on I2C
+		bool "AT24 EEPROM driver"
+endmenu

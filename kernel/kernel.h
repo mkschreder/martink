@@ -35,14 +35,14 @@ typedef long ssize_t;
 
 #include <string.h>
 
+#include "thread/async.h"
+
 #include <arch/soc.h>
 #include "util.h"
 #include "list.h"
 
 #include "mt.h"
-#include "dev/block.h"
 #include "dev/framebuffer.h"
-#include "dev/i2c.h"
 #include "dev/tty.h"
 
 #ifdef __cplusplus

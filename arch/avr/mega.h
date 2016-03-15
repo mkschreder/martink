@@ -55,7 +55,15 @@
 
 #include "mega/stack.h"
 #include "mega/time.h"
-#include "mega/pwm.h"
-#include "mega/eeprom.h"
 
-#include "eeprom.h"
+#include <avr/io.h>
+
+// on arduino we blink the led pin 
+// TODO: adopt so it does not pose danger in cases where this pin may be used for something else
+static inline void platform_panic_noblock(void){
+	DDRB |= _BV(5);  
+	PORTB |= _BV(5); 
+	_delay_ms(100); 
+	PORTB &= ~_BV(5); 
+	_delay_ms(100); 
+}

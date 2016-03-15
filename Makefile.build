@@ -5,12 +5,12 @@ include bus/Makefile
 include adc/Makefile
 include block/Makefile
 include boards/Makefile
-include eeprom/Makefile
 include kernel/Makefile
 include fs/Makefile
 include disp/Makefile
 include gui/Makefile
 include hid/Makefile
+include i2c/Makefile
 include io/Makefile
 include net/Makefile
 include radio/Makefile
@@ -19,6 +19,7 @@ include sensors/Makefile
 include tty/Makefile
 include util/Makefile
 include serial/Makefile
+include pwm/Makefile
 include spi/Makefile
 include crypto/Makefile
 include lib/Makefile

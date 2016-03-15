@@ -1,5 +1,7 @@
 #pragma once
 
+#include "config.h"
+
 #ifdef CONFIG_FREERTOS
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -32,3 +34,26 @@ typedef StaticSemaphore_t sem_t;
 
 /* Threads and delays */
 #define msleep(ms) vTaskDelay(pdMS_TO_TICKS((ms))); 
+#define schedule_start() vTaskStartScheduler()
+
+#define thread_self() xTaskGetCurrentTaskHandle()
+
+typedef TaskHandle_t thread_t; 
+
+typedef struct thread_attrs {
+	const char *name; 
+	uint8_t priority; 
+	int stack_size; 
+} thread_attr_t; 
+
+void thread_attr_init(struct thread_attrs *attr); 
+int thread_create(thread_t *thread, const thread_attr_t *attrs, void (*start_proc)(void*), void *arg); 
+
+// TODO: move this somewhere else
+
+#include <string.h>
+static inline void* kzmalloc(size_t size) {
+	void *ret = pvPortMalloc(size); 
+	memset(ret, 0, size); 
+	return ret; 
+}

@@ -1,18 +1,33 @@
 Introduction
 ===============
 
-LibK is a lightweight firmware development library that is designed for flash based, resource constrained microcontrollers that are not able to run a full modern operating system. LibK uses protothread-based, cooperative multitasking to make all I/O operatins non-blocking and to make the most of the already constrained CPU by never wasting any clock cycles waiting for an I/O operation to complete. 
+LibK is a lightweight firmware development library that is designed for flash
+based, resource constrained microcontrollers that are not able to run a full
+modern operating system. LibK uses protothread-based, cooperative multitasking
+to make all I/O operatins non-blocking and to make the most of the already
+constrained CPU by never wasting any clock cycles waiting for an I/O operation
+to complete. 
 
-Included in LibK you will find many device drivers that make it possible to use the supported devices in your project directly without having to implement the device drivers yourself. The device drivers have also been rewritten by me to use cooperative multitasking so that no device can ever slow down your application just because it is slow. 
+Included in LibK you will find many device drivers that make it possible to use
+the supported devices in your project directly without having to implement the
+device drivers yourself. The device drivers have also been rewritten by me to
+use cooperative multitasking so that no device can ever slow down your
+application just because it is slow. 
 
 Using LibK you can build portable applications for AVR-8, STM32 and PC. 
 
 Gettings started: compiling and flashing
 ----------------------------------------
 
-LibK build system is originally designed for building on Ubuntu linux so it may require modifications if you want to build on a different system. The build process uses Makefiles that it includes from all of the subfolders. Each subfolder has it's own Makefile, KConfig file and a README.md (docs) file. All of these files are aggregated by make and then compiled into their respective targets. 
+LibK build system is originally designed for building on Ubuntu linux so it may
+require modifications if you want to build on a different system. The build
+process uses Makefiles that it includes from all of the subfolders. Each
+subfolder has it's own Makefile, KConfig file and a README.md (docs) file. All
+of these files are aggregated by make and then compiled into their respective
+targets. 
 
-To compile LibK you will also need appropriate gcc toolchain for your hardware target. 
+To compile LibK you will also need appropriate gcc toolchain for your hardware
+target. 
 
 * avr-gcc and avr-libc for compiling for atmega, arduino, avr32
 * arm-none-eabi-gcc for compiling for sam3, stm32 and other arm architectures
@@ -29,78 +44,61 @@ Build everything:
 
 	make buildall
 
-This will build all supported architectures, produce corresponding libraries and compile examples as well. 
+This will build all supported architectures, produce corresponding libraries
+and compile examples as well. 
 
-The above will in fact invoke build commands for each target. For building a specific target library use BUILD variable that you pass to MAKE like this: 
+The above will in fact invoke build commands for each target. For building a
+specific target library use BUILD variable that you pass to MAKE like this: 
 
 	make BUILD=arm-stm32f103
 	
-The parameter to this command should be the same string as the config file name of the corresponding config in the "configs" folder. The build script will then include appropriate source files relevant only for that target and compile them into a corresponding static library. 
+The parameter to this command should be the same string as the config file name
+of the corresponding config in the "configs" folder. The build script will then
+include appropriate source files relevant only for that target and compile them
+into a corresponding static library. 
 
 Installing on your hardware
 --------------------------
 
-Note: Depending on how your target flashing process works, these instructions may not apply to you. In that case, find out how to actually burn a binary file on your architecture from the documentation of your target device. 
+Note: Depending on how your target flashing process works, these instructions
+may not apply to you. In that case, find out how to actually burn a binary file
+on your architecture from the documentation of your target device. 
 
-All libk programs compile to binary elf files that are then converted to either a binary blob or a hex file using appropriate objdump utility for the target platform. This resulting hex or bin file can then be directly passed to the flashing software and transferred to the target chip. Usually this transfer is done over a usb to serial converter. 
+All libk programs compile to binary elf files that are then converted to either
+a binary blob or a hex file using appropriate objdump utility for the target
+platform. This resulting hex or bin file can then be directly passed to the
+flashing software and transferred to the target chip. Usually this transfer is
+done over a usb to serial converter. 
 
-* Avr platform uses tool avrdude and expects avr to be connected to usbasp programmer. For flashing using a different programmer you will need to modify the makefiles (in examples folders). 
-* STM32 uses builtin ST bootloader and the stm32flash utility. You will need to explicitly boot the chip into the bootloader mode by holding boot0 low at poweron. Some firmwares also support booting into the bootloader from software (check the fst6-demo example for this can be done. It implements a firmware upgrade command). 
+- Avr platform uses tool avrdude and expects avr to be connected to usbasp
+  programmer. For flashing using a different programmer you will need to modify
+  the makefiles (in examples folders). 
+- STM32 uses builtin ST bootloader and the stm32flash utility. You will need to
+  explicitly boot the chip into the bootloader mode by holding boot0 low at
+  poweron. Some firmwares also support booting into the bootloader from
+  software (check the fst6-demo example for this can be done. It implements a
+  firmware upgrade command). 
 
-When building your own software, you will usually link libk into your project and then flash using your standard flashing process. For the examples provided inside libk, there are however makefile targets specified for flashing each of the examples. All examples are built using "make BUILD=(target) build-(example name)" pattern and installed using the corresponding "make BUILD=(target) build-(example name)" pattern. 
+When building your own software, you will usually link libk into your project
+and then flash using your standard flashing process. For the examples provided
+inside libk, there are however makefile targets specified for flashing each of
+the examples. All examples are built using "make BUILD=(target) build-(example
+name)" pattern and installed using the corresponding "make BUILD=(target)
+build-(example name)" pattern. 
 
 	make BUILD=arm-stm32f100mdvl build-fst6-demo
 	make BUILD=arm-stm32f100mdvl install-fst6-demo
 
-Note: if you get a "permission denied" when trying to access your serial port as normal user in linux, then make sure to add yourself to the "dialout" group. 
+Note: if you get a "permission denied" when trying to access your serial port
+as normal user in linux, then make sure to add yourself to the "dialout" group. 
 
-<!--
-More information
----------------
+License
+-------
 
-For documentation check out the following pages:
+This project consists of many different parts and code from other people,
+distributed under their own licenses - some parts are GPL, some are MIT. 
 
-* [Detailed hardware and api documentation for libk](https://github.com/mkschreder/martink/tree/master/doc/)
-
-It is distributed under the GNU General Public License - see the accompanying LICENSE.txt file for more details.
-
-It is designed to even be able to compile on a desktop. The future may very well involve using libk to use the same device drivers for both arduino and a linux based board that uses linux to access i2c ports and other ports. LibK can basically be compiled as a native library. All that is necessary to run it on any board is to implement the arch interface for that board. For a native version this layer would use linux system calls to access i2c or SPI ports instead of accessing hardware registers directly - but for the drivers it does not matter.
-
-It is howerver primarily designed for microcontrollers, flash based system on chip devices, small controllers with under 10kb of flash, controllers with as little as 2kb of ram, arm chips and avr chips. For many small devices linux simply does not work. What you wish you had is a library that makes it easy for you to write reusable code and abstracts away the absolutely lowest levels of hardware interaction with minimal overhead. 
-
-Do you ever have problems with figuring out how to use 'UDSR' or 'UCR' or 'BCC' or any other obscure register just to get some piece of hardware configured correctly? Do you ever always have datasheet open for the cpu you are working on just because you can't remember which bits in what registers you need to set?
-
-Yes unfortunately there has not been a good alternative to linux speciffically designed for tiny microcontrollers. This has resulted in many people designing their own solutions that are often completely incompatible when you find code from somebody else for another on chip peripheral. 
-
-LibK provides a framework for solving all of these problems. It comes with specialized build system based on menuconfig that provides a highly fine grained build configuration and lets you only compile the things that you need. It also makes it easy to switch between different targets that require completely different low level implementations.
-
-Building with menuconfig
---------------
-
-** note ** 
-Docs need to be updated here.. manuconfig can still be used, but preconfigured configs are also available in "configs/" and "include/configs" directories. This makes it not necessary to run menuconfig unless one wants to have more detailed control over what is actually being built. 
-** end not **
-
-Building libk can be a little tricky for a first timer. It is usually easier to call libk Makefile from within your own application Makefile. For how to do this, you can have a look at quadcopter example project using libk: 
-
-[https://github.com/mkschreder/bettercopter](https://github.com/mkschreder/bettercopter)
-
-To build with LibK you need to make sure that you have necessary toolchain installed for your architecture. For avr it's avr-gcc, for arm it's either arm-none-eabi-* or arm-linux-eabi-* packages. You also need libncurses-dev (for menuconfig). 
-
-New: it is now possible to easily build for multiple targets using BUILD option. 
-
-Currently available options: 
-	BUILD=avr-atmega328p - build for atmega
-	BUILD=arm-stm32f103 - build for stm32f103
-
-You can then build the library like this: 
-
-    make menuconfig
-    make BUILD=arm-stm32f103 
-    make BUILD=arm-stm32f103 install
-
-If everything goes well, the file that will be built will be libk.a. This is a library that you will then link your application with. It is often easier to integrate the build process for libk into the build process for your project. It is also good to make a symbolik link to libk code directory directly inside your project directory. This way you don't have to keep track of multiple copies of libk.
--->
+The project as a whole however is distributed under GPL version 3.  
 
 Supported architectures
 ------------------
@@ -114,7 +112,11 @@ Supported architectures
 Device driver support
 ---------------------
 
-Device drivers in libk operate on a higher level than architecture code. So they are largely architecture agnostic. Device drivers typically use interfaces to access services provided by the architecture and they can also export interfaces to other drivers in order to eliminate dependencies between drivers on each other.
+Device drivers in libk operate on a higher level than architecture code. So
+they are largely architecture agnostic. Device drivers typically use interfaces
+to access services provided by the architecture and they can also export
+interfaces to other drivers in order to eliminate dependencies between drivers
+on each other.
 
 | Device class | Device model | Support | Interfaces used | Interfaces exported |
 |--------------|--------------|---------|-----------------|---------------------| 
@@ -174,90 +176,95 @@ How the design goals are currently implemented:
 - LibK uses asynchronous I/O at all times, meaning that no read or write operation is ever blocking. This allows for other tasks to happen while a task is waiting for io. 
 - LibK uses protothreads instead of conventional threads - this means that threads never have any stack and all threads execute inside the same stack space of the main application. It also have many other advantages that are discussed further in this document. 
 
-<!--
-Architechture
-=============
-
-The system uses makefiles for building the projects. This is a good thing because makefiles are extremely powerful and allow for very specialized compilation process. Through use of separate makefiles in different parts of the project we can specify exactly which files are compiled and included. We can also load configuration from menuconfig directly into a makefile and write rules based on the config. This build system is highly influenced by the very efficient build system used by linux kernel. 
-
-We use mconf utility for generating the .config file which is included in makefiles and autoconf.h file which can be included into the application. Mconf (menuconfig) allows us to specify dependencies between different modules of the project and allow for highly specialized conditional compilation of different files for different systems. 
-
-The final result produced by the system is a built-in.o file that contains all the code for the main kernel. This file is then linked into your project to allow it to access code that talks to different peripherals such as on chip UART or SPI or I2C or any other supported device. 
-
-Many boards can be supported, by providing board speciffic files in the "boards" directory. Each file correspond to a supported board. Your application should do things like setting PWM output values by calling set_pin() method that is defined for every board. This method can do much more than just setting a GPIO pin. It can also take an integer value specifying PWM level and use it to fill appropriate hardware registers to generate output. Your board file should be speciffically designed for every board and it should provide an interface for the rest of the application for accessing these board peripherals. 
-
-Many drivers for out of chip devices (such as I2C peripherals) are completely reusable on many different architectures. For this reason, we group all architecture speciffic files into arch/ directory. The purpose of the architecture speciffic files is to provide an interface for the DRIVERS which they can use to access standard peripherals such as I2C or SPI busses. The arch directory should therefore only contain files that implement ON CHIP peripherals that the IC uses to communicate with the outside world. 
-
-When arch layer is ported to a different SoC, it should be possible to recompile the kernel and run all other drivers on that platform without any other changes.
-
-Known issues
-------------
-
-The way that devices are currently accessed is by using a prefix: ie uart_init() or spi_readwritebyte(). This may become an issue when we begin supporting boards with several uarts. This requires some thinking because it is not possible to use fancy things like dynamically allocated arrays of function pointers that would make every device completely interchangable. All devices in the kernel are sortof hardwired once it is compiled. This allows for very tiny memory footprint and allows the code to run well on small ICs with very little ram. Probably this can be partly solved by simply implementing uart1_x() groups of methods that would allow accesing the uart1 instead of uart0. This is how it has been done in many other microcontroller projects. Options can then be added into menuconfig to allow some higher level peripheral to be configured to use uart1 instead of uart0 and basically the problem may be solved. 
-
-Another issue: drivers need to be revised and fixed so that there are no internal conflicts. Many drivers come from projects where it has been decided that the driver would have exclusive access to some peripheral. But when we have several devices, exclusive access is not possible. So one driver may set a register and another driver may accidentally change it. For the most part this has been fixed, but there are some drivers for components that I have not been able to test. So compile, test, if it works fine, if it doesn't, it should be fairly easy to fix. Then submit a patch so we can get it fixed as well.
-
-Development tools 
------------------
-
-For reasons that using makefiles and utilities that are otherwise standard on linux is hard on other systems, it is recommended that you use linux (or maybe macos) for working on this project. It is simply much easier to write a powerful build system like menuconfig on linux than it is on windows. For compilation use GCC, for scripting use bash, for editing use whatever editor you like. If you are on windows then simply run a version of Ubuntu in VirtualBox and map files from your host system into the emulated linux and build as usual while still using windows for other things. 
--->
 Kernel Architecture
 ===================
 
-LibK is a lightweight kernel that implements cooperative multitasking using stackless threads. Stackless threads have been chosen because they are the most lightweight kind of threads available and they have very small overhead. There are however both advantages and also some disadvantages to using stackless protothreads. 
+LibK is a lightweight kernel that implements cooperative multitasking using
+stackless threads. Stackless threads have been chosen because they are the most
+lightweight kind of threads available and they have very small overhead. There
+are however both advantages and also some disadvantages to using stackless
+protothreads. 
 
 Advantages of stackless protothreads: 
 
-- Allow device drivers to be written such that no CPU cycles are ever wasted waiting for I/O. The device driver can simply return control to the application and wait until the next time it has the chance to run. 
-- Writing asynchronous tasks becomes a lot easier because they can be written linearly instead of being organized as a complicated state machine. 
-- No thread is ever interrupted while it is in the middle of some operation. Threads always run to completion. Meaning that we can design our code without having to think about byte level synchronization (device level syncrhonization is required though). 
+- Allow device drivers to be written such that no CPU cycles are ever wasted
+  waiting for I/O. The device driver can simply return control to the
+  application and wait until the next time it has the chance to run. 
+- Writing asynchronous tasks becomes a lot easier because they can be written
+  linearly instead of being organized as a complicated state machine. 
+- No thread is ever interrupted while it is in the middle of some operation.
+  Threads always run to completion. Meaning that we can design our code without
+  having to think about byte level synchronization (device level
+  syncrhonization is required though). 
 - No stack also means that we never run out of stack space inside a thread. 
-- Context switching is very fast - current thread method saves it's resume point, returns to libk scheduler, libk scheduler loads the address of the next thread function to run, and calls it. 
-- Not a problem to have tens of threads for each asynchronous action. Since threads are just normal methods minus the stack, we can have many threads without experiencing significant slowdown. 
-- Synchronization is much easier because all code that you "see" is atomic until it explicitly releases control to the scheduler. We thus do not have to worry about non atomic memory access. 
+- Context switching is very fast - current thread method saves it's resume
+  point, returns to libk scheduler, libk scheduler loads the address of the
+  next thread function to run, and calls it. 
+- Not a problem to have tens of threads for each asynchronous action. Since
+  threads are just normal methods minus the stack, we can have many threads
+  without experiencing significant slowdown. 
+- Synchronization is much easier because all code that you "see" is atomic
+  until it explicitly releases control to the scheduler. We thus do not have to
+  worry about non atomic memory access. 
 
 Disadvantages of this approach: 
 
-- Stackless means that no variable on the thread method stack is valid after a thread returns and then resumes again. Although we can easily solve this by maintaining the context inside a separate object to which the thread is attached. 
-- No preemption also means that a thread can keep CPU to itself for as long as it wishes. It is up to the programmer to release the CPU as quickly as possible. Since device drivers usually use interrupt requests to respond in realtime anyway, this limitation has not proven to be a problem so far. 
-- No thread can ever call another thread or spawn a new thread. Threads are only single level. All other code called from inside the thread can be considered to execute atomically (except for when it is interrupted by an ISR). 
-- Data that needs to be saved across multiple thread switches must be stored in memory (this is a problem with all multitasking though). 
-- Longer response times for tasks - a task can lose cpu for as long as it takes the heavies task to finish. This is solved by programmer explicitly designing threads such that control is periodically released to the scheduler. 
+- Stackless means that no variable on the thread method stack is valid after a
+  thread returns and then resumes again. Although we can easily solve this by
+  maintaining the context inside a separate object to which the thread is
+  attached. 
+- No preemption also means that a thread can keep CPU to itself for as long as
+  it wishes. It is up to the programmer to release the CPU as quickly as
+  possible. Since device drivers usually use interrupt requests to respond in
+  realtime anyway, this limitation has not proven to be a problem so far. 
+- No thread can ever call another thread or spawn a new thread. Threads are
+  only single level. All other code called from inside the thread can be
+  considered to execute atomically (except for when it is interrupted by an
+  ISR). 
+- Data that needs to be saved across multiple thread switches must be stored in
+  memory (this is a problem with all multitasking though). 
+- Longer response times for tasks - a task can lose cpu for as long as it takes
+  the heavies task to finish. This is solved by programmer explicitly designing
+  threads such that control is periodically released to the scheduler. 
 
 A detailed evaluation of libk threading
 --------------------------------------
 
-Stackless threads in libk are designed to solve one specific problem: busy waits. I settled for this approach because it has been the most lightweight solution to this problem. Almost 98% of all embedded code uses busy waits - the standard way to solve this problem is by implementing a scheduler that is able to interrupt a currently running task in the middle of it's busy loop and switch to a different task. This however also comes with a lot of subtle problems that result in much more synchronization code all around the application to ensure atomic access to shared data. 
+Stackless threads in libk are designed to solve one specific problem: busy
+waits. I settled for this approach because it has been the most lightweight
+solution to this problem. Almost 98% of all embedded code uses busy waits - the
+standard way to solve this problem is by implementing a scheduler that is able
+to interrupt a currently running task in the middle of it's busy loop and
+switch to a different task. This however also comes with a lot of subtle
+problems that result in much more synchronization code all around the
+application to ensure atomic access to shared data. 
 
-With protothreads, it is instead possible to minimize the amount of locking and synchronization necessary, while at the same time to enjoy a healthy degree of multitasking where CPU rarely is just idly spinning inside some delay loop.
+With protothreads, it is instead possible to minimize the amount of locking and
+synchronization necessary, while at the same time to enjoy a healthy degree of
+multitasking where CPU rarely is just idly spinning inside some delay loop.
 
-The main area where this kind of multitasking really is useful is device drivers that do a lot of I/O. I/O operations are by far the greatest bottleneck in most embedded systems that don't use multitasking and instead resort to idly waiting for an I/O operation to complete. LibK solves this problem by doing minimal caching of data and also by never waiting for an I/O operation to complete and instead letting another task run while I/O is in progress. 
+The main area where this kind of multitasking really is useful is device
+drivers that do a lot of I/O. I/O operations are by far the greatest bottleneck
+in most embedded systems that don't use multitasking and instead resort to idly
+waiting for an I/O operation to complete. LibK solves this problem by doing
+minimal caching of data and also by never waiting for an I/O operation to
+complete and instead letting another task run while I/O is in progress. 
 
-Another attractive feature of libk threading is that it is completely implemented in software - meaning that it will work the same on all hardware. It is after all just an array of "update" methods that the kernel schedules periodically. 
+Another attractive feature of libk threading is that it is completely
+implemented in software - meaning that it will work the same on all hardware.
+It is after all just an array of "update" methods that the kernel schedules
+periodically. 
 
-I have found that I could improve performance with protothreading almost 100x. When I eliminated all busy delay loops in the device drivers I have found that my application was able to run a lot faster and also it has become much more responsive. I have not howerver noticed a significant memory overhead. By far the main memory overhead (which is also a necessary evil) is caching data in memory so that it can be retained while another thread has control of the CPU. Most drivers use caching in one way or another. 
+I have found that I could improve performance with protothreading almost 100x.
+When I eliminated all busy delay loops in the device drivers I have found that
+my application was able to run a lot faster and also it has become much more
+responsive. I have not howerver noticed a significant memory overhead. By far
+the main memory overhead (which is also a necessary evil) is caching data in
+memory so that it can be retained while another thread has control of the CPU.
+Most drivers use caching in one way or another. 
+
 Device interfaces
 =================
-
-
-How to device access works
---------------------------
-
-For the sake of being light weight, the on chip devices all have static methods that are used for accessing each device. You can use macros to construct code for accessing a low level on chip device and most of these macros are device in arch/*.h files.
-
-Thus we can write spi0_init() and spi0_writereadbyte() to interact with the spi0 interface on the chip. All this is fine, until we want to configure another device driver to use a speciffic spi device. Of course we could write the driver so that it has the spi device hardcoded and always uses one speciffic output device - this is fine if we only have one instance of the driver - but boards can have several instances of the same device connected to completely different spi ports. And this needs to be configured.
-
-This does require some kind of way to reference an on chip device that can be specified dynamically in code. Generating separate code for each instance of the device no longer provides much benefit - so we need to use some extra memory to do this. The way this is solved right now is through the use of interfaces. Every type of low level device has an interface struct that can be optionally used to access that device from a driver. This interface we can construct dynamically. The overhead is a little memory used for storing the function pointers and a small overhead of calling a function pointer but this is negligible unless you have some really really small device. And also the library allows you to actually not use this interface at all if you don't want to - however higher level drivers use it because it adds a configurability benefit to the driver so that we can easily define multiple instances of a driver for a board.
-
-All device instance data is stored in a device specific struct along with any interfaces to lower level devices that the driver uses to talk to the device. This way we can configure a device in the board file to use i2c port X and address Y to talk to a device and then the driver code can use the constructed interface to access the device without knowing exactly which i2c port and address it is using. The driver does not need this data - it only needs a reference to an i2c interface that is already preconfigured to use specific settings for that board.
-
-The kind of code structure we are aiming to achieve is that all on board devices have to be configured in the board driver. All application code then uses structs defined in the board struct to talk to all devices accessible to it. 
- 
-Architecture layer
-==================
-
-- Martin K. Schröder - info@fortmax.se
 
 Currently supported architectures
 -----------------------
@@ -268,9 +275,14 @@ Currently supported architectures
 |   ATMEL  |   AT91SAM3    |  yes  |
 |   ST     |   STM32F103   |  part |
 
-When you want to implement support for a new chip, what you would need to do is implement all of the interfaces defined in arch/interface.h file. We will take a look at these interfaces in turn below. But first a little on how things are put together.
+When you want to implement support for a new chip, what you would need to do is
+implement all of the interfaces defined in arch/interface.h file. We will take
+a look at these interfaces in turn below. But first a little on how things are
+put together.
 
-The whole arch layer for an architecture can be included into your application by including arch/soc.h file. It will automatically include needed files according to include/autoconfig.h file (generated by 'make menuconfig')
+The whole arch layer for an architecture can be included into your application
+by including arch/soc.h file. It will automatically include needed files
+according to include/autoconfig.h file (generated by 'make menuconfig')
 
 ```
 #include <arch/soc.h>
@@ -287,14 +299,32 @@ This layer consists of following devices:
 * [UART](arch_uart.md) - asynchronous serial interfaces
 * [CAN](arch_can.md) - controller area network interfaces
 
-The arch layer is built around the idea of being really fast. Because this is the absolutely lowest layer that is closest to hardware, the methods of this layer get called a lot of times. This layer is responsible for providing a human readable interface to chip register operations.
+The arch layer is built around the idea of being really fast. Because this is
+the absolutely lowest layer that is closest to hardware, the methods of this
+layer get called a lot of times. This layer is responsible for providing a
+human readable interface to chip register operations.
 
-We would typically implement this layer by wrapping register operations in macro expressions. You can take a look at how this is done in one of the header files found in for instance arch/avr/m328p folder. All cpu operations are wrapped in macros. You don't have to use macros on higher layers, but this layer is usually very simple (ie all "method" calls in this layer really just write values to some memory location) so we actually want to do this with macros. You can for instance look at the implementation of gpio interface in arch/avr/m328p/gpio.h
+We would typically implement this layer by wrapping register operations in
+macro expressions. You can take a look at how this is done in one of the header
+files found in for instance arch/avr/m328p folder. All cpu operations are
+wrapped in macros. You don't have to use macros on higher layers, but this
+layer is usually very simple (ie all "method" calls in this layer really just
+write values to some memory location) so we actually want to do this with
+macros. You can for instance look at the implementation of gpio interface in
+arch/avr/m328p/gpio.h
 
 Devices and their interfaces
 ----------------------------
 
-There are typically two ways to access devices on the soc. You can either call the arch layer directly (ie call the macros) or you can use generic interfaces that the arch layer can create for you in order to access the devices generically. Generic interfaces are designed to allow interchangable use of many different types of devices that can provide the same kind of service. For example, libc FILE* handle is a type of generic interface. It has get() and put() function pointers that get called by getc/putc. This way you can use FILE* to access a file on any filesystem, you can access a device, you can access a fifo pipe - all thought exactly the same interface.
+There are typically two ways to access devices on the soc. You can either call
+the arch layer directly (ie call the macros) or you can use generic interfaces
+that the arch layer can create for you in order to access the devices
+generically. Generic interfaces are designed to allow interchangable use of
+many different types of devices that can provide the same kind of service. For
+example, libc FILE handle is a type of generic interface. It has get() and
+put() function pointers that get called by getc/putc. This way you can use
+FILE to access a file on any filesystem, you can access a device, you can
+access a fifo pipe - all thought exactly the same interface.
 
 This is exactly what we want to have for our device drivers as well!
 

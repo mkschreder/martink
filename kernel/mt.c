@@ -61,13 +61,13 @@ void vApplicationStackOverflowHook( TaskHandle_t xTask, signed char *pcTaskName 
 }
 /*-----------------------------------------------------------*/
 
+#include <serial/serial.h>
+#include <avr/sleep.h>
+#include <avr/power.h>
+
 void vApplicationIdleHook( void ); 
 void vApplicationIdleHook( void ){
-	static int idle_count = 0; 
-	if(idle_count % 100000000 == 0) {
-		//printk("idle %d\r\n", idle_count); 
-	}
-	idle_count++; 
+	cpu_relax(); 
 }
 
 void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,

@@ -23,6 +23,7 @@
 #include <kernel/list.h>
 #include "pwm.h"
 
+#if 0
 static LIST_HEAD(_pwm_devices); 
 
 void pwm_register_device(struct pwm_device *dev){
@@ -32,4 +33,4 @@ void pwm_register_device(struct pwm_device *dev){
 struct pwm_device *pwm_get_device(int number){
 	return list_get_entry(&_pwm_devices, number, struct pwm_device, list); 
 }
-
+#endif

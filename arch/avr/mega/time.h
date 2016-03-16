@@ -26,7 +26,6 @@
 extern "C" {
 #endif
 
-#include <arch/time.h>
 #include <avr/io.h>
 
 /*

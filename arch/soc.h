@@ -64,8 +64,6 @@ extern "C" {
 
 #include <kernel/list.h>
 
-#include "time.h"
-
 #ifdef CONFIG_ARCH_AVR
 #include "avr/mega.h"
 #elif CONFIG_ARCH_ARM

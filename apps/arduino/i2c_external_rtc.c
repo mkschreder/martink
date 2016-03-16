@@ -21,9 +21,10 @@ dimmed while user is typing and while the second led starts blinking.
 #include <gpio/gpio.h>
 #include <gpio/atmega_gpio.h>
 #include <pwm/pwm.h>
-#include <block/block.h>
+#include <memory/memory.h>
 #include <serial/serial.h>
 #include <i2c/i2c.h>
+#include <rtc/rtc.h>
 
 // this is just a static blink to signal that everything is working
 static void init_blink(void){
@@ -37,31 +38,37 @@ static void init_blink(void){
 }
 
 static void time_thread_proc( void *args ){
-	struct i2c_adapter *adapter = i2c_get_adapter(0); 
-	printk("i3c_scan: \r\n"); 
+	struct i2c_adapter *adapter = atmega_i2c_get_adapter(0); 
+	printk("i2c_scan: \r\n"); 
 	for(int c = 0; c <= 0x7f; c++){
-		if(i2c_adapter_device_exists(adapter, c)) printk("%02x ", c); 
+		if(i2c_device_exists(adapter, c)) printk("%02x ", c); 
 		else printk("00 ");  
 		if((c & 0x7) == 0x7) printk("\r\n"); 
 	}
 	printk("\r\n"); 
-	if(i2c_add_device(adapter, 0x57, "at24") < 0){
-		printk("Could not find EEPROM!\r\n"); 
-	}
-	
-	struct block_device *at24 = block_get_device(0); 
+
+	struct memory_device *at24 = at24_device_new(adapter, 0x57); 
 	if(!at24) { 
 		printk("No memory found!\r\n"); 
 		return; 
 	}
-	
+
+	struct rtc_device *rtc = ds3231_new(adapter, 0x68); 
+	if(!rtc) {
+		printk("No rtc device found!\r\n"); 
+		return; 
+	}
+
 	static char buf[8] = {'a','b','c','d',0,0,0,0}; 
+	static struct rtc_date_time time; 
 
 	for( ;; ){
 		// uncomment to try writing
-		//if(block_write(at24, 0, buf, sizeof(buf)) < 0) printk("NOWRITE\r\n"); 
+		//if(memory_device_write(at24, 0, buf, sizeof(buf)) < 0) printk("NOWRITE\r\n"); 
 		//memset(buf, 0, sizeof(buf)); 
-		if(block_read(at24, 0, buf, sizeof(buf)) < 0) printk("NOREAD\r\n");  
+		if(memory_device_read(at24, 0, buf, sizeof(buf)) < 0) printk("NOREAD\r\n");  
+		if(rtc_get_datetime(rtc, &time, 0) < 0) printk("NOTIME\r\n"); 
+		printk("time: %02d-%02d-%02d %02d:%02d:%02d\r\n", time.year, time.month, time.date, time.hour, time.minute, time.second); 
 		for(size_t c = 0; c < sizeof(buf); c++) printk("%02x", buf[c]); 
 		printk("\r\n"); 
 		init_blink(); 
@@ -70,11 +77,10 @@ static void time_thread_proc( void *args ){
 }
 
 static void dim_thread_proc( void *args ){
-	struct pwm_device *dev = pwm_get_device(0); 
+	struct pwm_device *dev = atmega_pwm_get_device(); 
 	if(!dev) return; 
 	gpio_configure(GPIO_PD6, GP_OUTPUT); 
 	for( ;; ){
-		printk("DIM\r\n"); 
 		pwm_set_output(dev, 0, 1); 	
 		for(int c = 0; c < 10; c++){
 			pwm_set_period(dev, 0, 20 * c);  

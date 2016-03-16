@@ -14,7 +14,7 @@ endmenu
 menu "Device driver support"
 	source crypto/KConfig
 	source bus/KConfig
-	source block/KConfig
+	source memory/KConfig
 	source adc/KConfig
 	source gpio/KConfig
 	source i2c/KConfig
@@ -27,6 +27,7 @@ menu "Device driver support"
 	source radio/KConfig
 	source rfid/KConfig
 	source sensors/KConfig
+	source rtc/KConfig
 	source serial/KConfig
 	source spi/KConfig
 	source tty/KConfig

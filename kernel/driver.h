@@ -3,7 +3,7 @@
 struct device_driver {
 	struct list_head list; 
 	const char *name; 
-	void (*probe)(void); 
+	//void (*probe)(void); 
 }; 
 
 #define module_driver(__driver, __register, __unregister, ...) \

@@ -1,15 +1,15 @@
 #pragma once
 
-struct device; 
-struct device_driver {
-	const char *name; 
-	int (*probe)(struct device *dev); 
-	int (*remove)(struct device *dev); 
-	int (*suspend)(struct device *dev); 
-}; 
+#include "list.h"
 
+#if 0
 struct device {
-	struct bus_type *bus; 
+	struct list_head list; 
 	struct device_driver *driver; 
 }; 
 
+struct device *device_find(struct list_head *list, const char *path); 
+void device_register(struct device *dev); 
+void device_foreach(void (*func)(struct device *dev, void *p), void *p); 
+
+#endif

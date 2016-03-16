@@ -1,6 +1,3 @@
-obj-y += arch/time.o
-obj-y += arch/soc.o
-
 docs-y += arch/README.md
 
 ifeq ($(CONFIG_ARCH_AVR),y)

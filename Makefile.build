@@ -1,11 +1,10 @@
-include apps/Makefile
 include arch/Makefile
+include kernel/Makefile
 include gpio/Makefile
 include bus/Makefile
 include adc/Makefile
-include block/Makefile
+include memory/Makefile
 include boards/Makefile
-include kernel/Makefile
 include fs/Makefile
 include disp/Makefile
 include gui/Makefile
@@ -20,7 +19,9 @@ include tty/Makefile
 include util/Makefile
 include serial/Makefile
 include pwm/Makefile
+include rtc/Makefile
 include spi/Makefile
 include crypto/Makefile
 include lib/Makefile
+include apps/Makefile
 include examples/Makefile

@@ -146,8 +146,8 @@ static struct pwm_device_ops mega_pwm_ops = {
 	.set_period = atmega_pwm_set_period
 }; 
 
-static void __init atmega_pwm_init(void){
+struct pwm_device *atmega_pwm_get_device(void){
 	mega_pwm.device.ops = &mega_pwm_ops; 
-	pwm_register_device(&mega_pwm.device); 
+	return &mega_pwm.device; 
 }
 

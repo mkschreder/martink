@@ -67,3 +67,14 @@ static inline void platform_panic_noblock(void){
 	PORTB &= ~_BV(5); 
 	_delay_ms(100); 
 }
+
+#include <avr/sleep.h>
+
+static inline void cpu_relax(void){
+	set_sleep_mode(SLEEP_MODE_IDLE); 
+	cli(); 
+	sleep_enable(); 
+	sei(); 
+	sleep_cpu(); 
+	sleep_disable(); 
+}

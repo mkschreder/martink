@@ -25,32 +25,33 @@
 #include <arch/soc.h>
 #include <i2c/i2c.h>
 #include <serial/serial.h>
-#include <block/block.h>
+#include "memory.h"
 
 //#define AT24_PAGE_SIZE 32 
 
 struct at24 {
-	struct i2c_client *client; 
-	struct block_device device; 
+	struct memory_device device; 
+	struct i2c_adapter *adapter; 
+	uint8_t addr; 
 };
 
-static int at24_read(struct block_device *dev, size_t offset, char *data, size_t size){
+static int at24_read(struct memory_device *dev, size_t offset, char *data, size_t size){
 	if(!dev) return -EINVAL; 
 	struct at24 *self = container_of(dev, struct at24, device); 
 	char outbuf[2] = { offset >> 8, offset & 0xff }; 
-	int ret = i2c_client_transfer(self->client, outbuf, sizeof(outbuf), data, size); 
+	int ret = i2c_transfer(self->adapter, self->addr, outbuf, sizeof(outbuf), data, size); 
 	if(ret < 0) return -EFAULT; 
 	return ret; 
 }
 
-static int at24_write(struct block_device *dev, size_t offset, const char *data, size_t _size){
+static int at24_write(struct memory_device *dev, size_t offset, const char *data, size_t _size){
 	if(!dev) return -EINVAL; 
 	struct at24 *self = container_of(dev, struct at24, device); 
 	size_t size = _size; 
 	// write one byte at a time (guaranteed support on all devices)  
 	while(size--){
 		char outbuf[3] = { offset >> 8, offset & 0xff, *data }; 
-		if(i2c_client_write(self->client, outbuf, sizeof(outbuf)) < 0){
+		if(i2c_write(self->adapter, self->addr, outbuf, sizeof(outbuf)) < 0){
 			return -EFAULT; 
 		}
 		// twr is at least 10ms
@@ -60,30 +61,18 @@ static int at24_write(struct block_device *dev, size_t offset, const char *data,
 	return _size - size; 
 }
 
-static struct block_device_ops at24_ops = {
+static struct memory_device_ops at24_ops = {
 	.read = at24_read, 
 	.write = at24_write
 }; 
 
-static int at24_probe(struct i2c_client *client) {
-	struct at24 *data = kzmalloc(sizeof(struct at24)); 
-	if(!data) return -ENOMEM; 
-	data->client = client; 
-	data->device.ops = &at24_ops; 
-	block_register_device(&data->device); 
-	i2c_client_set_data(client, data); 
-	return 0; 
-}
-
-static struct i2c_driver at24_driver = {
-	.driver = {
-		.name = "at24"
-	},
-	.probe = at24_probe, 
-	//.remove = at24_remove
-}; 
-
-static void __init at24_init(void){
-	i2c_add_client_driver(&at24_driver); 	
+struct memory_device* at24_device_new(struct i2c_adapter *adapter, uint8_t addr) {
+	if(!i2c_device_exists(adapter, addr)) return NULL; 
+	struct at24 *self = kzmalloc(sizeof(struct at24)); 
+	if(!self) return 0; 
+	self->addr = addr; 
+	self->device.ops = &at24_ops; 
+	self->adapter = adapter; 
+	return &self->device; 
 }
 

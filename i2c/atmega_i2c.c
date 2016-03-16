@@ -93,12 +93,11 @@ Revision Info:  $Id: twi_master.c 117 2010-06-24 20:21:28Z pieterconradie $
 struct avr_i2c_adapter {
 	struct i2c_adapter adapter; 
 
-	volatile struct i2c_client *client; // current client using the driver
+	uint8_t addr; // currently used address
 	volatile const char *wr_data; 
 	volatile char *rd_data; 
 	volatile uint8_t size;
 
-	volatile uint8_t addr; // current i2c address
 	volatile int status; 
 
 	mutex_t lock; 
@@ -111,7 +110,6 @@ static struct avr_i2c_adapter twi0;
 ISR(TWI_vect){
 	uint8_t status = TWSR; 
 	struct avr_i2c_adapter *self = &twi0; 
-	if(!self->client) return; // TODO: maybe signal this somehow? client MUST always be set when we get here!
 
 	switch(status){
 	case TW_START:
@@ -121,7 +119,7 @@ ISR(TWI_vect){
 		// TODO: what happens if we get here because of arbitration lost? 
 		// REPEATED START has been transmitted
 		// Load data register with TWI slave address
-		TWDR = self->client->addr;
+		TWDR = self->addr;
 		// TWI Interrupt enabled and clear flag to send next byte
 		TWCR = (1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)|(1<<TWEN)|(1<<TWIE);
 		break;
@@ -195,9 +193,9 @@ ISR(TWI_vect){
 
 /* _____FUNCTIONS_____________________________________________________ */
 
-static int _atmega_i2c_write(struct avr_i2c_adapter *self, struct i2c_client *client, const char *data, size_t size){
+static int _atmega_i2c_write(struct avr_i2c_adapter *self, uint8_t addr, const char *data, size_t size){
 	twi0_wait_ready(); 
-	client->addr &= ~I2C_READ; 	
+	self->addr = addr << 1; 
 	self->status = 0; 
 	self->wr_data = data; 
 	self->size = size; 
@@ -205,9 +203,9 @@ static int _atmega_i2c_write(struct avr_i2c_adapter *self, struct i2c_client *cl
 	sem_take(&self->ready); 
 	return (twi0.status < 0)?twi0.status:((int)size - self->size); 
 }
-static int _atmega_i2c_read(struct avr_i2c_adapter *self, struct i2c_client *client, char *data, size_t size){
+static int _atmega_i2c_read(struct avr_i2c_adapter *self, uint8_t addr, char *data, size_t size){
 	twi0_wait_ready(); 
-	client->addr |= I2C_READ; 
+	self->addr = (addr << 1) | I2C_READ; 
 	self->status = 0; 
 	self->rd_data = data; 
 	self->size = size; 
@@ -216,47 +214,44 @@ static int _atmega_i2c_read(struct avr_i2c_adapter *self, struct i2c_client *cli
 	return (twi0.status < 0)?twi0.status:((int)size - self->size); 
 }
 
-static int _atmega_i2c_stop(struct avr_i2c_adapter *self, struct i2c_client *client){
+static int _atmega_i2c_stop(struct avr_i2c_adapter *self){
 	twi0_send_stop(); 
 	twi0_wait_stop(); 
 	return 0; 
 }
 
-static int atmega_i2c_write(struct i2c_client *client, const char *data, size_t size){
-	struct avr_i2c_adapter *self = container_of(client->adapter, struct avr_i2c_adapter, adapter); 
+static int atmega_i2c_write(struct i2c_adapter *adapter, uint8_t addr, const char *data, size_t size){
+	struct avr_i2c_adapter *self = container_of(adapter, struct avr_i2c_adapter, adapter); 
 	mutex_lock(&self->lock); 
-	self->client = client; 
-	int ret = _atmega_i2c_write(self, client, data, size); 	
-	_atmega_i2c_stop(self, client); 
+	int ret = _atmega_i2c_write(self, addr, data, size); 	
+	_atmega_i2c_stop(self); 
 	mutex_unlock(&self->lock); 
 	return ret; 
 }
 
-static int atmega_i2c_read(struct i2c_client *client, char *data, size_t size){
-	struct avr_i2c_adapter *self = container_of(client->adapter, struct avr_i2c_adapter, adapter); 
+static int atmega_i2c_read(struct i2c_adapter *adapter, uint8_t addr, char *data, size_t size){
+	struct avr_i2c_adapter *self = container_of(adapter, struct avr_i2c_adapter, adapter); 
 	mutex_lock(&self->lock); 
-	self->client = client; 
-	int ret = _atmega_i2c_read(self, client, data, size); 	
-	_atmega_i2c_stop(self, client); 
+	int ret = _atmega_i2c_read(self, addr, data, size); 	
+	_atmega_i2c_stop(self); 
 	mutex_unlock(&self->lock); 
 	return ret; 
 }
 
 #include <serial/serial.h>
-static int atmega_i2c_transfer(struct i2c_client *client, const char *outbuf, size_t out_size, char *in_buf, size_t in_size){
-	if(!client || !outbuf || !in_buf) return -EINVAL; 
-	struct avr_i2c_adapter *self = container_of(client->adapter, struct avr_i2c_adapter, adapter); 
+static int atmega_i2c_transfer(struct i2c_adapter *adapter, uint8_t addr, const char *outbuf, size_t out_size, char *in_buf, size_t in_size){
+	if(!adapter || !outbuf || !in_buf) return -EINVAL; 
+	struct avr_i2c_adapter *self = container_of(adapter, struct avr_i2c_adapter, adapter); 
 	mutex_lock(&self->lock); 
-	self->client = client; 
-	int ret = _atmega_i2c_write(self, client, outbuf, out_size); 
+	int ret = _atmega_i2c_write(self, addr, outbuf, out_size); 
 	if(ret < 0) goto error; 
-	ret = _atmega_i2c_read(self, client, in_buf, in_size); 
+	ret = _atmega_i2c_read(self, addr, in_buf, in_size); 
 	if(ret < 0) goto error; 
-	_atmega_i2c_stop(self, client); 
+	_atmega_i2c_stop(self); 
 	mutex_unlock(&self->lock); 
 	return ret; 
 error: 
-	_atmega_i2c_stop(self, client); 
+	_atmega_i2c_stop(self); 
 	mutex_unlock(&self->lock); 
 	return ret; 
 }
@@ -267,7 +262,7 @@ static struct i2c_adapter_ops atmega_i2c_ops = {
 	.transfer = atmega_i2c_transfer
 }; 
 
-static void __init atmega_i2c_init(void){
+struct i2c_adapter *atmega_i2c_get_adapter(int number){
 	// only one twi interface for now
 	memset(&twi0, 0, sizeof(twi0)); 
 	struct avr_i2c_adapter *self = &twi0; 
@@ -276,8 +271,6 @@ static void __init atmega_i2c_init(void){
 	mutex_init(&self->lock); 
 	sem_init(&self->ready, 1, 0); 
 	
-	i2c_register_adapter(&self->adapter); 
-
 	// Initialize TWI clock
 	TWSR = 0; //TWI_PRESCALER;
 	TWBR = ((F_CPU / TWI_FREQ) - 16) / 2;
@@ -292,6 +285,7 @@ static void __init atmega_i2c_init(void){
 	PORTC |= _BV(5) | _BV(4); 
 
 	self->adapter.ops = &atmega_i2c_ops; 
-	i2c_register_adapter(&twi0.adapter); 
+
+	return &twi0.adapter; 
 }
 

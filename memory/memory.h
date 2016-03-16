@@ -1,5 +1,5 @@
 /**
-	Micro Block Device System 
+	External Memory Device System 
 	
 	Copyright (c) 2016 Martin Schröder <mkschreder.uk@gmail.com>
 
@@ -22,22 +22,28 @@
 
 #pragma once
 
+#include <kernel/device.h>
+#include <kernel/driver.h>
 #include <kernel/types.h>
 #include <kernel/list.h>
+#include <i2c/i2c.h>
 
-struct block_device; 
-struct block_device_ops {
-	int (*write)(struct block_device *dev, size_t offset, const char *data, size_t size); 
-	int (*read)(struct block_device *dev, size_t offset, char *data, size_t size); 
+struct memory_device; 
+struct memory_device_ops {
+	int (*write)(struct memory_device *dev, size_t offset, const char *data, size_t size); 
+	int (*read)(struct memory_device *dev, size_t offset, char *data, size_t size); 
 }; 
 
-struct block_device {
-	struct list_head list; 
-	struct block_device_ops *ops; 
+struct memory_device {
+	//struct device device; 
+	struct memory_device_ops *ops; 
 }; 
+/*
+void memory_register_device(struct memory_device *dev); 
+struct memory_device *memory_get_device(const char *path); 
+*/
+#define memory_device_write(dev, offset, data, size) dev->ops->write(dev, offset, data, size)
+#define memory_device_read(dev, offset, data, size) dev->ops->read(dev, offset, data, size)
 
-void block_register_device(struct block_device *dev); 
-struct block_device *block_get_device(int number); 
-
-#define block_write(dev, offset, data, size) dev->ops->write(dev, offset, data, size)
-#define block_read(dev, offset, data, size) dev->ops->read(dev, offset, data, size)
+struct memory_device* at24_device_new(struct i2c_adapter *adapter, uint8_t addr); 
+struct memory_device *atmega_eeprom_get(void); 

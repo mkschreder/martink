@@ -29,45 +29,23 @@
 #define I2C_WRITE   0
 
 struct i2c_adapter; 
-struct i2c_driver; 
-struct i2c_client; 
 
 struct i2c_adapter_ops {
-	int (*write)(struct i2c_client *self, const char *data, size_t size); 
-	int (*read)(struct i2c_client *self, char *data, size_t size); 
-	int (*transfer)(struct i2c_client *self, const char *wr_data, size_t wr_size, char *rd_data, size_t rd_size); 
+	int (*write)(struct i2c_adapter *self, uint8_t addr, const char *data, size_t size); 
+	int (*read)(struct i2c_adapter *self, uint8_t addr, char *data, size_t size); 
+	int (*transfer)(struct i2c_adapter *self, uint8_t addr, const char *wr_data, size_t wr_size, char *rd_data, size_t rd_size); 
 }; 
 
 struct i2c_adapter {
-	struct list_head list; 
-	struct i2c_driver *driver; 
+	//struct list_head list; 
+	//struct i2c_driver *driver; 
 	struct i2c_adapter_ops *ops; 
 }; 
 
-struct i2c_client; 
+#define i2c_transfer(adapter, addr, wr, wr_size, rd, rd_size) (adapter)->ops->transfer(adapter, addr, wr, wr_size, rd, rd_size)
+#define i2c_write(adapter, addr, wr, wr_size) (adapter)->ops->write(adapter, addr, wr, wr_size)
+#define i2c_read(adapter, addr, wr, wr_size) (adapter)->ops->read(adapter, addr, wr, wr_size)
 
-struct i2c_client {
-	struct list_head list; 
-	struct i2c_adapter *adapter; 
-	uint8_t addr; 
-	void *data; 
-}; 
+int i2c_device_exists(struct i2c_adapter *adapter, uint8_t address); 
 
-struct i2c_driver {
-	struct device_driver driver; 
-	int (*probe)(struct i2c_client *client); 
-}; 
-
-void i2c_register_adapter(struct i2c_adapter *self); 
-struct i2c_adapter *i2c_get_adapter(int number); 
-void i2c_add_client_driver(struct i2c_driver *driver); 
-int i2c_add_device(struct i2c_adapter *adapter, uint8_t address, const char *driver); 
-
-#define i2c_client_set_data(cl, data) do { cl->data = data; } while(0)
-#define i2c_client_get_data(cl) (cl->data)
-
-#define i2c_client_transfer(client, wr, wr_size, rd, rd_size) (client)->adapter->ops->transfer(client, wr, wr_size, rd, rd_size)
-#define i2c_client_write(client, wr, wr_size) (client)->adapter->ops->write(client, wr, wr_size)
-#define i2c_client_read(client, wr, wr_size) (client)->adapter->ops->read(client, wr, wr_size)
-
-int i2c_adapter_device_exists(struct i2c_adapter *adapter, uint8_t address); 
+struct i2c_adapter *atmega_i2c_get_adapter(int number); 

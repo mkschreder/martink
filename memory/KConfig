@@ -1,4 +1,4 @@
-menu "Persistent memory block devices"
+menu "External Memory"
 	config BLOCK
 		bool "Enable block device support"
 	config ATMEGA_EEPROM

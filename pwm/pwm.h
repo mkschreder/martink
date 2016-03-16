@@ -35,12 +35,11 @@ struct pwm_device_ops {
 }; 
 
 struct pwm_device {
-	struct list_head list; 
 	struct pwm_device_ops *ops; 
 }; 
 
-void pwm_register_device(struct pwm_device *dev); 
-struct pwm_device *pwm_get_device(int number); 
-
 #define pwm_set_output(dev, chan, on) dev->ops->set_output(dev, chan, on)
 #define pwm_set_period(dev, chan, on) dev->ops->set_period(dev, chan, on)
+
+struct pwm_device *atmega_pwm_get_device(void); 
+

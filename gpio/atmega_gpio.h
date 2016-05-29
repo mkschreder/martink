@@ -142,6 +142,15 @@ uint8_t gpio_read_pin(gpio_pin_t pin);
 uint8_t gpio_pin_busy(gpio_pin_t pin);
 int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t flags);
 
+#include <kernel/list.h>
+struct pcint_handler {
+	struct list_head list; 
+	uint8_t pin; 
+	void (*handler)(struct pcint_handler *self); 
+}; 
+
+int gpio_register_pcint(struct pcint_handler *handler); 
+
 #define gpio_clear(pin) gpio_write_pin(pin, 0)
 #define gpio_set(pin) gpio_write_pin(pin, 1)
 

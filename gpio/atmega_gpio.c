@@ -35,9 +35,10 @@ const struct pin_decl gPinPorts[4] = {
 	{&PORTD, &PIND, &DDRD},
 };
 
-volatile struct pin_state *_pin_states[GPIO_COUNT - GPIO_PB0] = {0}; 
+//volatile struct pin_state *_pin_states[GPIO_COUNT - GPIO_PB0] = {0}; 
 //static volatile uint8_t _pins_enabled[4] = {0}; 
 
+/*
 uint8_t gpio_pin_busy(gpio_pin_t pin){
 	if(pin < GPIO_PB0 || pin > GPIO_PD7) return 0; 
 	pin = (pin - GPIO_PB0); 
@@ -57,8 +58,8 @@ int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t
 	 
 	return 0; 
 }
-
-#if defined(CONFIG_GPIO_PIN_STATES)
+*/
+#if 0
 	static void PCINT_vect(void){
 		timestamp_t time = timestamp_now(); 
 		static uint8_t prev[3] = {0xff, 0xff, 0xff}; 
@@ -155,6 +156,36 @@ int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t
 		PCINT_vect(); 
 	}
 #endif
+
+static LIST_HEAD(_pcint_handlers); 
+//static uint8_t pcint_mask[3] = {0, 0, 0}; 
+//static uint8_t pcint_last[3] = {0, 0, 0}; 
+
+static void PCINT_vect(volatile uint8_t *port){
+	struct pcint_handler *irq; 
+	list_for_each_entry(irq, &_pcint_handlers, list){
+		irq->handler(irq); 
+	}
+}
+
+ISR(PCINT0_vect){
+	PCINT_vect(&PINB); 
+}
+
+ISR(PCINT1_vect){
+	PCINT_vect(&PINC); 
+}
+
+ISR(PCINT2_vect){
+	PCINT_vect(&PIND); 
+}
+
+int gpio_register_pcint(struct pcint_handler *handler){
+	cli(); 
+	list_add_tail(&handler->list, &_pcint_handlers); 	
+	sei(); 
+	return 0; 
+}
 
 void gpio_configure(gpio_pin_t pin, uint16_t fun){
 	if(fun & GP_OUTPUT) RSET(DREG(pin), PIDX(pin)); 

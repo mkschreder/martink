@@ -28,10 +28,9 @@ struct spi_adapter_ops {
 }; 
 
 struct spi_adapter {
-	struct list_head list; 
 	struct spi_adapter_ops *ops; 	
 }; 
 
-void spi_register_adapter(struct spi_adapter *dev); 
-struct spi_adapter *spi_get_adapter(int number); 
+#define spi_transfer(adapter, data, size) (adapter)->ops->transfer(adapter, data, size)
 
+struct spi_adapter *atmega_spi_get_adapter(void); 

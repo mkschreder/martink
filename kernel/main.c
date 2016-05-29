@@ -68,7 +68,6 @@ int main(void){
 	//do_initcalls(); 
 	libk_loop(); 
 }
-#endif
 void libk_register_device(struct libk_device *self, ASYNC_PTR(int, async_process_t, proc), const char *name){
 	//struct libk_device *self = (struct libk_device*)container_of(__self, struct libk_device, process); 
 	async_process_init(&self->process, ASYNC_NAME(int, async_process_t, proc), name); 
@@ -78,7 +77,6 @@ void libk_register_device(struct libk_device *self, ASYNC_PTR(int, async_process
 void libk_loop() {
 	while(1){
 		//timestamp_t start = timestamp_now(); 
-		//uint8_t pcount = 
 		ASYNC_RUN_PARALLEL(&ASYNC_GLOBAL_QUEUE); 
 		timestamp_t now = tsc_read(); 
 		//DEBUG("loop: %lu\n", timestamp_ticks_to_us(now - start)); 
@@ -93,6 +91,7 @@ void libk_loop() {
 		}
 	}
 }
+#endif
 
 extern int __cxa_guard_acquire(__guard *g);
 extern void __cxa_guard_release (__guard *g); 

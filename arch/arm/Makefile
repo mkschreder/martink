@@ -1,5 +1,7 @@
 VPATH += arch/arm
 
+ARCH:=stm32
+
 CC := arm-none-eabi-gcc
 CXX := arm-none-eabi-g++
 AS := arm-none-eabi-as
@@ -7,10 +9,10 @@ LD := arm-none-eabi-gcc
 LDXX := arm-none-eabi-g++
 
 ifeq ($(CONFIG_CPU_STM32), y)
-	include $(srctree)/arch/arm/stm32/Makefile
+include $(srctree)/arch/arm/stm32/Makefile
 endif
 ifeq ($(CONFIG_CPU_AT91SAM3), y)
-	include $(srctree)/arch/arm/sam3/Makefile
+include $(srctree)/arch/arm/sam3/Makefile
 endif
 
 obj-y += arch/arm/arm.o 

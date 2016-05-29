@@ -1,4 +1,5 @@
 #include <arch/soc.h>
+#include <kernel/time.h>
 #include "stm32.h"
 #include "time.h"
 
@@ -14,13 +15,12 @@ void SysTick_Handler(void){
 	++_ticks; 
 }
     
-void tsc_init(void)
-{
+static void __init tsc_init(void){
 	RCC_ClocksTypeDef RCC_Clocks;
 
-  RCC_GetClocksFreq(&RCC_Clocks);
-  SysTick_Config(RCC_Clocks.SYSCLK_Frequency / 1000UL); 
-  _clk_per_us = RCC_Clocks.SYSCLK_Frequency / 1000000UL; 
+	RCC_GetClocksFreq(&RCC_Clocks);
+	SysTick_Config(RCC_Clocks.SYSCLK_Frequency / 1000UL); 
+	_clk_per_us = RCC_Clocks.SYSCLK_Frequency / 1000000UL; 
   
 	//SysTick_Config (SystemCoreClock / 1000000UL); 
 	
@@ -30,37 +30,19 @@ void tsc_init(void)
 	NVIC_SetPriority(SysTick_IRQn, 0);
 }
 
-timestamp_t tsc_read(void)
-{
+long long tsc_read(void){
 	timestamp_t ret; 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
 		ret = _ticks * 1000 + 1000 - (SysTick->VAL / _clk_per_us); 
 	}
 	return ret; 
 }
-/*
-uint32_t millis(void)
-{
-	return _millis;
-}
 
-void delay_ms(uint32_t ms)
-{
-	int32_t curTime = _millis;
-	while((ms-(_millis-curTime)) > 0);
-}
-
-void delay_us(uint32_t us)
-{
-	int32_t curTime = _micros;
-	while((us-(Micros-curTime)) > 0);
-}
-*/
-timestamp_t tsc_us_to_ticks(timestamp_t us){
+long long tsc_us_to_ticks(long long us){
 	return us; 
 }
 
-timestamp_t tsc_ticks_to_us(timestamp_t ticks){
+long long tsc_ticks_to_us(long long ticks){
 	return ticks; 
 }
 

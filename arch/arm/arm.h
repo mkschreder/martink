@@ -23,11 +23,11 @@
 
 #include <sys/types.h> // for ssize_t
 
-#ifdef CONFIG_STM32
+#ifdef CONFIG_CPU_STM32
 #include "stm32/stm32.h"
 #endif
 
-#ifdef CONFIG_AT91SAM3
+#ifdef CONFIG_CPU_AT91SAM3
 #include "sam3/sam.h"
 #include "at91sam3xe.h"
 #endif

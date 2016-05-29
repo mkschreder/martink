@@ -1,6 +1,6 @@
 #pragma once
 
-#include <arch/types.h>
+#include <kernel/types.h>
 
 enum {
 	GPIO_PA0,

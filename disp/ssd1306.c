@@ -11,8 +11,6 @@
 #include <arch/soc.h>
 #include <errno.h>
 
-#include "ssd1306.h"
-#include "ssd1306_priv.h"
 //#include "lcd_font_5x7.h"
 
 #include <string.h>
@@ -87,8 +85,8 @@
 #define PACKETSZ (TEXTPACKETSZ * 6 + 1) // 8 chars * 6 bytes each + 1 command byte
 #define debug(msg) {} //uart_printf("SSD1306: %s\n", msg);
 
+#define SSD1306_128_64
 
-/*=========================================================================*/
 #if defined SSD1306_128_64 && defined SSD1306_128_32
 #error "Only one SSD1306 display can be specified at once in SSD1306.h"
 #endif
@@ -135,48 +133,102 @@
 #define SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL 0x29
 #define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
 
-/*
-static int ssd1306_command(ssd1306_t *self, uint8_t cmd){
-	if(cbuf_get_free(&self->buffer) < 2) return 0; 
-	cbuf_put(&self->buffer, 0); 
-	cbuf_put(&self->buffer, cmd); 
-	return 1; 
-}
-static int ssd1306_data(struct ssd1306 *self, uint8_t data){
-	if(cbuf_get_free(&self->buffer) < 2) return 0; 
-	cbuf_put(&self->buffer, 0x40); 
-	cbuf_put(&self->buffer, data);
-	return 1; 
-}*/
-/*static void ssd1306_command(ssd1306_t *self, uint8_t cmd){
-	uint8_t buf[2] = {0, cmd};
-	i2c_start_write(self->i2c, DISPLAY_ADDRESS, buf, 2);
-	i2c_stop(self->i2c); 
-}*/
-/*
-static void ssd1306_data(ssd1306_t *self, uint8_t data){
-	uint8_t buf[2] = {0x40, data};
-	i2c_start_write(self->i2c, DISPLAY_ADDRESS, buf, 2);
-	i2c_stop(self->i2c); 
-}*/
+//#define SSD1306_I2C_ADDR 0x78
+// normal i2c address on linux is 3c, shifted is 78
+#define SSD1306_I2C_ADDR 0x3c
+#define SSD1306_128_64
 
-/*static void ssd1306_data_buffer(ssd1306_t *self, uint8_t *data, uint16_t size){
+#define U8G_ESC_CS(x) 255, (0xd0 | ((x)&0x0f))
+#define U8G_ESC_ADR(x) 255, (0xe0 | ((x)&0x0f))
+#define U8G_ESC_RST(x) 255, (0xc0 | ((x)&0x0f))
+#define U8G_ESC_END 255, 254
+
+static const uint8_t cmd_init[] PROGMEM = {
+	U8G_ESC_CS(0),             //disable chip
+	U8G_ESC_ADR(0),           /* instruction mode */
+	U8G_ESC_RST(1),           /* do reset low pulse with (1*16)+2 milliseconds */
+	U8G_ESC_CS(1),             /* enable chip */
+	
+	0x0ae,				/* display off, sleep mode */
+	0x0d5, 0x081,		/* clock divide ratio (0x00=1) and oscillator frequency (0x8) */
+	0x0a8, 0x03f,		/* multiplex ratio */
+	0x0d3, 0x000,	0x00,	/* display offset */
+	//0x040,				/* start line */
+	0x08d, 0x14,		/* charge pump setting (p62): 0x014 enable, 0x010 disable */
+	0x020, 0x00, // memory addr mode
+	0x0a1,				/* segment remap a0/a1*/
+	0x0a5, // display on
+	0x0c8,				/* c0: scan dir normal, c8: reverse */
+	0x0da, 0x012,		/* com pin HW config, sequential com pin config (bit 4), disable left/right remap (bit 5) */
+	0x081, 0x09f,		/* set contrast control */
+	0x0d9, 0x011,		/* pre-charge period */
+	0x0db, 0x020,		/* vcomh deselect level */
+	0x021, 0x00, 0x7f, // (7d for 125 col screen!) column addressing mode
+	0x022, 0x00, 0x07,		/* page addressing mode WRONG: 3 byte cmd! */
+	0x0a4,				/* output ram to display */
+	0x0a6,				/* none inverted normal display mode */
+	0x0af,				/* display on */
+
+	U8G_ESC_CS(0),             /* disable chip */
+	U8G_ESC_END                /* end of sequence */
+};
+
+static const unsigned char cmd_home[] PROGMEM = {
+	U8G_ESC_ADR(0),           // instruction mode 
+	U8G_ESC_CS(1),             // enable chip 
+	0x000, // | (col & 0x0f),		// set lower 4 bit of the col adr to 0 
+	0x010, // | ((col >> 4) & 0x0f),		// set higher 4 bit of the col adr to 0 
+	0x0b0, // | row & 0x0f,  	// page address
+	U8G_ESC_END,                // end of sequence 
+};
+#include <kernel/mt.h>
+#include "display.h"
+
+struct ssd1306 {
+	struct display_device device; 
+	struct i2c_adapter *adapter; 
+	uint8_t addr; 
+	char buffer[1 * 128 + 1]; 
+	mutex_t lock; 
+};
+
+static int ssd1306_write_cmd(struct ssd1306 *self, uint8_t cmd){
+	char data[] = { 0, cmd }; 
+	if(i2c_write(self->adapter, self->addr, data, 2) < 0) return -EIO; 
+	return 0; 
+}
+
+#if 0
+static int ssd1306_write_data(struct ssd1306 *self, uint8_t data){
+	char buf[] = { 0x40, data }; 
+	if(i2c_write(self->adapter, self->addr, buf, 2) < 0) return -EIO; 
+	return 0; 
+}
+#endif
+
+static int ssd1306_write_array(struct ssd1306 *self, char *buffer, size_t size){
+	if(i2c_write(self->adapter, self->addr, buffer, size) < 0) return -EIO; 
+	return 0; 
+}
+
+/*
+static void ssd1306_data_buffer(struct ssd1306 *self, uint8_t *data, uint16_t size){
 	i2c_start_write(self->i2c, DISPLAY_ADDRESS, data, size);
 	i2c_stop(self->i2c); 
-}*/
+}
+*/
 
+#if 0
+static void ssd1306_clear(struct ssd1306 *dev){
+	//ssd1306_gotoChar(dev, 0, 0); ssd1306_write_cmd(dev, SSD1306_COLUMNADDR);
+	ssd1306_write_cmd(dev, 0);   // Column start address (0 = reset)
+	ssd1306_write_cmd(dev, 127); // Column end address (127 = reset)
 
-/*
-static void ssd1306_clear(ssd1306_t *dev){
-	//ssd1306_gotoChar(dev, 0, 0); ssd1306_command(dev, SSD1306_COLUMNADDR);
-	ssd1306_command(dev, 0);   // Column start address (0 = reset)
-	ssd1306_command(dev, 127); // Column end address (127 = reset)
-
-	ssd1306_command(dev, SSD1306_PAGEADDR);
-	ssd1306_command(dev, 0); // Page start address (0 = reset)
-	ssd1306_command(dev, (SSD1306_LCDHEIGHT == 64) ? 7 : 3); // Page end address
-}*/
-
+	ssd1306_write_cmd(dev, SSD1306_PAGEADDR);
+	ssd1306_write_cmd(dev, 0); // Page start address (0 = reset)
+	ssd1306_write_cmd(dev, (SSD1306_LCDHEIGHT == 64) ? 7 : 3); // Page end address
+}
+#endif
 /*
 int16_t ssd1306_puts(ssd1306_t *dev, const char *str, uint8_t col){
 	i2c_start_wait(DISPLAY_ADDRESS | I2C_WRITE);
@@ -196,17 +248,17 @@ int16_t ssd1306_puts(ssd1306_t *dev, const char *str, uint8_t col){
 }
 
 static void ssd1306_set_region(ssd1306_t *dev, uint16_t x0, uint16_t y0, uint16_t w, uint16_t h){
-	ssd1306_command(dev, SSD1306_SETLOWCOLUMN | (x0 & 0x0f)); 
-	ssd1306_command(dev, SSD1306_SETHIGHCOLUMN | ((x0 >> 4) & 0x0f)); 
-	ssd1306_command(dev, SSD1306_SETSTARTPAGE | ((y0 >> 3) & 0x07)); 
+	ssd1306_write_cmd(dev, SSD1306_SETLOWCOLUMN | (x0 & 0x0f)); 
+	ssd1306_write_cmd(dev, SSD1306_SETHIGHCOLUMN | ((x0 >> 4) & 0x0f)); 
+	ssd1306_write_cmd(dev, SSD1306_SETSTARTPAGE | ((y0 >> 3) & 0x07)); 
 	
-	ssd1306_command(dev, SSD1306_COLUMNADDR);
-	ssd1306_command(dev, x0);   // Column start address (0 = reset)
-	ssd1306_command(dev, x0 + w + 1); // Column end address (127 = reset)
+	ssd1306_write_cmd(dev, SSD1306_COLUMNADDR);
+	ssd1306_write_cmd(dev, x0);   // Column start address (0 = reset)
+	ssd1306_write_cmd(dev, x0 + w + 1); // Column end address (127 = reset)
 
-	ssd1306_command(dev, SSD1306_PAGEADDR);
-	ssd1306_command(dev, y0 >> 3); // Page start address (0 = reset)
-	ssd1306_command(dev, ((y0 + h) >> 3) + 1); // Page end address
+	ssd1306_write_cmd(dev, SSD1306_PAGEADDR);
+	ssd1306_write_cmd(dev, y0 >> 3); // Page start address (0 = reset)
+	ssd1306_write_cmd(dev, ((y0 + h) >> 3) + 1); // Page end address
   
 }
 
@@ -276,48 +328,8 @@ int16_t ssd1306_printf(ssd1306_t *dev, uint8_t col, const char *fmt, ...){
 	return n; 
 }*/
 
-static int _ssd1306_open(fb_dev_t dev){
-	struct ssd1306 *self = container_of(dev, struct ssd1306, api); 
-	if(self->lock) return EAGAIN; 
-	self->lock = 1; 
-	return 0; 
-}
-
-static int _ssd1306_close(fb_dev_t dev){
-	struct ssd1306 *self = container_of(dev, struct ssd1306, api); 
-	self->lock = 0;
-	return 0; 
-}
-
-static int _ssd1306_write(fb_dev_t dev, const uint8_t *data, size_t count){
-	struct ssd1306 *self = container_of(dev, struct ssd1306, api); 
-	if(self->cursor + count >= sizeof(self->framebuffer)) count = sizeof(self->framebuffer) - self->cursor; 
-	memcpy(self->framebuffer + self->cursor, data, count);
-	self->cursor += count;  
-	//for(size_t c = 0; c < count; c++){
-		//if(ssd1306_data(self, data[c]) != 1) return c; 
-	//}
-	return (int)count; 
-}
-
-static int _ssd1306_read(fb_dev_t dev, uint8_t *data, size_t count){
-	(void)dev; 
-	(void)data; 
-	(void)count; 
-	return 0; 
-}
-
-static void _ssd1306_get_size(fb_dev_t dev, uint16_t *w, uint16_t *h){
-	(void)dev; 
-	*w = 128; 
-	*h = 64; 
-}
-
-static void _ssd1306_seek(fb_dev_t dev, uint16_t x, uint16_t y){
-	struct ssd1306 *self = container_of(dev, struct ssd1306, api); 
-	self->cursor = 0; 
-	/*uint8_t col = x * 6; 
-	uint8_t row = y; 
+#if 0
+static int ssd1306_set_address(struct ssd1306 *self, int col, int row){
 	uint8_t home[] = {
 		U8G_ESC_ADR(0),           // instruction mode 
 		U8G_ESC_CS(1),             // enable chip 
@@ -331,116 +343,65 @@ static void _ssd1306_seek(fb_dev_t dev, uint16_t x, uint16_t y){
 		U8G_ESC_END,                // end of sequence 
 	}; 
 	for(unsigned c = 0; c < sizeof(home); c++){
-		ssd1306_command(self, home[c]); 
-	}*/
-}
-/*
-static void _ssd1306_clear(fb_dev_t dev){
-	struct ssd1306 *self = container_of(dev, struct ssd1306, api); 
-	_ssd1306_seek(dev, 0, 0); 
-	for(int c = 0; c < 128*64; c+=32) {
-		uint8_t buf[32] = {0}; 
-		_ssd1306_write(dev, buf, 32); 
+		if(ssd1306_write_cmd(self, home[c]) < 0) return -EIO; 
 	}
+	return 0; 
 }
-*/
+static int ssd1306_read(struct ssd1306 *self, char *out, size_t size){
+	if(i2c_read(self->adapter, self->addr, out, size) < 0) return -EIO; 
+	return 0; 
+}
+#endif
 
-DEVICE_CLOCK(ssd1306_clock){
-	struct libk_device *dev = DEVICE_CLOCK_GET_DEVICE(); 
+#include <serial/serial.h>
+static int ssd1306_draw_pixel(struct display_device *dev, uint16_t x, uint16_t y, uint32_t color){
 	struct ssd1306 *self = container_of(dev, struct ssd1306, device); 
-	uint8_t col = 0; 
-	uint8_t row = 0; 
-	uint8_t home[] = {
-		U8G_ESC_ADR(0),           // instruction mode 
-		U8G_ESC_CS(1),             // enable chip 
-		0x00 | (col & 0x0f),		// set lower 4 bit of the col adr to 0 
-		0x10 | ((col >> 4) & 0x0f),		// set higher 4 bit of the col adr to 0 
-		0xb0 | (row & 0x07),  	// page address
-		
-		0x021, col, 0x7f, // (7d for 125 col screen!) column addressing mode
-		0x022, row, 0x07,		
+	char *buf = &self->buffer[1]; 
+	int page = y >> 3; 
+	uint8_t bit = y & 0x7; 
+
+	ssd1306_write_cmd(self, SSD1306_SETLOWCOLUMN); 
+	ssd1306_write_cmd(self, SSD1306_SETHIGHCOLUMN); 
+	ssd1306_write_cmd(self, SSD1306_SETSTARTPAGE); 
+
+	ssd1306_write_cmd(self, SSD1306_PAGEADDR);
+	ssd1306_write_cmd(self, 0); // Page start address (0 = reset)
+	ssd1306_write_cmd(self, 7); // Page end address   
+
+	ssd1306_write_cmd(self, SSD1306_COLUMNADDR);
+	ssd1306_write_cmd(self, 0);   // Column start address (0 = reset)
+	ssd1306_write_cmd(self, 127); // Column end address (127 = reset)
+
+	if(color) *(buf+x) |= _BV(bit); 
+	else *(buf+x) &= ~_BV(bit); 
+
+	self->buffer[0] = 0x40; 
 	
-		U8G_ESC_END,                // end of sequence 
-	}; 
-	ASYNC_BEGIN();
-	AWAIT(i2cdev_open(self->i2c) == 0); 
-	 
+	ssd1306_write_array(self, self->buffer, sizeof(self->buffer)); 
+
+	return 0; 
+}
+
+static int ssd1306_init_display(struct ssd1306 *self){
 	for(unsigned c = 0; c < sizeof(cmd_init); c++){
-		//ssd1306_command(self, pgm_read_byte(&cmd_init[c]));
-		self->i2c_buf[0] = 0; 
-		self->i2c_buf[1] = pgm_read_byte(&cmd_init[c]); 
-		i2cdev_write(self->i2c, self->i2c_buf, 2); 
+		if(ssd1306_write_cmd(self, pgm_read_byte(&cmd_init[c])) < 0) return -EIO; 
 	}
-	i2cdev_close(self->i2c); 
-
-	while(1){
-		if(gbuf_is_dirty(&self->gbuf)){
-			//DEBUG("ssd1306: refresh\n"); 
-			AWAIT(i2cdev_open(self->i2c) == 0);
-			/*while(cbuf_get_waiting(&self->buffer) > 0){
-				size_t size = cbuf_getn(&self->buffer, self->i2c_buf, sizeof(self->i2c_buf)); 
-				for(size_t c = 0; c < size; c+=2)
-					i2cdev_write(self->i2c, self->i2c_buf + c, 2); 
-				AWAIT(i2cdev_status(self->i2c) == I2CDEV_READY); 
-				DEVICE_DELAY(10); 
-			}*/
-
-			for(self->c = 0; self->c < sizeof(home); self->c++){
-				self->i2c_buf[0] = 0; 
-				self->i2c_buf[1] = home[self->c]; 
-				i2cdev_write(self->i2c, self->i2c_buf, 2);
-
-				AWAIT(i2cdev_status(self->i2c) == I2CDEV_READY);  
-				//DEVICE_DELAY(0); 
-			} 
-			
-			// apparently we need to transfer 1 byte at a time because 
-			// otherwise we seem to get i2c faults at least with linux i2c 
-			for(self->c = 0; self->c < sizeof(self->framebuffer); self->c++){
-				self->i2c_buf[0] = 0x40; // data
-				self->i2c_buf[1] = self->framebuffer[self->c];
-				
-				i2cdev_write(self->i2c, self->i2c_buf, 2); 
-				
-				AWAIT(i2cdev_status(self->i2c) == I2CDEV_READY);  
-				////DEVICE_DELAY(0); 
-			}
-			/*while(cbuf_get_waiting(&self->buffer) > 0){
-				size_t size = cbuf_getn(&self->buffer, self->i2c_buf, sizeof(self->i2c_buf)); 
-				for(size_t c = 0; c < size; c+=2)
-					i2cdev_write(self->i2c, self->i2c_buf + c, 2); 
-				AWAIT(i2cdev_status(self->i2c) == I2CDEV_READY); 
-				DEVICE_DELAY(10); 
-			}*/
-			i2cdev_close(self->i2c); 
-			self->gbuf.dirty = 0; 
-		}
-		DEVICE_DELAY(100000); 
-		//ASYNC_YIELD(); 
-	}
-	ASYNC_END(0); 
+	return 0; 
 }
 
-void ssd1306_init(ssd1306_t *self, i2c_dev_t i2c){
-	self->i2c = i2c;
-	self->api = 0;
-	//self->cursor = 0; 
-	//cbuf_init(&self->buffer, self->cmd_buffer, sizeof(self->cmd_buffer)); 
-	gbuf_init(&self->gbuf, self->framebuffer, sizeof(self->framebuffer), 128, 64, GBUF_FORMAT_MONOCHROME); 
-	libk_register_device(&self->device, DEVICE_CLOCK_PTR(ssd1306_clock), "ssd1306"); 	
-}
+static struct display_device_ops ssd1306_ops = {
+	.draw_pixel = ssd1306_draw_pixel
+}; 
 
-fb_dev_t ssd1306_get_framebuffer_interface(struct ssd1306 *self){
-	static struct fb_device api = {
-		.open = _ssd1306_open, 
-		.close = _ssd1306_close, 
-		.seek = _ssd1306_seek, 
-		.write = _ssd1306_write, 
-		.read = _ssd1306_read, 
-		.get_size = _ssd1306_get_size
-		//.clear = _ssd1306_clear
-	}; 
-	self->api = &api; 
-	return &self->api; 
+struct display_device *ssd1306_new(struct i2c_adapter *adapter, uint8_t address){
+	if(!i2c_device_exists(adapter, address)) return NULL; 
+	struct ssd1306 *self = kzmalloc(sizeof(struct ssd1306)); 
+	if(!self) return 0; 
+	self->adapter = adapter;
+	self->addr = address;
+	self->device.ops = &ssd1306_ops; 
+	mutex_init(&self->lock); 
+	ssd1306_init_display(self); 
+	return &self->device; 
 }
 

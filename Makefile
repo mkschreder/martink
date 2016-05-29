@@ -32,7 +32,7 @@ LDFLAGS += -Wl,--relax,--gc-sections
 include Makefile.build 
 
 define check-set 
-$(if $(value $1),,$(error $1 is not set correctly!))
+$(if $(value $1),,$(warning $1 is not set correctly!))
 endef 
 
 $(call check-set,ARCH)

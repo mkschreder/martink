@@ -115,9 +115,10 @@ ISR(SPI_STC_vect){
 static int atmega_transfer(struct spi_adapter *dev, char *data, size_t size){
 	mutex_lock(&spi0.lock); 
 	spi0_interrupt_off(); 
-	spi0.data = data; 
+	spi0.data = data + 1; 
 	spi0.size = size; 
-	spi0.count = 0; 	
+	spi0.count = 1; 	
+	SPDR = data[0]; 
 	spi0_interrupt_on(); 
 	mutex_lock(&spi0.ready); 
 	mutex_unlock(&spi0.lock); 
@@ -128,7 +129,7 @@ static struct spi_adapter_ops atmega_spi_ops = {
 	.transfer = atmega_transfer
 }; 
 
-static void __init atmega_spi_init(void){
+struct spi_adapter *atmega_spi_get_adapter(void){
 	memset(&spi0, 0, sizeof(spi0)); 
 	mutex_init(&spi0.lock); 
 	mutex_init(&spi0.ready); 
@@ -136,6 +137,6 @@ static void __init atmega_spi_init(void){
 	spi0.device.ops = &atmega_spi_ops; 
 	spi0_init_default(); 
 	spi0_interrupt_on(); 
-
-	spi_register_adapter(&spi0.device); 
+	
+	return &spi0.device; 
 }

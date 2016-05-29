@@ -7,6 +7,15 @@ choice
 	config ARDUINO_EXTERNAL_RTC_EEPROM
 		depends on CPU_ATMEGA328P
 		bool "Arduino DS3231 RTC/EEPROM example"
+	config ARDUINO_SSD1306
+		depends on I2C
+		bool "Arduino SSD1306 example"
+	config ARDUINO_GPIO_WAKEUP
+		depends on I2C
+		bool "Arduino GPIO interrupt wakeup"
+	config APP_STM32_BLINKY
+		depends on CPU_STM32
+		bool "STM32 Blinky example"
 endchoice
 
 comment "Utility applications"

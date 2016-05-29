@@ -30,6 +30,10 @@
 #include "nrf24l01.h"
 #include "nrf24l01registers.h"
 
+#include <gpio/gpio.h>
+//#include <gpio/atmega_gpio.h>
+#include <spi/spi.h>
+
 #define nrf24l01_CSNhi gpio_set(nrf->cs_pin) //NRF24L01_PORT |= (1<<NRF24L01_CSN);
 #define nrf24l01_CSNlo gpio_clear(nrf->cs_pin) //NRF24L01_PORT &= ~(1<<NRF24L01_CSN);
 #define nrf24l01_CEhi gpio_set(nrf->ce_pin) //NRF24L01_PORT |=  (1<<NRF24L01_CE);
@@ -44,15 +48,16 @@
  * read one register
  */
 static uint8_t nrf24l01_readregister(struct nrf24l01 *nrf, uint8_t reg) {
-	delay_us(10); 
+	char data[] = { NRF24L01_CMD_R_REGISTER | (NRF24L01_CMD_REGISTER_MASK & reg), NRF24L01_CMD_NOP }; 
+	udelay(10); 
 	nrf24l01_CSNlo; //low CSN
-	delay_us(10); 
-	spi_writereadbyte(NRF24L01_CMD_R_REGISTER | (NRF24L01_CMD_REGISTER_MASK & reg));
-	delay_us(10); 
-	uint8_t result = spi_writereadbyte(NRF24L01_CMD_NOP); //read write register
-	delay_us(10); 
+	udelay(10); 
+	spi_transfer(nrf->adapter, &data[0], 1);
+	udelay(10); 
+	spi_transfer(nrf->adapter, &data[1], 1); //read write register
+	udelay(10); 
 	nrf24l01_CSNhi; //high CSN
-	return result;
+	return data[1];
 }
 
 /*
@@ -61,14 +66,14 @@ static uint8_t nrf24l01_readregister(struct nrf24l01 *nrf, uint8_t reg) {
  /*
 static void nrf24l01_readregisters(struct nrf24l01 *nrf, uint8_t reg, uint8_t *value, uint8_t len) {
 	uint8_t i = 0;
-	delay_us(10); 
+	udelay(10); 
 	nrf24l01_CSNlo; //low CSN
-	delay_us(10); 
+	udelay(10); 
 	spi_writereadbyte(NRF24L01_CMD_R_REGISTER | (NRF24L01_CMD_REGISTER_MASK & reg));
-	delay_us(10); 
+	udelay(10); 
 	for(i=0; i<len; i++){
 		value[i] = spi_writereadbyte(NRF24L01_CMD_NOP); //read write register
-		delay_us(10); 
+		udelay(10); 
 	}
 	nrf24l01_CSNhi; //high CSN
 }*/
@@ -77,13 +82,14 @@ static void nrf24l01_readregisters(struct nrf24l01 *nrf, uint8_t reg, uint8_t *v
  * write one register
  */
 static void nrf24l01_writeregister(struct nrf24l01 *nrf, uint8_t reg, uint8_t value) {
-	delay_us(10); 
+	char data[] = { NRF24L01_CMD_W_REGISTER | (NRF24L01_CMD_REGISTER_MASK & reg), value }; 
+	udelay(10); 
 	nrf24l01_CSNlo; //low CSN
-	delay_us(10); 
-	spi_writereadbyte(NRF24L01_CMD_W_REGISTER | (NRF24L01_CMD_REGISTER_MASK & reg));
-	delay_us(10); 
-	spi_writereadbyte(value); //write register
-	delay_us(10); 
+	udelay(10); 
+	spi_transfer(nrf->adapter, data, 1);
+	udelay(10); 
+	spi_transfer(nrf->adapter, data + 1, 1); //write register
+	udelay(10); 
 	nrf24l01_CSNhi; //high CSN
 }
 
@@ -92,14 +98,15 @@ static void nrf24l01_writeregister(struct nrf24l01 *nrf, uint8_t reg, uint8_t va
  */
 static void nrf24l01_writeregisters(struct nrf24l01 *nrf, uint8_t reg, uint8_t *value, uint8_t len) {
 	uint8_t i = 0;
-	delay_us(10); 
+	char data[] = { NRF24L01_CMD_W_REGISTER | (NRF24L01_CMD_REGISTER_MASK & reg) }; 
+	udelay(10); 
 	nrf24l01_CSNlo; //low CSN
-	delay_us(10); 
-  spi_writereadbyte(NRF24L01_CMD_W_REGISTER | (NRF24L01_CMD_REGISTER_MASK & reg));
-	delay_us(10); 
+	udelay(10); 
+	spi_transfer(nrf->adapter, data, 1); 
+	udelay(10); 
 	for(i=0; i<len; i++){
-		 spi_writereadbyte(value[i]); //write register
-		delay_us(10); 
+		spi_transfer(nrf->adapter, (char*)(value + i), 1); //write register
+		udelay(10); 
 	}
 	nrf24l01_CSNhi; //high CSN
 }
@@ -158,8 +165,9 @@ void nrf24l01_settxaddr(struct nrf24l01 *nrf, uint8_t *addr) {
  * flush RX fifo
  */
 static void nrf24l01_flushRXfifo(struct nrf24l01 *nrf) {
+	char data = NRF24L01_CMD_FLUSH_RX; 
 	nrf24l01_CSNlo; //low CSN
-	spi_writereadbyte(NRF24L01_CMD_FLUSH_RX);
+	spi_transfer(nrf->adapter, &data, 1);
 	nrf24l01_CSNhi; //high CSN
 }
 
@@ -167,8 +175,9 @@ static void nrf24l01_flushRXfifo(struct nrf24l01 *nrf) {
  * flush RX fifo
  */
 static void nrf24l01_flushTXfifo(struct nrf24l01 *nrf) {
+	char data = NRF24L01_CMD_FLUSH_TX; 
 	nrf24l01_CSNlo; //low CSN
-	spi_writereadbyte(NRF24L01_CMD_FLUSH_TX);
+	spi_transfer(nrf->adapter, &data, 1);
 	nrf24l01_CSNhi; //high CSN
 }
 
@@ -183,7 +192,7 @@ static void nrf24l01_setRX(struct nrf24l01 *nrf) {
 	nrf24l01_flushRXfifo(nrf); //flush rx fifo
 	nrf24l01_flushTXfifo(nrf); //flush tx fifo
 	nrf24l01_CEhi; //start listening
-	delay_us(150); //wait for the radio to power up
+	udelay(150); //wait for the radio to power up
 }
 
 /*
@@ -195,7 +204,7 @@ static void nrf24l01_setTX(struct nrf24l01 *nrf) {
 	nrf24l01_writeregister(nrf, NRF24L01_REG_CONFIG, nrf24l01_readregister(nrf, NRF24L01_REG_CONFIG) | (1<<NRF24L01_REG_PWR_UP)); //power up
 	nrf24l01_writeregister(nrf, NRF24L01_REG_STATUS, (1<<NRF24L01_REG_RX_DR) | (1<<NRF24L01_REG_TX_DS) | (1<<NRF24L01_REG_MAX_RT)); //reset status
 	nrf24l01_flushTXfifo(nrf); //flush tx fifo
-	delay_us(150); //wait for the radio to power up
+	udelay(150); //wait for the radio to power up
 }
 
 /*
@@ -235,7 +244,7 @@ void nrf24l01_printinfo(void(*prints)(const char *), void(*printc)(unsigned char
 
 void nrf24l01_powerdown(struct nrf24l01 *nrf){
 	(void)(nrf); 
-	//nrf24l01_writeregister(NRF24L01_REG_CONFIG, nrf24l01_readregister(NRF24L01_REG_CONFIG) & ~(1<<NRF24L01_REG_PWR_UP));
+	nrf24l01_writeregister(nrf, NRF24L01_REG_CONFIG, nrf24l01_readregister(nrf, NRF24L01_REG_CONFIG) & ~(1<<NRF24L01_REG_PWR_UP));
 	//_delay_ms(10); 
 }
 
@@ -243,11 +252,11 @@ void nrf24l01_powerdown(struct nrf24l01 *nrf){
  * get status register
  */
 uint8_t nrf24l01_getstatus(struct nrf24l01 *nrf) {
-	uint8_t status = 0;
+	char status = NRF24L01_CMD_NOP;
 	nrf24l01_CSNlo; //low CSN
-	status = spi_writereadbyte(NRF24L01_CMD_NOP); //get status, send NOP request
+	spi_transfer(nrf->adapter, &status, 1); //get status, send NOP request
 	nrf24l01_CSNhi; //high CSN
-	return status;
+	return (uint8_t)status;
 }
 
 /*
@@ -273,11 +282,13 @@ void nrf24l01_read(struct nrf24l01 *nrf, uint8_t *data) {
 	
 	//uint8_t sreg = SREG; 
 	//cli(); 
-	
+	char ch = NRF24L01_CMD_R_RX_PAYLOAD; 	
 	nrf24l01_CSNlo; //low CSN
-	spi_writereadbyte(NRF24L01_CMD_R_RX_PAYLOAD);
-	for(i=0; i<NRF24L01_PAYLOAD; i++)
-		data[i] = spi_writereadbyte(NRF24L01_CMD_NOP);
+	spi_transfer(nrf->adapter, &ch, 1);
+	for(i=0; i<NRF24L01_PAYLOAD; i++){
+		spi_transfer(nrf->adapter, (char*)&data[i], 1);
+	}
+		//data[i] = spi_writereadbyte(NRF24L01_CMD_NOP);
 	nrf24l01_CSNhi; //high CSN
 	//reset register
 	nrf24l01_writeregister(nrf, NRF24L01_REG_STATUS, (1<<NRF24L01_REG_RX_DR));
@@ -305,23 +316,25 @@ uint8_t nrf24l01_write(struct nrf24l01 *nrf, uint8_t *data) {
 	//set tx mode
 	nrf24l01_setTX(nrf);
 
+	char ch = NRF24L01_CMD_W_TX_PAYLOAD; 
 	//write data
 	nrf24l01_CSNlo; //low CSN
-	spi_writereadbyte(NRF24L01_CMD_W_TX_PAYLOAD);
-	for (i=0; i<NRF24L01_PAYLOAD; i++)
-		spi_writereadbyte(data[i]);
+	spi_transfer(nrf->adapter, &ch, 1);
+	for (i=0; i<NRF24L01_PAYLOAD; i++){
+		spi_transfer(nrf->adapter, (char*)&data[i], 1);
+	}
 	nrf24l01_CSNhi; //high CSN
 
 	//start transmission
 	nrf24l01_CEhi; //high CE
-	delay_us(15);
+	udelay(15);
 	nrf24l01_CElo; //low CE
 	
 	//stop if max_retries reached or send is ok
 	uint8_t status = 0; 
 	uint32_t timeout = 1500; 
 	do {
-		delay_us(15);
+		udelay(15);
 		status = nrf24l01_getstatus(nrf); 
 		timeout--; if(timeout == 0) break; 
 	}
@@ -411,8 +424,8 @@ static void nrf24l01_setcrclength(struct nrf24l01 *nrf) {
 /*
  * init nrf24l01
  */
-void nrf24l01_init(struct nrf24l01 *nrf, serial_dev_t spi, gpio_pin_t cs, gpio_pin_t ce) {
-	nrf->spi = spi; 
+void nrf24l01_init(struct nrf24l01 *nrf, struct spi_adapter *adapter, gpio_pin_t cs, gpio_pin_t ce) {
+	nrf->adapter = adapter; 
 	nrf->cs_pin = cs; 
 	nrf->ce_pin = ce; 
 	
@@ -424,7 +437,7 @@ void nrf24l01_init(struct nrf24l01 *nrf, serial_dev_t spi, gpio_pin_t cs, gpio_p
 	nrf24l01_CElo; //low CE
 	nrf24l01_CSNhi; //high CSN
 
-	delay_us(5000L); //wait for the radio to init
+	udelay(5000L); //wait for the radio to init
 
 	nrf24l01_setpalevel(nrf); //set power level
 	nrf24l01_setdatarate(nrf); //set data rate
@@ -519,7 +532,7 @@ void nrf24l01_scan(struct nrf24l01 *nrf, uint8_t iterations, uint8_t result[NRF2
       nrf24l01_setRX(nrf); 
       
       // wait enough for RX-things to settle
-      delay_us(40);
+      udelay(40);
       
       // this is actually the point where the RPD-flag
       // is set, when CE goes low

@@ -2,28 +2,33 @@
 
 extern int __cscount; 
 
-#define sei() __ASM volatile ("cpsie i"); 
+#define sei() asm volatile ("cpsie i"); 
 #define cli() __ASM volatile ("cpsid i"); 
 
 static inline uint32_t _cli(void) __attribute__((always_inline, unused));
 static inline void _sei(const uint32_t *primask) __attribute__((always_inline,
                                                                  unused));
 
-static inline uint32_t
-_cli(void)
-{
-	uint32_t  primask = 0;
-	__ASM volatile("mrs %0, primask\n" : "=r" (primask)::);
-	__disable_irq();
-	return primask;
+static void _sei( const uint32_t *_new ){
+	__asm volatile(
+		"	msr basepri, %0	" :: "r" ( *_new )
+	);
 }
 
-static inline void
-_sei(const uint32_t *primask)
-{
-	if (*primask == 0) {
-		__enable_irq();
-	}
+
+static inline uint32_t _cli( void ){
+	uint32_t _orig, _new;
+	__asm volatile
+	(
+		"	mrs %0, basepri											\n" \
+		"	mov %1, %2												\n"	\
+		"	msr basepri, %1											\n" \
+		"	isb														\n" \
+		"	dsb														\n" \
+		:"=r" (_orig), "=r" (_new) : "i" ( 1 )
+	);
+
+	return _orig;
 }
 
 #define ATOMIC_BLOCK(type) for ( type, __ToDo = 1; __ToDo ; __ToDo = 0 )

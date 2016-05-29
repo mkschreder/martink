@@ -348,7 +348,7 @@ typedef enum IRQn
   DMA2_Channel1_IRQn          = 56,     /*!< DMA2 Channel 1 global Interrupt                      */
   DMA2_Channel2_IRQn          = 57,     /*!< DMA2 Channel 2 global Interrupt                      */
   DMA2_Channel3_IRQn          = 58,     /*!< DMA2 Channel 3 global Interrupt                      */
-  DMA2_Channel4_5_IRQn        = 59      /*!< DMA2 Channel 4 and Channel 5 global Interrupt        */
+  DMA2_Channel4_5_IRQn        = 59,      /*!< DMA2 Channel 4 and Channel 5 global Interrupt        */
 #endif /* STM32F10X_HD */  
 
 #ifdef STM32F10X_HD_VL

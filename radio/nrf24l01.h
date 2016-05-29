@@ -32,8 +32,10 @@
 extern "C" {
 #endif
 
+#include <spi/spi.h>
+
 struct nrf24l01 {
-	serial_dev_t spi; 
+	struct spi_adapter *adapter; 
 	gpio_pin_t cs_pin; 
 	gpio_pin_t ce_pin; 
 }; 
@@ -95,7 +97,9 @@ struct nrf24l01 {
  //enable print info function
 #define NRF24L01_PRINTENABLE 0
 
-extern void nrf24l01_init(struct nrf24l01 *nrf, serial_dev_t spi, gpio_pin_t cs, gpio_pin_t ce);
+#include <spi/spi.h>
+
+extern void nrf24l01_init(struct nrf24l01 *nrf, struct spi_adapter *spi, gpio_pin_t cs, gpio_pin_t ce);
 extern uint8_t nrf24l01_getstatus(struct nrf24l01 *nrf);
 extern uint8_t nrf24l01_readready(struct nrf24l01 *nrf, uint8_t* pipe); 
 extern void nrf24l01_read(struct nrf24l01 *nrf, uint8_t *data);

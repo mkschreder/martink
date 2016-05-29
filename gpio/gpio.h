@@ -60,9 +60,22 @@ enum {
 
 //void gpio_init(void);
 
-#define gpio_set(pin) gpio_write_pin(pin, 1)
-#define gpio_clear(pin) gpio_write_pin(pin, 0)
-
 /// returns a standard parallel interface for the hardware gpio pins
 /// as a \ref struct parallel_interface
 //pio_dev_t gpio_get_parallel_interface(void); 
+
+struct gpio_adapter; 
+struct gpio_adapter_ops {
+	void (*set_pin)(struct gpio_adapter *self, gpio_pin_t pin); 	
+	void (*clear_pin)(struct gpio_adapter *self, gpio_pin_t pin); 	
+	void (*configure)(struct gpio_adapter *self, gpio_pin_t pin, uint16_t fun); 
+}; 
+
+#define gpio_configure_pin(adapter, pin, opts) (adapter)->ops->configure(adapter, pin, opts)
+#define gpio_set_pin(adapter, pin) (adapter)->ops->set_pin(adapter, pin)
+#define gpio_clear_pin(adapter, pin) (adapter)->ops->clear_pin(adapter, pin)
+
+struct gpio_adapter {
+	struct gpio_adapter_ops *ops; 
+}; 
+

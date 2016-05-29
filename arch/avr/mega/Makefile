@@ -35,6 +35,6 @@ LDFLAGS += -mmcu=$(mcu-y) -lc
 	arch/avr/mega/spi.o
 
 define target/image/finalize
-	avr-objcopy -j .text -j .data -O ihex $(1) $(2)
-	avr-size --format=berkeley $(1)
+	avr-objcopy -j .text -j .data -O ihex $(1) $(2).hex
+	avr-size --format=berkley $(1)
 endef

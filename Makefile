@@ -9,6 +9,9 @@ endif
 #CPU:=generic
 #BOARD:=native 
 
+all: config fixdirs check default_target
+	@echo "\033[32;40m [LD] $(ARCH)-$(CPU)-$(BOARD)\033[m"
+	
 include scripts/include/target.mk
 
 VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty
@@ -90,9 +93,6 @@ MAKEFLAGS += -rR
 export ktree srctree CONFIG_SHELL HOSTCC HOSTCFLAGS HOSTCXX HOSTCXXFLAGS 
 export quiet Q KBUILD_VERBOSE
 
-all: config fixdirs check default_target
-	@echo "\033[32;40m [LD] $(ARCH)-$(CPU)-$(BOARD)\033[m"
-	
 # Basic helpers built in scripts/
 PHONY += scripts_basic defconfig
 scripts_basic:

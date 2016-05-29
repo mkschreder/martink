@@ -23,7 +23,7 @@
 #include <avr/io.h>
 #include <arch/soc.h>
 
-#include "spi.h"
+#include "atmega_spi.h"
 
 #include <gpio/gpio.h>
 #include <gpio/atmega_gpio.h>
@@ -66,10 +66,11 @@ static inline void spi0_set_clock(uint16_t spi_rate) {
 #define spi0_enable() 					(SPCR |= _BV(SPE))
 #define spi0_disable() 					(SPCR &= ~_BV(SPE))
 static inline void spi0_config_gpio(void)			{
-	gpio_configure(GPIO_SPI0_MISO, GP_INPUT | GP_PULLUP);
-	gpio_configure(GPIO_SPI0_MOSI, GP_OUTPUT);
-	gpio_configure(GPIO_SPI0_SS, GP_OUTPUT);
-	gpio_configure(GPIO_SPI0_SCK, GP_OUTPUT);
+	struct gpio_adapter *gpio = atmega_gpio_get_adapter(); 
+	gpio_configure_pin(gpio, GPIO_SPI0_MISO, GP_INPUT | GP_PULLUP);
+	gpio_configure_pin(gpio, GPIO_SPI0_MOSI, GP_OUTPUT);
+	gpio_configure_pin(gpio, GPIO_SPI0_SS, GP_OUTPUT);
+	gpio_configure_pin(gpio, GPIO_SPI0_SCK, GP_OUTPUT);
 }
 #define spi0_wait_for_transmit_complete() do {} while(!(SPSR & _BV(SPIF)))
 #define spi0_error_collision() (SPSR & _BV(WCOL))
@@ -79,8 +80,8 @@ static inline void spi0_init_default(void) {
 	spi0_config_gpio();
 	spi0_interrupt_off(); 
 	spi0_order_msb_first();
-	spi0_master();
 	spi0_set_clock(SPI_CLOCK_DIV16);
+	spi0_master();
 	spi0_enable();
 }
 
@@ -96,11 +97,11 @@ struct atmega_spi {
 static struct atmega_spi spi0; 
 
 ISR(SPI_STC_vect){
-	if(spi0.data && spi0.count <= spi0.size)	{
+	if(spi0.data && spi0.size)	{
 		// store received byte in the previous position
 		if(spi0.count > 0) spi0.data[spi0.count - 1] = SPDR; 
 		// send current position, but only if not done yet
-		if(spi0.count != spi0.size) SPDR = spi0.data[spi0.count]; 
+		if(spi0.count < spi0.size) SPDR = spi0.data[spi0.count]; 
 		// signal completed transaction
 		if(spi0.count == spi0.size) {
 			spi0.data = 0; 
@@ -113,16 +114,24 @@ ISR(SPI_STC_vect){
 }
 
 static int atmega_transfer(struct spi_adapter *dev, char *data, size_t size){
+	if(size < 1) return 0; 
+	/*for(uint16_t c = 0; c < size; c++){
+		SPDR = data[c]; 
+		while(!(SPSR & (1 << SPIF))); 
+		data[c] = SPDR; 
+	}
+	return size; */
 	mutex_lock(&spi0.lock); 
 	spi0_interrupt_off(); 
-	spi0.data = data + 1; 
+	spi0.data = data; 
 	spi0.size = size; 
 	spi0.count = 1; 	
-	SPDR = data[0]; 
 	spi0_interrupt_on(); 
+	SPDR = data[0]; 
 	mutex_lock(&spi0.ready); 
+	uint16_t ret = spi0.count; 
 	mutex_unlock(&spi0.lock); 
-	return spi0.count; 
+	return ret; 
 }
 
 static struct spi_adapter_ops atmega_spi_ops = {
@@ -136,7 +145,7 @@ struct spi_adapter *atmega_spi_get_adapter(void){
 	mutex_lock(&spi0.ready); 
 	spi0.device.ops = &atmega_spi_ops; 
 	spi0_init_default(); 
-	spi0_interrupt_on(); 
+	//spi0_interrupt_on(); 
 	
 	return &spi0.device; 
 }

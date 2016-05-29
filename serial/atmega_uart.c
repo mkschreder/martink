@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "serial.h"
+#include "atmega_uart.h"
 
 #if (__GNUC__ * 100 + __GNUC_MINOR__) < 304
 #error "This library requires AVR-GCC 3.4 or later, update to newer AVR-GCC compiler !"
@@ -143,7 +144,7 @@ static inline void uart0_init_default(uint32_t baudrate) {
   uart0_interrupt_rx_on(); 
 }
 
-static inline void uart0_putc_direct(uint8_t ch){
+void uart0_putc_direct(uint8_t ch){
 	uart0_wait_for_empty_transmit_buffer();
 	UDR0 = ch;
 }
@@ -190,7 +191,7 @@ ISR(USART_RX_vect) {
 }
 
 ISR(USART_TX_vect) {
-
+	//mutex_unlock_from_isr(&uart0.tx_ready); 
 }
 
 ISR(USART_UDRE_vect) {
@@ -234,7 +235,7 @@ static int atmega_uart_write(struct serial_device *dev, const char *data, size_t
 	self->tx_data = data; 
 	self->tx_size = size; 
 	uart0_interrupt_dre_on();
-	mutex_lock_timeout(&self->tx_ready, 10); // wait for completion 
+	mutex_lock(&self->tx_ready); 
 	mutex_unlock(&self->lock); 
 	return 0; 
 }
@@ -243,7 +244,6 @@ static void atmega_uart_init(uint32_t baud){
 	struct atmega_uart *self = &uart0; 
 	memset(self, 0, sizeof(struct atmega_uart)); 
 	cbuf_init(&self->rx_buf, self->rx_buffer, sizeof(self->rx_buffer)); 
-	uart0_init_default(baud);
 	mutex_init(&self->lock); 
 	mutex_init(&self->rx_ready); 
 	mutex_init(&self->tx_ready); 
@@ -273,9 +273,13 @@ static void atmega_uart_probe(void){
 	self->serial.ops = &atmega_uart_ops; 
 	
 	//atmega_uart_write(&self->serial, "FOOBAR", 6); 
-	register_serial_device(&self->serial); 
+	//register_serial_device(&self->serial); 
 }
 
 static void __init _register_driver(void){
 	atmega_uart_probe(); 
+}
+
+struct serial_device *atmega_uart_get_adapter(void){
+	return &uart0.serial; 
 }

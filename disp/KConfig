@@ -13,5 +13,8 @@ menu "Display support"
 
 	config SEVSEG
 		bool "Seven segment display driver"
-		
+	
+	config MAX7456
+		bool "MAX7456 OSD"
+
 endmenu

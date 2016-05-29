@@ -33,4 +33,3 @@ struct spi_adapter {
 
 #define spi_transfer(adapter, data, size) (adapter)->ops->transfer(adapter, data, size)
 
-struct spi_adapter *atmega_spi_get_adapter(void); 

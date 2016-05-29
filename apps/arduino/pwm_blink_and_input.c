@@ -21,7 +21,6 @@ dimmed while user is typing and while the second led starts blinking.
 #include <gpio/gpio.h>
 #include <gpio/atmega_gpio.h>
 #include <pwm/pwm.h>
-#include <block/block.h>
 #include <serial/serial.h>
 
 // this is just a static blink to signal that everything is working
@@ -41,8 +40,8 @@ static void blink_thread_proc( void *args ){
 		printk("enter number for tx: "); 	
 		serial_read(_default_system_console, ch, 1); 	
 		printk("tx got %d\r\n", atoi(ch)); 	
-		uint16_t adc = adc_read_channel(adc_get_device(0), 0); 
-		printk("adc value: %d\r\n", adc); 
+		//uint16_t adc = adc_read_channel(adc_get_device(0), 0); 
+		//printk("adc value: %d\r\n", adc); 
 		for(int c = 0; c < atoi(ch); c++){
 			PORTB |= (1 << 5); 
 			// this is real sleep, not a busy wait
@@ -55,7 +54,7 @@ static void blink_thread_proc( void *args ){
 }
 
 static void dim_thread_proc( void *args ){
-	struct pwm_device *dev = pwm_get_device(0); 
+	struct pwm_device *dev = atmega_pwm_get_device(); 
 	gpio_configure(GPIO_PD6, GP_OUTPUT); 
 	for( ;; ){
 		pwm_set_output(dev, 0, 1); 	
@@ -78,8 +77,8 @@ int main(void){
 	init_blink(); 
 	_delay_ms(1000); 	
 
-	thread_create(&blink_thread, NULL, blink_thread_proc, NULL);  
-	thread_create(&dim_thread, NULL, dim_thread_proc, NULL);  
+	thread_create(&blink_thread, 32, 0, "blink", blink_thread_proc, NULL);  
+	thread_create(&dim_thread, 32, 0, "dim", dim_thread_proc, NULL);  
 
 	schedule_start(); 
 

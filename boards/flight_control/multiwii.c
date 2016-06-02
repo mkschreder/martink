@@ -19,10 +19,8 @@
 	Github: https://github.com/mkschreder
 */
 
-#include "multiwii.h"
-
 #include <arch/soc.h>
-#include "../util.h"
+#include <kernel/util.h>
 
 #include <sensors/hmc5883l.h>
 #include <sensors/bmp085.h>
@@ -36,6 +34,8 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+
+#include "multiwii.h"
 
 /*
 #define FRONT_PIN PD3
@@ -79,68 +79,69 @@ enum {
 
 static const uint16_t rc_defaults[6] = {1000, 1500, 1500, 1500, 1500, 1500}; 
 
+struct rc_input {
+	struct pin_state ps; 
+	struct pt thread; 
+	timestamp_t last_activity; 
+};
+
 struct multiwii_board {
 	uint16_t 				rc_values[6]; 
-	timestamp_t 		rc_reset_timeout; 
 	pio_dev_t 			gpio0; 
-	i2c_dev_t 			twi0; 
+	io_dev_t 				twi0; 
+	struct i2c_block_device bmpblk; 
+	struct i2c_block_device mpublk; 
+	struct i2c_block_device hmcblk; 
 	struct bmp085 	bmp;
 	struct mpu6050 	mpu;
 	struct hmc5883l hmc; 
 	struct ssd1306 	ssd;
 	struct hcsr04 	hcsr; 
 	int16_t acc_bias_x, acc_bias_y, acc_bias_z; 
+	timestamp_t 		time; // time keeping
+	struct rc_input rc_inputs[4]; 
 	struct fc_quad_interface interface; 
+	struct async_process process; 
 }; 
 
 static struct multiwii_board _brd; 
 static struct multiwii_board *brd = &_brd;
 
-static void reset_rc(void){
-	for(int c = 0; c < 6; c++){
-		brd->rc_values[c] = rc_defaults[c]; 
-	}
+#define COMPUTE_RC_CHAN(ch) {\
+	timestamp_t ticks = timestamp_ticks_to_us(brd->rc_inputs[ch].ps.t_down - brd->rc_inputs[ch].ps.t_up);\
+	if(abs(brd->rc_values[ch] - ticks) > 10 && ticks > RC_MIN && ticks < RC_MAX){\
+		brd->rc_values[ch] = constrain(ticks, 1000, 2000);\
+		brd->rc_inputs[ch].last_activity = timestamp_now(); \
+	}\
 }
 
-static void compute_rc_values(void){
-	timestamp_t t_up, t_down;
-	
-	#define COMPUTE_RC_CHAN(ch) {\
-		timestamp_t ticks = timestamp_ticks_to_us(t_down - t_up);\
-		if(abs(brd->rc_values[ch] - ticks) > 10 && ticks > RC_MIN && ticks < RC_MAX)\
-			brd->rc_values[ch] = constrain(ticks, 1000, 2000);\
+/*
+static PT_THREAD(rc_thread(uint8_t c)){
+	static const gpio_pin_t pins[] = {GPIO_RC0, GPIO_RC1, GPIO_RC2, GPIO_RC3}; 
+	PT_BEGIN(&brd->rc_inputs[c].thread); 
+	while(1){
+		// reset rc inputs
+		for(int c = 0; c < 4; c++){
+			rc_thread(c); 
+			if(timestamp_expired(brd->rc_inputs[c].last_activity + timestamp_us_to_ticks(500000))){
+				brd->rc_values[c] = rc_defaults[c]; 
+			}
+		}
+		gpio_start_read(pins[c], &brd->rc_inputs[c].ps, GP_READ_PULSE_P); 
+		PT_WAIT_WHILE(&brd->rc_inputs[c].thread, gpio_pin_busy(pins[c])); 
+		COMPUTE_RC_CHAN(c); 
 	}
-	uint8_t active = 0; 
-	if(gpio_get_status(GPIO_RC0, &t_up, &t_down) & GP_WENT_LOW){
-		active = 1; 
-		COMPUTE_RC_CHAN(0); 
-	}
-	if(gpio_get_status(GPIO_RC1, &t_up, &t_down) & GP_WENT_LOW){
-		active = 1; 
-		COMPUTE_RC_CHAN(1); 
-	}
-	if(gpio_get_status(GPIO_RC2, &t_up, &t_down) & GP_WENT_LOW){
-		active = 1; 
-		COMPUTE_RC_CHAN(2); 
-	}
-	if(gpio_get_status(GPIO_RC3, &t_up, &t_down) & GP_WENT_LOW){
-		active = 1; 
-		COMPUTE_RC_CHAN(3); 
-	}
-	if(active){
-		brd->rc_reset_timeout = timestamp_from_now_us(1000000);
-	}
+	PT_END(&brd->rc_inputs[c].thread); 
+}*/
+
+void mwii_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right){
+	mwii_write_pwm(MWII_OUT_PWM0, front);
+	mwii_write_pwm(MWII_OUT_PWM1, back);
+	mwii_write_pwm(MWII_OUT_PWM2, left);
+	mwii_write_pwm(MWII_OUT_PWM3, right); 
 }
 
-
-static inline void mwii_write_motors(uint16_t front, uint16_t back, uint16_t left, uint16_t right){
-	pwm0_set(front);
-	pwm1_set(back);
-	pwm4_set(left);
-	pwm5_set(right); 
-}
-
-
+/*
 static void mwii_calibrate_mpu6050(void){
 	// calibrate gyro offset
 	int16_t ax, ay, az, gx, gy, gz; 
@@ -169,37 +170,7 @@ static void mwii_calibrate_mpu6050(void){
 	mpu6050_setYGyroOffset(&_brd.mpu, -(int16_t)(ggy / iterations * 2) | 1); //20
 	mpu6050_setZGyroOffset(&_brd.mpu, -(int16_t)(ggz / iterations * 2) | 1); //-49
 	
-	// Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
-	// factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
-	// non-zero values. In addition, bit 0 of the lower byte must be preserved since it is used for temperature
-	// compensation calculations. Accelerometer bias registers expect bias input as 2048 LSB per g, so that
-	// the accelerometer biases calculated above must be divided by 8.
-	
-	// Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
-	// preserve temperature compensation bit when writing back to accelerometer bias registers
-	//bias_x = (int16_t)(bias_x - (aax / iterations / 16384.0 * 2048)) | 1; 
-	//bias_y = (int16_t)(bias_y - (aay / iterations / 16384.0 * 2048)) | 1; 
-	//bias_z = (int16_t)(bias_z - (aaz / iterations / 16384.0 * 2048)) | 1; 
-	
-	//mpu6050_setXAccOffset(&_brd.mpu, -(int16_t)(bias_x)); 
-	//mpu6050_setYAccOffset(&_brd.mpu, -(int16_t)(bias_y)); 
-	//mpu6050_setZAccOffset(&_brd.mpu, -(int16_t)(aaz)); 
-	
-	/*mpu6050_setXAccOffset(&_brd.mpu, 0x0100); 
-	mpu6050_setYAccOffset(&_brd.mpu, 0x0100); 
-	mpu6050_setZAccOffset(&_brd.mpu, 0x0100); */
-	
-	//mpu6050_setXGyroOffset(&_brd.mpu, -15 * 2); //14
-	//mpu6050_setYGyroOffset(&_brd.mpu, -20 * 2); //20
-	//mpu6050_setZGyroOffset(&_brd.mpu, 54 * 2); //-49
-	//mpu6050_setZAccOffset(&_brd.mpu, -20); // 15818
-	/*
-	mpu6050_getRawData(&_brd.mpu, &ax, &ay, &az, &gx, &gy, &gz); 
-	
-	mpu6050_setXGyroOffset(&_brd.mpu, gx); 
-	mpu6050_setYGyroOffset(&_brd.mpu, gy); 
-	mpu6050_setZGyroOffset(&_brd.mpu, gz); */
-}
+}*/
 
 static void _serial_fd_putc(int c, FILE *stream){
 	serial_dev_t dev = fdev_get_udata(stream); 
@@ -212,22 +183,38 @@ static int _serial_fd_getc(FILE *stream){
 }
 
 static FILE uart_fd = FDEV_SETUP_STREAM(_serial_fd_putc, _serial_fd_getc, _FDEV_SETUP_RW);
+static uint8_t uart_buffer[2][64]; 
+
+
+ASYNC_PROCESS(mwii_task){
+	ASYNC_BEGIN(); 
+	
+	while(1){
+		AWAIT(timestamp_expired(brd->time)); 
+		
+		
+		brd->time = timestamp_from_now_us(10000); 
+	}
+	
+	ASYNC_END(0); 
+}
 
 void mwii_init(void){
 	//soc_init(); 
 	time_init(); 
-	uart_init(0, 38400); 
-	gpio_init();
-	//spi_init(); 
-	twi_init(0); 
-	pwm_init(); 
-	adc0_init_default(); 
-	sei(); 
+	uart_init(0, 38400, uart_buffer[0], 64, uart_buffer[1], 64); 
 	
 	// setup printf stuff (specific to avr-libc)
 	fdev_set_udata(&uart_fd, uart_get_serial_interface(0)); 
 	stdout = &uart_fd; 
-	stderr = &uart_fd; 
+	stderr = &uart_fd;
+	
+	gpio_init();
+	//spi_init(); 
+	avr_i2c_init(0); 
+	pwm_init(); 
+	//adc0_init_default(); 
+	sei(); 
 	
 	/*
 	// setup stdout and stderr (avr-libc specific) 
@@ -237,7 +224,7 @@ void mwii_init(void){
 	fdev_set_udata(stderr, uart_get_serial_interface(0)); 
 */
 	// first thing must enable interrupts
-	kdebug("BOOT\n");
+	//kprintf("BOOT\n");
 	
 	gpio_configure(GPIO_MWII_LED, GP_OUTPUT); 
 	//gpio_set(GPIO_MWII_LED); 
@@ -260,7 +247,7 @@ void mwii_init(void){
 	
 	brd->gpio0 = gpio_get_parallel_interface();
 	
-	brd->twi0 = twi_get_interface(0);
+	brd->twi0 = avr_i2c_get_interface(0);
 	
 	/* 
 	// I2C scanner 
@@ -274,22 +261,26 @@ void mwii_init(void){
 	}
 	*/
 	gpio_set(GPIO_MWII_LED);
-	 
-	mpu6050_init(&brd->mpu, brd->twi0, MPU6050_ADDR); 
-	kdebug("MPU6050: %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
 	
-	bmp085_init(&brd->bmp, brd->twi0, BMP085_ADDR); 
-	kdebug("BMP085: found\n");
+	i2cblk_init(&brd->mpublk, brd->twi0, MPU6050_ADDR, 8, I2CBLK_IADDR8); 
+	mpu6050_init(&brd->mpu, i2cblk_get_interface(&brd->mpublk)); 
+	//kdebug("MPU6050: %s\n", ((mpu6050_probe(&brd->mpu))?"found":"not found!")); 
 	
-	hmc5883l_init(&brd->hmc, brd->twi0, HMC5883L_ADDR);
+	i2cblk_init(&brd->bmpblk, brd->twi0, BMP085_ADDR, 8, I2CBLK_IADDR8); 
+	bmp085_init(&brd->bmp, i2cblk_get_interface(&brd->bmpblk)); 
+	//kdebug("BMP085: found\n");
+	
+	i2cblk_init(&brd->hmcblk, brd->twi0, HMC5883L_ADDR, 8, I2CBLK_IADDR8); 
+	hmc5883l_init(&brd->hmc, i2cblk_get_interface(&brd->hmcblk));
 	
 	gpio_clear(GPIO_MWII_LED); 
 	
 	hcsr04_init(&brd->hcsr, brd->gpio0, GPIO_MWII_HCSR_TRIGGER, GPIO_MWII_HCSR_ECHO); 
 	
-	reset_rc();
+	ASYNC_PROCESS_INIT(&brd->process, mwii_task); 
+	ASYNC_QUEUE_WORK(&ASYNC_GLOBAL_QUEUE, &brd->process); 
 	
-	mwii_calibrate_mpu6050(); 
+	//mwii_calibrate_mpu6050(); 
 	// let the escs init as well
 	delay_us(500000L); 
 }
@@ -316,9 +307,9 @@ uint16_t mwii_read_pwm(mwii_in_pwm_channel_t chan){
 }
 
 /// gets main i2c interface of the board (it only has one) 
-i2c_dev_t mwii_get_i2c_interface(void){
-	return twi_get_interface(0); 
-}
+//i2c_dev_t mwii_get_i2c_interface(void){
+//	return avr_i2c_get_interface(0); 
+//}
 
 /// gets main usart interface
 serial_dev_t mwii_get_uart_interface(void){
@@ -361,13 +352,17 @@ float mwii_read_pressure_pa(void){
 
 
 void mwii_write_config(const uint8_t *data, uint8_t size){
-	memory_dev_t ee = eeprom_get_memory_interface(); 
-	mem_write(ee, 0, data, size); 
+	(void)data; 
+	(void)size; 
+	//memory_dev_t ee = eeprom_get_memory_interface(); 
+	//mem_write(ee, 0, data, size); 
 }
 
 void mwii_read_config(uint8_t *data, uint8_t size){
-	memory_dev_t ee = eeprom_get_memory_interface(); 
-	mem_read(ee, 0, data, size); 
+	(void)data; 
+	(void)size; 
+	//memory_dev_t ee = eeprom_get_memory_interface(); 
+	//mem_read(ee, 0, data, size); 
 }
 
 //************************
@@ -379,28 +374,21 @@ void mwii_calibrate_escs_on_reboot(void){
 	// TODO: save a flag and check it upon reboot
 }
 
+/*
 void mwii_process_events(void){
-	compute_rc_values(); 
+	_mwii_update_thread(); 
 	
-	//TIMSK0 |= _BV(TOIE0); 
-	if(timestamp_expired(brd->rc_reset_timeout)){
-		reset_rc(); 
-	}
-	
-}
+	bmp085_update(&_brd.bmp); 
+	hmc5883l_update(&_brd.hmc); 
+	mpu6050_update(&_brd.mpu); 
+}*/
 
-static int8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
-	(void)(self); 
+void mwii_read_sensors(struct fc_data *data){
 	data->flags = 0xffff; // all
 	mpu6050_readRawAcc(&_brd.mpu, 
 		&data->raw_acc.x, 
 		&data->raw_acc.y, 
 		&data->raw_acc.z); 
-	mpu6050_readRawGyr(&_brd.mpu, 
-		&data->raw_gyr.x, 
-		&data->raw_gyr.y, 
-		&data->raw_gyr.z
-	); 
 	mpu6050_convertAcc(&_brd.mpu, 
 		data->raw_acc.x, 
 		data->raw_acc.y, 
@@ -409,7 +397,12 @@ static int8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 		&data->acc_g.y, 
 		&data->acc_g.z
 	); 
-	mpu6050_convertAcc(&_brd.mpu, 
+	mpu6050_readRawGyr(&_brd.mpu, 
+		&data->raw_gyr.x, 
+		&data->raw_gyr.y, 
+		&data->raw_gyr.z
+	); 
+	mpu6050_convertGyr(&_brd.mpu, 
 		data->raw_gyr.x, 
 		data->raw_gyr.y, 
 		data->raw_gyr.z, 
@@ -417,6 +410,7 @@ static int8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 		&data->gyr_deg.y,
 		&data->gyr_deg.z
 	); 
+	/*
 	hmc5883l_readRawMag(&_brd.hmc, 
 		&data->raw_mag.x, 
 		&data->raw_mag.y, 
@@ -430,16 +424,37 @@ static int8_t _mwii_read_sensors(fc_board_t self, struct fc_data *data){
 		&data->mag.y, 
 		&data->mag.z
 	); 
-	
+	*/
 	int16_t sonar = hcsr04_read_distance_in_cm(&brd->hcsr); 
 	data->atmospheric_altitude = bmp085_read_altitude(&brd->bmp); 
 	data->sonar_altitude = (sonar > 0)?((float)sonar / 100.0):-1; 
 	data->temperature = bmp085_read_temperature(&brd->bmp); 
 	data->pressure = bmp085_read_pressure(&brd->bmp); 
-	data->vbat = (adc0_read_cached(2) / 65535.0);
-	return 0; 
+	
+	//data->vbat = (adc0_read_cached(2) / 65535.0);
 }
 
+void mwii_read_receiver(
+		uint16_t *rc_thr, uint16_t *rc_yaw, uint16_t *rc_pitch, uint16_t *rc_roll,
+		uint16_t *rc_aux0, uint16_t *rc_aux1) {
+	*rc_thr = 		brd->rc_values[RC_THROTTLE]; 
+	*rc_pitch = 	brd->rc_values[RC_PITCH]; 
+	*rc_yaw = 		brd->rc_values[RC_YAW]; 
+	*rc_roll = 		brd->rc_values[RC_ROLL]; 
+	*rc_aux0 = 		brd->rc_values[RC_MODE]; 
+	*rc_aux1 = 		brd->rc_values[RC_MODE2];
+	
+	// prevent small changes when stick is not touched
+	if(abs(*rc_pitch - 1500) < 20) *rc_pitch = 1500; 
+	if(abs(*rc_roll - 1500) < 20) *rc_roll = 1500; 
+	if(abs(*rc_yaw - 1500) < 20) *rc_yaw = 1500;
+}
+
+//***********************
+// INTERFACE 
+//***********************
+
+/*
 static int8_t _mwii_write_motors(fc_board_t self,
 	uint16_t front, uint16_t back, uint16_t left, uint16_t right){
 	(void)(self); 
@@ -507,7 +522,7 @@ fc_board_t mwii_get_fc_quad_interface(void){
 	// cast, but only because we never actually use any private data in multiwii
 	return &ptr; 
 }
-
+*/
 /*
 static void _mwii_calibrate_escs(void){
 	// set all outputs to maximum

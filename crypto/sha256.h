@@ -31,7 +31,6 @@
 
 #define __LITTLE_ENDIAN__
 
-
 #include <stdint.h>
 
 /** \def SHA256_HASH_BITS

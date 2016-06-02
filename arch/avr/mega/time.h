@@ -26,7 +26,8 @@
 extern "C" {
 #endif
 
-#include <arch/time.h>
+#include <avr/io.h>
+
 /*
 #define time_static_delay_us(us) _delay_us(us)
 
@@ -250,7 +251,7 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 /// CPU TIME STAMP COUNTER SETUP
 /// ****************************
 
-#include "../../types.h"
+#include <kernel/types.h>
 
 
 #if defined(CONFIG_TIMESTAMP_COUNTER)
@@ -259,15 +260,18 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 
 	#define TSC_PRESCALER TIM1_CLOCK_DIV8
 	#define TSC_TICKS_PER_US 2 //((timestamp_t)(F_CPU / 8L))
-
+	
+	#define tsc_init(void) {}
+#if 0
 	#define tsc_init(void) (\
 		timer1_mode(TIM1_MODE_NORMAL),\
 		timer1_set_clock(TSC_PRESCALER),\
 		timer1_interrupt_overflow_on()\
 	)
+#endif
 
-	timestamp_t tsc_read(void);
-
+	//timestamp_t tsc_read(void);
+/*
 	static inline timestamp_t tsc_us_to_ticks(timestamp_t us) {
 		return ((timestamp_t)(TSC_TICKS_PER_US * ((timestamp_t)us)));
 	}
@@ -275,12 +279,14 @@ timestamp_t time_clock_to_us(timestamp_t clock);
 	static inline timestamp_t tsc_ticks_to_us(timestamp_t ticks){
 		return (((timestamp_t)ticks) / TSC_TICKS_PER_US);
 	}
-
+*/
 	#define tsc_reset(void) (\
 		_tsc_ovf = 0,\
-		TCNT1 = 0 \
 	)
+	//TCNT1 = 0 
 #endif
+
+#define udelay(us) { long delay = us; while(delay--) _delay_us(1); }
 
 //#define static_delay_us(us) _delay_us(us)
 

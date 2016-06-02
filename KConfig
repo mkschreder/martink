@@ -4,18 +4,32 @@ menu "Board support"
 	source boards/KConfig
 endmenu
 
+source kernel/KConfig
+
+menu "Application Configuration"
+	source apps/KConfig
+	source examples/KConfig
+endmenu
+
 menu "Device driver support"
 	source crypto/KConfig
+	source bus/KConfig
+	source memory/KConfig
+	source adc/KConfig
+	source gpio/KConfig
+	source i2c/KConfig
+	source gui/KConfig
 	source disp/KConfig
 	source hid/KConfig
 	source io/KConfig
 	source net/KConfig
+	source pwm/KConfig
 	source radio/KConfig
 	source rfid/KConfig
 	source sensors/KConfig
+	source rtc/KConfig
+	source serial/KConfig
+	source spi/KConfig
 	source tty/KConfig
 endmenu
 
-menu "Application Configuration"
-	source KConfig.app
-endmenu

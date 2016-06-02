@@ -1,0 +1,7 @@
+menu "PWM Support"
+	config PWM 
+		bool "Enable PWM support"
+	config ATMEGA_PWM
+		depends on PWM && CPU_ATMEGA328P
+		bool "ATMega328P PWM driver"
+endmenu

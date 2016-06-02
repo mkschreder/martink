@@ -1,12 +1,15 @@
-obj-y += main.o
-
 include arch/Makefile
+include kernel/Makefile
+include gpio/Makefile
+include bus/Makefile
+include adc/Makefile
+include memory/Makefile
 include boards/Makefile
-include block/Makefile
 include fs/Makefile
-include crypto/Makefile
 include disp/Makefile
+include gui/Makefile
 include hid/Makefile
+include i2c/Makefile
 include io/Makefile
 include net/Makefile
 include radio/Makefile
@@ -14,5 +17,11 @@ include rfid/Makefile
 include sensors/Makefile
 include tty/Makefile
 include util/Makefile
-
+include serial/Makefile
+include pwm/Makefile
+include rtc/Makefile
+include spi/Makefile
+include crypto/Makefile
+include lib/Makefile
+include apps/Makefile
 include examples/Makefile

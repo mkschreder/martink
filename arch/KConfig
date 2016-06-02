@@ -1,60 +1,25 @@
 menu "Hardware"
-	config HAVE_ADC
-		bool
-	config HAVE_UART 
-		bool
-	config HAVE_UART0
-		bool
-	config HAVE_UART1
-		bool
-	config HAVE_SPI 
-		bool
-	config HAVE_SPI0
-		bool
-	config HAVE_SPI1 
-		bool
-	config HAVE_TWI
-		bool
-	config HAVE_TWI0
-		bool
-	config HAVE_TWI1
-		bool
-	config HAVE_TWI2
-		bool
-	config HAVE_TIMER0
-		bool
-	config HAVE_TIMER1
-		bool
-	config HAVE_TIMER2
-		bool
-	config HAVE_PWM0
-		bool
-	config HAVE_PWM1
-		bool
-	config HAVE_PWM2
-		bool
-		
 	choice 
-		prompt "Processor family"
-	
-		config AVR
+		prompt "Target Architechture"
+		
+		config ARCH_AVR
 			bool "Atmel AVR"
 		
-		config ARM
+		config ARCH_ARM
 			bool "ARM"
-			
-		config NATIVE
-			bool "Native"
+		
+		config ARCH_XTENSA
+			bool "Xtensa" 
+
+		config ARCH_LINUX
+			bool "Linux"
 			help 
-				Attmept to compile code that will run on your current build system
+				Compile for linux
 			
 	endchoice 
 		
-	menu "Processor type"
-		source arch/avr/mega/KConfig
-		source arch/arm/KConfig
-		source arch/native/KConfig
-	endmenu
-
-		
+	source arch/avr/KConfig
+	source arch/arm/KConfig
+	source arch/xtensa/KConfig
+	source arch/linux/KConfig
 endmenu

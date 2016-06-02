@@ -446,3 +446,8 @@ void init( void )
 #ifdef __cplusplus
 }
 #endif
+
+MODULE_AUTHOR("Martin K. Schröder <mkschreder.uk@gmail.com>"); 
+MODULE_NAME("board-arduino-due"); 
+MODULE_DESCRIPTION("Arduino DUE board driver"); 
+MODULE_INIT(init); 

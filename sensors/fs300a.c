@@ -23,6 +23,8 @@
   * http://www.seeedstudio.com/wiki/G3/4_Water_Flow_sensor
 */
 
+
+#include <stdio.h>
 #ifdef FS300A
 
 #include <stdio.h>

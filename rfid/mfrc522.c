@@ -1,4 +1,5 @@
-#ifdef MFRC522
+#include <kernel.h>
+#if 0
 
 #include "mfrc522.h"
 #include "spi.h"

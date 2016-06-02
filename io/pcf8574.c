@@ -31,6 +31,9 @@
 #define PCF8574_MAXDEVICES 8 //max devices, depends on address (3 bit)
 #define PCF8574_MAXPINS 8 //max pin per device
 
+#pragma message("Skipping pcf driver")
+
+#if 0 
 //#define PCF8574_LCD_DEVICEID 7
 
 void pcf8574_init(struct pcf8574 *self, i2c_dev_t i2c, uint8_t device_id) {
@@ -74,3 +77,4 @@ uint8_t pcf8574_read_pin(struct pcf8574 *self, uint8_t pin) {
 	return (self->in_reg & (1 << (pin & 0x07)))?1:0; 
 }
 
+#endif

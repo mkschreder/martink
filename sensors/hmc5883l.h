@@ -30,14 +30,28 @@ extern "C" {
 //definitions
 #define HMC5883L_ADDR (0x1E<<1) //device address
 
+#include <kernel/thread.h>
+#include <kernel/dev/i2c.h>
+
 struct hmc5883l {
-	i2c_dev_t i2c;
-	uint8_t addr;
+	io_dev_t dev;
+	
+	uint8_t buf[6]; 
+	
 	float scale; 
+	timestamp_t time; 
+	int16_t raw_mag[3]; 
+	
+	uint8_t status; 
+	uint32_t sensor_id; 
+	
+	struct async_process process; 
+	//struct libk_thread kthread; 
+	//struct async_task task; 
 };
 
 //functions
-void hmc5883l_init(struct hmc5883l *self, i2c_dev_t i2c, uint8_t addr);
+void hmc5883l_init(struct hmc5883l *self, io_dev_t dev);
 void hmc5883l_readRawMag(struct hmc5883l *self, int16_t *mxraw, int16_t *myraw, int16_t *mzraw);
 void hmc5883l_read_adjusted(struct hmc5883l *self, float *mx, float *my, float *mz);
 void hmc5883l_convertMag(struct hmc5883l *self, 

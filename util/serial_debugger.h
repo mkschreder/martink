@@ -35,7 +35,7 @@ struct serial_debugger {
 	uint8_t buf_ptr; 
 	uint8_t last_is_read; // 1 read 0 write
 
-	struct serial_if *_ex_serial; 
+	struct serial_device_ops *_ex_serial; 
 }; 
 
 void serial_debugger_init(struct serial_debugger *dbg,

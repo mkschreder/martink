@@ -70,9 +70,14 @@ enum {
 	GPIO_COUNT
 }; 
 
+struct irq {
+	uint8_t dummy; 
+}; 
+
 void gpio_init_default(void); 
 
 void gpio_configure(gpio_pin_t pin, uint16_t flags); 
+void gpio_register_irq(struct irq *self, void (*irq)(struct irq *self, uint32_t mask)); 
 
 #define gpio_write_word(addr, value) ((void)(addr), (void)(value), 0)
 #define gpio_read_word(addr, value) ((void)(addr), (void)(value), 0)
@@ -80,3 +85,5 @@ void gpio_write_pin(gpio_pin_t pin, uint8_t val);
 uint8_t gpio_read_pin(gpio_pin_t pin); 
 
 uint16_t gpio_get_status(gpio_pin_t pin, timestamp_t *t_up, timestamp_t *t_down); 
+
+#define GPIO_PIN_BIT(p) (1 << (p & 0xf))

@@ -25,11 +25,12 @@
 
 #include "types.h"
 
-#include "../util.h"
+#include <kernel/util.h>
 
 #include <inttypes.h>
 #include <stddef.h>
 
+typedef long ssize_t; 
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +43,7 @@ extern "C" {
 
 // these should be moved somewhere. This is the way to do configurable
 // c interfaces using macros. It is used by all generic interface headers. 
-
+/*
 // used for generating references to static methods
 #define PFNAME2(P, F) __##P##_##F##__
 #define PFNAME(P, F) PFNAME2(P, F)
@@ -53,28 +54,27 @@ extern "C" {
 
 // used for declaring driver functions
 #define PFDECL(P, F, args...) PFCALL(P, F, args )
+*/
 
 #define initproc //__attribute__((constructor))
 
-#ifdef CONFIG_AVR
+//#include "static_cbuf.h"
+
+#include <inttypes.h>
+
+#include <kernel/list.h>
+
+#ifdef CONFIG_ARCH_AVR
 #include "avr/mega.h"
-#elif CONFIG_ARM
+#elif CONFIG_ARCH_ARM
 #include "arm/arm.h"
-#elif CONFIG_NATIVE
-#include "native/native.h"
+#elif CONFIG_ARCH_XTENSA
+#include "xtensa/xtensa.h"
+#elif CONFIG_ARCH_LINUX
+#include "linux/native.h"
 #else 
 #error "You have not chosen an architecture!"
 #endif
-
-#include "interface.h"
-#include "static_cbuf.h"
-
-#include "time.h"
-#include "uart.h"
-#include "twi.h"
-#include "spi.h"
-#include "gpio.h"
-#include "pwm.h"
 
 #ifndef PROGMEM
 #define PROGMEM
@@ -95,7 +95,8 @@ extern "C" {
 /// architecture specific implementation of serial_printf
 /// the implementation needs to be implemented separately because of 
 /// differences in libc. Look in arch/syscalls.c
-uint16_t serial_printf(serial_dev_t port, const char *fmt, ...);
+//uint16_t serial_printf(serial_dev_t port, const char *fmt, ...);
+
 
 #ifdef __cplusplus
 }

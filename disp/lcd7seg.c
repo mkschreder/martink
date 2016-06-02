@@ -22,11 +22,10 @@
 	* Davide Gironi, original implementation
 */
 
+#include <arch/soc.h>
 
-#include <stdio.h>
 #include "lcd7seg.h"
 
-#include <arch/soc.h>
 
 #define SEVSEG_PINA 0
 #define SEVSEG_PINB 1

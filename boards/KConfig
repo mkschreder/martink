@@ -9,6 +9,10 @@ choice
 		select BMP085
 		bool "Multiwii V2.5 Flight Controller"
 	
+	config BOARD_IMX233
+		depends on NATIVE
+		bool "IMX233 Board"
+	
 	config BOARD_PROMINI
 		depends on ATMEGA328P
 		bool "Arduino Pro-Mini module"
@@ -26,13 +30,7 @@ choice
 		depends on ATMEGA328P
 		bool "Fortmax custom arduino radio board"
 		
-	config BOARD_VIRTUAL
+	config BOARD_GENERIC_LINUX
 		depends on NATIVE
-		bool "Compile for native execution"
+		bool "Compile ELF for running on linux"
 endchoice
-
-
-config MULTIWII_ACC
-	string "Multiwii Accelerometer"
-	depends on BOARD_MULTIWII
-	default "mpu6050"

@@ -38,8 +38,6 @@
 
 #include "sha256.h"
 
-#define LITTLE_ENDIAN
-
 #if defined LITTLE_ENDIAN
 #elif defined BIG_ENDIAN
 #else

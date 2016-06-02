@@ -35,10 +35,37 @@
 "C" {
 #endif
 
+#include <kernel/thread.h>
+#include <kernel/dev/i2c.h>
+
+enum {
+	MPU6050_REG_PWR_MGMT_1, 
+	MPU6050_REG_CONFIG,
+	MPU6050_REG_SMPLRT_DIV,
+	MPU6050_REG_GYRO_CONFIG,
+	MPU6050_REG_ACCEL_CONFIG,
+	MPU6050_REG_INT_PIN_CFG,
+	MPU6050_REG_USER_CTRL,
+	MPU6050_REG_COUNT
+}; 
 
 struct mpu6050{
-	i2c_dev_t i2c;
-	uint8_t addr; 
+	io_dev_t dev;
+	
+	// cached data
+	int16_t raw[6]; 
+	
+	// threads
+	struct async_process process; 
+	//struct libk_thread kthread; 
+	//struct async_task task; 
+	
+	//struct pt uthread, rthread, wthread, ithread; 
+	uint8_t buf[6]; // i2c buffer
+	
+	timestamp_t time; // for time keeping
+	unsigned int count; 
+	uint8_t state; // status 
 }; 
 
 //definitions
@@ -46,7 +73,9 @@ struct mpu6050{
 #define MPU6050_GETATTITUDE 0
 
 //functions
-void mpu6050_init(struct mpu6050 *self, i2c_dev_t i2c, uint8_t addr);
+void mpu6050_init(struct mpu6050 *self, io_dev_t device);
+void mpu6050_deinit(struct mpu6050 *self); 
+//void mpu6050_update(struct mpu6050 *self); 
 uint8_t mpu6050_probe(struct mpu6050 *self);
 
 //#if MPU6050_GETATTITUDE == 0
@@ -54,56 +83,7 @@ void mpu6050_readRawAcc(struct mpu6050 *self, int16_t* ax, int16_t* ay, int16_t*
 void mpu6050_readRawGyr(struct mpu6050 *self, int16_t* gx, int16_t* gy, int16_t* gz);
 void mpu6050_convertAcc(struct mpu6050 *self, int16_t ax, int16_t ay, int16_t az, float *axg, float *ayg, float *azg);
 void mpu6050_convertGyr(struct mpu6050 *self, int16_t gx, int16_t gy, int16_t gz, float *gxd, float *gyd, float *gyz);
-//void mpu6050_getRawData(struct mpu6050 *self, int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz);
-/*void mpu6050_convertData(struct mpu6050 *self, 
-	int16_t ax, int16_t ay, int16_t az, 
-	int16_t gx, int16_t gy, int16_t gz, 
-	float *axg, float *ayg, float *azg, 
-	float *gxd, float *gyd, float *gyz
-)*/
-//void mpu6050_getConvAcc(struct mpu6050 *self, double* axg, double* ayg, double* azg);
-//void mpu6050_getConvGyr(struct mpu6050 *self, double* gxds, double* gyds, double* gzds);
-//#endif
 
-/*
-void mpu6050_setSleepDisabled(struct mpu6050 *self);
-void mpu6050_setSleepEnabled(struct mpu6050 *self);
-
-int8_t mpu6050_readBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t *data);
-int8_t mpu6050_readByte(struct mpu6050 *self, uint8_t regAddr, uint8_t *data);
-void mpu6050_writeBytes(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint8_t* data);
-void mpu6050_writeByte(struct mpu6050 *self, uint8_t regAddr, uint8_t data);
-int8_t mpu6050_readBits(struct mpu6050 *self, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t *data);
-int8_t mpu6050_readBit(struct mpu6050 *self, uint8_t regAddr, uint8_t bitNum, uint8_t *data);
-void mpu6050_writeBits(struct mpu6050 *self, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t data);
-void mpu6050_writeBit(struct mpu6050 *self, uint8_t regAddr, uint8_t bitNum, uint8_t data);
-
-#if MPU6050_GETATTITUDE == 1
-void mpu6050_updateQuaternion(struct mpu6050 *self);
-void mpu6050_getQuaternion(struct mpu6050 *self, double *qw, double *qx, double *qy, double *qz);
-void mpu6050_getRollPitchYaw(struct mpu6050 *self, double *pitch, double *roll, double *yaw);
-#endif
-
-#if MPU6050_GETATTITUDE == 2
-void mpu6050_writeWords(struct mpu6050 *self, uint8_t regAddr, uint8_t length, uint16_t* data);
-void mpu6050_setMemoryBank(struct mpu6050 *self, uint8_t bank, uint8_t prefetchEnabled, uint8_t userBank);
-void mpu6050_setMemoryStartAddress(struct mpu6050 *self, uint8_t address);
-void mpu6050_readMemoryBlock(struct mpu6050 *self, uint8_t *data, uint16_t dataSize, uint8_t bank, uint8_t address);
-uint8_t mpu6050_writeMemoryBlock(struct mpu6050 *self, const uint8_t *data, uint16_t dataSize, uint8_t bank, uint8_t address, uint8_t verify, uint8_t useProgMem);
-uint8_t mpu6050_writeDMPConfigurationSet(struct mpu6050 *self, const uint8_t *data, uint16_t dataSize, uint8_t useProgMem);
-uint16_t mpu6050_getFIFOCount(struct mpu6050 *self);
-void mpu6050_getFIFOBytes(struct mpu6050 *self, uint8_t *data, uint8_t length);
-uint8_t mpu6050_getIntStatus(struct mpu6050 *self);
-void mpu6050_resetFIFO(struct mpu6050 *self);
-//base dmp
-uint8_t mpu6050_dmpInitialize(struct mpu6050 *self);
-void mpu6050_dmpEnable(struct mpu6050 *self);
-void mpu6050_dmpDisable(struct mpu6050 *self);
-void mpu6050_getQuaternion(struct mpu6050 *self, const uint8_t* packet, double *qw, double *qx, double *qy, double *qz);
-void mpu6050_getRollPitchYaw(struct mpu6050 *self, double qw, double qx, double qy, double qz, double *roll, double *pitch, double *yaw);
-uint8_t mpu6050_getQuaternionWait(struct mpu6050 *self, double *qw, double *qx, double *qy, double *qz);
-#endif
-*/
 /// temperature compensation offsets
 int8_t mpu6050_getTCXGyroOffset(struct mpu6050 *self);
 void mpu6050_setTCXGyroOffset(struct mpu6050 *self, int8_t offset);

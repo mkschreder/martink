@@ -1,0 +1,8 @@
+menu "Analog-to-digital (ADC) drivers"
+	config ADC
+		bool "ADC Support"
+	config ATMEGA_ADC
+		depends on ADC
+		bool "ATMega ADC support"
+endmenu
+		

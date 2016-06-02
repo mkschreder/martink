@@ -1,0 +1,26 @@
+choice 
+	prompt "Main Application Target"
+
+	config ARDUINO_PWM_BLINK_THREAD
+		depends on CPU_ATMEGA328P
+		bool "Arduino threaded PWM and BLINK example"
+	config ARDUINO_EXTERNAL_RTC_EEPROM
+		depends on CPU_ATMEGA328P
+		bool "Arduino DS3231 RTC/EEPROM example"
+endchoice
+
+comment "Utility applications"
+config APP_print_hello
+	depends on ARCH_LINUX
+	bool "Print Hello APP"
+
+config APP_imx23_ssd1306
+	depends on ARCH_LINUX
+	bool "ssd1306 example on imx233 board"
+
+config APP_test 
+	depends on ARCH_LINUX
+	bool "simple test app"
+
+config APP_RTOS_TEST_dis
+	bool "simple rtos test"

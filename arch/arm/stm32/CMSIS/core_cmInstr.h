@@ -362,10 +362,10 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE void __DMB(void)
     \param [in]    value  Value to reverse
     \return               Reversed value
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __REV(uint32_t value)
+__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __REV(uint32_t /*@unused@*/ value )
 {
-  uint32_t result;
-
+  uint32_t result = 0;
+  
   __ASM volatile ("rev %0, %1" : "=r" (result) : "r" (value) );
   return(result);
 }
@@ -378,10 +378,10 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __REV(uint32_t value
     \param [in]    value  Value to reverse
     \return               Reversed value
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __REV16(uint32_t value)
+__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __REV16(uint32_t /*@unused@*/ value)
 {
-  uint32_t result;
-
+  uint32_t result = 0;
+	
   __ASM volatile ("rev16 %0, %1" : "=r" (result) : "r" (value) );
   return(result);
 }
@@ -394,9 +394,9 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __REV16(uint32_t val
     \param [in]    value  Value to reverse
     \return               Reversed value
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE int32_t __REVSH(int32_t value)
+__attribute__( ( always_inline ) ) __STATIC_INLINE int32_t __REVSH(int32_t /*@unused@*/ value)
 {
-  uint32_t result;
+  int32_t result = 0;
 
   __ASM volatile ("revsh %0, %1" : "=r" (result) : "r" (value) );
   return(result);
@@ -411,7 +411,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE int32_t __REVSH(int32_t value
     \param [in]    value  Number of Bits to rotate
     \return               Rotated value
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __ROR(uint32_t op1, uint32_t op2)
+__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __ROR(uint32_t /*@unused@*/ op1, uint32_t /*@unused@*/ op2)
 {
 
   __ASM volatile ("ror %0, %0, %1" : "+r" (op1) : "r" (op2) );
@@ -428,9 +428,9 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __ROR(uint32_t op1, 
     \param [in]    value  Value to reverse
     \return               Reversed value
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __RBIT(uint32_t value)
+__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __RBIT(uint32_t /*@unused@*/ value)
 {
-  uint32_t result;
+  uint32_t result = 0;
 
    __ASM volatile ("rbit %0, %1" : "=r" (result) : "r" (value) );
    return(result);
@@ -444,9 +444,9 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __RBIT(uint32_t valu
     \param [in]    ptr  Pointer to data
     \return             value of type uint8_t at (*ptr)
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE uint8_t __LDREXB(volatile uint8_t *addr)
+__attribute__( ( always_inline ) ) __STATIC_INLINE uint8_t __LDREXB(volatile uint8_t /*@unused@*/ *addr)
 {
-    uint8_t result;
+    uint8_t result = 0;
 
    __ASM volatile ("ldrexb %0, [%1]" : "=r" (result) : "r" (addr) );
    return(result);
@@ -460,9 +460,9 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint8_t __LDREXB(volatile uin
     \param [in]    ptr  Pointer to data
     \return        value of type uint16_t at (*ptr)
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE uint16_t __LDREXH(volatile uint16_t *addr)
+__attribute__( ( always_inline ) ) __STATIC_INLINE uint16_t __LDREXH(volatile uint16_t /*@unused@*/ *addr)
 {
-    uint16_t result;
+    uint16_t result = 0;
 
    __ASM volatile ("ldrexh %0, [%1]" : "=r" (result) : "r" (addr) );
    return(result);
@@ -476,9 +476,9 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint16_t __LDREXH(volatile ui
     \param [in]    ptr  Pointer to data
     \return        value of type uint32_t at (*ptr)
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __LDREXW(volatile uint32_t *addr)
+__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __LDREXW(volatile uint32_t /*@unused@*/ *addr)
 {
-    uint32_t result;
+    uint32_t result = 0;
 
    __ASM volatile ("ldrex %0, [%1]" : "=r" (result) : "r" (addr) );
    return(result);
@@ -494,9 +494,9 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __LDREXW(volatile ui
     \return          0  Function succeeded
     \return          1  Function failed
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __STREXB(uint8_t value, volatile uint8_t *addr)
+__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __STREXB(uint8_t /*@unused@*/ value, volatile uint8_t /*@unused@*/ *addr)
 {
-   uint32_t result;
+   uint32_t result = 0;
 
    __ASM volatile ("strexb %0, %2, [%1]" : "=&r" (result) : "r" (addr), "r" (value) );
    return(result);
@@ -512,9 +512,9 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __STREXB(uint8_t val
     \return          0  Function succeeded
     \return          1  Function failed
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __STREXH(uint16_t value, volatile uint16_t *addr)
+__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __STREXH(uint16_t /*@unused@*/ value, volatile uint16_t /*@unused@*/ *addr)
 {
-   uint32_t result;
+   uint32_t result = 0;
 
    __ASM volatile ("strexh %0, %2, [%1]" : "=&r" (result) : "r" (addr), "r" (value) );
    return(result);
@@ -530,9 +530,9 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __STREXH(uint16_t va
     \return          0  Function succeeded
     \return          1  Function failed
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __STREXW(uint32_t value, volatile uint32_t *addr)
+__attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __STREXW(uint32_t /*@unused@*/ value, volatile uint32_t /*@unused@*/ *addr)
 {
-   uint32_t result;
+   uint32_t result = 0;
 
    __ASM volatile ("strex %0, %2, [%1]" : "=&r" (result) : "r" (addr), "r" (value) );
    return(result);
@@ -576,7 +576,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE void __CLREX(void)
  */
 #define __USAT(ARG1,ARG2) \
 ({                          \
-  uint32_t __RES, __ARG1 = (ARG1); \
+  uint32_t __RES = 0, __ARG1 = (ARG1); \
   __ASM ("usat %0, %1, %2" : "=r" (__RES) :  "I" (ARG2), "r" (__ARG1) ); \
   __RES; \
  })
@@ -589,9 +589,9 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE void __CLREX(void)
     \param [in]  value  Value to count the leading zeros
     \return             number of leading zeros in value
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE uint8_t __CLZ(uint32_t value)
+__attribute__( ( always_inline ) ) __STATIC_INLINE uint8_t __CLZ(uint32_t /*@unused@*/ value)
 {
-  uint8_t result;
+  uint8_t result = 0;
 
   __ASM volatile ("clz %0, %1" : "=r" (result) : "r" (value) );
   return(result);

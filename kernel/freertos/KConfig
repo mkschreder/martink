@@ -1,0 +1,2 @@
+config FREERTOS
+	bool "FreeRTOS scheduler support"

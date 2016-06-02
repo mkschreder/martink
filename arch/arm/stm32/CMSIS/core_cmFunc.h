@@ -337,7 +337,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE void __disable_irq(void)
  */
 __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_CONTROL(void)
 {
-  uint32_t result;
+  uint32_t result = 0;
 
   __ASM volatile ("MRS %0, control" : "=r" (result) );
   return(result);
@@ -350,7 +350,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_CONTROL(void)
 
     \param [in]    control  Control Register value to set
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_CONTROL(uint32_t control)
+__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_CONTROL(uint32_t /*@unused@*/ control)
 {
   __ASM volatile ("MSR control, %0" : : "r" (control) );
 }
@@ -364,7 +364,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE void __set_CONTROL(uint32_t c
  */
 __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_IPSR(void)
 {
-  uint32_t result;
+  uint32_t result = 0;
 
   __ASM volatile ("MRS %0, ipsr" : "=r" (result) );
   return(result);
@@ -379,7 +379,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_IPSR(void)
  */
 __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_APSR(void)
 {
-  uint32_t result;
+  uint32_t result = 0;
 
   __ASM volatile ("MRS %0, apsr" : "=r" (result) );
   return(result);
@@ -394,7 +394,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_APSR(void)
  */
 __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_xPSR(void)
 {
-  uint32_t result;
+  uint32_t result = 0;
 
   __ASM volatile ("MRS %0, xpsr" : "=r" (result) );
   return(result);
@@ -409,7 +409,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_xPSR(void)
  */
 __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_PSP(void)
 {
-  register uint32_t result;
+  register uint32_t result = 0;
 
   __ASM volatile ("MRS %0, psp\n"  : "=r" (result) );
   return(result);
@@ -422,7 +422,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_PSP(void)
 
     \param [in]    topOfProcStack  Process Stack Pointer value to set
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_PSP(uint32_t topOfProcStack)
+__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_PSP(uint32_t /*@unused@*/ topOfProcStack)
 {
   __ASM volatile ("MSR psp, %0\n" : : "r" (topOfProcStack) );
 }
@@ -436,7 +436,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE void __set_PSP(uint32_t topOf
  */
 __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_MSP(void)
 {
-  register uint32_t result;
+  register uint32_t result = 0;
 
   __ASM volatile ("MRS %0, msp\n" : "=r" (result) );
   return(result);
@@ -449,7 +449,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_MSP(void)
 
     \param [in]    topOfMainStack  Main Stack Pointer value to set
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_MSP(uint32_t topOfMainStack)
+__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_MSP(uint32_t /*@unused@*/ topOfMainStack)
 {
   __ASM volatile ("MSR msp, %0\n" : : "r" (topOfMainStack) );
 }
@@ -463,7 +463,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE void __set_MSP(uint32_t topOf
  */
 __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_PRIMASK(void)
 {
-  uint32_t result;
+  uint32_t result = 0;
 
   __ASM volatile ("MRS %0, primask" : "=r" (result) );
   return(result);
@@ -476,7 +476,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_PRIMASK(void)
 
     \param [in]    priMask  Priority Mask
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_PRIMASK(uint32_t priMask)
+__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_PRIMASK(uint32_t /*@unused@*/ priMask)
 {
   __ASM volatile ("MSR primask, %0" : : "r" (priMask) );
 }
@@ -514,7 +514,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE void __disable_fault_irq(void
  */
 __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_BASEPRI(void)
 {
-  uint32_t result;
+  uint32_t result = 0;
 
   __ASM volatile ("MRS %0, basepri_max" : "=r" (result) );
   return(result);
@@ -527,7 +527,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_BASEPRI(void)
 
     \param [in]    basePri  Base Priority value to set
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_BASEPRI(uint32_t value)
+__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_BASEPRI(uint32_t /*@unused@*/ value)
 {
   __ASM volatile ("MSR basepri, %0" : : "r" (value) );
 }
@@ -541,7 +541,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE void __set_BASEPRI(uint32_t v
  */
 __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_FAULTMASK(void)
 {
-  uint32_t result;
+  uint32_t result = 0;
 
   __ASM volatile ("MRS %0, faultmask" : "=r" (result) );
   return(result);
@@ -554,7 +554,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_FAULTMASK(void
 
     \param [in]    faultMask  Fault Mask value to set
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_FAULTMASK(uint32_t faultMask)
+__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_FAULTMASK(uint32_t /*@unused@*/ faultMask)
 {
   __ASM volatile ("MSR faultmask, %0" : : "r" (faultMask) );
 }
@@ -573,7 +573,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE void __set_FAULTMASK(uint32_t
 __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_FPSCR(void)
 {
 #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
-  uint32_t result;
+  uint32_t result = 0;
 
   __ASM volatile ("VMRS %0, fpscr" : "=r" (result) );
   return(result);
@@ -589,7 +589,7 @@ __attribute__( ( always_inline ) ) __STATIC_INLINE uint32_t __get_FPSCR(void)
 
     \param [in]    fpscr  Floating Point Status/Control value to set
  */
-__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_FPSCR(uint32_t fpscr)
+__attribute__( ( always_inline ) ) __STATIC_INLINE void __set_FPSCR(uint32_t /*@unused@*/ fpscr)
 {
 #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
   __ASM volatile ("VMSR fpscr, %0" : : "r" (fpscr) );

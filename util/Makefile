@@ -1,1 +1,2 @@
-obj-y += util/serial_debugger.o util/json.o
+obj-$(CONFIG_SERIAL_DEBUG) += util/serial_debugger.o 
+obj-$(CONFIG_JSON) += util/json.o

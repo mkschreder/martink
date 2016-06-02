@@ -27,6 +27,9 @@
 
 #include <stdio.h>
 
+#include <kernel/dev/i2c.h>
+#include <kernel/thread.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -34,15 +37,27 @@ extern "C" {
 #define BMP085_ADDR (0x77<<1) //0x77 default I2C address
 
 struct bmp085 {
-	i2c_dev_t i2c;
-	uint8_t addr;
-	int regac1, regac2, regac3, regb1, regb2, regmb, regmc, regmd;
-	unsigned int regac4, regac5, regac6;
+	io_dev_t dev; // underlying register file device
+	
+	int32_t calib_data[11]; 
+	//int16_t regac1, regac2, regac3, regb1, regb2, regmb, regmc, regmd;
+	//uint16_t regac4, regac5, regac6;
+	int32_t ut, up; 
+	uint8_t buf[4]; // i2c buffer
+	
+	struct async_process process; 
+	//struct libk_thread kthread; 
+	//struct async_task task; 
+	int 	count; 
+	timestamp_t time; 
+	uint8_t status; 
 };
 
 //functions
 /// inits the device over the interface supplied 
-void bmp085_init(struct bmp085 *self, i2c_dev_t i2c, uint8_t addr);
+void bmp085_init(struct bmp085 *self, io_dev_t i2c);
+/// runs all background tasks for the bmp sensor
+void bmp085_update(struct bmp085 *self); 
 /// returns pressure 
 long bmp085_read_pressure(struct bmp085 *self);
 /// returns altitude

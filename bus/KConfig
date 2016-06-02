@@ -1,0 +1,13 @@
+config BUS_I2C
+	bool
+config BUS_SPI
+	bool 
+
+config LINUX_I2C
+	depends on ARCH_LINUX
+	select BUS_I2C
+	bool "Linux i2c bridge driver"
+config LINUX_SPI
+	depends on ARCH_LINUX
+	select BUS_SPI
+	bool "Linux SPI bridge driver"

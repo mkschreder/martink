@@ -16,4 +16,6 @@ obj-$(CONFIG_L3G4200D) += sensors/l3g4200d.o
 obj-$(CONFIG_MMA7455) += sensors/mma7455.o  
 obj-$(CONFIG_MPU6050MP6) += sensors/mpu6050dmp6.o 
 obj-$(CONFIG_TEMT6000) += sensors/temt6000.o
-obj-y += sensors/mpu6000.o
+obj-$(CONFIG_MPU6000) += sensors/mpu6000.o
+
+docs-y += sensors/README.md

@@ -26,15 +26,15 @@ CFLAGS += -mmcu=$(mcu-y) -DF_CPU=$(CPU_FREQ)
 LDFLAGS += -mmcu=$(mcu-y) -lc 
 
 
-#obj-$(CONFIG_CPU_ATMEGA328P) += \
-#	arch/avr/mega/adc.o \
-#	arch/avr/mega/twi.o 		  \
-	arch/avr/mega/gpio.o \
-	arch/avr/mega/time.o  \
-	arch/avr/mega/uart.o \
-	arch/avr/mega/spi.o
+obj-$(CONFIG_CPU_ATMEGA328P) += \
+	arch/avr/mega/time.o 
 
 define target/image/finalize
-	avr-objcopy -j .text -j .data -O ihex $(1) $(2)
+	avr-objcopy -j .text -j .data -O ihex $(1) $(2).hex
 	avr-size --format=berkeley $(1)
 endef
+
+flash-arduino: all
+	sudo avrdude -P /dev/ttyUSB0 -b 57600 -c arduino -p m328p -U flash:w:$(TARGET).hex
+
+PHONY += flash-arduino

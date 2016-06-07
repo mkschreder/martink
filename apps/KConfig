@@ -7,6 +7,10 @@ choice
 	config ARDUINO_EXTERNAL_RTC_EEPROM
 		depends on CPU_ATMEGA328P
 		bool "Arduino DS3231 RTC/EEPROM example"
+	config ARDUINO_APP_RANGEFINDER
+		depends on CPU_ATMEGA328P
+		bool "Arduino 6-channel rangefinder"
+
 endchoice
 
 comment "Utility applications"

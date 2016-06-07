@@ -158,6 +158,8 @@ void gpio_enable_pcint(gpio_pin_t pin);
 				:(-1)\
 )
 
+void gpio_register_pcint(gpio_pin_t pin, void (*handler)(void *), void *data); 
+
 #if defined(CONFIG_GPIO_PIN_STATES)
 	//extern uint8_t gpio_get_status(gpio_pin_t pin, 
 	//	timestamp_t *ch_up, timestamp_t *ch_down);

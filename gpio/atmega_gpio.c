@@ -22,6 +22,7 @@
 #include <arch/soc.h>
 #include <kernel/mt.h>
 #include <kernel/time.h>
+#include <stdlib.h>
 
 #include "gpio.h"
 #include "atmega_gpio.h"
@@ -143,18 +144,34 @@ int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t
 		}
 	}
 	*/
-	ISR(PCINT0_vect){
-		PCINT_vect(); 
-	}
-	
-	ISR(PCINT1_vect){
-		PCINT_vect(); 
-	}
-
-	ISR(PCINT2_vect){
-		PCINT_vect(); 
-	}
 #endif
+
+struct pcint_handler {
+	struct list_head list; 
+	void (*callback)(void *); 
+	void *data; 
+}; 
+
+LIST_HEAD(_pcint_handlers); 
+
+static void PCINT_vect(void){
+	struct pcint_handler *h = 0; 
+	list_for_each_entry(h, &_pcint_handlers, list){
+		if(h->callback) h->callback(h->data); 	
+	}
+}
+
+ISR(PCINT0_vect){
+	PCINT_vect(); 
+}
+
+ISR(PCINT1_vect){
+	PCINT_vect(); 
+}
+
+ISR(PCINT2_vect){
+	PCINT_vect(); 
+}
 
 void gpio_configure(gpio_pin_t pin, uint16_t fun){
 	if(fun & GP_OUTPUT) RSET(DREG(pin), PIDX(pin)); 
@@ -198,6 +215,23 @@ static uint16_t _fx_rand(void)
 	bit  = ((lfsr >> 0) ^ (lfsr >> 2) ^ (lfsr >> 3) ^ (lfsr >> 5) ) & 1;
 	return lfsr =  (lfsr >> 1) | (bit << 15);
 }
+
+void gpio_register_pcint(gpio_pin_t pin, void (*handler)(void *data), void *data){
+	struct pcint_handler *h = 0; 
+	list_for_each_entry(h, &_pcint_handlers, list){
+		if(h->callback && h->callback == handler) {
+			gpio_enable_pcint(pin); 
+			return; 		
+		}
+	}
+	h = malloc(sizeof(struct pcint_handler)); 
+	memset(h, 0, sizeof(struct pcint_handler)); 
+	h->callback = handler; 
+	h->data = data; 
+	list_add_tail(&h->list, &_pcint_handlers); 
+	gpio_enable_pcint(pin); 
+}
+
 // initializes the standard random number generator from a floating pin
 uint32_t gpio_read_prng(gpio_pin_t pin){
 	// save pin state

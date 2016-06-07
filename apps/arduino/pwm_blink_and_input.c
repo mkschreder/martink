@@ -21,7 +21,6 @@ dimmed while user is typing and while the second led starts blinking.
 #include <gpio/gpio.h>
 #include <gpio/atmega_gpio.h>
 #include <pwm/pwm.h>
-#include <block/block.h>
 #include <serial/serial.h>
 
 // this is just a static blink to signal that everything is working

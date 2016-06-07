@@ -4,4 +4,5 @@ obj-$(CONFIG_APP_test) += apps/test.o
 obj-$(CONFIG_APP_RTOS_TEST) += apps/rtos-test.o
 obj-$(CONFIG_ARDUINO_PWM_BLINK_THREAD) += apps/arduino/pwm_blink_and_input.o
 obj-$(CONFIG_ARDUINO_EXTERNAL_RTC_EEPROM) += apps/arduino/i2c_external_rtc.o
+obj-$(CONFIG_ARDUINO_APP_RANGEFINDER) += apps/arduino/6ch-rangefinder.o
 LDFLAGS-$(CONFIG_APP_test) += -lpthread

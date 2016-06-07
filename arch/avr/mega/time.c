@@ -42,6 +42,20 @@
 		}
 		return time;
 	}
+
+	timestamp_t tsc_us_to_ticks(timestamp_t us) {
+		return ((timestamp_t)(TSC_TICKS_PER_US * ((timestamp_t)us)));
+	}
+
+	timestamp_t tsc_ticks_to_us(timestamp_t ticks){
+		return (((timestamp_t)ticks) / TSC_TICKS_PER_US);
+	}
+
+	static void __init tsc_init(void){
+		timer1_mode(TIM1_MODE_NORMAL);
+		timer1_set_clock(TSC_PRESCALER); 
+		timer1_interrupt_overflow_on(); 
+	}
 #endif
 
 

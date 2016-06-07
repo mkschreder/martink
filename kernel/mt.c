@@ -1,5 +1,6 @@
 #include "mt.h"
 
+#ifdef CONFIG_FREERTOS
 static const thread_attr_t _default_attrs = {
 	.name = NULL, 
 	.stack_size = 300, // TODO: adjust
@@ -87,3 +88,4 @@ void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,
     /* The size of the stack to allocate - in words, NOT in bytes! */
     *pusIdleTaskStackSize = configMINIMAL_STACK_SIZE;
 }
+#endif

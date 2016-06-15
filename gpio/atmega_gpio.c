@@ -191,6 +191,16 @@ void gpio_enable_pcint(gpio_pin_t pin){
 				:(-1);
 }
 
+void gpio_disable_pcint(gpio_pin_t pin){
+	((pin) >= GPIO_PB0 && (pin) <= GPIO_PB7)
+		?(PCICR &= ~_BV(PCINT0), PCMSK0 = PCMSK0 & ~_BV((pin) - GPIO_PB0))
+		:((pin) >= GPIO_PC0 && (pin) <= GPIO_PC7_NC)
+			?(PCICR &= ~_BV(PCINT1), PCMSK1 = PCMSK1 & ~ _BV((pin) - GPIO_PB0))
+			:((pin) >= GPIO_PD0 && (pin) <= GPIO_PD7)
+				?(PCICR &= ~_BV(PCINT2), PCMSK2 = PCMSK2 & ~ _BV((pin) - GPIO_PD0))
+				:(-1);
+}
+
 uint8_t gpio_write_word(uint8_t addr, uint32_t value) {
 	return ((addr) < 4)?(*gPinPorts[addr].out_reg = ((value) & 0xff), 0):(1); 
 }
@@ -220,7 +230,6 @@ void gpio_register_pcint(gpio_pin_t pin, void (*handler)(void *data), void *data
 	struct pcint_handler *h = 0; 
 	list_for_each_entry(h, &_pcint_handlers, list){
 		if(h->callback && h->callback == handler) {
-			gpio_enable_pcint(pin); 
 			return; 		
 		}
 	}
@@ -229,7 +238,6 @@ void gpio_register_pcint(gpio_pin_t pin, void (*handler)(void *data), void *data
 	h->callback = handler; 
 	h->data = data; 
 	list_add_tail(&h->list, &_pcint_handlers); 
-	gpio_enable_pcint(pin); 
 }
 
 // initializes the standard random number generator from a floating pin

@@ -147,16 +147,8 @@ int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t
 
 // evaluates to bit that has been enabled or -1 if invalid pcint
 void gpio_enable_pcint(gpio_pin_t pin); 
+void gpio_disable_pcint(gpio_pin_t pin); 
 
-#define gpio_disable_pcint(pin) (\
-	((pin) >= GPIO_PB0 && (pin) <= GPIO_PB7)\
-		?(PCICR &= ~_BV(PCINT0), PCMSK0 = PCMSK0 & ~_BV((pin) - GPIO_PB0))\
-		:((pin) >= GPIO_PC0 && (pin) <= GPIO_PC7)\
-			?(PCICR &= ~_BV(PCINT1), PCMSK1 = PCMSK1 & ~ _BV((pin) - GPIO_PB0))\
-			:((pin) >= GPIO_PD0 && (pin) <= GPIO_PD7)\
-				?(PCICR &= ~_BV(PCINT2), PCMSK2 = PCMSK2 & ~ _BV((pin) - GPIO_PD0))\
-				:(-1)\
-)
 
 void gpio_register_pcint(gpio_pin_t pin, void (*handler)(void *), void *data); 
 

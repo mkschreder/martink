@@ -21,7 +21,10 @@ Quick and dirty way to read 6 rangefinders on arduino. (note: really dirty!)
 #include <kernel/time.h>
 
 #define SENSOR_COUNT 6
-#define SENSOR_READING_TIMEOUT 30UL
+
+// 15ms is enough for measuring up to 2.7m. Beyond that sensor readings are unreliable. 
+#define SENSOR_READING_TIMEOUT 15UL
+
 //#define SENSOR_MAX_READING (200 * 58)
 #define SENSOR_READING_INVALID (-1)
 
@@ -29,6 +32,7 @@ static int16_t _readings[SENSOR_COUNT];
 static int16_t _health[SENSOR_COUNT]; 
 static timestamp_t _timestamps[SENSOR_COUNT]; 
 static uint8_t _cur_sensor = 0; 
+static uint8_t _reading_pending = 0; 
 
 static void _pcint_handler(void *data){
 	int up = gpio_read_pin(GPIO_PD2 + _cur_sensor); 
@@ -38,6 +42,7 @@ static void _pcint_handler(void *data){
 		if(reading >= 0){ // if distance is less than 0 then it is invalid so we only update if we have what *seems* like a valid distance. 
 			_readings[_cur_sensor] = reading;  
 		}
+		_reading_pending = 0; 
 		// disable pcint here as a precaution
 		gpio_disable_pcint(GPIO_PD2 + _cur_sensor); 
 	} else {
@@ -71,12 +76,18 @@ int main(void){
 		// configure echo pin as input 
 		gpio_configure(GPIO_PD2 + _cur_sensor, GP_INPUT); 
 		gpio_write_pin(GPIO_PD2 + _cur_sensor, 1); 
+		
+		// set the reading flag
+		_reading_pending = 1; 
 
 		// enable echo interrupt 
 		gpio_enable_pcint(GPIO_PD2 + _cur_sensor); 
 		
-		// wait for a sensor delay
-		_delay_ms(SENSOR_READING_TIMEOUT); 
+		// wait until reading done or cancel after a sensor delay
+		timestamp_t timeout = timestamp_from_now_us(SENSOR_READING_TIMEOUT * 1000UL); 
+		while(_reading_pending && !timestamp_expired(timeout)){
+			_delay_ms(1); 
+		}
 
 		// disable pin interrupt
 		gpio_disable_pcint(GPIO_PD2 + _cur_sensor); 

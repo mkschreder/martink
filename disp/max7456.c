@@ -76,6 +76,44 @@ static void max7456_set_white_level(struct max7456 *self, uint8_t row_white_leve
 	}
 }
 
+static void _tty_put(struct tty_device *dev, uint8_t ch, tty_color_t fg, tty_color_t bg){
+	struct max7456 *self = container_of(dev, struct max7456, device); 
+	max7456_write_char_at(self, self->cursor_x, self->cursor_y, ch); 
+}
+
+/// move cursor to a new position on the screen. 
+static void _tty_move_cursor(struct tty_device *dev, uint16_t x, uint16_t y){
+	struct max7456 *self = container_of(dev, struct max7456, device); 
+	self->cursor_x = x; 
+	self->cursor_y = y; 
+}
+
+/// get the size of the screen
+static void _tty_get_size(struct tty_device *dev, uint16_t *w, uint16_t *h){
+	// PAL
+	*w = 30; 
+	*h = 16; 
+}
+
+/// clear the screen
+static void _tty_clear(tty_dev_t dev){
+	uint16_t w, h; 
+	struct max7456 *self = container_of(dev, struct max7456, device); 
+	_tty_get_size(dev, &w, &h); 
+	for(unsigned int x = 0; x < w; x++){
+		for(unsigned int y = 0; y < h; y++){
+			max7456_write_char_at(self, x, y, ' '); 
+		}
+	}
+}
+
+static struct tty_device_ops max7456_ops = {
+	.put = _tty_put, 
+	.move_cursor = _tty_move_cursor, 
+	.get_size = _tty_get_size, 
+	.clear = _tty_clear
+}; 
+
 void max7456_init(struct max7456 *self, struct spi_adapter *spi, struct gpio_adapter *gpio, gpio_pin_t cs_pin){
 	self->spi = spi; 
 	self->gpio = gpio; 
@@ -93,6 +131,9 @@ void max7456_init(struct max7456 *self, struct spi_adapter *spi, struct gpio_ada
 	max7456_write_reg(self, MAX7456_REG_VM0, VM0_VIDEO_MODE_PAL | VM0_SYNC_NEXT_VSYNC | VM0_OSD_ENABLE); 
 
 	max7456_set_white_level(self, MAX7456_WLEVEL_90); 	
+
+	// init tty device
+	self->device.ops = &max7456_ops; 
 }
 
 void max7456_write_char_at(struct max7456 *self, uint8_t x, uint8_t y, uint8_t ch){
@@ -103,3 +144,6 @@ void max7456_write_char_at(struct max7456 *self, uint8_t x, uint8_t y, uint8_t c
 	max7456_write_reg(self, MAX7456_REG_DMDI, ch); 
 }
 
+struct tty_device* max7456_to_tty_device(struct max7456 *self){
+	return &self->device; 
+}

@@ -742,7 +742,7 @@ STATE(_st_idle, term, ev, arg){
 	}
 }
 
-void vt100_init(struct vt100 *self, tty_dev_t display){
+void vt100_init(struct vt100 *self, struct tty_device *display){
 	self->display = display; 
   //self->send_response = send_response; 
 	_vt100_reset(self); 
@@ -762,6 +762,33 @@ void vt100_puts(struct vt100 *term, const char *str){
 * SERIAL INTERFACE
 ********************/
 
+static int _serial_write(struct serial_device *dev, const char *data, size_t size){
+	struct vt100 *self = container_of(dev, struct vt100, serial); 
+	for(size_t c = 0; c < size; c++) vt100_putc(self, data[c]); 
+	return size; 
+}
+
+static int _serial_read(struct serial_device *dev, char *data, size_t size){
+	// not supported
+	return -EINVAL; 
+}
+
+static void _serial_set_baud(struct serial_device *dev, uint32_t baud){
+	// not applicable
+}
+
+struct serial_device_ops _vt100_ops = {
+	.write = _serial_write, 
+	.read = _serial_read, 
+	.set_baud = _serial_set_baud
+}; 
+
+struct serial_device *vt100_to_serial_device(struct vt100 *self){
+	self->serial.ops = &_vt100_ops; 
+	return &self->serial; 
+}
+
+/*
 static uint16_t _vt100_serial_putc(serial_dev_t self, uint8_t ch){
 	struct vt100 *dev = container_of(self, struct vt100, serial); 
 	vt100_putc(dev, ch); 
@@ -818,3 +845,4 @@ serial_dev_t vt100_to_serial_device(struct vt100 *self){
 	self->serial = &_vt100_if;
 	return &self->serial; 
 }
+*/

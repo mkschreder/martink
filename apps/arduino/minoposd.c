@@ -18,22 +18,27 @@ License: GPLv3
 #include <serial/serial.h>
 #include <serial/atmega_uart.h>
 #include <disp/max7456.h>
+#include <tty/vt100.h>
+#include <serial/atmega_uart.h>
 
 static void app_main(void *arg){
 	struct max7456 osd; 
+	struct vt100 vt100; 
 	struct gpio_adapter *gpio = atmega_gpio_get_adapter(); 
 	struct spi_adapter *spi = atmega_spi_get_adapter(); 
-	
+	struct serial_device *uart = atmega_uart_get_adapter(); 
+
+	serial_set_baud(uart, 57600); 
+
 	max7456_init(&osd, spi, gpio, GPIO_PD6); 
-	uint8_t ch = 0; 
-	for(int y = 0; y < 16; y++){
-		for(int x = 0; x < 30; x++){
-			max7456_write_char_at(&osd, x, y, ch++); 
-		}
-	}
-			
+	vt100_init(&vt100, max7456_to_tty_device(&osd)); 
+
+	//serial_printf(vt100_to_serial_device(&vt100), "Hello World!\nNext Line\n"); 
 	for(;;){
-		msleep(100); 
+		char ch; 
+		serial_read(uart, &ch, 1); 
+		serial_write(uart, &ch, 1); 
+		serial_write(vt100_to_serial_device(&vt100), &ch, 1); 
 	}
 }
 

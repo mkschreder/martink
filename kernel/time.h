@@ -9,7 +9,9 @@ extern long long tsc_us_to_ticks(long long us);
 #define timestamp_init() (tsc_init())
 #define timestamp_now() (tsc_read())
 
-timestamp_t timestamp_ticks_to_us(timestamp_t ticks);
+#define timestamp_ticks_to_us(ticks) tsc_ticks_to_us(ticks)
+
+//timestamp_t timestamp_ticks_to_us(timestamp_t ticks);
 timestamp_t timestamp_us_to_ticks(timestamp_t us);
 
 #define timestamp_before(unknown, known) (((timestamp_t)(unknown) - (timestamp_t)(known)) < 0)

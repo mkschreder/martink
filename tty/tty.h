@@ -2,10 +2,10 @@
 
 #include <inttypes.h>
 
-typedef struct tty_device **tty_dev_t;
+typedef struct tty_device *tty_dev_t;
 typedef uint16_t tty_color_t;
 
-struct tty_device {
+struct tty_device_ops {
 	/// write a character to the screen at current cursor position using the fg and bg colors
 	void (*put)(tty_dev_t self, uint8_t ch, tty_color_t fg, tty_color_t bg);
 	/// move cursor to a new position on the screen. 
@@ -16,18 +16,22 @@ struct tty_device {
 	void (*clear)(tty_dev_t self);
 }; 
 
+struct tty_device {
+	struct tty_device_ops *ops; 
+}; 
+
 static inline void tty_put(tty_dev_t self, uint8_t ch, tty_color_t fg, tty_color_t bg){
-	(*self)->put(self, ch, fg, bg); 
+	(self)->ops->put(self, ch, fg, bg); 
 }
 
 static inline void tty_move_cursor(tty_dev_t self, uint16_t x, uint16_t y){
-	(*self)->move_cursor(self, x, y); 
+	(self)->ops->move_cursor(self, x, y); 
 }
 
 static inline void tty_get_size(tty_dev_t self, uint16_t *w, uint16_t *h){
-	(*self)->get_size(self, w, h); 
+	(self)->ops->get_size(self, w, h); 
 }
 
 static inline void tty_clear(tty_dev_t self){
-	(*self)->clear(self); 
+	(self)->ops->clear(self); 
 }

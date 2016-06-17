@@ -43,7 +43,6 @@ extern "C" {
 
 #include "mt.h"
 #include "dev/framebuffer.h"
-#include "dev/tty.h"
 
 #ifdef __cplusplus
 }

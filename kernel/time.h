@@ -9,18 +9,20 @@ extern long long tsc_us_to_ticks(long long us);
 #define timestamp_init() (tsc_init())
 #define timestamp_now() (tsc_read())
 
-#define timestamp_ticks_to_us(ticks) tsc_ticks_to_us(ticks)
-
-//timestamp_t timestamp_ticks_to_us(timestamp_t ticks);
-timestamp_t timestamp_us_to_ticks(timestamp_t us);
+static inline timestamp_t timestamp_ticks_to_us(timestamp_t ticks){ return tsc_ticks_to_us(ticks); }
+static inline timestamp_t timestamp_us_to_ticks(timestamp_t us){ return tsc_us_to_ticks(us); }
 
 #define timestamp_before(unknown, known) (((timestamp_t)(unknown) - (timestamp_t)(known)) < 0)
 #define timestamp_after(a,b) timestamp_before(b, a)
 
-timestamp_t timestamp_from_now_us(timestamp_t us);
+static inline timestamp_t timestamp_from_now_us(timestamp_t us) { 
+	return tsc_read() + timestamp_us_to_ticks(us); 
+}
 
 // timeout expired: can handle overflow of timer correctly
-uint8_t timestamp_expired(timestamp_t timeout);
+static inline uint8_t timestamp_expired(timestamp_t timeout){
+	return timestamp_after(tsc_read(), timeout); 
+}
 
 void timestamp_delay_us(timestamp_t usec);
 

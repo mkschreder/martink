@@ -262,6 +262,13 @@ int _wait(int *status) {
  Returns -1 on error or number of bytes sent
  */
 int _write(int file, const char *ptr, int len) {
+	static serial_dev_t out = 0, err = 0; 
+	
+	if(!out)
+		out = uart_get_serial_interface(0); 
+	if(!err)
+		err = uart_get_serial_interface(0); 
+		
 	switch (file) {
 	#if 0
 		case STDOUT_FILENO: 

@@ -36,5 +36,10 @@ LDFLAGS += -mmcu=$(mcu-y) -lc
 
 define target/image/finalize
 	avr-objcopy -j .text -j .data -O ihex $(1) $(2).hex
-	avr-size --format=berkley $(1)
+	avr-size --format=berkeley $(1)
 endef
+
+flash-arduino: all
+	sudo avrdude -P /dev/ttyUSB0 -b 57600 -c arduino -p m328p -U flash:w:$(TARGET).hex
+
+PHONY += flash-arduino

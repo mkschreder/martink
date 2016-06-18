@@ -3,6 +3,8 @@
 #include "config.h"
 
 #ifdef CONFIG_FREERTOS
+#define HAVE_THREADS
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -57,3 +59,30 @@ static inline void* kzmalloc(size_t size) {
 	memset(ret, 0, size); 
 	return ret; 
 }
+
+#else
+
+typedef char mutex_t; 
+typedef char sem_t; 
+
+#define mutex_init(sem) { *(sem) = 1; }
+#define mutex_lock_timeout(sem, timeout) { uint16_t t = timeout; while(t > 0){ if(sem != 0) break; _delay_ms(1); t--; } }
+#define mutex_lock(sem) { while(*(sem) == 0); cli(); *(sem) = 0; sei(); }
+#define mutex_unlock(sem) { cli(); *(sem) = 1; sei(); }
+#define mutex_unlock_from_isr(sem) { *(sem) = 1; }
+/*
+#define sem_init(sem, max, starting) {}
+#define sem_give(sem) {}
+#define sem_give_from_isr(sem) {}
+#define sem_take_timeout(sem, timeout) {}
+#define sem_take(sem) {}
+#define sem_count(sem) {}
+*/
+/* Threads and delays */
+#define msleep(ms) _delay_ms(ms) 
+
+#define thread_self() (1)
+
+#endif
+
+

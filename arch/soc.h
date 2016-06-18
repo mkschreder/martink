@@ -30,6 +30,8 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+typedef long ssize_t; 
+
 #ifdef __cplusplus
 extern "C" {
 #endif

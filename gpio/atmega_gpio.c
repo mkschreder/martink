@@ -22,29 +22,23 @@
 #include <arch/soc.h>
 #include <kernel/mt.h>
 #include <kernel/time.h>
+#include <stdlib.h>
 
 #include "gpio.h"
 #include "atmega_gpio.h"
 #include <string.h>
 
-struct pin_decl {
-	volatile uint8_t *out_reg;
-	volatile uint8_t *in_reg;
-	volatile uint8_t *ddr_reg;
-};
-
 static uint8_t _dummyPR = 0; 
-static const struct pin_decl gPinPorts[4] = {
+const struct pin_decl gPinPorts[4] = {
 	{&_dummyPR, &_dummyPR, &_dummyPR },
 	{&PORTB, &PINB, &DDRB},
 	{&PORTC, &PINC, &DDRC},
 	{&PORTD, &PIND, &DDRD},
 };
 
-//volatile struct pin_state *_pin_states[GPIO_COUNT - GPIO_PB0] = {0}; 
+volatile struct pin_state *_pin_states[GPIO_COUNT - GPIO_PB0] = {0}; 
 //static volatile uint8_t _pins_enabled[4] = {0}; 
 
-/*
 uint8_t gpio_pin_busy(gpio_pin_t pin){
 	if(pin < GPIO_PB0 || pin > GPIO_PD7) return 0; 
 	pin = (pin - GPIO_PB0); 
@@ -64,8 +58,8 @@ int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t
 	 
 	return 0; 
 }
-*/
-#if 0
+
+#if defined(CONFIG_GPIO_PIN_STATES)
 	static void PCINT_vect(void){
 		timestamp_t time = timestamp_now(); 
 		static uint8_t prev[3] = {0xff, 0xff, 0xff}; 
@@ -150,122 +144,44 @@ int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t
 		}
 	}
 	*/
-	ISR(PCINT0_vect){
-		PCINT_vect(); 
-	}
-	
-	ISR(PCINT1_vect){
-		PCINT_vect(); 
-	}
-
-	ISR(PCINT2_vect){
-		PCINT_vect(); 
-	}
 #endif
 
-enum {
-	GP_READ_PULSE_P = (1 << 0), 
-	GP_READ_PULSE_N = (1 << 1), 
-	GP_READ_EDGE_P 	= (1 << 2), 
-	GP_READ_EDGE_N 	= (1 << 3) 
-}; 
-
-struct pin_state {
-	volatile timestamp_t t_up; 
-	volatile timestamp_t t_down; 
-	volatile uint8_t status; 
-	volatile uint8_t flags; 
-}; 
-
-//extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0]; 
-
-#define RIDX(pin) 	((pin > 0)?(((pin - 1) & 0xf8) >> 3):0)
-#define PIDX(pin) 	((pin > 0)?((pin - 1) & 0x07):0)
-#define OREG(pin) 	*(gPinPorts[RIDX(pin)].out_reg)
-#define IREG(pin) 	*(gPinPorts[RIDX(pin)].in_reg)
-#define DREG(pin) 	*(gPinPorts[RIDX(pin)].ddr_reg)
-#define RSET(reg, bit) (reg |= _BV(bit))
-#define RCLR(reg, bit) (reg &= ~_BV(bit))
-
-#if defined(CONFIG_GPIO_PIN_STATES)
-#define gpio_init_pin_states() (timestamp_init())
-#else
-#define gpio_init_pin_states() (0)
-#endif
-
-#define gpio_init_default() (\
-	gpio_init_pin_states()\
-)
-
-void gpio_configure(gpio_pin_t pin, uint16_t conf); 
-uint8_t gpio_write_word(uint8_t addr, uint32_t value);
-uint8_t gpio_read_word(uint8_t addr, uint32_t *value);
-void gpio_write_pin(gpio_pin_t pin, uint8_t val);
-uint8_t gpio_read_pin(gpio_pin_t pin);
-
-uint8_t gpio_pin_busy(gpio_pin_t pin);
-int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t flags);
-
-#include <kernel/list.h>
 struct pcint_handler {
 	struct list_head list; 
-	uint8_t pin; 
-	void (*handler)(struct pcint_handler *self); 
+	void (*callback)(void *); 
+	void *data; 
 }; 
 
-int gpio_register_pcint(struct pcint_handler *handler); 
+LIST_HEAD(_pcint_handlers); 
 
-#define gpio_clear(pin) gpio_write_pin(pin, 0)
-#define gpio_set(pin) gpio_write_pin(pin, 1)
-
-#define gpio_disable_pcint(pin) (\
-	((pin) >= GPIO_PB0 && (pin) <= GPIO_PB7)\
-		?(PCICR &= ~_BV(PCINT0), PCMSK0 = PCMSK0 & ~_BV((pin) - GPIO_PB0))\
-		:((pin) >= GPIO_PC0 && (pin) <= GPIO_PC7)\
-			?(PCICR &= ~_BV(PCINT1), PCMSK1 = PCMSK1 & ~ _BV((pin) - GPIO_PB0))\
-			:((pin) >= GPIO_PD0 && (pin) <= GPIO_PD7)\
-				?(PCICR &= ~_BV(PCINT2), PCMSK2 = PCMSK2 & ~ _BV((pin) - GPIO_PD0))\
-				:(-1)\
-)
-
-#if defined(CONFIG_GPIO_PIN_STATES)
-	//extern uint8_t gpio_get_status(gpio_pin_t pin, 
-	//	timestamp_t *ch_up, timestamp_t *ch_down);
-#endif
-
-static LIST_HEAD(_pcint_handlers); 
-//static uint8_t pcint_mask[3] = {0, 0, 0}; 
-//static uint8_t pcint_last[3] = {0, 0, 0}; 
-
-static void PCINT_vect(volatile uint8_t *port){
-	struct pcint_handler *irq; 
-	list_for_each_entry(irq, &_pcint_handlers, list){
-		irq->handler(irq); 
+static void PCINT_vect(void){
+	struct pcint_handler *h = 0; 
+	list_for_each_entry(h, &_pcint_handlers, list){
+		if(h->callback) h->callback(h->data); 	
 	}
 }
 
 ISR(PCINT0_vect){
-	PCINT_vect(&PINB); 
+	PCINT_vect(); 
 }
 
 ISR(PCINT1_vect){
-	PCINT_vect(&PINC); 
+	PCINT_vect(); 
 }
 
 ISR(PCINT2_vect){
-	PCINT_vect(&PIND); 
+	PCINT_vect(); 
 }
 
-/*
-static int _atmega_gpio_register_pcint(struct pcint_handler *handler){
-	cli(); 
-	list_add_tail(&handler->list, &_pcint_handlers); 	
-	sei(); 
-	return 0; 
-}*/
+void gpio_configure(gpio_pin_t pin, uint16_t fun){
+	if(fun & GP_OUTPUT) RSET(DREG(pin), PIDX(pin)); 
+	else RCLR(DREG(pin), PIDX(pin)); 
+	if(fun & GP_PULLUP) RSET(OREG(pin), PIDX(pin)); 
+	else RCLR(OREG(pin), PIDX(pin)); 
+	if((fun) & GP_PCINT) gpio_enable_pcint(pin); 
+}
 
-/*
-static void _atmega_gpio_enable_pcint(gpio_pin_t pin){
+void gpio_enable_pcint(gpio_pin_t pin){
 	((pin) >= GPIO_PB0 && (pin) <= GPIO_PB7)
 		?(PCICR |= _BV(PCINT0), PCMSK0 = PCMSK0 | _BV((pin) - GPIO_PB0))
 		:((pin) >= GPIO_PC0 && (pin) <= GPIO_PC7_NC)
@@ -274,31 +190,30 @@ static void _atmega_gpio_enable_pcint(gpio_pin_t pin){
 				?(PCICR |= _BV(PCINT2), PCMSK2 = PCMSK2 | _BV((pin) - GPIO_PD0))
 				:(-1);
 }
-*/
 
-static void _atmega_gpio_configure(struct gpio_adapter *adapter, gpio_pin_t pin, uint16_t fun){
-	if(fun & GP_OUTPUT) RSET(DREG(pin), PIDX(pin)); 
-	else RCLR(DREG(pin), PIDX(pin)); 
-	if(fun & GP_PULLUP) RSET(OREG(pin), PIDX(pin)); 
-	else RCLR(OREG(pin), PIDX(pin)); 
-	//if((fun) & GP_PCINT) _atmega_gpio_enable_pcint(pin); 
+void gpio_disable_pcint(gpio_pin_t pin){
+	((pin) >= GPIO_PB0 && (pin) <= GPIO_PB7)
+		?(PCICR &= ~_BV(PCINT0), PCMSK0 = PCMSK0 & ~_BV((pin) - GPIO_PB0))
+		:((pin) >= GPIO_PC0 && (pin) <= GPIO_PC7_NC)
+			?(PCICR &= ~_BV(PCINT1), PCMSK1 = PCMSK1 & ~ _BV((pin) - GPIO_PB0))
+			:((pin) >= GPIO_PD0 && (pin) <= GPIO_PD7)
+				?(PCICR &= ~_BV(PCINT2), PCMSK2 = PCMSK2 & ~ _BV((pin) - GPIO_PD0))
+				:(-1);
 }
 
-/*
-static uint8_t _atmega_gpio_write_word(uint8_t addr, uint32_t value) {
+uint8_t gpio_write_word(uint8_t addr, uint32_t value) {
 	return ((addr) < 4)?(*gPinPorts[addr].out_reg = ((value) & 0xff), 0):(1); 
 }
 
-static uint8_t _atmega_gpio_read_word(uint8_t addr, uint32_t *value) {
+uint8_t gpio_read_word(uint8_t addr, uint32_t *value) {
 	return ((addr) < 4)?(*value = *gPinPorts[addr].in_reg, 0):(1); 
 }
-*/
-static void _atmega_gpio_write_pin(gpio_pin_t pin, uint8_t val) {
+
+void gpio_write_pin(gpio_pin_t pin, uint8_t val) {
 	(val)?RSET(OREG(pin), PIDX(pin)):RCLR(OREG(pin), PIDX(pin)); 
 }
 
-/*
-static uint8_t _atmega_gpio_read_pin(gpio_pin_t pin) {
+uint8_t gpio_read_pin(gpio_pin_t pin) {
 	return (IREG(pin) & _BV(PIDX(pin)))?1:0; 
 }
 
@@ -310,8 +225,23 @@ static uint16_t _fx_rand(void)
 	bit  = ((lfsr >> 0) ^ (lfsr >> 2) ^ (lfsr >> 3) ^ (lfsr >> 5) ) & 1;
 	return lfsr =  (lfsr >> 1) | (bit << 15);
 }
+
+void gpio_register_pcint(gpio_pin_t pin, void (*handler)(void *data), void *data){
+	struct pcint_handler *h = 0; 
+	list_for_each_entry(h, &_pcint_handlers, list){
+		if(h->callback && h->callback == handler) {
+			return; 		
+		}
+	}
+	h = malloc(sizeof(struct pcint_handler)); 
+	memset(h, 0, sizeof(struct pcint_handler)); 
+	h->callback = handler; 
+	h->data = data; 
+	list_add_tail(&h->list, &_pcint_handlers); 
+}
+
 // initializes the standard random number generator from a floating pin
-static uint32_t _atmega_gpio_read_prng(gpio_pin_t pin){
+uint32_t gpio_read_prng(gpio_pin_t pin){
 	// save pin state
 	uint8_t dreg = DREG(pin);
 	uint8_t ireg = IREG(pin);
@@ -365,26 +295,4 @@ static uint32_t _atmega_gpio_read_prng(gpio_pin_t pin){
 	
 	// we should never return 0 because it signifies error
 	return (sr == 0)?1:sr; 
-}
-*/
-static void _atmega_gpio_set_pin(struct gpio_adapter *adapter, gpio_pin_t pin){
-	_atmega_gpio_write_pin(pin, 1); 	
-}
-
-static void _atmega_gpio_clear_pin(struct gpio_adapter *adapter, gpio_pin_t pin){
-	_atmega_gpio_write_pin(pin, 0); 	
-}
-
-static struct gpio_adapter_ops _atmega_gpio_ops = {
-	.set_pin = _atmega_gpio_set_pin, 
-	.clear_pin = _atmega_gpio_clear_pin, 
-	.configure = _atmega_gpio_configure
-}; 
-
-static struct gpio_adapter _atmega_gpio = {
-	.ops = &_atmega_gpio_ops 
-}; 
-
-struct gpio_adapter *atmega_gpio_get_adapter(void){
-	return &_atmega_gpio; 
 }

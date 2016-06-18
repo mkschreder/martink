@@ -2,8 +2,8 @@
 
 extern int __cscount; 
 
-#define sei() asm volatile ("cpsie i"); 
-#define cli() __ASM volatile ("cpsid i"); 
+#define sei() __asm volatile ("cpsie i"); 
+#define cli() __asm volatile ("cpsid i"); 
 
 static inline uint32_t _cli(void) __attribute__((always_inline, unused));
 static inline void _sei(const uint32_t *primask) __attribute__((always_inline,

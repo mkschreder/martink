@@ -93,4 +93,69 @@ enum {
 #define GPIO_AIN0 	GPIO_PD6
 #define GPIO_AIN1 	GPIO_PD7
 
-struct gpio_adapter *atmega_gpio_get_adapter(void); 
+extern const struct pin_decl {
+	volatile uint8_t *out_reg;
+	volatile uint8_t *in_reg;
+	volatile uint8_t *ddr_reg;
+} gPinPorts[4];
+
+enum {
+	GP_READ_PULSE_P = (1 << 0), 
+	GP_READ_PULSE_N = (1 << 1), 
+	GP_READ_EDGE_P 	= (1 << 2), 
+	GP_READ_EDGE_N 	= (1 << 3) 
+}; 
+
+struct pin_state {
+	volatile timestamp_t t_up; 
+	volatile timestamp_t t_down; 
+	volatile uint8_t status; 
+	volatile uint8_t flags; 
+}; 
+
+//extern volatile struct pin_state gPinState[GPIO_COUNT - GPIO_PB0]; 
+
+#define RIDX(pin) 	((pin > 0)?(((pin - 1) & 0xf8) >> 3):0)
+#define PIDX(pin) 	((pin > 0)?((pin - 1) & 0x07):0)
+#define OREG(pin) 	*(gPinPorts[RIDX(pin)].out_reg)
+#define IREG(pin) 	*(gPinPorts[RIDX(pin)].in_reg)
+#define DREG(pin) 	*(gPinPorts[RIDX(pin)].ddr_reg)
+#define RSET(reg, bit) (reg |= _BV(bit))
+#define RCLR(reg, bit) (reg &= ~_BV(bit))
+
+#if defined(CONFIG_GPIO_PIN_STATES)
+#define gpio_init_pin_states() (timestamp_init())
+#else
+#define gpio_init_pin_states() (0)
+#endif
+
+#define gpio_init_default() (\
+	gpio_init_pin_states()\
+)
+
+void gpio_configure(gpio_pin_t pin, uint16_t conf); 
+uint8_t gpio_write_word(uint8_t addr, uint32_t value);
+uint8_t gpio_read_word(uint8_t addr, uint32_t *value);
+void gpio_write_pin(gpio_pin_t pin, uint8_t val);
+uint8_t gpio_read_pin(gpio_pin_t pin);
+
+uint8_t gpio_pin_busy(gpio_pin_t pin);
+int8_t gpio_start_read(gpio_pin_t pin, volatile struct pin_state *state, uint8_t flags);
+
+#define gpio_clear(pin) gpio_write_pin(pin, 0)
+#define gpio_set(pin) gpio_write_pin(pin, 1)
+
+// evaluates to bit that has been enabled or -1 if invalid pcint
+void gpio_enable_pcint(gpio_pin_t pin); 
+void gpio_disable_pcint(gpio_pin_t pin); 
+
+
+void gpio_register_pcint(gpio_pin_t pin, void (*handler)(void *), void *data); 
+
+#if defined(CONFIG_GPIO_PIN_STATES)
+	//extern uint8_t gpio_get_status(gpio_pin_t pin, 
+	//	timestamp_t *ch_up, timestamp_t *ch_down);
+#endif
+
+// attempt to gather entropy from floating gpio pin
+extern uint32_t gpio_read_prng(gpio_pin_t pin);

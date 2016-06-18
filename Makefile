@@ -5,13 +5,13 @@ ifneq ($(V),)
 	Q:=
 endif
 
+all: config fixdirs check default_target
+	@echo "\033[32;40m [LD] $(ARCH)-$(CPU)-$(BOARD)\033[m"
+	
 #ARCH:=linux
 #CPU:=generic
 #BOARD:=native 
 
-all: config fixdirs check default_target
-	@echo "\033[32;40m [LD] $(ARCH)-$(CPU)-$(BOARD)\033[m"
-	
 include scripts/include/target.mk
 
 VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty

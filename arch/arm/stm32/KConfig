@@ -5,4 +5,5 @@ choice
 	
 	config CPU_STM32F10X
 		bool "STM32F10X"
+	
 endchoice 

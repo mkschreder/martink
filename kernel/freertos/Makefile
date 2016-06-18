@@ -7,6 +7,6 @@ obj-$(CONFIG_FREERTOS) += \
 	kernel/freertos/timers.o \
 	kernel/freertos/memory/heap_1.o 
 
-ifdef $(CONFIG_FREERTOS)
+ifeq ($(CONFIG_FREERTOS),y)
 include kernel/freertos/portable/Makefile
 endif

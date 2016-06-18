@@ -3,6 +3,7 @@ scripts/kconfig/lxdialog/lxdialog
 scripts/kconfig/mconf
 tmp
 include/autoconf.h
+.config
 .config.old
 .config.in
 *.o

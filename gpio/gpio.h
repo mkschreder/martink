@@ -66,14 +66,20 @@ enum {
 
 struct gpio_adapter; 
 struct gpio_adapter_ops {
-	void (*set_pin)(struct gpio_adapter *self, gpio_pin_t pin); 	
-	void (*clear_pin)(struct gpio_adapter *self, gpio_pin_t pin); 	
+	void (*write_pin)(struct gpio_adapter *self, gpio_pin_t pin, uint8_t val); 	
+	uint8_t (*read_pin)(struct gpio_adapter *self, gpio_pin_t pin); 	
 	void (*configure)(struct gpio_adapter *self, gpio_pin_t pin, uint16_t fun); 
+	void (*register_irq)(struct gpio_adapter *self, gpio_pin_t pin, void (*pcint_handler)(struct gpio_adapter *, void *data), void *data); 
+	void (*enable_irq)(struct gpio_adapter *self, gpio_pin_t pin, uint8_t enabled); 
 }; 
 
 #define gpio_configure_pin(adapter, pin, opts) (adapter)->ops->configure(adapter, pin, opts)
-#define gpio_set_pin(adapter, pin) (adapter)->ops->set_pin(adapter, pin)
+#define gpio_write_pin(adapter, pin, val) (adapter)->ops->write_pin(adapter, pin, val)
 #define gpio_clear_pin(adapter, pin) (adapter)->ops->clear_pin(adapter, pin)
+#define gpio_read_pin(adapter, pin) (adapter)->ops->read_pin(adapter, pin)
+#define gpio_register_pcint(adapter, pin, cb, data) (adapter)->ops->register_irq(adapter, pin, cb, data)
+#define gpio_enable_pcint(adapter, pin) (adapter)->ops->enable_irq(adapter, pin, 1)
+#define gpio_disable_pcint(adapter, pin) (adapter)->ops->enable_irq(adapter, pin, 0)
 
 struct gpio_adapter {
 	struct gpio_adapter_ops *ops; 

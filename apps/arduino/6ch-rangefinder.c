@@ -33,9 +33,10 @@ static int16_t _health[SENSOR_COUNT];
 static timestamp_t _timestamps[SENSOR_COUNT]; 
 static uint8_t _cur_sensor = 0; 
 static uint8_t _reading_pending = 0; 
+static struct gpio_adapter *gpio = 0; 
 
-static void _pcint_handler(void *data){
-	int up = gpio_read_pin(GPIO_PD2 + _cur_sensor); 
+static void _pcint_handler(struct gpio_adapter *self, void *data){
+	int up = gpio_read_pin(gpio, GPIO_PD2 + _cur_sensor); 
 	if(!up){
 		// falling edge is when we calc the time 
 		int32_t reading = tsc_ticks_to_us(tsc_read() - _timestamps[_cur_sensor]); 	
@@ -44,7 +45,7 @@ static void _pcint_handler(void *data){
 		}
 		_reading_pending = 0; 
 		// disable pcint here as a precaution
-		gpio_disable_pcint(GPIO_PD2 + _cur_sensor); 
+		gpio_disable_pcint(gpio, GPIO_PD2 + _cur_sensor); 
 	} else {
 		// rising edge is start of measure
 		_timestamps[_cur_sensor] = tsc_read(); 	
@@ -52,13 +53,14 @@ static void _pcint_handler(void *data){
 }
 
 int main(void){
+	gpio = atmega_gpio_get_adapter(); 	
 	for(int c = 0; c < SENSOR_COUNT; c++){
 		// configure trigger pin
-		gpio_configure(GPIO_PB0 + c, GP_OUTPUT); 
-		gpio_write_pin(GPIO_PB0 + c, 0); 
+		gpio_configure_pin(gpio, GPIO_PB0 + c, GP_OUTPUT); 
+		gpio_write_pin(gpio, GPIO_PB0 + c, 0); 
 		// configure echo pin
-		gpio_configure(GPIO_PD2 + c, GP_INPUT); 
-		gpio_register_pcint(GPIO_PD2 + c, &_pcint_handler, NULL); 
+		gpio_configure_pin(gpio, GPIO_PD2 + c, GP_INPUT); 
+		gpio_register_pcint(gpio, GPIO_PD2 + c, &_pcint_handler, NULL); 
 	}
 	printk("6THSENSE\n"); 
 	
@@ -67,21 +69,21 @@ int main(void){
 		_readings[_cur_sensor] = SENSOR_READING_INVALID; 
 	
 		// output trigger pulse
-		gpio_write_pin(GPIO_PB0 + _cur_sensor, 0); 
+		gpio_write_pin(gpio, GPIO_PB0 + _cur_sensor, 0); 
 		_delay_us(5); 
-		gpio_write_pin(GPIO_PB0 + _cur_sensor, 1);  
+		gpio_write_pin(gpio, GPIO_PB0 + _cur_sensor, 1);  
 		_delay_us(10); 
-		gpio_write_pin(GPIO_PB0 + _cur_sensor, 0); 
+		gpio_write_pin(gpio, GPIO_PB0 + _cur_sensor, 0); 
 
 		// configure echo pin as input 
-		gpio_configure(GPIO_PD2 + _cur_sensor, GP_INPUT); 
-		gpio_write_pin(GPIO_PD2 + _cur_sensor, 1); 
+		gpio_configure_pin(gpio, GPIO_PD2 + _cur_sensor, GP_INPUT); 
+		gpio_write_pin(gpio, GPIO_PD2 + _cur_sensor, 1); 
 		
 		// set the reading flag
 		_reading_pending = 1; 
 
 		// enable echo interrupt 
-		gpio_enable_pcint(GPIO_PD2 + _cur_sensor); 
+		gpio_enable_pcint(gpio, GPIO_PD2 + _cur_sensor); 
 		
 		// wait until reading done or cancel after a sensor delay
 		timestamp_t timeout = timestamp_from_now_us(SENSOR_READING_TIMEOUT * 1000UL); 
@@ -90,11 +92,11 @@ int main(void){
 		}
 
 		// disable pin interrupt
-		gpio_disable_pcint(GPIO_PD2 + _cur_sensor); 
+		gpio_disable_pcint(gpio, GPIO_PD2 + _cur_sensor); 
 
 		// configure echo pin to a reset state
-		gpio_configure(GPIO_PD2 + _cur_sensor, GP_OUTPUT); 
-		gpio_write_pin(GPIO_PD2 + _cur_sensor, 0); 
+		gpio_configure_pin(gpio, GPIO_PD2 + _cur_sensor, GP_OUTPUT); 
+		gpio_write_pin(gpio, GPIO_PD2 + _cur_sensor, 0); 
 	
 		// go to next sensor
 		_cur_sensor++; 

@@ -1529,7 +1529,6 @@ StackType_t *pxTopOfStack;
 
 #endif /* ( ( INCLUDE_xTaskResumeFromISR == 1 ) && ( INCLUDE_vTaskSuspend == 1 ) ) */
 /*-----------------------------------------------------------*/
-#include <avr/io.h>
 void vTaskStartScheduler( void )
 {
 BaseType_t xReturn;

@@ -21,7 +21,11 @@ dimmed while user is typing and while the second led starts blinking.
 #include <gpio/gpio.h>
 #include <gpio/atmega_gpio.h>
 #include <pwm/pwm.h>
+#include <memory/memory.h>
 #include <serial/serial.h>
+#include <i2c/i2c.h>
+#include <rtc/rtc.h>
+#include <disp/display.h>
 
 // this is just a static blink to signal that everything is working
 static void init_blink(void){
@@ -34,27 +38,36 @@ static void init_blink(void){
 	}
 }
 
-static void blink_thread_proc( void *args ){
+static void time_thread_proc( void *args ){
+	struct i2c_adapter *adapter = atmega_i2c_get_adapter(0); 
+	printk("i2c_scan: \r\n"); 
+	for(int c = 0; c <= 0x7f; c++){
+		if(i2c_device_exists(adapter, c)) printk("%02x ", c); 
+		else printk("00 ");  
+		if((c & 0x7) == 0x7) printk("\r\n"); 
+	}
+	printk("\r\n"); 
+
+	struct display_device *disp = ssd1306_new(adapter, 0x3c); 
+	if(!disp) {
+		printk("No display device found!\r\n"); 
+		return; 
+	}
+	
+	int tick = 0; 
 	for( ;; ){
-		char ch[2] = {0}; 
-		printk("enter number for tx: "); 	
-		serial_read(_default_system_console, ch, 1); 	
-		printk("tx got %d\r\n", atoi(ch)); 	
-		//uint16_t adc = adc_read_channel(adc_get_device(0), 0); 
-		//printk("adc value: %d\r\n", adc); 
-		for(int c = 0; c < atoi(ch); c++){
-			PORTB |= (1 << 5); 
-			// this is real sleep, not a busy wait
-			// task will not run at all while it sleeps 
-			msleep(50); 
-			PORTB &= ~(1 << 5); 
-			msleep(50); 
+		for(int c = 0; c < 10; c++){
+			display_draw_pixel(disp, tick, c, 1); 
 		}
+		printk("TICK\r\n"); 
+		msleep(1000); 
+		tick++; 
 	}
 }
 
 static void dim_thread_proc( void *args ){
 	struct pwm_device *dev = atmega_pwm_get_device(); 
+	if(!dev) return; 
 	gpio_configure(GPIO_PD6, GP_OUTPUT); 
 	for( ;; ){
 		pwm_set_output(dev, 0, 1); 	
@@ -72,13 +85,13 @@ static void dim_thread_proc( void *args ){
 }
 
 int main(void){
-	thread_t blink_thread, dim_thread; 
+	thread_t time_thread, dim_thread; 
 
 	init_blink(); 
 	_delay_ms(1000); 	
-
-	thread_create(&blink_thread, 32, 0, "blink", blink_thread_proc, NULL);  
-	thread_create(&dim_thread, 32, 0, "dim", dim_thread_proc, NULL);  
+	
+	thread_create(&time_thread, 200, 1, NULL, time_thread_proc, NULL);  
+	thread_create(&dim_thread, 80, 1, NULL, dim_thread_proc, NULL);  
 
 	schedule_start(); 
 

@@ -68,10 +68,20 @@ static inline void platform_panic_noblock(void){
 	_delay_ms(100); 
 }
 
+#include <avr/power.h>
 #include <avr/sleep.h>
 
 static inline void cpu_relax(void){
 	set_sleep_mode(SLEEP_MODE_IDLE); 
+	cli(); 
+	sleep_enable(); 
+	sei(); 
+	sleep_cpu(); 
+	sleep_disable(); 
+}
+
+static inline void cpu_powerdown(void){
+	set_sleep_mode(SLEEP_MODE_PWR_SAVE); 
 	cli(); 
 	sleep_enable(); 
 	sei(); 

@@ -1,7 +1,7 @@
 #include <arch/soc.h>
 
 #include <kernel/cbuf.h>
-#include <kernel/thread.h>
+#include <kernel/mt.h>
 
 #include <inttypes.h>
 
@@ -42,10 +42,8 @@ static const struct i2c_device _devices[] = {
 struct i2c_device_data {
 	uint8_t dev_id; 
 	uint8_t addr; 
-	async_mutex_t lock, buffer_lock; 
 	uint8_t flags; 
 	ssize_t offset; 
-	struct io_device io; 
 }; 
 
 #define I2C_FLAG_SEND_STOP (1)
@@ -54,7 +52,8 @@ struct i2c_device_data {
 
 static struct i2c_device_data _data[I2C_DEV_COUNT]; 
 
-int8_t i2cdev_init(uint8_t dev_id){
+#if 0
+static int8_t i2cdev_init(uint8_t dev_id){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
 	if(dev_id >= count) return -1; 
 	const struct i2c_device *conf = &_devices[dev_id]; 
@@ -63,8 +62,6 @@ int8_t i2cdev_init(uint8_t dev_id){
 	data->dev_id = dev_id; 
 	data->offset = 0; 
 	data->flags = 0; 
-	ASYNC_MUTEX_INIT(data->buffer_lock, 1); 
-	ASYNC_MUTEX_INIT(data->lock, 1); 
 	
 	RCC_APB2PeriphClockCmd (conf->rcc_gpio, ENABLE); 
 	RCC_APB1PeriphClockCmd(conf->rcc_id, ENABLE);
@@ -116,7 +113,7 @@ static void i2cdev_wait(I2C_TypeDef *dev, uint8_t addr){
 	I2C_GenerateSTOP(dev, ENABLE);  
 }
 
-void i2cdev_deinit(uint8_t dev_id){
+static void i2cdev_deinit(uint8_t dev_id){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
 	if(dev_id >= count) return; 
 	const struct i2c_device *conf = &_devices[dev_id]; 
@@ -125,43 +122,16 @@ void i2cdev_deinit(uint8_t dev_id){
   _data[dev_id].flags = 0; 
 }
 
-static ASYNC(io_result_t, io_device_t, vopen){
-	struct i2c_device_data *data = container_of(self, struct i2c_device_data, io); 
-	
-	ASYNC_BEGIN(); 
-	
-	ASYNC_MUTEX_LOCK(data->lock); 
-	
-	data->offset = 0; 
-	
-	ASYNC_END(0); 
-}
-
-static ASYNC(io_result_t, io_device_t, vclose){
-	struct i2c_device_data *data = container_of(self, struct i2c_device_data, io); 
-	
-	ASYNC_BEGIN(); 
-	
-	ASYNC_MUTEX_UNLOCK(data->lock); 
-	
-	ASYNC_END(0); 
-}
-
-static ASYNC(io_result_t, io_device_t, vwrite, const uint8_t *buffer, ssize_t bytes_to_send){
-	struct i2c_device_data *data = container_of(self, struct i2c_device_data, io); 
+static int stm32_i2c_write(struct i2c_device *self, const uint8_t *buffer, ssize_t bytes_to_send){
 	const struct i2c_device *conf = &_devices[data->dev_id]; 
-	
-	ASYNC_BEGIN(); 
-	
-	ASYNC_MUTEX_LOCK(data->buffer_lock); 
-	
+
 	I2C_DEBUG("I2C: write\n"); 
 	
 	I2C_GenerateSTART(conf->dev, ENABLE);
-	AWAIT(I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_MODE_SELECT));
+	while(I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_MODE_SELECT));
 	
 	I2C_Send7bitAddress(conf->dev, data->addr, I2C_Direction_Transmitter);
-	AWAIT(I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)); 
+	while(I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)); 
 	
 	I2C_Cmd(conf->dev, ENABLE);
 	
@@ -175,36 +145,28 @@ static ASYNC(io_result_t, io_device_t, vwrite, const uint8_t *buffer, ssize_t by
 	if(data->flags & I2C_FLAG_SEND_STOP) {
 		I2C_DEBUG("I2C: stop\n"); 
 		I2C_GenerateSTOP(conf->dev, ENABLE);
-		AWAIT(!I2C_GetFlagStatus(conf->dev, I2C_FLAG_BUSY)); 
+		while(!I2C_GetFlagStatus(conf->dev, I2C_FLAG_BUSY)); 
 		i2cdev_wait(conf->dev, data->addr);
 	}
 	
 	data->offset = 0;
-	
-	ASYNC_MUTEX_UNLOCK(data->buffer_lock); 
-	
-	ASYNC_END(bytes_to_send); 
 }
 
-static ASYNC(io_result_t, io_device_t, vread, uint8_t *buffer, ssize_t size){
+static int stm32_i2c_read(struct i2c_adapter *adapter, uint8_t addr, uint8_t *buffer, ssize_t size){
 	//if(dev_id >= I2C_DEV_COUNT) return -1; 
 	//const struct i2c_device *conf = &_devices[dev_id]; 
 	struct i2c_device_data *data = container_of(self, struct i2c_device_data, io); 
 	const struct i2c_device *conf = &_devices[data->dev_id]; 
-	
-	ASYNC_BEGIN(); 
-	
-	ASYNC_MUTEX_LOCK(data->buffer_lock); 
 	
 	I2C_DEBUG("I2C: read %d to %d\n", size, data->offset); 
 	//i2cdev_wait(conf->dev, data->addr); 
 	
 	//PT_WAIT_WHILE(pt, I2C_GetFlagStatus(conf->dev, I2C_FLAG_BUSY)); 
 	I2C_GenerateSTART(conf->dev, ENABLE);
-	AWAIT(I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_MODE_SELECT));
+	while(I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_MODE_SELECT));
 	
 	I2C_Send7bitAddress(conf->dev, data->addr, I2C_Direction_Receiver);
-	AWAIT(I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
+	while(I2C_CheckEvent(conf->dev, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
 	
 	I2C_Cmd(conf->dev, ENABLE);
 			
@@ -232,69 +194,11 @@ static ASYNC(io_result_t, io_device_t, vread, uint8_t *buffer, ssize_t size){
 	if(data->flags & I2C_FLAG_SEND_STOP) {
 		I2C_DEBUG("I2C: stop\n"); 
 		I2C_GenerateSTOP(conf->dev, ENABLE);
-		AWAIT(!I2C_GetFlagStatus(conf->dev, I2C_FLAG_BUSY)); 
+		while(!I2C_GetFlagStatus(conf->dev, I2C_FLAG_BUSY)); 
 	}
 	
 	data->offset = 0;
 	
 	I2C_DEBUG("I2C: read completed\n"); 
-	
-	ASYNC_MUTEX_UNLOCK(data->buffer_lock); 
-	
-	ASYNC_END(size); 
 }
-
-static ASYNC(io_result_t, io_device_t, vseek, ssize_t pos, int whence){
-	struct i2c_device_data *data = container_of(self, struct i2c_device_data, io); 
-	
-	ASYNC_BEGIN();
-	
-	(void)whence; 
-	
-	I2C_DEBUG("i2c: seek %d\n", pos); 
-	data->addr = pos; 
-	
-	ASYNC_END(pos); 
-}
-
-
-static ASYNC(io_result_t, io_device_t, vioctl, ioctl_req_t req, va_list vl){
-	struct i2c_device_data *data = container_of(self, struct i2c_device_data, io); 
-	
-	ASYNC_BEGIN(); 
-	
-	if(req == I2C_SEND_STOP){
-		uint8_t en = va_arg(vl, int); 
-		I2C_DEBUG("I2C: sendstop: %d\n", en); 
-		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-			if(en)
-				data->flags |= I2C_FLAG_SEND_STOP; 
-			else
-				data->flags &= ~I2C_FLAG_SEND_STOP; 
-		}
-		ASYNC_EXIT(0); 
-	} 
-	
-	ASYNC_END(-1); 
-}
-
-io_dev_t i2cdev_get_interface(uint8_t dev_id){
-	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
-	if(dev_id >= count) return 0; 
-	//const struct i2c_device *conf = &_devices[dev_id]; 
-	struct i2c_device_data *data = &_data[dev_id]; 
-	
-	static struct io_device_ops _if;
-	if(!data->io.api){
-		_if = (struct io_device_ops) {
-			.open = __io_device_t_vopen__, 
-			.close = __io_device_t_vclose__, 
-			.read = 	__io_device_t_vread__,
-			.write = 	__io_device_t_vwrite__,
-			.seek = __io_device_t_vseek__, 
-			.ioctl = __io_device_t_vioctl__, 
-		};
-		data->io.api = &_if; 
-	}
-	return &data->io; 
-}
+#endif

@@ -1,11 +1,12 @@
 #pragma once 
 
-#include <kernel/dev/i2c.h>
-#include <kernel/io_device.h>
+#include <i2c/i2c.h>
 
+#if 0 
 int8_t 	i2cdev_init(uint8_t dev_id); 
 void 		i2cdev_deinit(uint8_t dev_id); 
 io_dev_t i2cdev_get_interface(uint8_t dev_id); 
+#endif
 
 /*
 uint8_t i2cdev_open(uint8_t dev_id); 

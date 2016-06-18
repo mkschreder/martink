@@ -94,8 +94,8 @@ int8_t uart_init(uint8_t dev_id, uint32_t baud, uint8_t *tx_buffer, uint8_t tx_s
 	const struct uart_device *conf = &_devices[dev_id]; 
 	USART_TypeDef *dev = _devices[dev_id].dev; 
 	
-	cbuf_init(&rx_buffers[dev_id], rx_buffer, rx_size); 
-	cbuf_init(&tx_buffers[dev_id], tx_buffer, tx_size); 
+	cbuf_init(&rx_buffers[dev_id], (char*)rx_buffer, rx_size); 
+	cbuf_init(&tx_buffers[dev_id], (char*)tx_buffer, tx_size); 
 	
 	USART_DeInit(dev); 
 	
@@ -135,12 +135,12 @@ int8_t uart_init(uint8_t dev_id, uint32_t baud, uint8_t *tx_buffer, uint8_t tx_s
 	
 	NVIC_InitTypeDef NVIC_InitStructure;
 
-  /* Enable the USARTx Interrupt */
-  NVIC_InitStructure.NVIC_IRQChannel = conf->irq;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+	/* Enable the USARTx Interrupt */
+	NVIC_InitStructure.NVIC_IRQChannel = conf->irq;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
   
 	USART_ITConfig(dev, USART_IT_RXNE, ENABLE);
 	USART_ITConfig(dev, USART_IT_TXE, ENABLE);
@@ -178,9 +178,10 @@ int8_t		uart_set_baudrate(uint8_t dev_id, uint32_t baud){
 	return 0; 
 }
 
-uint16_t uart_getc(uint8_t dev_id){
+#if 0
+int uart_getc(uint8_t dev_id){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 
-	if(dev_id >= count) return SERIAL_NO_DATA; 
+	if(dev_id >= count) return -EAGAIN; 
 	USART_TypeDef *dev = _devices[dev_id].dev; 
 
 	uint16_t ret = SERIAL_NO_DATA; 
@@ -192,6 +193,7 @@ uint16_t uart_getc(uint8_t dev_id){
 	USART_ITConfig(dev, USART_IT_RXNE, ENABLE);
 	return ret; 
 }
+#endif
 
 int8_t uart_putc(uint8_t dev_id, uint8_t ch){
 	uint8_t count = sizeof(_devices) / sizeof(_devices[0]); 

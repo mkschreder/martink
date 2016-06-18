@@ -1,4 +1,5 @@
 #include <arch/soc.h>
+#include <gpio/gpio.h>
 
 static const struct {
 	GPIO_TypeDef *gpio; 

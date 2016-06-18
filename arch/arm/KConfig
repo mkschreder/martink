@@ -1,50 +1,16 @@
+config ARCH_ARM_CM3
+	bool
 
 choice
-	depends on ARM
+	depends on ARCH_ARM
 	prompt "ARM Model" 
-	default AT91SAM3
-	
-	config STM32
-		bool	
-	config SAM3
-		bool
-		
-	config STM32F103
-		select STM32
-		select HAVE_UART
-		select HAVE_UART0
-		select HAVE_UART1
-		select HAVE_UART2
-		select HAVE_TWI
-		select HAVE_TWI0
-		select HAVE_SPI
-		select HAVE_SPI0
-		select HAVE_SPI1
-		bool "STM32F103"
-	
-	config STM32F100MDVL
-		select STM32
-		select HAVE_UART
-		select HAVE_UART0
-		select HAVE_UART1
-		select HAVE_UART2
-		select HAVE_TWI
-		select HAVE_TWI0
-		select HAVE_SPI
-		select HAVE_SPI0
-		select HAVE_SPI1
-		bool "STM32F100MDVL
-		
-	config AT91SAM3
-		select SAM3
-		select HAVE_UART
-		select HAVE_UART0
-		select HAVE_TWI
-		select HAVE_TWI0
-		select HAVE_SPI
-		select HAVE_SPI0
-		bool "AT91SAM3"
 
+	config CPU_STM32
+		select ARCH_ARM_CM3
+		bool "STM32"
+	
+	config CPU_AT91SAM3
+		bool "AT91SAM3"
 endchoice 
 
 source arch/arm/stm32/KConfig

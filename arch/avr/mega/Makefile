@@ -27,7 +27,13 @@ LDFLAGS += -mmcu=$(mcu-y) -lc
 
 
 obj-$(CONFIG_CPU_ATMEGA328P) += \
-	arch/avr/mega/time.o 
+	arch/avr/mega/time.o  
+#	arch/avr/mega/adc.o \
+#	arch/avr/mega/twi.o 		  \
+	arch/avr/mega/gpio.o \
+	arch/avr/mega/time.o  \
+	arch/avr/mega/uart.o \
+	arch/avr/mega/spi.o
 
 define target/image/finalize
 	avr-objcopy -j .text -j .data -O ihex $(1) $(2).hex

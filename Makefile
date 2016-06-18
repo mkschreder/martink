@@ -93,7 +93,6 @@ MAKEFLAGS += -rR
 export ktree srctree CONFIG_SHELL HOSTCC HOSTCFLAGS HOSTCXX HOSTCXXFLAGS 
 export quiet Q KBUILD_VERBOSE
 
-
 # Basic helpers built in scripts/
 PHONY += scripts_basic defconfig
 scripts_basic:

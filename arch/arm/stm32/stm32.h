@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(CONFIG_STM32F103) || defined(CONFIG_STM32F100MDVL)
+#if defined(CONFIG_CPU_STM32F10X)
 #include "CMSIS/stm32f10x.h"
 #include "f10x/stm32f10x_usart.h"
 #include "f10x/stm32f10x_i2c.h"
@@ -22,6 +22,21 @@
 #include "pwm.h"
 #include "adc.h"
 #include "clock.h"
+
+// TODO: define these
+#define cpu_relax() {}
+#define cpu_powerdown() {}
+#define platform_panic_noblock() {} 
+// ??
+#define STM32_DELAY_US_MULT 1
+
+static inline void udelay(uint32_t us){
+	us *= STM32_DELAY_US_MULT;
+	us--;
+	__asm volatile (" mov r0, %0 \n"
+	"loop: subs r0, #1 \n"
+	" bhi loop \n":"=r" (us));
+}
 
 void EnterFlashUpgrade(void); 
 

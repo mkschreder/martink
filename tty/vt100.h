@@ -25,8 +25,8 @@
 extern "C" {
 #endif
 
-#include <kernel/dev/tty.h>
-#include <kernel/dev/serial.h>
+#include "tty.h"
+#include <serial/serial.h>
 
 #define VT100_CHAR_WIDTH 6
 #define VT100_CHAR_HEIGHT 8
@@ -40,7 +40,7 @@ extern "C" {
 struct vt100 {
 	uint8_t flags;
 
-	tty_dev_t display;
+	struct tty_device *display;
 	
 	//uint16_t screen_width, screen_height;
 	// cursor position on the screen (0, 0) = top left corner. 
@@ -63,15 +63,14 @@ struct vt100 {
 	//void (*send_response)(char *str);
 	void (*ret_state)(struct vt100 *term, uint8_t ev, uint16_t arg);
 	
-	struct serial_device_ops *serial; 
+	struct serial_device serial; 
 };
 
 //void vt100_init(void (*send_response)(char *str));
 void vt100_init(struct vt100 *self, tty_dev_t display); 
 void vt100_putc(struct vt100 *self, uint8_t ch);
 void vt100_puts(struct vt100 *self, const char *str);
-
-serial_dev_t vt100_to_serial_device(struct vt100 *self); 
+struct serial_device *vt100_to_serial_device(struct vt100 *self); 
 
 #ifdef __cplusplus
 }

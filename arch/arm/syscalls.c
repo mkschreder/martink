@@ -56,7 +56,7 @@ void _exit(int status) {
 	(void)(status); 
 	//printf("SYSCALL: exit(%d)\n", status); 
 	while (1) {
-		printf("."); 
+		//printk("."); 
 	}
 }
 
@@ -197,6 +197,7 @@ int _read(int file, char *ptr, int len) {
 	int n;
 	int num = 0;
 	switch (file) {
+	#if 0
 		case STDIN_FILENO:
 			for (n = 0; n < len; n++) {
 				uint16_t c = uart_getc(0); 
@@ -205,6 +206,7 @@ int _read(int file, char *ptr, int len) {
 				num++;
 			}
 			break;
+	#endif
 		default:
 			errno = EBADF;
 			return -1;
@@ -268,6 +270,7 @@ int _write(int file, const char *ptr, int len) {
 		err = uart_get_serial_interface(0); 
 		
 	switch (file) {
+	#if 0
 		case STDOUT_FILENO: 
 			if(out)
 				return serial_putn(out, (const uint8_t*)ptr, len); 
@@ -276,6 +279,7 @@ int _write(int file, const char *ptr, int len) {
 			if(err)
 				return serial_putn(err, (const uint8_t*)ptr, len); 
 			break;
+	#endif
 		default:
 			errno = EBADF;
 			return -1;

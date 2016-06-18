@@ -46,7 +46,7 @@ typedef struct thread_attrs {
 } thread_attr_t; 
 
 void thread_attr_init(struct thread_attrs *attr); 
-int thread_create(thread_t *thread, const thread_attr_t *attrs, void (*start_proc)(void*), void *arg); 
+int thread_create(thread_t *thread, uint32_t stack_size, uint8_t priority, const char *name, void (*start_routine)(void*), void *arg); 
 
 // TODO: move this somewhere else
 

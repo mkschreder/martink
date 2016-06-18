@@ -1,11 +1,9 @@
 choice
-	depends on ARM
+	depends on CPU_STM32
 	prompt "STM32 Model" 
-	default STM32F10X
+	default CPU_STM32F10X
 	
-	config STM32F10X
-		depends on STM32
-		
+	config CPU_STM32F10X
 		bool "STM32F10X"
 	
 endchoice 

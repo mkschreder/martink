@@ -35,19 +35,19 @@
 		_tsc_ovf++;
 	}
 	
-	timestamp_t tsc_read(void){
-		timestamp_t time; 
+	long long tsc_read(void){
+		long long time; 
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
 			time = TCNT1 + _tsc_ovf * 65535L;
 		}
 		return time;
 	}
 
-	timestamp_t tsc_us_to_ticks(timestamp_t us) {
+	long long tsc_us_to_ticks(long long us) {
 		return ((timestamp_t)(TSC_TICKS_PER_US * ((timestamp_t)us)));
 	}
 
-	timestamp_t tsc_ticks_to_us(timestamp_t ticks){
+	long long tsc_ticks_to_us(long long ticks){
 		return (((timestamp_t)ticks) / TSC_TICKS_PER_US);
 	}
 

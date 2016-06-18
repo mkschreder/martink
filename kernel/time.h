@@ -2,9 +2,9 @@
 
 #include "types.h"
 
-extern timestamp_t tsc_read(void); 
-extern timestamp_t tsc_ticks_to_us(timestamp_t t); 
-extern timestamp_t tsc_us_to_ticks(timestamp_t t); 
+extern long long tsc_read(void); 
+extern long long tsc_ticks_to_us(long long ticks); 
+extern long long tsc_us_to_ticks(long long us); 
 
 #define timestamp_init() (tsc_init())
 #define timestamp_now() (tsc_read())

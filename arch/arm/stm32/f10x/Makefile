@@ -1,20 +1,21 @@
 VPATH += arch/stm32/f10x
 
-COMMON_FLAGS += -Wl,--gc-sections -fno-common -mcpu=cortex-m3 -mthumb 
+CFLAGS += -Wl,--gc-sections -fno-common -mcpu=cortex-m3 -mthumb 
 
-ifeq ($(CONFIG_STM32F103), y)
-	COMMON_FLAGS += -DHSE_VALUE=8000000 -DF_CPU=72000000 -DSTM32F10X_MD -Wl,-L$(srctree)/arch/arm/stm32/f10x/,-Tstm32f10x_md.ld 
+ifeq ($(CONFIG_CPU_STM32F10X), y)
+CFLAGS += -DHSE_VALUE=8000000 -DF_CPU=72000000 -DSTM32F10X_MD 
+LDFLAGS += -Wl,-L$(srctree)/arch/arm/stm32/f10x/,-Tstm32f10x_md.ld 
 endif
-ifeq ($(CONFIG_STM32F100MDVL), y)
-	COMMON_FLAGS += -DHSE_VALUE=12000000 -DSTM32F10X_MD_VL -Wl,-L$(srctree)/arch/arm/stm32/f10x/,-Tstm32f10x_md_vl.ld 
-endif
+#ifeq ($(CONFIG_STM32F100MDVL), y)
+#	COMMON_FLAGS += -DHSE_VALUE=12000000 -DSTM32F10X_MD_VL -Wl,-L$(srctree)/arch/arm/stm32/f10x/,-Tstm32f10x_md_vl.ld 
+#endif
 
 #LDFLAGS += -lgcc
 CPU_FLAGS := 
 
 #-DF_CPU=$(CPU_FREQ) -mmcu=$(ARCH_CPU)
 
-obj-$(CONFIG_STM32) += arch/arm/stm32/f10x/init.o \
+obj-$(CONFIG_CPU_STM32) += arch/arm/stm32/f10x/init.o \
 arch/arm/stm32/f10x/stm32f10x_cec.o \
 arch/arm/stm32/f10x/stm32f10x_exti.o \
 arch/arm/stm32/f10x/stm32f10x_iwdg.o \

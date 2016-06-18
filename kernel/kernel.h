@@ -31,7 +31,7 @@ extern "C" {
 #include <stddef.h>
 //#include <sys/types.h>
 
-typedef long ssize_t; 
+//typedef long ssize_t; 
 
 #include <string.h>
 
@@ -42,6 +42,7 @@ typedef long ssize_t;
 #include "list.h"
 
 #include "mt.h"
+
 #include "dev/framebuffer.h"
 #include "dev/tty.h"
 

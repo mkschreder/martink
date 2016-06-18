@@ -23,18 +23,3 @@
 #include <kernel/list.h>
 #include "spi.h"
 
-static LIST_HEAD(_spi_adapters); 
-
-void spi_register_adapter(struct spi_adapter *dev){
-	list_add_tail(&dev->list, &_spi_adapters); 
-}
-
-struct spi_adapter *spi_get_adapter(int number){
-	// TODO: slow method
-	struct spi_adapter *dev = NULL, *item; 
-	list_for_each_entry(item, &_spi_adapters, list){
-		if(!number) { dev = item; break; }
-		number--; 
-	}
-	return dev; 
-}

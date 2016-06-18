@@ -33,6 +33,7 @@ menu "Configure ATMega328P driver"
 	
 	config TIMESTAMP_COUNTER
 		default y
+		depends on !FREERTOS
 		bool "Enable timestamp subsystem (timer1 configured as cpu clock counter)"
 		help
 			Uses timer1 for microsecond time measurement tasks. This is
@@ -49,7 +50,7 @@ menu "Configure ATMega328P driver"
 			wait for each conversion to complete.
 
 	config GPIO_PIN_STATES
-		select TIMESTAMP_COUNTER
+		depends on TIMESTAMP_COUNTER
 		default y
 		bool "Enable GPIO pin states"
 		help

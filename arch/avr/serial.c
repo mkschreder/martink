@@ -22,7 +22,7 @@
 #include <kernel/types.h>
 #include <kernel/mt.h>
 
-static void _serial_fd_putc(int c, FILE *stream){
+static void _serial_fd_putc(char c, FILE *stream){
 	struct serial_device *dev = fdev_get_udata(stream); 
 	char ch = c; 
 	serial_write(dev, (char*)&ch, 1); 

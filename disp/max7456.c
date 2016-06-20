@@ -91,8 +91,8 @@ static void _tty_move_cursor(struct tty_device *dev, uint16_t x, uint16_t y){
 /// get the size of the screen
 static void _tty_get_size(struct tty_device *dev, uint16_t *w, uint16_t *h){
 	// PAL
-	*w = 30; 
-	*h = 16; 
+	*w = MAX7456_COLS_COUNT; 
+	*h = MAX7456_ROWS_COUNT; 
 }
 
 /// clear the screen

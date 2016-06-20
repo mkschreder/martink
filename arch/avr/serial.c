@@ -22,10 +22,10 @@
 #include <kernel/types.h>
 #include <kernel/mt.h>
 
-static void _serial_fd_putc(char c, FILE *stream){
+static int _serial_fd_putc(char c, FILE *stream){
 	struct serial_device *dev = fdev_get_udata(stream); 
 	char ch = c; 
-	serial_write(dev, (char*)&ch, 1); 
+	return serial_write(dev, (char*)&ch, 1); 
 }
 
 static int _serial_fd_getc(FILE *stream){

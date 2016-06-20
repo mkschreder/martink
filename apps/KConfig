@@ -1,43 +1,46 @@
-choice 
-	prompt "Main Application Target"
+menu "Applications"
+	choice 
+		prompt "Target Application"
 
-	config APP_ARDUINO_PWM_BLINK_THREAD
-		depends on CPU_ATMEGA328P
-		depends on ATMEGA_GPIO
-		depends on ATMEGA_PWM
-		bool "Arduino threaded PWM and BLINK example"
-	config APP_ARDUINO_MINOPOSD
-		depends on MAX7456
-		bool "Arduino based minoposd implementation"
-	config ARDUINO_EXTERNAL_RTC_EEPROM
-		depends on CPU_ATMEGA328P
-		bool "Arduino DS3231 RTC/EEPROM example"
-	config ARDUINO_APP_RANGEFINDER
-		depends on CPU_ATMEGA328P
-		bool "Arduino 6-channel rangefinder"
-	config ARDUINO_SSD1306
-		depends on I2C
-		bool "Arduino SSD1306 example"
-	config ARDUINO_GPIO_WAKEUP
-		depends on I2C
-		bool "Arduino GPIO interrupt wakeup"
-	config APP_STM32_BLINKY
-		depends on CPU_STM32
-		bool "STM32 Blinky example"
-endchoice
+		config APP_ARDUINO_PWM_BLINK_THREAD
+			depends on CPU_ATMEGA328P
+			depends on ATMEGA_GPIO
+			depends on ATMEGA_PWM
+			bool "Arduino threaded PWM and BLINK example"
+		config APP_ARDUINO_MINOPOSD
+			depends on MAX7456
+			bool "Arduino based minoposd implementation"
+		config ARDUINO_EXTERNAL_RTC_EEPROM
+			depends on CPU_ATMEGA328P
+			bool "Arduino DS3231 RTC/EEPROM example"
+		config ARDUINO_APP_RANGEFINDER
+			depends on CPU_ATMEGA328P
+			bool "Arduino 6-channel rangefinder"
+		config ARDUINO_SSD1306
+			depends on I2C
+			bool "Arduino SSD1306 example"
+		config ARDUINO_GPIO_WAKEUP
+			depends on I2C
+			bool "Arduino GPIO interrupt wakeup"
+		config APP_STM32_BLINKY
+			depends on CPU_STM32
+			bool "STM32 Blinky example"
+	endchoice
 
-comment "Utility applications"
-config APP_print_hello
-	depends on ARCH_LINUX
-	bool "Print Hello APP"
+	comment "Utility applications"
+	config APP_print_hello
+		depends on ARCH_LINUX
+		bool "Print Hello APP"
 
-config APP_imx23_ssd1306
-	depends on ARCH_LINUX
-	bool "ssd1306 example on imx233 board"
+	config APP_imx23_ssd1306
+		depends on ARCH_LINUX
+		bool "ssd1306 example on imx233 board"
 
-config APP_test 
-	depends on ARCH_LINUX
-	bool "simple test app"
+	config APP_test 
+		depends on ARCH_LINUX
+		bool "simple test app"
 
-config APP_RTOS_TEST_dis
-	bool "simple rtos test"
+	config APP_RTOS_TEST_dis
+		depends on HAVE_THREADING
+		bool "simple rtos test"
+endmenu

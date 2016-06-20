@@ -1,17 +1,8 @@
 source arch/KConfig
-
-menu "Board support"
-	source boards/KConfig
-endmenu
-
+source boards/KConfig
 source kernel/KConfig
 
-menu "Application Configuration"
-	source apps/KConfig
-	source examples/KConfig
-endmenu
-
-menu "Device driver support"
+menu "Device Drivers"
 	source crypto/KConfig
 	source bus/KConfig
 	source memory/KConfig
@@ -32,4 +23,8 @@ menu "Device driver support"
 	source spi/KConfig
 	source tty/KConfig
 endmenu
+
+source apps/KConfig
+source examples/KConfig
+
 

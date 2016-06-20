@@ -1,6 +1,6 @@
-menu "Hardware"
+menu "Target CPU"
 	choice 
-		prompt "Target Architechture"
+		prompt "CPU Target"
 		
 		config ARCH_AVR
 			bool "Atmel AVR"

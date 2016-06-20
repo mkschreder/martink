@@ -1,2 +1,2 @@
-obj-$(CONFIG_ATMEGA328P) += boards/flight_control/multiwii.o
-obj-$(CONFIG_STM32F103) += boards/flight_control/openpilot_cc3d.o
+obj-$(CONFIG_BOARD_MULTIWII) += boards/flight_control/multiwii.o
+obj-$(CONFIG_BOARD_CC3D) += boards/flight_control/openpilot_cc3d.o

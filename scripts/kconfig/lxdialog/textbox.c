@@ -38,10 +38,7 @@ int dialog_textbox(const char *title, const char *file, int height, int width)
 {
 	int i, x, y, cur_x, cur_y, fpos, key = 0;
 	int passed_end;
-	char search_term[MAX_LEN + 1];
 	WINDOW *dialog, *text;
-
-	search_term[0] = '\0';	/* no search term entered yet */
 
 	/* Open input file for reading */
 	if ((fd = open(file, O_RDONLY)) == -1) {
@@ -437,7 +434,7 @@ static void print_page(WINDOW * win, int height, int width)
  */
 static void print_line(WINDOW * win, int row, int width)
 {
-	int y, x;
+	int __attribute__((unused)) y, x;
 	char *line;
 
 	line = get_line();

@@ -467,7 +467,10 @@ static int exec_conf(void)
 
 	*argptr++ = NULL;
 
-	pipe(pipefd);
+	if(pipe(pipefd) < 0){
+		printf("could not create pipe!\n"); 
+	}
+
 	pid = fork();
 	if (pid == 0) {
 		sigprocmask(SIG_SETMASK, &osset, NULL);
@@ -833,7 +836,9 @@ static void show_textbox(const char *title, const char *text, int r, int c)
 	int fd;
 
 	fd = creat(".help.tmp", 0777);
-	write(fd, text, strlen(text));
+	if(write(fd, text, strlen(text)) < 0){
+		printf("could not write help tmp file!\n"); 
+	}
 	close(fd);
 	show_file(".help.tmp", title, r, c);
 	unlink(".help.tmp");

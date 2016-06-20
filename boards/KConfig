@@ -1,36 +1,40 @@
 choice
-	prompt "Board model"
+	prompt "Target Board"
 	default BOARD_MULTIWII
 
 	config BOARD_MULTIWII
-		depends on ATMEGA328P
+		depends on CPU_ATMEGA328P
 		select MPU6050
 		select HMC5883L
 		select BMP085
 		bool "Multiwii V2.5 Flight Controller"
-	
+
+	config BOARD_MINIMOSD
+		depends on CPU_ATMEGA328P
+		select MAX7456
+		bool "MiminOSD ATMega328P board"
+
 	config BOARD_IMX233
-		depends on NATIVE
+		depends on CPU_NATIVE
 		bool "IMX233 Board"
 	
 	config BOARD_PROMINI
-		depends on ATMEGA328P
+		depends on CPU_ATMEGA328P
 		bool "Arduino Pro-Mini module"
 	
 	config BOARD_STM32F103
-		depends on STM32F10X
+		depends on CPU_STM32F10X
 		bool "STM32F103C6 dev board"
 	
-	
 	config BOARD_ARDUINO_DUE
-		depends on AT91SAM3
+		depends on CPU_AT91SAM3
 		bool "Arduino Due SAM3"
 		
 	config BOARD_ARDURADIO
-		depends on ATMEGA328P
+		depends on CPU_ATMEGA328P
 		bool "Fortmax custom arduino radio board"
 		
 	config BOARD_GENERIC_LINUX
-		depends on NATIVE
+		depends on CPU_NATIVE
 		bool "Compile ELF for running on linux"
 endchoice

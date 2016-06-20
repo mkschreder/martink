@@ -1,2 +1,5 @@
 config FREERTOS
+	select HAVE_THREADING
 	bool "FreeRTOS scheduler support"
+	help 
+		Enables realtime sheduler support and allows you to build a multithreaded application. 

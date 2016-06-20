@@ -101,7 +101,9 @@ static void conf_askvalue(struct symbol *sym, const char *def)
 		check_stdin();
 	case ask_all:
 		fflush(stdout);
-		fgets(line, 128, stdin);
+		if(fgets(line, 128, stdin) < 0) {
+			printf("could not get string!\n"); 
+		}
 		return;
 	case set_default:
 		printf("%s\n", def);
@@ -189,7 +191,7 @@ int conf_string(struct menu *menu)
 				help = nohelp_text;
 				if (menu->sym->help)
 					help = menu->sym->help;
-				printf("\n%s\n", menu->sym->help);
+				printf("\n%s\n", help);
 				def = NULL;
 				break;
 			}
@@ -205,7 +207,6 @@ int conf_string(struct menu *menu)
 static int conf_sym(struct menu *menu)
 {
 	struct symbol *sym = menu->sym;
-	int type;
 	tristate oldval, newval;
 	const char *help;
 
@@ -213,7 +214,6 @@ static int conf_sym(struct menu *menu)
 		printf("%*s%s ", indent - 1, "", menu->prompt->text);
 		if (sym->name)
 			printf("(%s) ", sym->name);
-		type = sym_get_type(sym);
 		putchar('[');
 		oldval = sym_get_tristate_value(sym);
 		switch (oldval) {
@@ -356,19 +356,20 @@ static int conf_choice(struct menu *menu)
 			check_stdin();
 		case ask_all:
 			fflush(stdout);
-			fgets(line, 128, stdin);
-			strip(line);
-			if (line[0] == '?') {
-				printf("\n%s\n", menu->sym->help ?
-					menu->sym->help : nohelp_text);
-				continue;
+			if(fgets(line, 128, stdin) == line){
+				strip(line);
+				if (line[0] == '?') {
+					printf("\n%s\n", menu->sym->help ?
+						menu->sym->help : nohelp_text);
+					continue;
+				}
+				if (!line[0])
+					cnt = def;
+				else if (isdigit(line[0]))
+					cnt = atoi(line);
+				else
+					continue;
 			}
-			if (!line[0])
-				cnt = def;
-			else if (isdigit(line[0]))
-				cnt = atoi(line);
-			else
-				continue;
 			break;
 		case set_random:
 			def = (random() % cnt) + 1;

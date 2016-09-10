@@ -1,0 +1,11 @@
+PKG_SOURCE_URL:=https://github.com/mkschreder/libucrypt.git
+PKG_SOURCE_VERSION:=e78815fe147b7037ac1d043ac3950ef76d2bfcb6
+
+define Package/install
+	$(INSTALL_DIR) $(2)/usr/lib/
+	$(CP) $(1)/src/.libs/libucrypt.a $(2)/usr/lib/
+	$(INSTALL_DIR) $(2)/usr/include/ucrypt/
+	$(CP) $(1)/src/*.h $(2)/usr/include/ucrypt/
+endef
+
+$(eval $(call BuildPackage,libucrypt))

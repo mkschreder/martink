@@ -1,0 +1,11 @@
+PKG_SOURCE_URL:=https://github.com/mkschreder/libblobpack.git
+PKG_SOURCE_VERSION:=d8f7e32338fec3380b86ac209192b7921a0af40e
+
+define Package/install
+	$(INSTALL_DIR) $(2)/usr/lib/
+	$(CP) $(1)/src/.libs/libblobpack.a $(2)/usr/lib/
+	$(INSTALL_DIR) $(2)/usr/include/blobpack/
+	$(CP) $(1)/src/*.h $(2)/usr/include/blobpack/
+endef
+
+$(eval $(call BuildPackage,libblobpack))

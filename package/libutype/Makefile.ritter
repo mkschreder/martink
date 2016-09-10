@@ -1,0 +1,4 @@
+PKG_SOURCE_URL:=https://github.com/mkschreder/libutype.git
+PKG_SOURCE_VERSION:=c6ef5d939e5ca37d557dd2a44720ffaef3a1cac1
+
+$(eval $(call BuildPackage,libutype))

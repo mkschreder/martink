@@ -1,2 +1,0 @@
-config AES_TEST
-	bool "AES test"

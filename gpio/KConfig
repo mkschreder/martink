@@ -5,4 +5,8 @@ menu "GPIO Support"
 	config ATMEGA_GPIO
 		depends on GPIO_SUPPORT && CPU_ATMEGA328P
 		bool "ATMega328p GPIO Support"
+
+	config STM32_GPIO
+		depends on GPIO_SUPPORT && CPU_STM32
+		bool "STM32 GPIO Support"
 endmenu

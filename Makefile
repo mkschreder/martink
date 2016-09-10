@@ -38,9 +38,9 @@ define check-set
 $(if $(value $1),,$(warning $1 is not set correctly!))
 endef 
 
-$(call check-set,ARCH)
-$(call check-set,CPU)
-$(call check-set,BOARD)
+#$(call check-set,ARCH)
+#$(call check-set,CPU)
+#$(call check-set,BOARD)
 
 BUILD_DIR := build/$(ARCH)-$(CPU)-$(BOARD)
 CONFIG := .config
@@ -104,7 +104,7 @@ scripts/basic/%: scripts_basic ;
 
 # needed for menuconfig
 %config: scripts_basic FORCE 	
-	$(Q)if [ ! -e .config ]; then cp $(CONFIG) .config; fi
+	#$(Q)if [ ! -e .config ]; then cp $(CONFIG) .config; fi
 	$(Q)make $(build)=scripts/kconfig $@
 	$(Q)if [ $(SAVECONFIG) ]; then cp .config $(CONFIG); fi
 
@@ -130,10 +130,13 @@ else
 endif
 
 $(TARGET): $(obj-y)
-	$(Q)$(CC) -o $@.elf $(LDFLAGS) $(obj-y) -Wl,-Map,$@.map
+	$(Q)$(CC) -o $@.elf  $(obj-y) -Wl,-Map,$@.map $(LDFLAGS)
 	@echo "Finalizing image.."
 	$(call target/image/finalize,$(TARGET).elf,$(TARGET))
- 
+
+flash: 
+	$(call target/image/flash,$(TARGET))
+
 default_target: $(TARGET)
 	@echo ""
 		
@@ -203,3 +206,4 @@ install:
 # information in a variable se we can use it in if_changed and friends.
 .PHONY: $(PHONY) directories
 
+include mk/package.mk

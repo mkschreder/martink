@@ -10,5 +10,6 @@ obj-$(CONFIG_ARDUINO_GPIO_WAKEUP) += apps/arduino/gpio_wakeup.o
 obj-$(CONFIG_APP_ARDUINO_MINOPOSD) += apps/arduino/minoposd.o
 obj-$(CONFIG_APP_STM32_BLINKY) += apps/stm32/blinky.o
 LDFLAGS-$(CONFIG_APP_test) += -lpthread
+LDFLAGS-$(CONFIG_ARDUINO_APP_RANGEFINDER) += -lblobpack
 
 include $(srctree)/apps/arduino/Makefile

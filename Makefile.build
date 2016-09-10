@@ -21,7 +21,6 @@ include serial/Makefile
 include pwm/Makefile
 include rtc/Makefile
 include spi/Makefile
-include crypto/Makefile
 include lib/Makefile
 include apps/Makefile
 include examples/Makefile

@@ -1,6 +1,6 @@
 #include <arch/soc.h>
 #include <gpio/gpio.h>
-
+#if 0
 static const struct {
 	GPIO_TypeDef *gpio; 
 } _ports[] = {
@@ -221,3 +221,4 @@ void EXTI15_10_IRQHandler(void);
 void EXTI15_10_IRQHandler(void){
 	EXTI_IRQ(); 
 }
+#endif

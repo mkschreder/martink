@@ -1,7 +1,0 @@
-menu "Cryptographic support"
-	config CRYPTO
-		bool "Enable crypto functions"
-	config CRYPTO_AES
-		depends on CRYPTO
-		bool "AES encryption support"
-endmenu

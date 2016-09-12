@@ -5,12 +5,23 @@ choice
 	depends on ARCH_ARM
 	prompt "ARM Model" 
 
-	config CPU_STM32
+	config CPU_STM32F10x
 		select ARCH_ARM_CM3
-		bool "STM32"
+		bool "STM32F10x"
 	
+	config CPU_STM32F30x
+		select ARCH_ARM_CM3
+		bool "STM32F30x"
+
+	config CPU_STM32F37x
+		select ARCH_ARM_CM3
+		bool "STM32F37x"
+
+	config CPU_STM32L1xx
+		select ARCH_ARM_CM3
+		bool "STM32L1xx"
+
 	config CPU_AT91SAM3
 		bool "AT91SAM3"
 endchoice 
 
-source arch/arm/stm32/KConfig

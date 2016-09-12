@@ -29,7 +29,7 @@ CFLAGS += -Wall -fPIC -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototype
 CXXFLAGS += -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wcast-align -Wchar-subscripts -Wredundant-decls
-LDFLAGS += -Wl,--relax,--gc-sections
+LDFLAGS += -Wl,--relax,--gc-sections 
 
 -include .config
 include Makefile.build 
@@ -43,7 +43,7 @@ endef
 #$(call check-set,BOARD)
 
 BUILD_DIR := build_dir/target-$(ARCH)-$(CPU)-$(BOARD)
-STAGING_DIR := staging_dir/target-$(ARCH)-$(CPU)-$(BOARD)
+STAGING_DIR := $(CURDIR)/staging_dir/target-$(ARCH)-$(CPU)-$(BOARD)
 CONFIG := .config
 CONFIG_H := include/configs/$(ARCH).h
 
@@ -64,7 +64,7 @@ COMMON_FLAGS += -I$(srctree) -I$(srctree)/include -DBUILD_$(BUILD_DEFINE) $(CPU_
 # add includes to the make
 CFLAGS 		+= $(CFLAGS-y) $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
 CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
-LDFLAGS 	+= $(LDFLAGS-y)
+LDFLAGS 	+= $(LDFLAGS-y) -L$(STAGING_DIR)/ld/
 #TARGET := kernel-$(BUILD)
 
 # SHELL used by kbuild

@@ -5,6 +5,7 @@ BOARD:=generic
 
 ifeq ($(CONFIG_CPU_STM32F10x), y)
 CPU:=stm32f10x
+LDFLAGS+=-llibk-arm32 -Wl,-Tstm32f10x_md.ld 
 else ifeq ($(CONFIG_CPU_STM32F30x), y)
 CPU:=stm32f30x
 else ifeq ($(CONFIG_CPU_STM32F37x), y)

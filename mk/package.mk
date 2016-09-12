@@ -32,7 +32,7 @@ $$($(2)_PKG_BUILD_DIR)/.configured:
 	touch $$($(2)_PKG_BUILD_DIR)/.configured
 $(1)$(2)/compile: $$($(2)_PKG_BUILD_DIR) $$($(2)_PKG_BUILD_DIR)/.configured
 	echo "building package $(1)$(2)"
-	make -C $$($(2)_PKG_BUILD_DIR) CC=$(CC) CFLAGS="$(CFLAGS)"
+	make -C $$($(2)_PKG_BUILD_DIR) CC=$(CC) CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)"
 $(1)$(2)/install: $(1)$(2)/compile
 	$(call Package/install,$$($(2)_PKG_BUILD_DIR),$(STAGING_DIR))
 PHONY+=$(1)$(2)/compile

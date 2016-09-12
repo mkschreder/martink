@@ -42,7 +42,8 @@ endef
 #$(call check-set,CPU)
 #$(call check-set,BOARD)
 
-BUILD_DIR := build/$(ARCH)-$(CPU)-$(BOARD)
+BUILD_DIR := build_dir/target-$(ARCH)-$(CPU)-$(BOARD)
+STAGING_DIR := staging_dir/target-$(ARCH)-$(CPU)-$(BOARD)
 CONFIG := .config
 CONFIG_H := include/configs/$(ARCH).h
 
@@ -142,15 +143,6 @@ default_target: $(TARGET)
 		
 #$(patsubst %, $(BUILD_DIR)/%, $(obj-y))
 
-buildall: 
-	make -C . BUILD=arm-stm32f100mdvl
-	make -C . BUILD=arm-stm32f103
-	make -C . BUILD=avr-atmega328p
-	make -C . BUILD=arm-stm32f100mdvl build-fst6-demo
-	make -C . BUILD=arm-stm32f103 build-cc3d-demo
-	make -C . BUILD=avr-atmega328p build-mwii-demo
-	make -C . docs 
-	
 docs: 
 	@cat README-intro.md $(docs-y) > README.md
 	@pandoc -V geometry:margin=1in --toc README.md -o Reference-Manual.pdf

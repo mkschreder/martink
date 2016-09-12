@@ -1,5 +1,5 @@
 PKG_SOURCE_URL:=https://github.com/mkschreder/libblobpack.git
-PKG_SOURCE_VERSION:=d8f7e32338fec3380b86ac209192b7921a0af40e
+PKG_SOURCE_VERSION:=0d1db44094ba49a0ca51e675f80d79efe5551cbd
 
 define Package/install
 	$(INSTALL_DIR) $(2)/usr/lib/

@@ -3,7 +3,6 @@ source boards/KConfig
 source kernel/KConfig
 
 menu "Device Drivers"
-	source crypto/KConfig
 	source bus/KConfig
 	source memory/KConfig
 	source adc/KConfig

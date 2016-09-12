@@ -1,0 +1,14 @@
+PKG_SOURCE_URL:=https://github.com/mkschreder/libk-arm32.git
+PKG_SOURCE_VERSION:=20d99495e83ff241d6e099ddc2868a9fa7463a40
+
+define Package/install
+	$(INSTALL_DIR) $(2)/usr/lib/
+	$(CP) $(1)/src/.libs/libk-arm32-stm32f10x.a $(2)/usr/lib/
+	$(CP) $(1)/src/.libs/libk-arm32-stm32f30x.a $(2)/usr/lib/
+	$(CP) $(1)/src/.libs/libk-arm32-stm32f37x.a $(2)/usr/lib/
+	$(CP) $(1)/src/.libs/libk-arm32-stm32l1xx.a $(2)/usr/lib/
+	$(INSTALL_DIR) $(2)/usr/include/libk/arm32/
+	(cd $(1)/src/ && find . -name '*.h' -print | tar --create --files-from -) | (cd $(2)/usr/include/libk/arm32 && tar xvfp -)
+endef
+
+$(eval $(call BuildPackage,libk-arm32))

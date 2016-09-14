@@ -1,7 +1,0 @@
-menu "I2C Support"
-	config I2C
-		bool "Enable I2C support"
-	config ATMEGA_I2C
-		depends on I2C && ARCH_AVR
-		bool "ATMega I2C Support"
-endmenu

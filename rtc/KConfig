@@ -1,7 +1,0 @@
-menu "Realtime Clock Support"
-	config RTC 
-		bool "Enable RTC drivers"
-	config DS3231
-		depends on RTC && I2C
-		bool "DS3231 I2C RTC"
-endmenu

@@ -1,6 +1,10 @@
 PKG_SOURCE_URL:=https://github.com/mkschreder/hello-world.git
 PKG_SOURCE_VERSION:=6b3819721d05f7336778bfa698d6c22a567368f8
 
+define Package/info
+	DEPENDS:= 
+endef
+
 define Package/install
 	$(INSTALL_DIR) $(2)/usr/bin/
 	$(CP) $(1)/src/hello-world $(2)/usr/bin/

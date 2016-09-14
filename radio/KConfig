@@ -1,5 +1,0 @@
-menu "Radio modem support"
-	config NRF24L01
-		depends on HAVE_SPI
-		bool "NRF24L01 SPI module"
-endmenu

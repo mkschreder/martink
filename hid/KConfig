@@ -1,4 +1,0 @@
-menu "HID support"
-	config WIINUNCHUK
-		bool "WII nunchuck support"
-endmenu

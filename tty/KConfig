@@ -1,3 +1,0 @@
-config VT100
-	bool "VT100 emulator driver (simple)"
-	

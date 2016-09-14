@@ -1,0 +1,18 @@
+#define Target/defaults
+#ARCH:=arm
+#BOARD:=naze32
+#CPU:=stm32f10x
+#CPU_CFLAGS:=-mcpu=cortex-m3 -mthumb -mlong-calls
+#CPU_LDFLAGS:=-Tstm32f10x_md_vl.ld 
+#CC:=arm-none-eabi-gcc
+#AS:=arm-none-eabi-gcc
+#endef
+
+define Target/image
+	$(Q)arm-none-eabi-objcopy -O ihex --set-start 0x8000000 $(STAGING_DIR)/usr/bin/$(2) $(2).hex
+	$(Q)echo "Firmare in: $(2).hex"
+endef
+
+define Target/flash
+	stm32flash -w $(2).hex -v -g 0x0 -b 115200 /dev/ttyUSB0
+endef

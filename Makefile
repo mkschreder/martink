@@ -8,42 +8,44 @@ endif
 all: config fixdirs check default_target
 	@echo "\033[32;40m [LD] $(ARCH)-$(CPU)-$(BOARD)\033[m"
 	
-#ARCH:=linux
-#CPU:=generic
-#BOARD:=native 
-
-include scripts/include/target.mk
-
 VPATH := arch:boards:build:crypto:disp:hid:io:motors:net:radio:rfid:sensors:tty
 
+-include .config
+
+INSTALL_DIR:=mkdir -p
+CP:=cp -Rp
+
+include mk/package.mk
+include mk/target.mk
+
+$(foreach target,$(wildcard target/*),$(eval $(call RegisterTarget,$(dir $(target)),$(notdir $(basename $(target))))))
+
+BUILD_DIR := build_dir/target-$(ARCH)-$(CPU)-$(BOARD)
+STAGING_DIR := $(CURDIR)/staging_dir/target-$(ARCH)-$(CPU)-$(BOARD)
+CFLAGS+=-I$(STAGING_DIR)/usr/include/
+LDFLAGS+=-L$(STAGING_DIR)/usr/lib/
+
+$(foreach package,$(wildcard apps/*),$(eval $(call RegisterPackage,$(dir $(package)),$(notdir $(basename $(package))))))
+$(foreach package,$(wildcard package/*),$(eval $(call RegisterPackage,$(dir $(package)),$(notdir $(basename $(package))))))
+
 # define defaults that can be added to in submakefiles
-INCLUDES := -I. -Iinclude -Iinclude/c++ -Ikernel
-COMMON_FLAGS := -ffunction-sections -fdata-sections -Wall -Werror -Os
-CFLAGS += -Wall -fPIC -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
+INCLUDES += -I. -Iinclude -Iinclude/c++ -Ikernel
+COMMON_CFLAGS += -ffunction-sections -fdata-sections -Os
+CFLAGS += -Wall -Wno-format-y2k -W -Wno-strict-prototypes -Wmissing-prototypes \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wshadow -Wcast-align -Wchar-subscripts -Winline \
 -Wnested-externs -Wredundant-decls -Wmissing-field-initializers -Wextra \
 -Wformat=2 -Wno-format-nonliteral -Wpointer-arith -Wno-missing-braces \
 -Wno-unused-parameter -Wno-unused-variable -Wno-inline
-#-Wpedantic
 CXXFLAGS += -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wcast-align -Wchar-subscripts -Wredundant-decls
-LDFLAGS += -Wl,--relax,--gc-sections 
 
--include .config
-include Makefile.build 
 
 define check-set 
 $(if $(value $1),,$(warning $1 is not set correctly!))
 endef 
 
-#$(call check-set,ARCH)
-#$(call check-set,CPU)
-#$(call check-set,BOARD)
-
-BUILD_DIR := build_dir/target-$(ARCH)-$(CPU)-$(BOARD)
-STAGING_DIR := $(CURDIR)/staging_dir/target-$(ARCH)-$(CPU)-$(BOARD)
 CONFIG := .config
 CONFIG_H := include/configs/$(ARCH).h
 
@@ -59,12 +61,12 @@ ktree := martink
 
 # append flags defined in arch/
 BUILD_DEFINE := $(subst -,_,$(BUILD))
-COMMON_FLAGS += -I$(srctree) -I$(srctree)/include -DBUILD_$(BUILD_DEFINE) $(CPU_FLAGS) 
+COMMON_CFLAGS += -I$(srctree) -I$(srctree)/include -DBUILD_$(BUILD_DEFINE) $(CPU_CFLAGS) 
 
 # add includes to the make
-CFLAGS 		+= $(CFLAGS-y) $(INCLUDES) $(COMMON_FLAGS) -std=gnu99 
-CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_FLAGS) -fpermissive  -std=c++11 
-LDFLAGS 	+= $(LDFLAGS-y) -L$(STAGING_DIR)/ld/
+CFLAGS 		+= $(CFLAGS-y) $(INCLUDES) $(COMMON_CFLAGS) -std=gnu99  
+CXXFLAGS 	+= -Ilib/stlport-avr $(INCLUDES) $(COMMON_CFLAGS) -fpermissive  -std=c++11 
+LDFLAGS 	+= -Wl,--relax,--gc-sections $(LDFLAGS-y) $(CPU_LDFLAGS) 
 #TARGET := kernel-$(BUILD)
 
 # SHELL used by kbuild
@@ -104,8 +106,7 @@ scripts_basic:
 scripts/basic/%: scripts_basic ;
 
 # needed for menuconfig
-%config: scripts_basic FORCE 	
-	#$(Q)if [ ! -e .config ]; then cp $(CONFIG) .config; fi
+%config: scripts_basic   	
 	$(Q)make $(build)=scripts/kconfig $@
 	$(Q)if [ $(SAVECONFIG) ]; then cp .config $(CONFIG); fi
 
@@ -130,10 +131,10 @@ else
 		echo "Please specify BUILD you want to save to!"
 endif
 
-$(TARGET): $(obj-y)
-	$(Q)$(CC) -o $@.elf  $(obj-y) -Wl,-Map,$@.map $(LDFLAGS)
-	@echo "Finalizing image.."
-	$(call target/image/finalize,$(TARGET).elf,$(TARGET))
+#$(TARGET): $(obj-y)
+#	$(Q)$(CC) -o $@.elf  $(obj-y) -Wl,-Map,$@.map $(LDFLAGS)
+#	@echo "Finalizing image.."
+#	$(call target/image/finalize,$(TARGET).elf,$(TARGET))
 
 flash: 
 	$(call target/image/flash,$(TARGET))
@@ -150,9 +151,6 @@ docs:
 $(BUILD_DIR)/%.o: %.cpp .config 
 	$(Q)mkdir -p `dirname $@`
 	$(Q)$(CXX) -c $(CXXFLAGS) $< -o $@
-
-#splint -unrecogcomments -predboolint -exportlocal -noeffect -fcnuse +matchanyintegral -boolops +boolint -D__GNUC__ -DBUILD_arm_stm32f103 -DSTM32F10X_MD -Iarch/arm/stm32/CMSIS -I./ -I./include $<
-#scan-build -enable-checker alpha.core.BoolAssignment -enable-checker alpha.core.CastToStruct -enable-checker alpha.core.IdenticalExpr -enable-checker alpha.core.PointerArithm -enable-checker alpha.core.PointerSub -enable-checker alpha.core.SizeofPtr -enable-checker alpha.core.TestAfterDivZero -enable-checker alpha.security.ArrayBoundV2 -enable-checker alpha.security.ReturnPtrRange -enable-checker security.FloatLoopCounter -enable-checker security.insecureAPI.strcpy --use-cc=$(CC) $(CC) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/%.o: %.c .config 
 	@echo "\033[33;40m [CC] $(subst $(BUILD_DIR)/,,$@)\033[m"
@@ -187,9 +185,6 @@ clean:
 
 -include $(obj-y:%.o=%.d)
 
-PHONY += FORCE
-FORCE:
-
 install: 
 	mkdir -p $(DESTDIR)/usr/lib/
 	cp -Rp $(TARGET) $(DESTDIR)/usr/lib/
@@ -198,4 +193,3 @@ install:
 # information in a variable se we can use it in if_changed and friends.
 .PHONY: $(PHONY) directories
 
-include mk/package.mk

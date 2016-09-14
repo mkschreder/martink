@@ -1,29 +1,3 @@
-source arch/KConfig
-source boards/KConfig
-source kernel/KConfig
-
-menu "Device Drivers"
-	source bus/KConfig
-	source memory/KConfig
-	source adc/KConfig
-	source gpio/KConfig
-	source i2c/KConfig
-	source gui/KConfig
-	source disp/KConfig
-	source hid/KConfig
-	source io/KConfig
-	source net/KConfig
-	source pwm/KConfig
-	source radio/KConfig
-	source rfid/KConfig
-	source sensors/KConfig
-	source rtc/KConfig
-	source serial/KConfig
-	source spi/KConfig
-	source tty/KConfig
-endmenu
-
-source apps/KConfig
-source examples/KConfig
-
+config test
+	bool "Foo"
 

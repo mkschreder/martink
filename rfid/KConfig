@@ -1,4 +1,0 @@
-menu "RFID readers support"
-	config MFRC522
-		bool "MFRC522 13mhz RFID reader support"
-endmenu

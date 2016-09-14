@@ -1,6 +1,0 @@
-menu "Kernel Configuration"
-	config HAVE_THREADING
-		bool
-
-	source kernel/freertos/KConfig
-endmenu

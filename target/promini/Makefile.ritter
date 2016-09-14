@@ -1,0 +1,22 @@
+define Target/defaults
+ARCH:=avr
+BOARD:=promini
+CPU:=atmega328p
+CPU_CFLAGS:=-mmcu=$$(CPU) -DF_CPU=16000000UL
+CPU_LDFLAGS:=-Wl,--start-group,-lfreertos,-lk-avr,-lutype,-lk-avr,--end-group 
+TARGET_CC:=avr-gcc
+TARGET_AS:=avr-gcc
+endef
+
+define Target/info
+	DEPENDS:=package/libk-avr
+endef
+
+define Target/image
+	$(Q)avr-objcopy -j .text -j .data -O ihex $$(STAGING_DIR)/usr/bin/$(2) $(2).hex
+	$(Q)echo "Firmare in: $(2).hex"
+endef
+
+define Target/flash
+	$(Q)sudo avrdude -P /dev/ttyUSB0 -b 57600 -c arduino -p m328p -U flash:w:$(2).hex
+endef

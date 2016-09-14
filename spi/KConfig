@@ -1,7 +1,0 @@
-menu "SPI Support"
-	config SPI
-		bool "Enable SPI support"
-	config ATMEGA_SPI
-		depends on SPI && CPU_ATMEGA328P
-		bool "ATMega328P SPI Support"
-endmenu

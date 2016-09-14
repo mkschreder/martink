@@ -1,4 +1,15 @@
 PKG_SOURCE_URL:=https://github.com/mkschreder/libutype.git
-PKG_SOURCE_VERSION:=c6ef5d939e5ca37d557dd2a44720ffaef3a1cac1
+PKG_SOURCE_VERSION:=17350e8455a3f5372995ae34a3994968fa8a09f0
+
+define Package/info
+	LDFLAGS+=
+endef
+
+define Package/install
+	$(INSTALL_DIR) $(2)/usr/lib/
+	$(CP) $(1)/src/.libs/libutype.a $(2)/usr/lib/
+	$(INSTALL_DIR) $(2)/usr/include/utype/
+	(cd $(1)/src/ && find . -name '*.h' -print | tar --create --files-from -) | (cd $(2)/usr/include/utype && tar xfp -) 
+endef
 
 $(eval $(call BuildPackage,libutype))

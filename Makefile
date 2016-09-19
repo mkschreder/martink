@@ -16,30 +16,30 @@ INSTALL_DIR:=mkdir -p
 CP:=cp -Rp
 
 include mk/package.mk
-include mk/target.mk
+include mk/firmware.mk
 
-$(foreach target,$(wildcard target/*),$(eval $(call RegisterTarget,$(dir $(target)),$(notdir $(basename $(target))))))
-
-BUILD_DIR := build_dir/target-$(ARCH)-$(CPU)-$(BOARD)
-STAGING_DIR := $(CURDIR)/staging_dir/target-$(ARCH)-$(CPU)-$(BOARD)
-CFLAGS+=-I$(STAGING_DIR)/usr/include/
-LDFLAGS+=-L$(STAGING_DIR)/usr/lib/
-
-$(foreach package,$(wildcard apps/*),$(eval $(call RegisterPackage,$(dir $(package)),$(notdir $(basename $(package))))))
-$(foreach package,$(wildcard package/*),$(eval $(call RegisterPackage,$(dir $(package)),$(notdir $(basename $(package))))))
+#BUILD_DIR := build_dir/target-$(ARCH)-$(CPU)-$(BOARD)
+#STAGING_DIR := $(CURDIR)/staging_dir/target-$(ARCH)-$(CPU)-$(BOARD)
+#CFLAGS+=-I$(STAGING_DIR)/usr/include/
+#LDFLAGS+=-L$(STAGING_DIR)/usr/lib/
 
 # define defaults that can be added to in submakefiles
 INCLUDES += -I. -Iinclude -Iinclude/c++ -Ikernel
 COMMON_CFLAGS += -ffunction-sections -fdata-sections -Os
-CFLAGS += -Wall -Wno-format-y2k -W -Wno-strict-prototypes -Wmissing-prototypes \
+TARGET_CFLAGS += -Wall -Wno-format-y2k -W -Wno-strict-prototypes -Wmissing-prototypes \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wshadow -Wcast-align -Wchar-subscripts -Winline \
 -Wnested-externs -Wredundant-decls -Wmissing-field-initializers -Wextra \
 -Wformat=2 -Wno-format-nonliteral -Wpointer-arith -Wno-missing-braces \
 -Wno-unused-parameter -Wno-unused-variable -Wno-inline
-CXXFLAGS += -Wall -Wno-format-y2k -W \
+TARGET_CXXFLAGS += -Wall -Wno-format-y2k -W \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wcast-align -Wchar-subscripts -Wredundant-decls
+
+
+$(foreach fw,$(wildcard firmware/*),$(eval $(call RegisterFirmware,$(dir $(fw)),$(notdir $(basename $(fw))))))
+$(foreach package,$(wildcard apps/*),$(eval $(call RegisterPackage,$(dir $(package)),$(notdir $(basename $(package))))))
+$(foreach package,$(wildcard package/*),$(eval $(call RegisterPackage,$(dir $(package)),$(notdir $(basename $(package))))))
 
 
 define check-set 
@@ -60,8 +60,7 @@ ktree := martink
 #$(eval $(call BuildDir,block))
 
 # append flags defined in arch/
-BUILD_DEFINE := $(subst -,_,$(BUILD))
-COMMON_CFLAGS += -I$(srctree) -I$(srctree)/include -DBUILD_$(BUILD_DEFINE) $(CPU_CFLAGS) 
+COMMON_CFLAGS += -I$(srctree) -I$(srctree)/include $(CPU_CFLAGS) 
 
 # add includes to the make
 CFLAGS 		+= $(CFLAGS-y) $(INCLUDES) $(COMMON_CFLAGS) -std=gnu99  

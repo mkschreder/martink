@@ -130,7 +130,7 @@ Design goals
 - To keep in mind that the final code may have to run on a system with just 2k of ram. This is important because many design decisions and code practices are used throughout the firmware code to keep the amount of data stored in memory to an absolute minimum. 
 - To support compilation for desktop as well as microcontroller to enable efficient testing on desktop before running the code on a microcontroller. 
 
-Architechture
+Architecture
 --------------
 
 The system uses makefiles for building the projects. This is a good thing because makefiles are extremely powerful and allow for very specialized compilation process. Through use of separate makefiles in different parts of the project we can specify exactly which files are compiled and included. We can also load configuration from menuconfig directly into a makefile and write rules based on the config. This build system is highly influenced by the very efficient build system used by linux kernel. 
